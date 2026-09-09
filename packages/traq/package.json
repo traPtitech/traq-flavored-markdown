@@ -3,6 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
+  "homepage": "https://github.com/traq-markdown-parser/traq#readme",
+  "bugs": {
+    "url": "https://github.com/traq-markdown-parser/traq/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traq-markdown-parser/traq.git"
+  },
+  "license": "MIT",
+  "author": "traP (https://github.com/traPtitech)",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -35,59 +49,43 @@
     "LICENSE",
     "styles"
   ],
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
     "build": "bun run scripts/build.ts",
-    "test": "bun test ./typescript/tests",
-    "typecheck": "tsc -p typescript/tsconfig.json --noEmit && tsc -p examples/typescript/tsconfig.json",
-    "test:rust": "cargo test --workspace --all-features",
-    "test:go": "go -C go test -count=1 ./...",
-    "example:rust": "cargo run -p traq-markdown-example && cargo run -p traq-markdown-grammar --example parse && cargo run -p traq-markdown-processing --example notification && cargo run -p traq-markdown-processing --example compose-text",
-    "example:go": "go -C examples/go run .",
-    "example:ts": "bun run examples/typescript/main.mts",
-    "examples": "bun run example:rust && bun run example:go && bun run example:ts",
-    "check:package": "bun run scripts/package-check.ts",
-    "check:architecture": "bun run scripts/check-js-boundaries.ts",
-    "generate:bindings": "bun run ../../scripts/generate-bindings.ts traq",
-    "build:ts": "tsc -p typescript/tsconfig.build.json",
     "build:renderer": "sass --no-source-map styles/index.scss dist/index.css",
+    "build:ts": "tsc -p typescript/tsconfig.build.json",
+    "check:architecture": "bun run scripts/check-js-boundaries.ts",
+    "check:package": "bun run scripts/package-check.ts",
     "check:rendering": "bun run scripts/check-rendering.ts",
     "corpus:collect": "bun run scripts/corpus/fetch.ts",
     "corpus:compare": "bun run scripts/corpus/compare.ts",
     "corpus:report": "bun run scripts/corpus/report.ts",
-    "test:corpus": "bun test ./scripts/corpus"
+    "example:go": "go -C examples/go run .",
+    "example:rust": "cargo run -p traq-markdown-example && cargo run -p traq-markdown-grammar --example parse && cargo run -p traq-markdown-processing --example notification && cargo run -p traq-markdown-processing --example compose-text",
+    "example:ts": "bun run examples/typescript/main.ts",
+    "examples": "bun run example:rust && bun run example:go && bun run example:ts",
+    "generate:bindings": "bun run ../../scripts/generate-bindings.ts traq",
+    "test": "bun test ./typescript/tests",
+    "test:corpus": "bun test ./scripts/corpus",
+    "test:go": "go -C go test -count=1 ./...",
+    "test:rust": "cargo test --workspace --all-features",
+    "typecheck": "tsc -p typescript/tsconfig.json --noEmit && tsc -p examples/typescript/tsconfig.json"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/traq-markdown-parser/traq.git"
-  },
-  "author": "traP (https://github.com/traPtitech)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/traq-markdown-parser/traq/issues"
-  },
-  "homepage": "https://github.com/traq-markdown-parser/traq#readme",
-  "sideEffects": [
-    "./dist/index.css"
-  ],
   "devDependencies": {
     "@traq-markdown-parser/commonmark": "workspace:*",
     "@traq-markdown-parser/core": "workspace:*",
     "@traq-markdown-parser/trap-extension": "workspace:*",
-    "@types/node": "26.3.0",
-    "esbuild": "^0.25.12",
-    "jest-diff": "^30.2.0",
-    "markdown-it": "^14.1.0",
-    "parse5": "^7.3.0",
-    "sass": "^1.97.3",
-    "typescript": "6.0.3"
+    "esbuild": "0.28.2",
+    "jest-diff": "30.5.1",
+    "markdown-it": "15.0.1",
+    "parse5": "8.0.1",
+    "sass": "1.103.1"
   },
-  "type": "module",
   "peerDependencies": {
-    "@traq-markdown-parser/commonmark": "^0.1.0",
-    "@traq-markdown-parser/core": "^0.1.0",
-    "@traq-markdown-parser/trap-extension": "^0.1.0"
+    "@traq-markdown-parser/commonmark": "0.1.0",
+    "@traq-markdown-parser/core": "0.1.0",
+    "@traq-markdown-parser/trap-extension": "0.1.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

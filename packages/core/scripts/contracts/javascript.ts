@@ -1,4 +1,4 @@
-import { quoted as q, shape, typeName } from './schema.mjs'
+import { quoted as q, shape, typeName } from './schema.ts'
 
 function validator(s) {
   if (s.kind === 'string' || s.kind === 'boolean') return s.kind

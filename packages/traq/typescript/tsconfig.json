@@ -8,7 +8,7 @@
     "index.ts",
     "generated/**/*.ts",
     "tests/package-consumer/*.ts",
-    "../examples/typescript/*.mts",
+    "../examples/typescript/*.ts",
     "renderer/**/*.ts",
     "tests/rendering/types.ts"
   ]

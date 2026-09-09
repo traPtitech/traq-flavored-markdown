@@ -1,4 +1,4 @@
-import { quoted as q, shape, typeName } from './schema.mjs'
+import { quoted as q, shape, typeName } from './schema.ts'
 
 const fieldName = name =>
   name === 'id'

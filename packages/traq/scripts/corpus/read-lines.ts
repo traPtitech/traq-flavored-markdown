@@ -1,13 +1,9 @@
-import { createReadStream } from 'node:fs'
-
 // JSONL is delimited by LF; U+2028 and U+2029 can occur inside JSON strings.
 export async function* readLines(file) {
   let pending = ''
-  for await (const chunk of createReadStream(file, {
-    encoding: 'utf8',
-    highWaterMark: 1 << 20
-  })) {
-    pending += chunk
+  const decoder = new TextDecoder()
+  for await (const chunk of Bun.file(file).stream()) {
+    pending += decoder.decode(chunk, { stream: true })
     let start = 0,
       end
     while ((end = pending.indexOf('\n', start)) !== -1) {
@@ -16,5 +12,6 @@ export async function* readLines(file) {
     }
     pending = pending.slice(start)
   }
+  pending += decoder.decode()
   if (pending) yield pending
 }

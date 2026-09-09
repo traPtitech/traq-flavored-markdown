@@ -1,6 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-
 import { goContract } from '@traq-markdown-parser/core/codegen/go'
 
 export async function processingFiles(schemas, input) {
@@ -17,7 +14,7 @@ export async function processingFiles(schemas, input) {
   const types = new Map()
   async function declaration(name) {
     if (types.has(name)) return
-    const source = await readFile(path.join(input, name + '.ts'), 'utf8')
+    const source = await Bun.file(`${input}/${name}.ts`).text()
     types.set(
       name,
       source

@@ -1,37 +1,54 @@
-import { execFileSync } from 'node:child_process'
-import {
-  copyFile,
-  mkdtemp,
-  readFile,
-  realpath,
-  rm,
-  writeFile
-} from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { $ } from 'bun'
 
-const root = fileURLToPath(new URL('../', import.meta.url))
-const run = (args, cwd = root) =>
-  execFileSync(process.execPath, args, {
-    cwd,
-    encoding: 'utf8',
-    windowsHide: true
-  })
-const bun = (args, cwd) => run(args, cwd)
-const temp = await realpath(tmpdir()),
-  dir = await mkdtemp(path.join(temp, 'markdown-packages-'))
+const root = new URL('../', import.meta.url)
+const tempRoot = (
+  Bun.env.TEMP ??
+  Bun.env.TMP ??
+  Bun.env.TMPDIR ??
+  '/tmp'
+).replace(/[\\/]+$/, '')
+const temporaryDirectory = `${tempRoot}/markdown-packages-${Bun.randomUUIDv7()}`
+if (!temporaryDirectory.startsWith(`${tempRoot}/`))
+  throw new Error('Invalid temporary path')
+const bun = Bun.argv[0]
+const archiveName = archive =>
+  archive.slice(
+    Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
+  )
+const packageNames = ['core', 'commonmark', 'trap-extension', 'traq']
+const capture = async (command, args, cwd) => {
+  return (await $.cwd(cwd)`${command} ${args}`.quiet()).text()
+}
+await $`mkdir -p ${temporaryDirectory}`
 try {
   const archives = []
-  for (const repo of ['core', 'commonmark', 'trap-extension', 'traq']) {
-    const cwd = path.resolve(root, '..', repo)
-    const output = bun(
-      ['pm', 'pack', '--dry-run', '--ignore-scripts', '--destination', dir],
+  for (const repo of packageNames) {
+    const cwd = Bun.fileURLToPath(new URL(`../${repo}/`, root))
+    const output = await capture(
+      bun,
+      [
+        'pm',
+        'pack',
+        '--dry-run',
+        '--ignore-scripts',
+        '--destination',
+        temporaryDirectory
+      ],
       cwd
     )
-    const archive = bun(
-      ['pm', 'pack', '--quiet', '--ignore-scripts', '--destination', dir],
-      cwd
+    const archive = (
+      await capture(
+        bun,
+        [
+          'pm',
+          'pack',
+          '--quiet',
+          '--ignore-scripts',
+          '--destination',
+          temporaryDirectory
+        ],
+        cwd
+      )
     ).trim()
     archives.push(archive)
     const files = new Set(
@@ -49,30 +66,23 @@ try {
     if (repo !== 'traq' && [...files].some(n => n.endsWith('.wasm')))
       throw Error('Unexpected Wasm in ' + repo)
   }
-  await writeFile(
-    path.join(dir, 'package.json'),
+  const packageDependencies = Object.fromEntries(
+    packageNames.map((name, index) => [
+      `@traq-markdown-parser/${name}`,
+      `file:./${archiveName(archives[index])}`
+    ])
+  )
+  await Bun.write(
+    `${temporaryDirectory}/package.json`,
     JSON.stringify({
       private: true,
       type: 'module',
-      dependencies: {
-        '@traq-markdown-parser/core': 'file:./' + path.basename(archives[0]),
-        '@traq-markdown-parser/commonmark':
-          'file:./' + path.basename(archives[1]),
-        '@traq-markdown-parser/trap-extension':
-          'file:./' + path.basename(archives[2]),
-        '@traq-markdown-parser/traq': 'file:./' + path.basename(archives[3])
-      },
-      overrides: {
-        '@traq-markdown-parser/core': 'file:./' + path.basename(archives[0]),
-        '@traq-markdown-parser/commonmark':
-          'file:./' + path.basename(archives[1]),
-        '@traq-markdown-parser/trap-extension':
-          'file:./' + path.basename(archives[2]),
-        '@traq-markdown-parser/traq': 'file:./' + path.basename(archives[3])
-      }
+      dependencies: packageDependencies,
+      overrides: packageDependencies
     })
   )
-  bun(
+  await capture(
+    bun,
     [
       'install',
       '--ignore-scripts',
@@ -81,18 +91,19 @@ try {
       '--omit',
       'peer'
     ],
-    dir
+    temporaryDirectory
   )
-  const tsc = fileURLToPath(import.meta.resolve('typescript/bin/tsc'))
+  const tsc = Bun.fileURLToPath(import.meta.resolve('typescript/bin/tsc'))
   for (const [source, name] of [
     ['typescript/tests/package-consumer', 'sdk'],
     ['typescript/tests/rendering', 'renderer']
   ]) {
-    await copyFile(
-      path.join(root, source, 'types.ts'),
-      path.join(dir, name + '.ts')
+    await Bun.write(
+      `${temporaryDirectory}/${name}.ts`,
+      Bun.file(new URL(`${source}/types.ts`, root))
     )
-    run(
+    await capture(
+      bun,
       [
         tsc,
         '--noEmit',
@@ -105,26 +116,25 @@ try {
         'NodeNext',
         name + '.ts'
       ],
-      dir
+      temporaryDirectory
     )
-    await copyFile(
-      path.join(
-        root,
-        source,
-        name === 'sdk' ? 'runtime.ts' : 'package-runtime.ts'
-      ),
-      path.join(dir, name + '.ts')
+    await Bun.write(
+      `${temporaryDirectory}/${name}.ts`,
+      Bun.file(
+        new URL(
+          `${source}/${name === 'sdk' ? 'runtime.ts' : 'package-runtime.ts'}`,
+          root
+        )
+      )
     )
-    const contract = JSON.parse(
-      await readFile(path.join(root, 'dist/contract.json'))
+    const contract = await Bun.file(new URL('dist/contract.json', root)).json()
+    await Bun.stdout.write(
+      await capture(bun, [name + '.ts', contract.sha256], temporaryDirectory)
     )
-    process.stdout.write(run([name + '.ts', contract.sha256], dir))
   }
   console.log(
     'Four packed packages: SDK, renderer, declarations, CSS and Wasm integration passed'
   )
 } finally {
-  if (path.dirname(path.resolve(dir)) !== temp)
-    throw Error('Invalid temporary path')
-  await rm(dir, { recursive: true, force: true })
+  await $`rm -rf ${temporaryDirectory}`
 }

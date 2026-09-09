@@ -1,5 +1,3 @@
-import assert from 'node:assert/strict'
-
 import * as generic from '@traq-markdown-parser/commonmark/generic/renderer'
 import * as commonNodes from '@traq-markdown-parser/commonmark/nodes'
 import * as common from '@traq-markdown-parser/commonmark/renderer'
@@ -8,7 +6,7 @@ import * as trapNodes from '@traq-markdown-parser/trap-extension/nodes'
 import * as trap from '@traq-markdown-parser/trap-extension/renderer'
 import * as traq from '@traq-markdown-parser/traq/renderer'
 import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
-import { test } from 'bun:test'
+import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
 
 import { commonParser, parser } from './setup.ts'
@@ -17,17 +15,15 @@ const build = plugin => new html.PresetBuilder().add(plugin).build()
 
 test('rendering returns HTML and exposes no parser or token adapter', () => {
   const view = html.renderer(common.preset())
-  assert.equal(
-    view.render(parser.parse('**bold**')),
+  expect(view.render(parser.parse('**bold**'))).toBe(
     '<p><strong>bold</strong></p>\n'
   )
-  assert.equal(
-    view.render(parser.parseInline('**bold**')),
+  expect(view.render(parser.parseInline('**bold**'))).toBe(
     '<strong>bold</strong>'
   )
-  assert.deepEqual(Object.keys(view).sort(), ['render'])
-  assert.equal(html.installParser, undefined)
-  assert.equal(html.traQMarkdownIt, undefined)
+  expect(Object.keys(view).sort()).toEqual(['render'])
+  expect(html.installParser).toBeUndefined()
+  expect(html.traQMarkdownIt).toBeUndefined()
 })
 
 test('replacement preserves defaults and earlier snapshots', () => {
@@ -36,15 +32,14 @@ test('replacement preserves defaults and earlier snapshots', () => {
   const builder = new html.PresetBuilder().add(plugin)
   const before = html.renderer(builder.build())
   plugin.replace(common.nodes.Link, (node, ctx) => ctx.render(node.children))
-  assert.throws(() => builder.remove(plugin), /Missing plugin/)
+  expect(() => builder.remove(plugin)).toThrow(/Missing plugin/)
   const custom = html.renderer(build(plugin))
-  assert.match(custom.render(document), /<strong>bold<\/strong>/)
-  assert.doesNotMatch(custom.render(document), /<a /)
-  assert.match(before.render(document), /<a /)
-  assert.match(html.renderer(builder.build()).render(document), /<a /)
-  assert.throws(() => plugin.replace('typo', () => ''), /Missing handler/)
-  assert.throws(
-    () => plugin.on(common.nodes.Link, () => ''),
+  expect(custom.render(document)).toMatch(/<strong>bold<\/strong>/)
+  expect(custom.render(document)).not.toMatch(/<a /)
+  expect(before.render(document)).toMatch(/<a /)
+  expect(html.renderer(builder.build()).render(document)).toMatch(/<a /)
+  expect(() => plugin.replace('typo', () => '')).toThrow(/Missing handler/)
+  expect(() => plugin.on(common.nodes.Link, () => '')).toThrow(
     /Duplicate handler/
   )
 })
@@ -58,7 +53,7 @@ test('renderer declarations customize Rust-produced nodes', () => {
   const view = html.renderer(
     new html.PresetBuilder().add(common.plugin()).add(presentation).build()
   )
-  assert.equal(view.render(parser.parse('$x$')), '<p>$x$</p>\n')
+  expect(view.render(parser.parse('$x$'))).toBe('<p>$x$</p>\n')
 })
 
 test('composition validates selected names without changing earlier presets', () => {
@@ -66,27 +61,24 @@ test('composition validates selected names without changing earlier presets', ()
   const first = new html.Plugin(group.new('one')).on('a', () => '')
   const builder = new html.PresetBuilder().add(first)
   const preset = builder.build()
-  assert.throws(() => builder.add(first), /Duplicate plugin/)
-  assert.throws(
-    () => builder.add(new html.Plugin(group.new('two')).on('a', () => '')),
-    /Duplicate handler/
-  )
+  expect(() => builder.add(first)).toThrow(/Duplicate plugin/)
+  expect(() =>
+    builder.add(new html.Plugin(group.new('two')).on('a', () => ''))
+  ).toThrow(/Duplicate handler/)
   builder.remove(first)
-  assert.doesNotThrow(() => html.renderer(preset))
-  assert.throws(() => builder.remove(first), /Missing plugin/)
+  expect(() => html.renderer(preset)).not.toThrow()
+  expect(() => builder.remove(first)).toThrow(/Missing plugin/)
   builder.add(first).add(new html.Plugin(group.new('one')))
-  assert.throws(() => builder.build(), /Duplicate name/)
+  expect(() => builder.build()).toThrow(/Duplicate name/)
   const other = Declaration.group('custom')
-  assert.throws(
-    () =>
-      new html.PresetBuilder()
-        .add(first)
-        .add(new html.Plugin(other.new('different')))
-        .build(),
-    /Duplicate name/
-  )
-  assert.throws(() => html.renderer({}), /Expected renderer Preset/)
-  assert.throws(() => new html.Plugin('name'), /declaration/)
+  expect(() =>
+    new html.PresetBuilder()
+      .add(first)
+      .add(new html.Plugin(other.new('different')))
+      .build()
+  ).toThrow(/Duplicate name/)
+  expect(() => html.renderer({})).toThrow(/Expected renderer Preset/)
+  expect(() => new html.Plugin('name')).toThrow(/declaration/)
 })
 
 test('custom HTML handlers receive escaped text helpers and rendered children', () => {
@@ -101,15 +93,13 @@ test('custom HTML handlers receive escaped text helpers and rendered children', 
       '</b>'
   )
   const view = html.renderer(build(plugin))
-  assert.equal(
-    view.render(parser.parseInline('**<x>**')),
+  expect(view.render(parser.parseInline('**<x>**'))).toBe(
     '<b title="&quot;&lt;&amp;">&lt;x&gt;</b>'
   )
   plugin.replace(common.nodes.Strong, () => [])
-  assert.throws(
-    () => html.renderer(build(plugin)).render(parser.parse('**x**')),
-    /HTML strings/
-  )
+  expect(() =>
+    html.renderer(build(plugin)).render(parser.parse('**x**'))
+  ).toThrow(/HTML strings/)
 })
 
 test('fallback replacement keeps other extensions and does not require a store', () => {
@@ -122,20 +112,18 @@ test('fallback replacement keeps other extensions and does not require a store',
       .add(extension)
       .build()
   )
-  assert.equal(
-    view.render(parser.parse(':stamp: ==marked==')),
+  expect(view.render(parser.parse(':stamp: ==marked=='))).toBe(
     '<p>:stamp: <mark>marked</mark></p>\n'
   )
   const source = '!{"type":"user","id":"u","raw":"@user"}'
-  assert.equal(
-    html.renderer(traq.html()).render(parser.parse(source)),
+  expect(html.renderer(traq.html()).render(parser.parse(source))).toBe(
     '<p>@user</p>\n'
   )
 })
 
 test('empty presets escape source without implicitly enabling CommonMark', () => {
   const view = html.renderer(new html.PresetBuilder().build())
-  assert.equal(view.render(parser.parse('**bold**')), '**bold**')
+  expect(view.render(parser.parse('**bold**'))).toBe('**bold**')
   const source = '<script>日本語</script>'
   const document = {
     source,
@@ -147,7 +135,7 @@ test('empty presets escape source without implicitly enabling CommonMark', () =>
       }
     ]
   }
-  assert.equal(view.render(document), '&lt;script&gt;日本語&lt;/script&gt;')
+  expect(view.render(document)).toBe('&lt;script&gt;日本語&lt;/script&gt;')
 })
 
 test('tight lists preserve paragraphs owned by blockquotes and nested loose lists', () => {
@@ -163,7 +151,7 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
       '1. parent\n   - child\n     > quote',
       '- **strong**\n\n  paragraph'
     ]) {
-      assert.equal(view.render(local.parse(source)), md.render(source), source)
+      expect(view.render(local.parse(source))).toBe(md.render(source))
     }
   } finally {
     local.dispose()
@@ -172,22 +160,19 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
 
 test('CommonMark owns link policy and rejects malformed known payloads', () => {
   const view = html.renderer(common.preset({ validateLink: () => false }))
-  assert.doesNotMatch(
-    view.render(parser.parse('[link](https://example.com)')),
+  expect(view.render(parser.parse('[link](https://example.com)'))).not.toMatch(
     /href=/
   )
-  assert.doesNotMatch(
-    view.render(parser.parseInline('[link](https://example.com)')),
-    /href=/
-  )
+  expect(
+    view.render(parser.parseInline('[link](https://example.com)'))
+  ).not.toMatch(/href=/)
   const document = parser.parseInline('[label](https://example.com)')
   document.children[0].data.destination = 'javascript:alert(1)'
-  assert.equal(html.renderer(common.preset()).render(document), 'label')
+  expect(html.renderer(common.preset()).render(document)).toBe('label')
   const heading = parser.parse('# title')
-  assert.equal(heading.children[0].kind, commonNodes.names.Heading)
+  expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
   heading.children[0].data.level = '1 onclick="alert(1)"'
-  assert.throws(
-    () => html.renderer(common.preset()).render(heading),
+  expect(() => html.renderer(common.preset()).render(heading)).toThrow(
     /Invalid render payload/
   )
 })
@@ -197,25 +182,20 @@ test('direct HTML rendering escapes attributes, image text, and fence info', () 
   const view = html.renderer(
     common.preset({ linkAttributes: { title: '"<&' } })
   )
-  assert.equal(
-    view.render(parser.parseInline('[x](/url)')),
+  expect(view.render(parser.parseInline('[x](/url)'))).toBe(
     '<a href="/url" title="&quot;&lt;&amp;">x</a>'
   )
-  assert.throws(
-    () => common.plugin({ linkAttributes: { 'x onclick': 'bad' } }),
-    /Invalid HTML attribute/
-  )
-  assert.equal(
-    view.render(parser.parseInline('![**bold** `code` &quot;](/image)')),
-    '<img src="/image" alt="bold code &quot;">'
-  )
-  assert.equal(
-    view.render(parser.parse('```a\\+b&quot;\n<&\n```')),
+  expect(() =>
+    common.plugin({ linkAttributes: { 'x onclick': 'bad' } })
+  ).toThrow(/Invalid HTML attribute/)
+  expect(
+    view.render(parser.parseInline('![**bold** `code` &quot;](/image)'))
+  ).toBe('<img src="/image" alt="bold code &quot;">')
+  expect(view.render(parser.parse('```a\\+b&quot;\n<&\n```'))).toBe(
     '<pre><code class="language-a+b&quot;">&lt;&amp;\n</code></pre>\n'
   )
   const extended = html.renderer(traq.html({ validateImage: () => true }))
-  assert.equal(
-    extended.render(parser.parseInline('![日本語](/image)')),
+  expect(extended.render(parser.parseInline('![日本語](/image)'))).toBe(
     '<img src="/image" alt="日本語">'
   )
 })

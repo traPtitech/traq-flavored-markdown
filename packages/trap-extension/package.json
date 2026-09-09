@@ -2,13 +2,14 @@
   "name": "@traq-markdown-parser/trap-extension",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "description": "trap-extension Markdown contracts and HTML rendering.",
-  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/traq-markdown-parser/trap-extension.git"
   },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
   "exports": {
     "./nodes": {
       "types": "./dist/generated/trap.d.ts",
@@ -27,23 +28,20 @@
     "dist",
     "LICENSE"
   ],
-  "sideEffects": false,
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
     "build": "tsc -p typescript/tsconfig.json",
-    "typecheck": "tsc -p typescript/tsconfig.json --noEmit",
-    "generate:bindings": "bun run ../../scripts/generate-bindings.ts trap-extension"
-  },
-  "peerDependencies": {
-    "@traq-markdown-parser/core": "^0.1.0",
-    "@traq-markdown-parser/commonmark": "^0.1.0"
+    "generate:bindings": "bun run ../../scripts/generate-bindings.ts trap-extension",
+    "typecheck": "tsc -p typescript/tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "typescript": "6.0.3",
-    "@types/node": "26.3.0",
-    "@traq-markdown-parser/core": "workspace:*",
-    "@traq-markdown-parser/commonmark": "workspace:*"
+    "@traq-markdown-parser/commonmark": "workspace:*",
+    "@traq-markdown-parser/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@traq-markdown-parser/commonmark": "0.1.0",
+    "@traq-markdown-parser/core": "0.1.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

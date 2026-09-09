@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
-
 import { createRuntime, presets } from '@traq-markdown-parser/traq'
 
-const wasm = await readFile(
-  new URL(import.meta.resolve('@traq-markdown-parser/traq/parser.wasm'))
+const parserWasmUrl = new URL(
+  import.meta.resolve('@traq-markdown-parser/traq/parser.wasm')
 )
-const runtime = await createRuntime(wasm)
+const wasmBytes = await Bun.file(parserWasmUrl).bytes()
+const runtime = await createRuntime(wasmBytes)
 try {
   const parser = runtime.createParser(presets.traq.v1)
   console.log(JSON.stringify(parser.parse('**hello** :stamp: $x$'), null, 2))

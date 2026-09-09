@@ -1,11 +1,8 @@
-import { once } from 'node:events'
-import { createWriteStream } from 'node:fs'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
-import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { parseArgs } from 'node:util'
+import path from 'path'
 
+import { $ } from 'bun'
+
+import { parseArgs } from './args.ts'
 import { readLines } from './read-lines.ts'
 
 const { values } = parseArgs({
@@ -19,17 +16,19 @@ const { values } = parseArgs({
 })
 if (!values.corpus || !values.out)
   throw new Error('--corpus and --out are required')
-const baselineRequire = createRequire(
-  path.resolve(values.baseline, 'package.json')
+await $`mkdir -p ${values.out}`
+const baselinePackage = Bun.resolveSync(
+  '@traptitech/traq-markdown-it',
+  path.resolve(values.baseline)
 )
-const { traQMarkdownIt } = baselineRequire('@traptitech/traq-markdown-it')
-const sdkPath = fileURLToPath(new URL('../../', import.meta.url))
+const { traQMarkdownIt } = await import(Bun.pathToFileURL(baselinePackage).href)
+const sdkPath = Bun.fileURLToPath(new URL('../../', import.meta.url))
 const frontendPath = sdkPath
 const { createRuntime, presets } = await import(
-  pathToFileURL(sdkPath + '/dist/index.js')
+  Bun.pathToFileURL(sdkPath + '/dist/index.js').href
 )
 const { messageRenderers } = await import(
-  pathToFileURL(frontendPath + '/dist/renderer/index.js')
+  Bun.pathToFileURL(frontendPath + '/dist/renderer/index.js').href
 )
 const origin = values.origin
 const store = {
@@ -47,7 +46,7 @@ const store = {
 let start = performance.now()
 const baseline = new traQMarkdownIt(store, [], origin)
 const beforeInitializationMs = performance.now() - start
-const bytes = await readFile(sdkPath + '/dist/parser.wasm')
+const bytes = await Bun.file(sdkPath + '/dist/parser.wasm').arrayBuffer()
 start = performance.now()
 const runtime = await createRuntime(bytes),
   parser = runtime.createParser(presets.traq.v1),
@@ -123,11 +122,10 @@ function summary(a) {
     p99Us: q(0.99)
   }
 }
-await mkdir(values.out, { recursive: true })
-const output = createWriteStream(path.join(values.out, 'sui-differences.jsonl'))
-const embeddingOutput = createWriteStream(
+const output = Bun.file(path.join(values.out, 'sui-differences.jsonl')).writer()
+const embeddingOutput = Bun.file(
   path.join(values.out, 'sui-embedding-differences.jsonl')
-)
+).writer()
 const started = performance.now()
 try {
   let n = 0
@@ -164,34 +162,28 @@ try {
         JSON.stringify(a.embeddings) !== JSON.stringify(b.embeddings)
       ) {
         stats.embeddingDifferences++
-        if (
-          !embeddingOutput.write(
-            JSON.stringify({
-              index: report.messages,
-              mode: p.mode,
-              source,
-              before: a.embeddings,
-              after: b.embeddings
-            }) + '\n'
-          )
+        await embeddingOutput.write(
+          JSON.stringify({
+            index: report.messages,
+            mode: p.mode,
+            source,
+            before: a.embeddings,
+            after: b.embeddings
+          }) + '\n'
         )
-          await once(embeddingOutput, 'drain')
       }
       if (a.html !== b.html || a.error !== b.error) {
         stats.differences++
-        if (
-          !output.write(
-            JSON.stringify({
-              index: report.messages,
-              mode: p.mode,
-              source,
-              before: a.html,
-              after: b.html,
-              error: a.error || b.error
-            }) + '\n'
-          )
+        await output.write(
+          JSON.stringify({
+            index: report.messages,
+            mode: p.mode,
+            source,
+            before: a.html,
+            after: b.html,
+            error: a.error || b.error
+          }) + '\n'
         )
-          await once(output, 'drain')
       }
     }
     report.messages++
@@ -200,17 +192,15 @@ try {
         JSON.stringify({ processed: report.messages, modes: report.modes })
       )
   }
-  embeddingOutput.end()
-  await once(embeddingOutput, 'finish')
-  output.end()
-  await once(output, 'finish')
+  await embeddingOutput.end()
+  await output.end()
   report.wallSeconds = (performance.now() - started) / 1000
   for (const p of profiles)
     Object.assign(report.modes[p.mode], {
       before: summary(timings[p.mode].before),
       after: summary(timings[p.mode].after)
     })
-  await writeFile(
+  await Bun.write(
     path.join(values.out, 'sui-summary.json'),
     JSON.stringify(report, null, 2) + '\n'
   )

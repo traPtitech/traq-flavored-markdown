@@ -1,17 +1,15 @@
-import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-
 import { goPayload } from '@traq-markdown-parser/core/codegen/go'
 import { javascript } from '@traq-markdown-parser/core/codegen/javascript'
 import { shape } from '@traq-markdown-parser/core/codegen/schema'
-import { test } from 'bun:test'
+import { file } from 'bun'
+import { expect, test } from 'bun:test'
 
 import { names, nodes } from '../../dist/generated/nodes.js'
 
 const manifest = JSON.parse(
-  await readFile(
+  await file(
     new URL('../../target/node-contracts/contracts.json', import.meta.url)
-  )
+  ).text()
 )
 
 function example(s) {
@@ -29,24 +27,24 @@ test('generated optional TypeScript guards enforce every exported payload shape'
   )) {
     const valid = example(shape(schema)),
       check = nodes.get(name)
-    assert(check(valid), name)
-    assert(!check({ ...valid, unexpected: true }), name)
-    assert(!check(null), name)
+    expect(check(valid)).toBeTruthy()
+    expect(check({ ...valid, unexpected: true })).toBeFalsy()
+    expect(check(null)).toBeFalsy()
     for (const field of schema.required ?? []) {
       const missing = { ...valid }
       delete missing[field]
-      assert(!check(missing), name + ' missing ' + field)
-      assert(!check({ ...valid, [field]: [] }), name + ' field ' + field)
+      expect(check(missing)).toBeFalsy()
+      expect(check({ ...valid, [field]: [] })).toBeFalsy()
     }
   }
-  assert(
+  expect(
     !nodes.get(names.Reference)({
       type: 'other',
       id: 'u',
       label: '@u'
     })
-  )
-  assert(!nodes.get(names.Cell)({ alignment: 'other' }))
+  ).toBeTruthy()
+  expect(!nodes.get(names.Cell)({ alignment: 'other' })).toBeTruthy()
 })
 
 test('unsupported schema constraints fail generation instead of weakening validation', () => {
@@ -57,12 +55,10 @@ test('unsupported schema constraints fail generation instead of weakening valida
     properties: { value: { type: 'string', pattern: 'secret' } },
     required: ['value']
   }
-  assert.throws(
-    () => javascript([['test/example@1', schema]]),
+  expect(() => javascript([['test/example@1', schema]])).toThrow(
     /Unsupported schema keyword/
   )
-  assert.throws(
-    () => goPayload('test/example@1', schema),
+  expect(() => goPayload('test/example@1', schema)).toThrow(
     /Unsupported schema keyword/
   )
   for (const unsupported of [
@@ -71,19 +67,16 @@ test('unsupported schema constraints fail generation instead of weakening valida
     { $ref: '#/$defs/Value', type: 'boolean' },
     { anyOf: [{ type: 'string' }, { type: 'null', enum: [null] }] }
   ])
-    assert.throws(() => shape(unsupported), /Unsupported schema keyword/)
+    expect(() => shape(unsupported)).toThrow(/Unsupported schema keyword/)
   const recursive = { $ref: '#/$defs/Value' }
-  assert.throws(
-    () => shape(recursive, { $defs: { Value: recursive } }),
+  expect(() => shape(recursive, { $defs: { Value: recursive } })).toThrow(
     /Recursive payload schemas/
   )
   const plain = { ...schema, properties: { value: { type: 'string' } } }
-  assert.throws(
-    () =>
-      javascript([
-        ['test/example@1', plain],
-        ['other/example@1', { ...plain, title: 'ExampleData' }]
-      ]),
-    /Duplicate generated payload type/
-  )
+  expect(() =>
+    javascript([
+      ['test/example@1', plain],
+      ['other/example@1', { ...plain, title: 'ExampleData' }]
+    ])
+  ).toThrow(/Duplicate generated payload type/)
 })

@@ -1,25 +1,21 @@
-import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-
 import { goNodes } from '@traq-markdown-parser/core/codegen/go'
 import { nodeFiles } from '@traq-markdown-parser/core/codegen/nodes'
-import { test } from 'bun:test'
+import { write } from 'bun'
+import { expect, test } from 'bun:test'
 
 import { presetFiles } from '../../scripts/contracts/presets.ts'
 import { typescriptFiles } from '../../scripts/contracts/typescript.ts'
+import { withTempDirectory } from './temp-directory.ts'
 
 test('new Rust-exported payloads and presets generate both host APIs', async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), 'markdown-contract-'))
-  try {
+  await withTempDirectory('markdown-contract-', async directory => {
     // The same inputs produced by ts-rs and schemars for a new Rust node.
-    await writeFile(
-      path.join(directory, 'BadgeData.ts'),
+    await write(
+      `${directory}/BadgeData.ts`,
       'export type BadgeData = { label:string; active:boolean };\n'
     )
-    await writeFile(
-      path.join(directory, 'ParseError.ts'),
+    await write(
+      `${directory}/ParseError.ts`,
       'export type ParseError = {code:"internal_error"};\n'
     )
     const schema = {
@@ -33,12 +29,10 @@ test('new Rust-exported payloads and presets generate both host APIs', async () 
 
     const manifest = { nodes: { [key]: { schema, group: 'custom' } } }
     const generated = await typescriptFiles(manifest, directory)
-    assert.match(
-      (await nodeFiles(manifest, directory)).get('custom.ts'),
+    expect((await nodeFiles(manifest, directory)).get('custom.ts')).toMatch(
       /kind: "custom::BadgeData"; data: BadgeData/
     )
-    assert.match(
-      generated.get('typescript/generated/nodes.ts'),
+    expect(generated.get('typescript/generated/nodes.ts')).toMatch(
       /custom.NodeKind/
     )
     const go = goNodes([[key, schema]])
@@ -47,36 +41,27 @@ test('new Rust-exported payloads and presets generate both host APIs', async () 
       /Active bool/,
       /case BadgeName: return &Badge\{\}/
     ])
-      assert.match(go, expected)
-    assert.throws(
-      () =>
-        goNodes([
-          [key, schema],
-          ['another::BadgeData', schema]
-        ]),
-      /Duplicate generated payload type/
-    )
+      expect(go).toMatch(expected)
+    expect(() =>
+      goNodes([
+        [key, schema],
+        ['another::BadgeData', schema]
+      ])
+    ).toThrow(/Duplicate generated payload type/)
     const presets = presetFiles({ commonmark: 0, custom: { compact: 1 } })
-    assert.match(
-      presets.get('typescript/generated/presets.ts'),
+    expect(presets.get('typescript/generated/presets.ts')).toMatch(
       /"custom.compact"/
     )
-    assert.match(
-      presets.get('go/generated_presets.go'),
+    expect(presets.get('go/generated_presets.go')).toMatch(
       /PresetCustomCompact Preset = "custom.compact"/
     )
-  } finally {
-    if (path.dirname(directory) !== path.resolve(tmpdir()))
-      throw new Error('Unexpected temporary path')
-    await rm(directory, { recursive: true, force: true })
-  }
+  })
 })
 
 test('Rust processing options and nested results generate without host changes', async () => {
   const { processingFiles } =
     await import('../../scripts/contracts/processing.ts')
-  const directory = await mkdtemp(path.join(tmpdir(), 'processing-contract-'))
-  try {
+  await withTempDirectory('processing-contract-', async directory => {
     const object = (title, properties) => ({
       title,
       type: 'object',
@@ -97,16 +82,16 @@ test('Rust processing options and nested results generate without host changes',
       batches: { type: 'array', items: { $ref: '#/$defs/Details' } }
     })
     output.$defs = { Details: details }
-    await writeFile(
-      path.join(directory, 'ExtractorOptions.ts'),
+    await write(
+      `${directory}/ExtractorOptions.ts`,
       'import type { Details } from "./Details.js";\nexport type ExtractorOptions = { compact:boolean; details:Details };'
     )
-    await writeFile(
-      path.join(directory, 'Extraction.ts'),
+    await write(
+      `${directory}/Extraction.ts`,
       'import type { Details } from "./Details.js";\nexport type Extraction = { details:Details; batches:Array<Details> };'
     )
-    await writeFile(
-      path.join(directory, 'Details.ts'),
+    await write(
+      `${directory}/Details.ts`,
       'export type Details = { labels:Array<string> };'
     )
     const schemas = {
@@ -115,24 +100,19 @@ test('Rust processing options and nested results generate without host changes',
     }
     const files = await processingFiles(schemas, directory)
     const go = files.get('go/generated_processing.go')
-    assert.match(go, /Compact bool/)
-    assert.match(go, /Batches \[\]Details/)
-    assert.match(go, /Labels \[\]string/)
-    assert.equal(go.match(/type Details struct/g).length, 1)
+    expect(go).toMatch(/Compact bool/)
+    expect(go).toMatch(/Batches \[\]Details/)
+    expect(go).toMatch(/Labels \[\]string/)
+    expect(go.match(/type Details struct/g)).toHaveLength(1)
     const ts = files.get('typescript/generated/processing.ts')
-    assert.match(ts, /compact:boolean/)
-    assert.match(ts, /batches:Array<Details>/)
-    assert.equal(ts.match(/export type Details/g).length, 1)
+    expect(ts).toMatch(/compact:boolean/)
+    expect(ts).toMatch(/batches:Array<Details>/)
+    expect(ts.match(/export type Details/g)).toHaveLength(1)
     output.$defs = {
       Details: object('Details', { other: { type: 'boolean' } })
     }
-    await assert.rejects(
-      processingFiles(schemas, directory),
+    await expect(processingFiles(schemas, directory)).rejects.toThrow(
       /Conflicting processing type/
     )
-  } finally {
-    if (path.dirname(directory) !== path.resolve(tmpdir()))
-      throw new Error('Unexpected temporary path')
-    await rm(directory, { recursive: true, force: true })
-  }
+  })
 })

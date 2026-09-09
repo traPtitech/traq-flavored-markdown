@@ -1,29 +1,31 @@
-import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
+import path from 'path'
 
-import { test } from 'bun:test'
+import { $ } from 'bun'
+import { expect, test } from 'bun:test'
 
 import { collect } from './fetch.ts'
 
 test('corpus collection respects bounds, credentials, and no-overwrite behavior', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'traq-corpus-check-'))
+  const directory = path.join(
+    Bun.env.TEMP ?? Bun.env.TMPDIR ?? '.',
+    `traq-corpus-check-${crypto.randomUUID()}`
+  )
+  await $`mkdir -p ${directory}`
   try {
     const calls = [],
       logs = []
     const fetchImpl = async (url, options) => {
       calls.push(String(url))
-      assert.equal(options.method, 'GET')
-      assert.equal(options.redirect, 'error')
-      assert.equal(options.headers.Authorization, 'Bearer test-token')
+      expect(options.method).toBe('GET')
+      expect(options.redirect).toBe('error')
+      expect(options.headers.Authorization).toBe('Bearer test-token')
       if (url.pathname.endsWith('/channels'))
         return Response.json({
           public: [{ id: 'channel-a' }],
           dm: [{ id: 'private-dm' }]
         })
-      assert(!String(url).includes('private-dm'))
-      assert.equal(url.searchParams.get('limit'), '2')
+      expect(String(url)).not.toContain('private-dm')
+      expect(url.searchParams.get('limit')).toBe('2')
       return Response.json([
         { id: 'a', userId: 'author', content: '**private text**' },
         { id: 'b', content: '`code`' }
@@ -39,32 +41,31 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
       fetchImpl,
       progress: x => logs.push(x)
     })
-    assert.equal(result.messages, 2)
-    assert.equal(calls.length, 2)
+    expect(result.messages).toBe(2)
+    expect(calls.length).toBe(2)
     const saved = (
-      await readFile(path.join(directory, 'messages.jsonl'), 'utf8')
+      await Bun.file(path.join(directory, 'messages.jsonl')).text()
     )
       .trim()
       .split('\n')
       .map(JSON.parse)
-    assert.equal(saved[0].source, '**private text**')
-    assert.notEqual(saved[0].id, 'a')
-    assert.equal(saved[0].userId, undefined)
-    assert(!JSON.stringify(result).includes('private text'))
-    assert(!JSON.stringify(logs).includes('test-token'))
-    await assert.rejects(
+    expect(saved[0].source).toBe('**private text**')
+    expect(saved[0].id).not.toBe('a')
+    expect(saved[0].userId).toBeUndefined()
+    expect(JSON.stringify(result)).not.toContain('private text')
+    expect(JSON.stringify(logs)).not.toContain('test-token')
+    await expect(
       collect({
         baseUrl: 'https://traq.example/',
         token: 'test-token',
         output: directory,
         fetchImpl
-      }),
-      { code: 'EEXIST' }
-    )
+      })
+    ).rejects.toMatchObject({ code: 'EEXIST' })
     console.log(
       'PASS read-only sampling, bounds, credential handling, raw local corpus, no overwrite'
     )
   } finally {
-    await rm(directory, { recursive: true })
+    await $`rm -rf ${directory}`
   }
 })

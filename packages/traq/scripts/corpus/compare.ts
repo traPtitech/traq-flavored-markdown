@@ -1,10 +1,10 @@
-import { execFileSync } from 'node:child_process'
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { parseArgs } from 'node:util'
+import path from 'path'
 
-const root = fileURLToPath(new URL('../../', import.meta.url))
+import { $ } from 'bun'
+
+import { parseArgs } from './args.ts'
+
+const root = Bun.fileURLToPath(new URL('../../', import.meta.url))
 const { values: v } = parseArgs({
   options: {
     corpus: { type: 'string' },
@@ -27,34 +27,43 @@ const { values: v } = parseArgs({
 if (!v.corpus) throw Error('--corpus messages.jsonl is required')
 if (!Number.isSafeInteger(Number(v.max)) || Number(v.max) <= 0)
   throw Error('--max must be a positive integer')
-const corpus = path.resolve(v.corpus),
-  out = path.resolve(v.out ?? path.join(root, '.private/corpora/comparison'))
+const corpus = path.resolve(v.corpus)
+const out = path.resolve(
+  v.out ?? path.join(root, '.private/corpora/comparison')
+)
 const baseline = path.join(root, '.private/corpus-baseline')
-await mkdir(baseline, { recursive: true })
-await mkdir(out, { recursive: true })
-const run = (cmd, args, cwd = root) =>
-  execFileSync(cmd, args, { cwd, stdio: 'inherit', windowsHide: true })
-const git = (repo, args) =>
-  execFileSync('git', ['-C', path.resolve(repo), ...args], {
-    encoding: 'utf8',
-    windowsHide: true
-  }).trim()
-const show = (repo, ref, file) => git(repo, ['show', ref + ':' + file]) + '\n'
-const versions = {
-  suiMaster: git(v.sui, ['rev-parse', v['sui-ref']]),
-  traqMaster: git(v.traq, ['rev-parse', v['traq-ref']]),
-  renderer: git(root, ['rev-parse', 'HEAD']),
-  processor: git(root, ['rev-parse', 'HEAD'])
+await $`mkdir -p ${baseline}`
+await $`mkdir -p ${out}`
+
+const run = async (cmd, args, cwd = root) => {
+  await $`${cmd} ${args}`.cwd(cwd)
 }
-const lock = JSON.parse(show(v.sui, v['sui-ref'], 'package-lock.json'))
+const git = async (repo, args) =>
+  (await $`git -C ${path.resolve(repo)} ${args}`.quiet()).text().trim()
+const show = async (repo, ref, file) =>
+  (await git(repo, ['show', ref + ':' + file])) + '\n'
+
+const versions = {
+  suiMaster: await git(v.sui, ['rev-parse', v['sui-ref']]),
+  traqMaster: await git(v.traq, ['rev-parse', v['traq-ref']]),
+  renderer: await git(root, ['rev-parse', 'HEAD']),
+  processor: await git(root, ['rev-parse', 'HEAD'])
+}
+
+const lock = JSON.parse(await show(v.sui, v['sui-ref'], 'package-lock.json'))
 const rendererVersion =
   lock.packages['node_modules/@traptitech/traq-markdown-it'].version
-const { createRequire } = await import('node:module')
-const currentRequire = createRequire(
-  path.resolve(root, '../commonmark/package.json')
-)
-const katexVersion = currentRequire('katex').version
-const highlightVersion = currentRequire('highlight.js').versionString
+
+const packageVersion = async (name, parent) =>
+  JSON.parse(
+    await Bun.file(
+      Bun.resolveSync(`${name}/package.json`, path.resolve(parent))
+    ).text()
+  ).version
+const commonmark = path.resolve(root, '../commonmark')
+const katexVersion = await packageVersion('katex', commonmark)
+const highlightVersion = await packageVersion('highlight.js', commonmark)
+
 const baselinePackage = {
   private: true,
   type: 'module',
@@ -65,21 +74,23 @@ const baselinePackage = {
   },
   overrides: { katex: katexVersion, 'highlight.js': highlightVersion }
 }
-await writeFile(
+await Bun.write(
   path.join(baseline, 'package.json'),
   JSON.stringify(baselinePackage, null, 2)
 )
-run(
-  process.execPath,
+
+await run(
+  Bun.argv[0],
   ['install', '--ignore-scripts', '--no-save', '--no-progress'],
   baseline
 )
-const baselineRequire = createRequire(path.join(baseline, 'package.json'))
-const legacyRequire = createRequire(
-  baselineRequire.resolve('@traptitech/traq-markdown-it')
+const legacyPackage = Bun.resolveSync(
+  '@traptitech/traq-markdown-it',
+  path.resolve(baseline)
 )
-const katexBefore = legacyRequire('katex').version
-const highlightBefore = legacyRequire('highlight.js').versionString
+const { traQMarkdownIt } = await import(Bun.pathToFileURL(legacyPackage).href)
+const katexBefore = await packageVersion('katex', baseline)
+const highlightBefore = await packageVersion('highlight.js', baseline)
 if (katexBefore !== katexVersion || highlightBefore !== highlightVersion)
   throw Error('Comparison requires matching KaTeX and highlight.js versions')
 Object.assign(versions, {
@@ -89,42 +100,44 @@ Object.assign(versions, {
   katexAfter: katexVersion,
   baselineRenderer: rendererVersion
 })
-await writeFile(
+await Bun.write(
   path.join(out, 'revisions.json'),
   JSON.stringify(versions, null, 2)
 )
 const goRoot = path.join(baseline, 'notification')
-await mkdir(path.join(goRoot, 'go-before'), { recursive: true })
+await $`mkdir -p ${path.join(goRoot, 'go-before')}`
+
 for (const name of ['parser.go', 'spoiler.go'])
-  await writeFile(
+  await Bun.write(
     path.join(goRoot, 'go-before', name),
-    show(v.traq, v['traq-ref'], 'utils/message/' + name)
+    await show(v.traq, v['traq-ref'], 'utils/message/' + name)
   )
-await copyFile(
-  new URL('./notification/main.go', import.meta.url),
-  path.join(goRoot, 'main.go')
+await Bun.write(
+  path.join(goRoot, 'main.go'),
+  Bun.file(new URL('./notification/main.go', import.meta.url))
 )
-const goMod = show(v.traq, v['traq-ref'], 'go.mod')
+
+const goMod = await show(v.traq, v['traq-ref'], 'go.mod')
 const version = name => {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const match = goMod.match(new RegExp('\\s' + escaped + '\\s+(\\S+)'))
   if (!match) throw Error('Missing baseline dependency ' + name)
   return match[1]
 }
-await writeFile(
+await Bun.write(
   path.join(goRoot, 'go.mod'),
   `module corpuscomparison\n\ngo 1.26.0\n\nrequire (\n github.com/gofrs/uuid ${version('github.com/gofrs/uuid')}\n github.com/json-iterator/go ${version('github.com/json-iterator/go')}\n github.com/traq-markdown-parser/traq/go v0.1.0\n)\nreplace github.com/traq-markdown-parser/traq/go => ${JSON.stringify(path.join(root, 'go').replaceAll('\\', '/'))}\n`
 )
-await writeFile(
+await Bun.write(
   path.join(goRoot, 'config.json'),
   JSON.stringify({
     origin: v.origin,
     wasm: path.join(root, 'dist/parser.wasm')
   })
 )
-run('go', ['mod', 'tidy'], goRoot)
-run(process.execPath, [
-  fileURLToPath(new URL('./compare-frontend.ts', import.meta.url)),
+await run('go', ['mod', 'tidy'], goRoot)
+await run(Bun.argv[0], [
+  Bun.fileURLToPath(new URL('./compare-frontend.ts', import.meta.url)),
   '--corpus',
   corpus,
   '--out',
@@ -136,7 +149,7 @@ run(process.execPath, [
   '--origin',
   v.origin
 ])
-run(
+await run(
   'go',
   [
     'run',
@@ -152,8 +165,8 @@ run(
   ],
   goRoot
 )
-run(process.execPath, [
-  fileURLToPath(new URL('./report.ts', import.meta.url)),
+await run(Bun.argv[0], [
+  Bun.fileURLToPath(new URL('./report.ts', import.meta.url)),
   '--data',
   out,
   '--out',

@@ -1,66 +1,47 @@
-import { execFileSync } from 'node:child_process'
-import { copyFile, mkdir, rm } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { $ } from 'bun'
 
-const root = fileURLToPath(new URL('../', import.meta.url))
-const target = path.resolve(root, process.env.CARGO_TARGET_DIR || 'target')
-const contracts = path.join(target, 'node-contracts')
-const run = (command, args) =>
-  execFileSync(command, args, {
-    cwd: root,
-    env: { ...process.env, CARGO_TARGET_DIR: target },
-    stdio: 'inherit',
-    windowsHide: true
-  })
+const root = new URL('../', import.meta.url)
+const rootPath = Bun.fileURLToPath(root)
+const configuredTarget = Bun.env.CARGO_TARGET_DIR
+const target = (() => {
+  const directory = configuredTarget
+    ? /^(?:[A-Za-z]:[\\/]|[\\/]{1,2})/.test(configuredTarget)
+      ? Bun.pathToFileURL(configuredTarget)
+      : new URL(configuredTarget, root)
+    : new URL('target/', root)
+  if (!directory.pathname.endsWith('/')) directory.pathname += '/'
+  return directory
+})()
+const targetPath = Bun.fileURLToPath(target)
+const contracts = new URL('node-contracts/', target)
+const cargo = $.cwd(rootPath).env({
+  ...Bun.env,
+  CARGO_TARGET_DIR: targetPath
+})
+const bun = Bun.argv[0]
 
-run('cargo', [
-  'build',
-  '--locked',
-  '--release',
-  '--target',
-  'wasm32-unknown-unknown',
-  '-p',
-  'traq-markdown-wasm'
-])
+await cargo`cargo build --locked --release --target wasm32-unknown-unknown -p traq-markdown-wasm`
 
-run('cargo', [
-  'run',
-  '--locked',
-  '--release',
-  '-p',
-  'traq-markdown-wasm',
-  '--features',
-  'contracts',
-  '--bin',
-  'export-node-contracts',
-  '--',
-  contracts
-])
+await cargo`cargo run --locked --release -p traq-markdown-wasm --features contracts --bin export-node-contracts -- ${Bun.fileURLToPath(contracts)}`
 
-await rm(path.join(root, 'dist'), { recursive: true, force: true })
-await mkdir(path.join(root, 'dist'), { recursive: true })
-await copyFile(
-  path.join(target, 'wasm32-unknown-unknown/release/traq_markdown_wasm.wasm'),
-  path.join(root, 'dist/parser.wasm')
+const dist = Bun.fileURLToPath(new URL('dist/', root))
+await $`rm -rf ${dist}`
+await $`mkdir -p ${dist}`
+await Bun.write(
+  new URL('dist/parser.wasm', root),
+  Bun.file(
+    new URL('wasm32-unknown-unknown/release/traq_markdown_wasm.wasm', target)
+  )
 )
-run(process.execPath, [
-  'run',
-  path.join(root, '../../scripts/generate-bindings.ts'),
-  'traq',
-  contracts
-])
 
-run(process.execPath, [
-  'node_modules/typescript/bin/tsc',
-  '-p',
-  'typescript/tsconfig.build.json'
-])
-run(process.execPath, ['scripts/contract.ts'])
+await $.cwd(
+  rootPath
+)`${bun} ${Bun.fileURLToPath(new URL('../../../scripts/generate-bindings.ts', import.meta.url))} traq ${Bun.fileURLToPath(contracts)}`
+await $.cwd(
+  rootPath
+)`${bun} node_modules/typescript/bin/tsc -p typescript/tsconfig.build.json`
+await $.cwd(rootPath)`${bun} scripts/contract.ts`
 
-run(process.execPath, [
-  'node_modules/sass/sass.js',
-  '--no-source-map',
-  'styles/index.scss',
-  'dist/index.css'
-])
+await $.cwd(
+  rootPath
+)`${bun} node_modules/sass/sass.js --no-source-map styles/index.scss dist/index.css`

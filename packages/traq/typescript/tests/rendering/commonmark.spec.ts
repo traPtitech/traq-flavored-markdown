@@ -1,19 +1,15 @@
-import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-
 import { preset } from '@traq-markdown-parser/commonmark/renderer'
 import { renderer } from '@traq-markdown-parser/core/renderer'
-import { test } from 'bun:test'
+import { file } from 'bun'
+import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
-import { escapeHtml } from 'markdown-it/lib/common/utils.mjs'
 
 import { commonParser } from './setup.ts'
 
 const fixtures = JSON.parse(
-  await readFile(
-    new URL('./fixtures/commonmark-0.31.2.json', import.meta.url),
-    'utf8'
-  )
+  await file(
+    new URL('./fixtures/commonmark-0.31.2.json', import.meta.url)
+  ).text()
 )
 
 test('CommonMark fixture inputs match markdown-it with the same escaped-HTML policy', () => {
@@ -24,15 +20,13 @@ test('CommonMark fixture inputs match markdown-it with the same escaped-HTML pol
   const expected = new MarkdownIt('commonmark', { html: true, xhtmlOut: false })
   expected.validateLink = () => true
   expected.renderer.rules.html_inline = (tokens, index) =>
-    escapeHtml(tokens[index].content)
+    expected.utils.escapeHtml(tokens[index].content)
   expected.renderer.rules.html_block = (tokens, index) =>
-    '<p>' + escapeHtml(tokens[index].content) + '</p>\n'
+    '<p>' + expected.utils.escapeHtml(tokens[index].content) + '</p>\n'
   try {
     for (const entry of fixtures)
-      assert.equal(
-        view.render(parser.parse(entry.markdown)),
-        expected.render(entry.markdown),
-        `example ${entry.example}: ${entry.section}`
+      expect(view.render(parser.parse(entry.markdown))).toBe(
+        expected.render(entry.markdown)
       )
   } finally {
     parser.dispose()

@@ -1,14 +1,11 @@
-import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-import { pathToFileURL } from 'node:url'
-
 import { goPayload } from '@traq-markdown-parser/core/codegen/go'
 import { javascript } from '@traq-markdown-parser/core/codegen/javascript'
 import { shape } from '@traq-markdown-parser/core/codegen/schema'
-import { test } from 'bun:test'
+import { pathToFileURL, write } from 'bun'
+import { expect, test } from 'bun:test'
 import ts from 'typescript'
+
+import { withTempDirectory } from './temp-directory.ts'
 
 test('generated numeric payload validators retain Rust integer bounds', async () => {
   for (const [format, maximum] of [
@@ -32,35 +29,29 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
         module: ts.ModuleKind.ESNext
       }
     }).outputText
-    const directory = await mkdtemp(path.join(tmpdir(), 'traq-numeric-'))
-    try {
-      const generatedModule = path.join(directory, 'numeric.mjs')
-      await writeFile(generatedModule, compiled)
+    await withTempDirectory('traq-numeric-', async directory => {
+      const generatedModule = `${directory}/numeric.mjs`
+      await write(generatedModule, compiled)
       const { nodes } = await import(pathToFileURL(generatedModule).href)
       const validate = nodes.get('example::Numeric')
       for (const value of [0, 1, maximum])
-        assert.equal(validate({ value }), true)
+        expect(validate({ value })).toBe(true)
       for (const value of [-1, maximum + 1, 0.5, null, '1', NaN, Infinity])
-        assert.equal(validate({ value }), false)
-      assert.equal(validate({}), false)
-      assert.equal(validate({ value: 1, extra: 1 }), false)
-      assert.match(
-        goPayload('example::Numeric', schema),
+        expect(validate({ value })).toBe(false)
+      expect(validate({})).toBe(false)
+      expect(validate({ value: 1, extra: 1 })).toBe(false)
+      expect(goPayload('example::Numeric', schema)).toMatch(
         new RegExp('Value ' + format)
       )
-      assert.throws(
-        () => shape({ ...schema.properties.value, maximum: 6 }),
+      expect(() => shape({ ...schema.properties.value, maximum: 6 })).toThrow(
         /Unsupported integer/
       )
-      assert.throws(
-        () => shape({ ...schema.properties.value, multipleOf: 2 }),
-        /Unsupported schema keyword/
-      )
+      expect(() =>
+        shape({ ...schema.properties.value, multipleOf: 2 })
+      ).toThrow(/Unsupported schema keyword/)
       const withoutMaximum = { ...schema.properties.value }
       delete withoutMaximum.maximum
-      assert.equal(shape(withoutMaximum).max, maximum)
-    } finally {
-      await rm(directory, { recursive: true, force: true })
-    }
+      expect(shape(withoutMaximum).max).toBe(maximum)
+    })
   }
 })

@@ -1,23 +1,24 @@
-import { readFile, writeFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import path from 'path'
 
 import { parseFragment } from 'parse5'
 
 import { readLines } from './read-lines.ts'
 
-const require = createRequire(import.meta.url)
+const readText = file => Bun.file(file).text()
+const readBase64 = async file =>
+  new Uint8Array(await Bun.file(file).arrayBuffer()).toBase64()
+
 const escape = s =>
   s.replace(
     /[&<>"]/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]
   )
 export async function rendererCss() {
-  const katexFile = require.resolve('katex/dist/katex.css', {
-    paths: [fileURLToPath(new URL('../../../commonmark/', import.meta.url))]
-  })
-  let math = await readFile(katexFile, 'utf8')
+  const commonmark = Bun.fileURLToPath(
+    new URL('../../../commonmark/', import.meta.url)
+  )
+  const katexFile = Bun.resolveSync('katex/dist/katex.css', commonmark)
+  let math = await readText(katexFile)
   for (const match of [...math.matchAll(/url\(([^)]+)\)/g)]) {
     const relative = match[1].replace(/^["']|["']$/g, '')
     const font = path.resolve(path.dirname(katexFile), relative)
@@ -31,12 +32,12 @@ export async function rendererCss() {
       'url(data:font/' +
         path.extname(font).slice(1) +
         ';base64,' +
-        (await readFile(font)).toString('base64') +
+        (await readBase64(font)) +
         ')'
     )
   }
   return (
-    (await readFile(new URL('../../dist/index.css', import.meta.url))) +
+    (await readText(new URL('../../dist/index.css', import.meta.url))) +
     '\n' +
     math
   )
@@ -116,6 +117,7 @@ export function inertHtml(html) {
 }
 export function mhtml(html) {
   const boundary = '----markdown-corpus-report'
+  const encoded = new TextEncoder().encode(html).toBase64()
   return [
     'MIME-Version: 1.0',
     'Content-Type: multipart/related; type="text/html"; boundary="' +
@@ -127,10 +129,7 @@ export function mhtml(html) {
     'Content-Transfer-Encoding: base64',
     'Content-Location: https://markdown-report.invalid/differences.html',
     '',
-    Buffer.from(html)
-      .toString('base64')
-      .match(/.{1,76}/g)
-      .join('\r\n'),
+    encoded.match(/.{1,76}/g).join('\r\n'),
     '--' + boundary + '--',
     ''
   ].join('\r\n')
@@ -184,5 +183,5 @@ export async function writeMhtml(data, out, css, custom, meta) {
     '件を比較 · 全差分を収録</p><nav><a href="#render">通常</a> · <a href="#inline">インライン</a> · <a href="#notification">通知</a></nav></div></header><main>' +
     sections +
     '</main></body></html>'
-  await writeFile(out, mhtml(html))
+  await Bun.write(out, mhtml(html))
 }

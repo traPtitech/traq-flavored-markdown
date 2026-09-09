@@ -7,7 +7,7 @@
     "declaration": true,
     "rootDir": ".",
     "outDir": "../dist",
-    "types": ["node"]
+    "types": ["bun"]
   },
   "include": ["**/*.ts"],
   "exclude": ["tests"]

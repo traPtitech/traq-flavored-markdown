@@ -1,24 +1,35 @@
-import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-
 import * as rendering from '@traq-markdown-parser/traq/renderer'
 import { plugin } from '@traq-markdown-parser/commonmark/renderer'
 import { PresetBuilder, renderer } from '@traq-markdown-parser/core/renderer'
 import { createRuntime, presets } from '@traq-markdown-parser/traq'
+import { file } from 'bun'
 
-assert.throws(() => import.meta.resolve('markdown-it'), {
-  code: 'ERR_MODULE_NOT_FOUND'
-})
+const check = (condition: unknown, message: string) => {
+  if (!condition) throw new Error(message)
+}
 
-const css = await readFile(
-  new URL(import.meta.resolve('@traq-markdown-parser/traq/index.css')),
-  'utf8'
+let missingPackageError: unknown
+try {
+  import.meta.resolve('markdown-it')
+} catch (error) {
+  missingPackageError = error
+}
+check(
+  (missingPackageError as { code?: unknown })?.code === 'ERR_MODULE_NOT_FOUND',
+  'markdown-it unexpectedly escaped into the packed package'
 )
-assert(css.includes('.markdown-body') && css.includes('.emoji'))
+
+const css = await file(
+  new URL(import.meta.resolve('@traq-markdown-parser/traq/index.css'))
+).text()
+check(
+  css.includes('.markdown-body') && css.includes('.emoji'),
+  'Packed CSS is missing expected selectors'
+)
 const runtime = await createRuntime(
-  await readFile(
+  await file(
     new URL(import.meta.resolve('@traq-markdown-parser/traq/parser.wasm'))
-  )
+  ).bytes()
 )
 try {
   const parser = runtime.createParser(presets.traq.v1)
@@ -30,19 +41,26 @@ try {
     'spoiler',
     'background-color: #ff0000'
   ])
-    assert(output.includes(text), text)
+    check(output.includes(text), text)
   const messages = rendering.messageRenderers({
     origin: 'https://q.example.test'
   })
   const message = parser.parse(
     'hello\nhttps://q.example.test/files/00000000-0000-0000-0000-000000000001'
   )
-  assert.equal(messages.condensed.render(message).renderedText, 'hello')
-  assert.equal(messages.standard.render(message).embeddings[0].type, 'file')
+  check(
+    messages.condensed.render(message).renderedText === 'hello',
+    'Packed condensed renderer changed the message text'
+  )
+  check(
+    messages.standard.render(message).embeddings[0].type === 'file',
+    'Packed standard renderer did not extract the file embedding'
+  )
   const custom = renderer(new PresetBuilder().add(plugin()).build())
-  assert.equal(
-    custom.render(parser.parseInline('**shared declaration**')),
-    '<strong>shared declaration</strong>'
+  check(
+    custom.render(parser.parseInline('**shared declaration**')) ===
+      '<strong>shared declaration</strong>',
+    'Packed shared renderer did not preserve CommonMark strong text'
   )
 } finally {
   runtime.dispose()

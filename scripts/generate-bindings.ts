@@ -1,19 +1,39 @@
-import { execFileSync } from 'node:child_process'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { $ } from 'bun'
 
-import { goNodes } from '../packages/core/scripts/contracts/go.mjs'
-import { nodeFiles } from '../packages/core/scripts/contracts/nodes.mjs'
+import { goNodes } from '../packages/core/scripts/contracts/go.ts'
+import { nodeFiles } from '../packages/core/scripts/contracts/nodes.ts'
 
-const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
-const formatTypescript = paths => {
+const repositoryRoot = Bun.fileURLToPath(new URL('../', import.meta.url))
+const resolvePath = (base, ...parts) =>
+  Bun.fileURLToPath(new URL(parts.join('/'), Bun.pathToFileURL(`${base}/`)))
+
+const readManifest = input =>
+  Bun.file(resolvePath(input, 'contracts.json')).json()
+
+const runCommand = (command, cwd = repositoryRoot) =>
+  $`${command[0]} ${command.slice(1)}`.cwd(cwd)
+
+const writeFiles = async (root, files, ...prefix) => {
+  const paths = []
+  for (const [name, source] of files) {
+    const output = resolvePath(root, ...prefix, name)
+    await Bun.write(output, source)
+    paths.push(output)
+  }
+  return paths
+}
+
+const formatTypescript = async paths => {
   if (!paths.length) return
-  execFileSync(
-    process.execPath,
-    ['run', 'prettier', '--write', '--ignore-path', '.gitignore', ...paths],
-    { cwd: repositoryRoot, stdio: 'inherit', windowsHide: true }
-  )
+  await runCommand([
+    Bun.argv[0],
+    'run',
+    'prettier',
+    '--write',
+    '--ignore-path',
+    '.gitignore',
+    ...paths
+  ])
 }
 
 const contractGroups = {
@@ -25,11 +45,11 @@ const contractGroups = {
 }
 
 async function generateContractGroup(packageName, group, crate) {
-  const root = path.join(repositoryRoot, 'packages', packageName)
-  const input = path.join(root, 'target', 'typescript-contracts', group)
-  execFileSync(
-    'cargo',
+  const root = resolvePath(repositoryRoot, 'packages', packageName)
+  const input = resolvePath(root, 'target', 'typescript-contracts', group)
+  await runCommand(
     [
+      'cargo',
       'run',
       '--locked',
       '--offline',
@@ -42,103 +62,110 @@ async function generateContractGroup(packageName, group, crate) {
       '--',
       input
     ],
-    { cwd: root, stdio: 'inherit', windowsHide: true }
+    root
   )
 
-  const manifest = JSON.parse(
-    await readFile(path.join(input, 'contracts.json'), 'utf8')
-  )
-  const goPath = path.join(
+  const manifest = await readManifest(input)
+  const goPath = resolvePath(
     root,
     'go',
-    group === 'generic' ? 'generic' : '',
+    ...(group === 'generic' ? ['generic'] : []),
     'generated_nodes.go'
   )
-  await mkdir(path.dirname(goPath), { recursive: true })
   const entries = Object.entries(manifest.nodes).map(([key, node]) => [
     key,
     node.schema
   ])
-  await writeFile(goPath, goNodes(entries, group))
-  execFileSync('gofmt', ['-w', goPath], { windowsHide: true })
+  await Bun.write(goPath, goNodes(entries, group))
+  await runCommand(['gofmt', '-w', goPath])
 
-  const typescriptPaths = []
-  for (const [name, source] of await nodeFiles(manifest, input)) {
-    const output = path.join(root, 'typescript', 'generated', name)
-    await mkdir(path.dirname(output), { recursive: true })
-    await writeFile(output, source)
-    typescriptPaths.push(output)
-  }
-  formatTypescript(typescriptPaths)
+  const typescriptPaths = await writeFiles(
+    root,
+    await nodeFiles(manifest, input),
+    'typescript',
+    'generated'
+  )
+  await formatTypescript(typescriptPaths)
 }
 
 async function generateContracts(packageName) {
-  for (const [group, crate] of contractGroups[packageName])
+  for (const [group, crate] of contractGroups[packageName]) {
     await generateContractGroup(packageName, group, crate)
+  }
 }
 
 async function generateTraq(inputPath) {
-  const root = path.join(repositoryRoot, 'packages', 'traq')
-  const input = path.resolve(
-    inputPath ?? path.join(root, 'target', 'node-contracts')
-  )
-  const manifest = JSON.parse(
-    await readFile(path.join(input, 'contracts.json'), 'utf8')
-  )
+  const root = resolvePath(repositoryRoot, 'packages', 'traq')
+  const input = inputPath
+    ? Bun.fileURLToPath(Bun.pathToFileURL(inputPath))
+    : resolvePath(root, 'target', 'node-contracts')
+  const manifest = await readManifest(input)
   const [go, presets, processing, typescript] = await Promise.all([
     import(
-      pathToFileURL(path.join(root, 'scripts', 'contracts', 'go.ts')).href
+      Bun.pathToFileURL(resolvePath(root, 'scripts', 'contracts', 'go.ts')).href
     ),
     import(
-      pathToFileURL(path.join(root, 'scripts', 'contracts', 'presets.ts')).href
-    ),
-    import(
-      pathToFileURL(path.join(root, 'scripts', 'contracts', 'processing.ts'))
+      Bun.pathToFileURL(resolvePath(root, 'scripts', 'contracts', 'presets.ts'))
         .href
     ),
     import(
-      pathToFileURL(path.join(root, 'scripts', 'contracts', 'typescript.ts'))
-        .href
+      Bun.pathToFileURL(
+        resolvePath(root, 'scripts', 'contracts', 'processing.ts')
+      ).href
+    ),
+    import(
+      Bun.pathToFileURL(
+        resolvePath(root, 'scripts', 'contracts', 'typescript.ts')
+      ).href
     )
   ])
   const files = await typescript.typescriptFiles(manifest, input)
   files.set('go/generated_nodes.go', go.goNodes(manifest))
-  for (const [name, source] of presets.presetFiles(manifest.presets))
+  for (const [name, source] of presets.presetFiles(manifest.presets)) {
     files.set(name, source)
+  }
   for (const [name, source] of await processing.processingFiles(
     manifest.processing,
     input
-  ))
+  )) {
     files.set(name, source)
-  files.set(
-    'typescript/generated/artifact.ts',
-    `// Generated for this Wasm build. Do not edit.\nexport const buildId = '${manifest.buildId}';\nexport const inputBytes = ${manifest.limits.inputBytes};\n`
-  )
-  files.set(
-    'go/generated_artifact.go',
-    `// Code generated for this Wasm build. DO NOT EDIT.\npackage markdown\nconst buildID = "${manifest.buildId}"\nconst inputBytes = ${manifest.limits.inputBytes}\nconst memoryPages = ${manifest.limits.memoryBytes / 65536}\n`
-  )
-  const paths = []
-  for (const [name, source] of files) {
-    const output = path.join(root, name)
-    await mkdir(path.dirname(output), { recursive: true })
-    await writeFile(output, source)
-    paths.push(output)
   }
-  execFileSync('gofmt', ['-w', ...paths.filter(name => name.endsWith('.go'))], {
-    windowsHide: true
-  })
-  formatTypescript(paths.filter(name => name.endsWith('.ts')))
+  const typescriptArtifact = [
+    '// Generated for this Wasm build. Do not edit.',
+    `export const buildId = '${manifest.buildId}';`,
+    `export const inputBytes = ${manifest.limits.inputBytes};`,
+    ''
+  ].join('\n')
+  const goArtifact = [
+    '// Code generated for this Wasm build. DO NOT EDIT.',
+    'package markdown',
+    `const buildID = "${manifest.buildId}"`,
+    `const inputBytes = ${manifest.limits.inputBytes}`,
+    `const memoryPages = ${manifest.limits.memoryBytes / 65536}`,
+    ''
+  ].join('\n')
+  files.set('typescript/generated/artifact.ts', typescriptArtifact)
+  files.set('go/generated_artifact.go', goArtifact)
+  const paths = await writeFiles(root, files)
+  await runCommand([
+    'gofmt',
+    '-w',
+    ...paths.filter(name => name.endsWith('.go'))
+  ])
+  await formatTypescript(paths.filter(name => name.endsWith('.ts')))
+  const payloadCount = Object.keys(manifest.nodes).length
   console.log(
-    `Generated ${files.size} binding files from ${Object.keys(manifest.nodes).length} Rust payloads`
+    `Generated ${files.size} binding files from ${payloadCount} Rust payloads`
   )
 }
 
 const [packageName, input] = Bun.argv.slice(2)
-if (packageName === 'commonmark' || packageName === 'trap-extension')
+if (packageName === 'commonmark' || packageName === 'trap-extension') {
   await generateContracts(packageName)
-else if (packageName === 'traq') await generateTraq(input)
-else
+} else if (packageName === 'traq') {
+  await generateTraq(input)
+} else {
   throw new Error(
     'usage: bun scripts/generate-bindings.ts <commonmark|trap-extension|traq> [contracts-dir]'
   )
+}

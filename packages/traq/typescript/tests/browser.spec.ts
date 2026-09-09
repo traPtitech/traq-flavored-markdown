@@ -1,13 +1,20 @@
-import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-
-import { test } from 'bun:test'
+import { file } from 'bun'
+import { expect, test } from 'bun:test'
 
 import { buildId } from '../../dist/generated/artifact.js'
 import { names } from '../../dist/generated/nodes.js'
 import { createRuntime, isKnownNode, presets } from '../../dist/index.js'
 
-const bytes = await readFile(new URL('../../dist/parser.wasm', import.meta.url))
+const bytes = await file(
+  new URL('../../dist/parser.wasm', import.meta.url)
+).bytes()
+const captureError = (run: () => unknown) => {
+  try {
+    run()
+  } catch (error) {
+    return error
+  }
+}
 
 test('failed requests do not poison later calls; resources remain bounded', async () => {
   const runtime = await createRuntime(bytes)
@@ -16,18 +23,16 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
     ['\ud800', 'invalid_utf8'],
     ['x'.repeat(65537), 'resource_limit']
   ]) {
-    assert.throws(
-      () => core.parse(source),
-      e =>
-        code === 'invalid_utf8'
-          ? e instanceof TypeError
-          : e.cause?.code === 'resource_limit' &&
-            e.cause?.resource === 'input_bytes'
-    )
+    const error = captureError(() => core.parse(source))
+    if (code === 'invalid_utf8') expect(error).toBeInstanceOf(TypeError)
+    else
+      expect(error).toMatchObject({
+        cause: { code: 'resource_limit', resource: 'input_bytes' }
+      })
   }
-  assert.throws(() => core.parse(2), TypeError)
-  assert.equal(core.parseInline('**x**').children[0].kind, names.Strong)
-  assert.equal(core.parse('\ufefftext🦀').source, '\ufefftext🦀')
+  expect(() => core.parse(2)).toThrow(TypeError)
+  expect(core.parseInline('**x**').children[0].kind).toBe(names.Strong)
+  expect(core.parse('\ufefftext🦀').source).toBe('\ufefftext🦀')
   const hostile = [
     '['.repeat(5000),
     '> '.repeat(300),
@@ -39,35 +44,33 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
     '> '.repeat(60) + '\t'.repeat(60000),
     '- > '.repeat(30) + '\t'.repeat(60000)
   ]
-  assert.throws(
-    () => core.parse('!!'.repeat(100) + 'deep' + '!!'.repeat(100)),
-    e => e.cause?.resource === 'depth'
+  const depthError = captureError(() =>
+    core.parse('!!'.repeat(100) + 'deep' + '!!'.repeat(100))
   )
+  expect(depthError).toMatchObject({ cause: { resource: 'depth' } })
   for (const source of hostile) {
     try {
-      assert.equal(core.parse(source).source, source)
+      expect(core.parse(source).source).toBe(source)
     } catch (e) {
-      assert(e instanceof Error)
-      assert.equal(e.cause.code, 'resource_limit')
+      expect(e).toBeInstanceOf(Error)
+      expect((e as { cause: { code: string } }).cause.code).toBe(
+        'resource_limit'
+      )
     }
-    assert.equal(
-      core.parse('after').children[0].children[0].data.value,
-      'after'
-    )
+    expect(core.parse('after').children[0].children[0].data.value).toBe('after')
   }
   const columns = 7500
-  assert.throws(
-    () =>
-      core.parse(
-        '|'.repeat(columns + 1) +
-          '\n' +
-          '|-'.repeat(columns) +
-          '|\n' +
-          '|'.repeat(columns + 1)
-      ),
-    e => e.cause?.resource === 'output_bytes'
+  const outputError = captureError(() =>
+    core.parse(
+      '|'.repeat(columns + 1) +
+        '\n' +
+        '|-'.repeat(columns) +
+        '|\n' +
+        '|'.repeat(columns + 1)
+    )
   )
-  assert.equal(core.parse('after').source, 'after')
+  expect(outputError).toMatchObject({ cause: { resource: 'output_bytes' } })
+  expect(core.parse('after').source).toBe('after')
 })
 
 test('artifact pairing, preset selection, disposal and isolated results', async () => {
@@ -75,42 +78,45 @@ test('artifact pairing, preset selection, disposal and isolated results', async 
     new Uint8Array([1, 2, 3]),
     new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
   ])
-    await assert.rejects(async () => {
-      const r = await createRuntime(bad)
-      try {
-        r.createParser(presets.traq.v1)
-      } finally {
-        r.dispose()
-      }
-    })
+    await expect(
+      (async () => {
+        const r = await createRuntime(bad)
+        try {
+          r.createParser(presets.traq.v1)
+        } finally {
+          r.dispose()
+        }
+      })()
+    ).rejects.toThrow()
   const runtime = await createRuntime(bytes)
-  assert.throws(() => runtime.createParser('traq.invalid'), /Markdown:/)
+  expect(() => runtime.createParser('traq.invalid')).toThrow(/Markdown:/)
   const traq = runtime.createParser(presets.traq.v1)
   const common = runtime.createParser(presets.commonmark)
   let replacement
   try {
     const first = traq.parseInline(':stamp:')
-    assert.equal(first.children[0].kind, names.Stamp)
-    assert(isKnownNode(first.children[0]))
-    assert(!isKnownNode({ ...first.children[0], kind: 'future::Node' }))
-    assert.equal(common.parseInline(':stamp:').children[0].kind, names.Text)
+    expect(first.children[0].kind).toBe(names.Stamp)
+    expect(isKnownNode(first.children[0])).toBeTruthy()
+    expect(
+      isKnownNode({ ...first.children[0], kind: 'future::Node' })
+    ).toBeFalsy()
+    expect(common.parseInline(':stamp:').children[0].kind).toBe(names.Text)
     traq.parse('another')
-    assert.equal(first.source, ':stamp:')
+    expect(first.source).toBe(':stamp:')
     traq.dispose()
     traq.dispose()
-    assert.throws(() => traq.parse('closed'), /disposed/)
-    assert.equal(common.parse('still open').source, 'still open')
+    expect(() => traq.parse('closed')).toThrow(/disposed/)
+    expect(common.parse('still open').source).toBe('still open')
     replacement = runtime.createParser(presets.traq.v1)
-    assert.equal(
-      replacement.parseInline(':stamp:').children[0].kind,
+    expect(replacement.parseInline(':stamp:').children[0].kind).toBe(
       names.Stamp
     )
   } finally {
     traq.dispose()
     runtime.dispose()
-    assert.throws(() => common.parse('closed'), /disposed/)
-    assert.throws(() => replacement.parse('closed'), /disposed/)
-    assert.throws(() => runtime.createParser(presets.commonmark), /disposed/)
+    expect(() => common.parse('closed')).toThrow(/disposed/)
+    expect(() => replacement.parse('closed')).toThrow(/disposed/)
+    expect(() => runtime.createParser(presets.commonmark)).toThrow(/disposed/)
     runtime.dispose()
   }
 })
@@ -132,33 +138,36 @@ test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async
       )
     )
   }
-  assert.equal(wasm.abi_version(), 3)
-  assert(call('configure', 'traq.bad').error)
-  assert.equal(call('configure', 'traq.v1').configured, buildId)
-  assert.deepEqual(call('parse', new Uint8Array([255])), {
+  expect(wasm.abi_version()).toBe(3)
+  expect(call('configure', 'traq.bad').error).toBeTruthy()
+  expect(call('configure', 'traq.v1').configured).toBe(buildId)
+  expect(call('parse', new Uint8Array([255]))).toEqual({
     error: { code: 'invalid_utf8' }
   })
-  assert(call('parse', 'x', 99).error)
-  assert.equal(call('parse', 'ok').document.source, 'ok')
+  expect(call('parse', 'x', 99).error).toBeTruthy()
+  expect(call('parse', 'ok').document.source).toBe('ok')
   const pages = wasm.memory.buffer.byteLength / 65536
-  assert.equal(wasm.memory.grow(512 - pages), pages)
-  assert.throws(() => wasm.memory.grow(1), RangeError)
+  expect(wasm.memory.grow(512 - pages)).toBe(pages)
+  expect(() => wasm.memory.grow(1)).toThrow(RangeError)
 })
 
 test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', async () => {
   const runtime = await createRuntime(bytes)
   const parser = runtime.createParser(presets.traq.v1)
   const commonmark = JSON.parse(
-    await readFile(
+    await file(
       new URL('../../tests/fixtures/commonmark-0.31.2.json', import.meta.url)
-    )
+    ).text()
   )
   try {
-    for (const file of ['traq-v1-commonmark', 'traq-v1-extensions']) {
+    for (const fixtureName of ['traq-v1-commonmark', 'traq-v1-extensions']) {
       const cases = JSON.parse(
-        await readFile(
-          new URL('../../tests/fixtures/' + file + '.json', import.meta.url)
-        )
+        await file(
+          new URL(
+            '../../tests/fixtures/' + fixtureName + '.json',
+            import.meta.url
+          )
+        ).text()
       )
       for (const fixture of cases)
         for (const [mode, method] of [
@@ -170,16 +179,11 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
             fixture.source ??
             commonmark.find(c => c.example === fixture.example).markdown
           if ('Ok' in expected)
-            assert.deepEqual(
-              parser[method](source),
-              expected.Ok,
-              fixture.name + ' ' + mode
-            )
-          else
-            assert.throws(
-              () => parser[method](source),
-              e => assert.deepEqual(e.cause, expected.Err) === undefined
-            )
+            expect(parser[method](source)).toEqual(expected.Ok)
+          else {
+            const error = captureError(() => parser[method](source))
+            expect((error as { cause: unknown })?.cause).toEqual(expected.Err)
+          }
         }
     }
   } finally {
@@ -188,35 +192,56 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
 })
 
 test('Wasm input views respect their byte range and are copied before async work', async () => {
-  const padded = Buffer.concat([Buffer.from([99]), bytes, Buffer.from([99])])
+  const padded = new Uint8Array(bytes.length + 2)
+  padded[0] = 99
+  padded.set(bytes, 1)
+  padded[padded.length - 1] = 99
   const view = padded.subarray(1, padded.length - 1)
   const pending = createRuntime(view)
   view.fill(0)
   const runtime = await pending
   const parser = runtime.createParser(presets.traq.v1)
   try {
-    assert.equal(parser.parse('copied').source, 'copied')
+    expect(parser.parse('copied').source).toBe('copied')
   } finally {
     runtime.dispose()
   }
 })
 
 test('a valid parser Wasm from a different Rust build is rejected', async () => {
-  const other = Buffer.from(bytes)
-  const id = Buffer.from(buildId)
+  const other = bytes.slice()
+  const id = new TextEncoder().encode(buildId)
+  const indexOfBytes = (source, target, start = 0) => {
+    for (
+      let position = start;
+      position <= source.length - target.length;
+      position++
+    ) {
+      let matches = true
+      for (let offset = 0; offset < target.length; offset++)
+        if (source[position + offset] !== target[offset]) {
+          matches = false
+          break
+        }
+      if (matches) return position
+    }
+    return -1
+  }
   let count = 0
   for (
-    let position = other.indexOf(id);
+    let position = indexOfBytes(other, id);
     position !== -1;
-    position = other.indexOf(id, position + id.length)
+    position = indexOfBytes(other, id, position + id.length)
   ) {
     other.fill(48, position, position + id.length)
     count++
   }
-  assert(count > 0)
+  expect(count).toBeGreaterThan(0)
   const runtime = await createRuntime(other)
   try {
-    assert.throws(() => runtime.createParser(presets.traq.v1), /does not match/)
+    expect(() => runtime.createParser(presets.traq.v1)).toThrow(
+      /does not match/
+    )
   } finally {
     runtime.dispose()
   }

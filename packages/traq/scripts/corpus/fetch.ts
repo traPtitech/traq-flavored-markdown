@@ -1,9 +1,9 @@
 // Read-only production sampling. Response bodies and credentials never enter logs.
-import { createHash, createHmac, randomBytes } from 'node:crypto'
-import { mkdir, open, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { parseArgs, parseEnv } from 'node:util'
+import path from 'path'
+
+import { $ } from 'bun'
+
+import { parseArgs, parseEnv } from './args.ts'
 
 export async function collect({
   baseUrl,
@@ -46,9 +46,9 @@ export async function collect({
     !Number.isFinite(Date.parse(until))
   )
     throw new Error('Invalid delay or date')
-  const salt = randomBytes(32)
+  const salt = crypto.getRandomValues(new Uint8Array(32))
   const anonymous = id =>
-    createHmac('sha256', salt).update(id).digest('hex').slice(0, 24)
+    new Bun.CryptoHasher('sha256', salt).update(id).digest('hex').slice(0, 24)
   const report = {
     format: 1,
     status: 'running',
@@ -72,8 +72,7 @@ export async function collect({
     if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname))
       throw new Error('Request escaped API origin')
     for (let attempt = 0; attempt < 4; attempt++) {
-      if (report.requests)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
+      if (report.requests) await Bun.sleep(delayMs)
       report.requests++
       let response
       try {
@@ -88,7 +87,7 @@ export async function collect({
         })
       } catch {
         if (attempt < 3) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * 2 ** attempt))
+          await Bun.sleep(1000 * 2 ** attempt)
           continue
         }
         throw new Error(
@@ -105,7 +104,7 @@ export async function collect({
           )
         )
         await response.body?.cancel()
-        await new Promise(resolve => setTimeout(resolve, retry))
+        await Bun.sleep(retry)
         continue
       }
       if ([403, 404].includes(response.status)) {
@@ -123,9 +122,15 @@ export async function collect({
       }
     }
   }
-  await mkdir(output, { recursive: true, mode: 0o700 })
+  await $`mkdir -p ${output}`
   // Never overwrite an existing corpus on a rerun.
-  const sink = await open(path.join(output, 'messages.jsonl'), 'wx', 0o600)
+  const messagesFile = path.join(output, 'messages.jsonl')
+  if (await Bun.file(messagesFile).exists()) {
+    const error = new Error('The corpus already exists')
+    error.code = 'EEXIST'
+    throw error
+  }
+  const sink = Bun.file(messagesFile).writer()
   try {
     const list = await get('channels?include-dm=false')
     if (!list || !Array.isArray(list.public))
@@ -135,7 +140,7 @@ export async function collect({
       .filter(c => typeof c.id === 'string')
       .map(c => ({
         id: c.id,
-        key: createHash('sha256').update(c.id).digest('hex')
+        key: new Bun.CryptoHasher('sha256').update(c.id).digest('hex')
       }))
       .sort((a, b) => a.key.localeCompare(b.key))
       .slice(channelOffset, channelOffset + maxChannels)
@@ -174,7 +179,7 @@ export async function collect({
             throw new Error('Invalid message fields (body omitted)')
           if (seen.has(message.id)) continue
           seen.add(message.id)
-          const bytes = Buffer.byteLength(message.content)
+          const bytes = new TextEncoder().encode(message.content).byteLength
           const bucket =
             bytes < 100
               ? '<100'
@@ -228,18 +233,13 @@ export async function collect({
     throw error
   } finally {
     await sink.close()
-    await writeFile(
-      path.join(output, 'manifest.json'),
-      JSON.stringify(report, null, 2) + '\n',
-      { mode: 0o600 }
-    )
+    const manifest = path.join(output, 'manifest.json')
+    await Bun.write(manifest, JSON.stringify(report, null, 2) + '\n')
+    if (!Bun.env.WINDIR) await $`chmod 600 ${manifest}`
   }
 }
 
-if (
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
   try {
     const { values } = parseArgs({
       options: {
@@ -257,7 +257,7 @@ if (
     let config = {}
     if (values['env-file']) {
       try {
-        config = parseEnv(await readFile(values['env-file'], 'utf8'))
+        config = parseEnv(await Bun.file(values['env-file']).text())
       } catch {
         throw new Error('Could not read env file')
       }
@@ -267,7 +267,7 @@ if (
       throw new Error(
         'API base URL and token file, or --env-file with TRAQ_API_BASE_URL/BOT_ACCESS_TOKEN, are required'
       )
-    const privateRoot = fileURLToPath(
+    const privateRoot = Bun.fileURLToPath(
       new URL('../../.private/corpora/', import.meta.url)
     )
     const output = path.resolve(
@@ -283,7 +283,7 @@ if (
     let token
     try {
       token = values['token-file']
-        ? (await readFile(values['token-file'], 'utf8')).trim()
+        ? (await Bun.file(values['token-file']).text()).trim()
         : config.BOT_ACCESS_TOKEN.trim()
     } catch {
       throw new Error('Could not read token file')
@@ -301,7 +301,7 @@ if (
     })
     console.log(JSON.stringify({ output, ...report }, null, 2))
   } catch (error) {
-    console.error(error.message)
-    process.exitCode = 1
+    console.error(error instanceof Error ? error.message : String(error))
+    throw error
   }
 }

@@ -1,10 +1,9 @@
-import { readFile } from 'node:fs/promises'
-
 import { createRuntime, presets } from '@traq-markdown-parser/traq'
+import { file } from 'bun'
 
-export const wasmBytes = await readFile(
+export const wasmBytes = await file(
   new URL(import.meta.resolve('@traq-markdown-parser/traq/parser.wasm'))
-)
+).bytes()
 const runtime = await createRuntime(wasmBytes)
 export const parser = runtime.createParser(presets.traq.v1)
 export const commonParser = () => runtime.createParser(presets.commonmark)

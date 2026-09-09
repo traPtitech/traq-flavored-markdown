@@ -1,6 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-
 export async function typescriptFiles(manifest, input) {
   const files = new Map()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
@@ -27,7 +24,7 @@ export async function typescriptFiles(manifest, input) {
       `export const names = Object.freeze({${owners.map(g => `...${g}.names`).join(',')}});\n` +
       `export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map([${owners.map(g => `...${g}.nodes`).join(',')}]);\n` +
       'export function isKnownNode(node:Node<true>):node is Node<true> & NodeKind {return nodes.get(node.kind)?.(node.data) ?? false;}\n' +
-      (await readFile(path.join(input, 'ParseError.ts'), 'utf8')).replace(
+      (await Bun.file(`${input}/ParseError.ts`).text()).replace(
         /^\/\/[^\n]*\n/gm,
         ''
       )

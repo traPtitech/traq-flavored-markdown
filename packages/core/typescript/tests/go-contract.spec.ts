@@ -1,16 +1,13 @@
-import assert from 'node:assert/strict'
+import { expect, test } from 'bun:test'
 
-import { test } from 'bun:test'
-
-import { goContract } from '../../scripts/contracts/go.mjs'
+import { goContract } from '../../scripts/contracts/go.ts'
 
 test('named string enums remain compatible with Go string fields', () => {
-  assert.equal(
+  expect(
     goContract({
       title: 'LookupKind',
       type: 'string',
       enum: ['user', 'group']
-    }),
-    'type LookupKind = string\n'
-  )
+    })
+  ).toBe('type LookupKind = string\n')
 })

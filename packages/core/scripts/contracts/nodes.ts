@@ -1,8 +1,7 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
+import path from 'path'
 
-import { javascript } from './javascript.mjs'
-import { quoted as q } from './schema.mjs'
+import { javascript } from './javascript.ts'
+import { quoted as q } from './schema.ts'
 
 export async function nodeFiles(manifest, input) {
   const entries = Object.entries(manifest.nodes).map(([key, node]) => [
@@ -15,7 +14,7 @@ export async function nodeFiles(manifest, input) {
     const types = new Map()
     async function payload(name) {
       if (types.has(name)) return
-      const source = await readFile(path.join(input, name + '.ts'), 'utf8')
+      const source = await Bun.file(path.join(input, name + '.ts')).text()
       types.set(
         name,
         source

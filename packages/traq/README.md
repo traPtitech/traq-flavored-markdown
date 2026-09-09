@@ -50,7 +50,7 @@ try {
 }
 ```
 
-`wasmBytes` は `Uint8Array` です。Node.js は `@traq-markdown-parser/traq/parser.wasm` を `readFile` で読み、ブラウザーは `new Uint8Array(await response.arrayBuffer())` を渡します。Runtime と Parser は再利用できます。同じ Runtime から異なるプリセットの Parser も作成できます。
+`wasmBytes` は `Uint8Array` です。Bun では `Bun.file(new URL(import.meta.resolve('@traq-markdown-parser/traq/parser.wasm'))).bytes()` で読み、ブラウザーでは `new Uint8Array(await response.arrayBuffer())` を渡します。Runtime と Parser は再利用できます。同じ Runtime から異なるプリセットの Parser も作成できます。
 
 ノード型は判別可能な union です。文法別の payload 型と任意利用の guard は `@traq-markdown-parser/commonmark/nodes`・`@traq-markdown-parser/commonmark/generic/nodes`・`@traq-markdown-parser/trap-extension/nodes`、配布物全体の一覧は `@traq-markdown-parser/traq/nodes` から利用できます。
 

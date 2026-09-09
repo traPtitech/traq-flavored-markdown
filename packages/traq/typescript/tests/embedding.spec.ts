@@ -1,7 +1,5 @@
-import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-
-import { test } from 'bun:test'
+import { file } from 'bun'
+import { expect, test } from 'bun:test'
 
 import {
   createRuntime,
@@ -10,12 +8,13 @@ import {
   presets
 } from '../../dist/index.js'
 
-const bytes = await readFile(new URL('../../dist/parser.wasm', import.meta.url))
+const bytes = await file(
+  new URL('../../dist/parser.wasm', import.meta.url)
+).bytes()
 const fixtures = JSON.parse(
-  await readFile(
-    new URL('../../tests/fixtures/embedding.json', import.meta.url),
-    'utf8'
-  )
+  await file(
+    new URL('../../tests/fixtures/embedding.json', import.meta.url)
+  ).text()
 )
 
 const userId = 'dfdff0c9-5de0-46ee-9721-2525e8bb3d44'
@@ -49,7 +48,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
 
   try {
     for (const [source, expected] of fixtures) {
-      assert.equal(embed(source), expected, source)
+      expect(embed(source)).toBe(expected)
     }
 
     const reference = `!${JSON.stringify({ type: 'user', raw: '@a', id: userId })}`
@@ -65,66 +64,58 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     ]
 
     for (const source of preserved) {
-      assert.equal(embed(source), source, source)
+      expect(embed(source)).toBe(source)
     }
 
-    assert.equal(embed('日本語😀 **@a**'), `日本語😀 **${reference}**`)
+    expect(embed('日本語😀 **@a**')).toBe(`日本語😀 **${reference}**`)
 
     const escaped = embed('@a"b')
-    assert.equal(process(escaped).embedding.unembeddedText, '@a"b')
+    expect(process(escaped).embedding.unembeddedText).toBe('@a"b')
 
     const linkedReference = '[label ' + reference + '](https://example.com)'
-    assert.equal(
+    expect(
       process(linkedReference).embedding.unembeddedText,
       '[label @a](https://example.com)'
-    )
+    ).toBe('[label @a](https://example.com)')
 
     for (const protectedSource of [
       '\x60\x60\x60\n' + reference + '\n\x60\x60\x60',
       '$$\n' + reference + '\n$$'
     ]) {
-      assert.equal(
+      expect(
         process(protectedSource).embedding.unembeddedText,
         protectedSource
-      )
+      ).toBe(protectedSource)
     }
 
     const source = `日本語😀 ${reference} \`${reference}\` !!${reference}!!`
     const output = process(source)
-    assert.equal(
+    expect(
       output.embedding.unembeddedText,
       `日本語😀 @a \`${reference}\` !!@a!!`
-    )
-    assert.equal(mentionsUser(output.references, userId, []), true)
-    assert.equal(
-      mentionsUser(process(`\`${reference}\``).references, userId, []),
-      false
-    )
+    ).toBe(`日本語😀 @a \`${reference}\` !!@a!!`)
+    expect(mentionsUser(output.references, userId, [])).toBe(true)
+    expect(
+      mentionsUser(process(`\`${reference}\``).references, userId, [])
+    ).toBe(false)
 
     const groupReference =
       '!' + JSON.stringify({ type: 'group', raw: '@group', id: groupId })
-    assert.equal(
-      mentionsUser(process(groupReference).references, userId, [groupId]),
-      true
-    )
-    assert.equal(
-      mentionsUser(process(groupReference).references, userId, []),
+    expect(
+      mentionsUser(process(groupReference).references, userId, [groupId])
+    ).toBe(true)
+    expect(mentionsUser(process(groupReference).references, userId, [])).toBe(
       false
     )
-    assert.equal(
-      mentionsUser(process(reference).references, groupId, []),
-      false
-    )
-    assert.equal(
-      mentionsUser(process('!{invalid:json}').references, userId, [groupId]),
-      false
-    )
-    assert.equal(mentionsUser(process('').references, userId, [groupId]), false)
+    expect(mentionsUser(process(reference).references, groupId, [])).toBe(false)
+    expect(
+      mentionsUser(process('!{invalid:json}').references, userId, [groupId])
+    ).toBe(false)
+    expect(mentionsUser(process('').references, userId, [groupId])).toBe(false)
 
-    assert.throws(
-      () => embedReferences('different', process('@a').embedding, () => userId),
-      /does not match source/
-    )
+    expect(() =>
+      embedReferences('different', process('@a').embedding, () => userId)
+    ).toThrow(/does not match source/)
   } finally {
     runtime.dispose()
   }

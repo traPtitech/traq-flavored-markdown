@@ -1,36 +1,31 @@
-import { spawnSync } from 'node:child_process'
-import { readdirSync } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { $ } from 'bun'
 
-const root = fileURLToPath(new URL('../', import.meta.url))
-const ignored = new Set(['node_modules', 'target'])
-
-function goFiles(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
-    const path = join(directory, entry.name)
-    if (entry.isDirectory()) return ignored.has(entry.name) ? [] : goFiles(path)
-    return entry.isFile() && entry.name.endsWith('.go') ? [path] : []
-  })
-}
-
-const check = process.argv.length === 3 && process.argv[2] === '--check'
-if (!check && process.argv.length !== 2) {
+const packagesRoot = Bun.fileURLToPath(new URL('../packages/', import.meta.url))
+const args = Bun.argv.slice(2)
+const check = args.length === 1 && args[0] === '--check'
+if (!check && args.length !== 0) {
   throw new Error('usage: bun scripts/gofmt.ts [--check]')
 }
 
-const result = spawnSync(
-  'gofmt',
-  [check ? '-l' : '-w', ...goFiles(join(root, 'packages'))],
-  {
-    encoding: 'utf8'
-  }
-)
-if (result.error) throw result.error
-if (result.status !== 0) process.exit(result.status ?? 1)
+const goFilePaths = [
+  ...new Bun.Glob('**/*.go').scanSync({
+    cwd: packagesRoot,
+    onlyFiles: true,
+    dot: true,
+    ignore: ['**/node_modules/**', '**/target/**']
+  })
+]
+const result = await $`gofmt ${check ? '-l' : '-w'} ${goFilePaths}`
+  .cwd(packagesRoot)
+  .nothrow()
+  .quiet()
+if (result.exitCode !== 0) {
+  throw new Error(`gofmt failed (exited with ${result.exitCode})`)
+}
 
-if (check && result.stdout.trim()) {
-  console.error(result.stdout.trim())
+const output = result.text()
+if (check && output.trim()) {
+  console.error(output.trim())
   console.error('Run bun run format:go to fix these files.')
-  process.exitCode = 1
+  throw new Error('Go files are not formatted')
 }

@@ -1,8 +1,13 @@
-import { createHash } from 'node:crypto'
-import { readFile, writeFile } from 'node:fs/promises'
-import { brotliCompressSync, gzipSync } from 'node:zlib'
+const compress = async (format, bytes) =>
+  (
+    await new Response(
+      new Blob([bytes]).stream().pipeThrough(new CompressionStream(format))
+    ).arrayBuffer()
+  ).byteLength
 
-const bytes = await readFile(new URL('../dist/parser.wasm', import.meta.url))
+const bytes = await Bun.file(
+  new URL('../dist/parser.wasm', import.meta.url)
+).bytes()
 const { instance } = await WebAssembly.instantiate(bytes, {})
 const wasm = instance.exports
 const pointer = wasm.contract_ptr()
@@ -12,12 +17,12 @@ const metadata = JSON.parse(
 )
 const contract = {
   ...metadata,
-  sha256: createHash('sha256').update(bytes).digest('hex'),
+  sha256: new Bun.CryptoHasher('sha256').update(bytes).digest('hex'),
   bytes: bytes.length,
-  gzipBytes: gzipSync(bytes).length,
-  brotliBytes: brotliCompressSync(bytes).length
+  gzipBytes: await compress('gzip', bytes),
+  brotliBytes: await compress('brotli', bytes)
 }
-await writeFile(
+await Bun.write(
   new URL('../dist/contract.json', import.meta.url),
   JSON.stringify(contract, null, 2) + '\n'
 )

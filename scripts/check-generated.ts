@@ -1,7 +1,6 @@
-import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { $ } from 'bun'
 
-const root = fileURLToPath(new URL('../', import.meta.url))
+const root = Bun.fileURLToPath(new URL('../', import.meta.url))
 const generated = [
   [
     'packages/commonmark/typescript/generated',
@@ -21,12 +20,14 @@ const generated = [
   ]
 ]
 
-for (const paths of generated) {
-  const result = spawnSync(
-    'git',
-    ['-c', `safe.directory=${root}`, 'diff', '--exit-code', '--', ...paths],
-    { cwd: root, stdio: 'inherit' }
-  )
-  if (result.error) throw result.error
-  if (result.status !== 0) process.exit(result.status ?? 1)
+const safeDirectory = `safe.directory=${root}`
+for (const generatedPaths of generated) {
+  const result =
+    await $`git -c ${safeDirectory} diff --exit-code -- ${generatedPaths}`
+      .cwd(root)
+      .nothrow()
+  if (result.exitCode !== 0)
+    throw new Error(
+      `Generated files differ (git exited with ${result.exitCode})`
+    )
 }
