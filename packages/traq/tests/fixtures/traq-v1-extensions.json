@@ -1,0 +1,2342 @@
+[
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 51,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Strong",
+                  "span": {
+                    "end": 8,
+                    "start": 0
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 6,
+                        "start": 2
+                      },
+                      "data": {
+                        "value": "bold"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 9,
+                    "start": 8
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Emphasis",
+                  "span": {
+                    "end": 19,
+                    "start": 9
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 18,
+                        "start": 10
+                      },
+                      "data": {
+                        "value": "emphasis"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 20,
+                    "start": 19
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_generic_contracts::strikethrough::StrikethroughData",
+                  "span": {
+                    "end": 30,
+                    "start": 20
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 28,
+                        "start": 22
+                      },
+                      "data": {
+                        "value": "strike"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 31,
+                    "start": 30
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_generic_contracts::mark::MarkData",
+                  "span": {
+                    "end": 39,
+                    "start": 31
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 37,
+                        "start": 33
+                      },
+                      "data": {
+                        "value": "mark"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 40,
+                    "start": 39
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_trap_contracts::spoiler::SpoilerData",
+                  "span": {
+                    "end": 51,
+                    "start": 40
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 49,
+                        "start": 42
+                      },
+                      "data": {
+                        "value": "spoiler"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "**bold** *emphasis* ~~strike~~ ==mark== !!spoiler!!"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Strong",
+              "span": {
+                "end": 8,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 6,
+                    "start": 2
+                  },
+                  "data": {
+                    "value": "bold"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 9,
+                "start": 8
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Emphasis",
+              "span": {
+                "end": 19,
+                "start": 9
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 18,
+                    "start": 10
+                  },
+                  "data": {
+                    "value": "emphasis"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 20,
+                "start": 19
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_generic_contracts::strikethrough::StrikethroughData",
+              "span": {
+                "end": 30,
+                "start": 20
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 28,
+                    "start": 22
+                  },
+                  "data": {
+                    "value": "strike"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 31,
+                "start": 30
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_generic_contracts::mark::MarkData",
+              "span": {
+                "end": 39,
+                "start": 31
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 37,
+                    "start": 33
+                  },
+                  "data": {
+                    "value": "mark"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 40,
+                "start": 39
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_trap_contracts::spoiler::SpoilerData",
+              "span": {
+                "end": 51,
+                "start": 40
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 49,
+                    "start": 42
+                  },
+                  "data": {
+                    "value": "spoiler"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "**bold** *emphasis* ~~strike~~ ==mark== !!spoiler!!"
+        }
+      }
+    },
+    "name": "formatting",
+    "source": "**bold** *emphasis* ~~strike~~ ==mark== !!spoiler!!"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 15,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_generic_contracts::math::InlineMathData",
+                  "span": {
+                    "end": 7,
+                    "start": 0
+                  },
+                  "data": {
+                    "tex": "x + y"
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 12,
+                    "start": 7
+                  },
+                  "data": {
+                    "value": " and "
+                  }
+                },
+                {
+                  "kind": "markdown_generic_contracts::math::InlineMathData",
+                  "span": {
+                    "end": 15,
+                    "start": 12
+                  },
+                  "data": {
+                    "tex": "x"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "$x + y$ and $x$"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_generic_contracts::math::InlineMathData",
+              "span": {
+                "end": 7,
+                "start": 0
+              },
+              "data": {
+                "tex": "x + y"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 12,
+                "start": 7
+              },
+              "data": {
+                "value": " and "
+              }
+            },
+            {
+              "kind": "markdown_generic_contracts::math::InlineMathData",
+              "span": {
+                "end": 15,
+                "start": 12
+              },
+              "data": {
+                "tex": "x"
+              }
+            }
+          ],
+          "source": "$x + y$ and $x$"
+        }
+      }
+    },
+    "name": "inline math",
+    "source": "$x + y$ and $x$"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_generic_contracts::math::BlockMathData",
+              "span": {
+                "end": 15,
+                "start": 0
+              },
+              "data": {
+                "tex": "\nx^2 + y^2\n"
+              }
+            }
+          ],
+          "source": "$$\nx^2 + y^2\n$$"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 2,
+                "start": 0
+              },
+              "data": {
+                "value": "$$"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 3,
+                "start": 2
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 12,
+                "start": 3
+              },
+              "data": {
+                "value": "x^2 + y^2"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 13,
+                "start": 12
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 15,
+                "start": 13
+              },
+              "data": {
+                "value": "$$"
+              }
+            }
+          ],
+          "source": "$$\nx^2 + y^2\n$$"
+        }
+      }
+    },
+    "name": "block math",
+    "source": "$$\nx^2 + y^2\n$$"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_generic_contracts::table::TableData",
+              "span": {
+                "end": 52,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_generic_contracts::table::RowData",
+                  "span": {
+                    "end": 17,
+                    "start": 0
+                  },
+                  "data": {
+                    "header": true
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_generic_contracts::table::CellData",
+                      "span": {
+                        "end": 6,
+                        "start": 2
+                      },
+                      "data": {
+                        "alignment": "left"
+                      },
+                      "children": [
+                        {
+                          "kind": "markdown_commonmark_contracts::nodes::Text",
+                          "span": {
+                            "end": 6,
+                            "start": 2
+                          },
+                          "data": {
+                            "value": "left"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "markdown_generic_contracts::table::CellData",
+                      "span": {
+                        "end": 14,
+                        "start": 9
+                      },
+                      "data": {
+                        "alignment": "right"
+                      },
+                      "children": [
+                        {
+                          "kind": "markdown_commonmark_contracts::nodes::Text",
+                          "span": {
+                            "end": 14,
+                            "start": 9
+                          },
+                          "data": {
+                            "value": "right"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_generic_contracts::table::RowData",
+                  "span": {
+                    "end": 52,
+                    "start": 33
+                  },
+                  "data": {
+                    "header": false
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_generic_contracts::table::CellData",
+                      "span": {
+                        "end": 42,
+                        "start": 35
+                      },
+                      "data": {
+                        "alignment": "left"
+                      },
+                      "children": [
+                        {
+                          "kind": "markdown_commonmark_contracts::nodes::Strong",
+                          "span": {
+                            "end": 42,
+                            "start": 35
+                          },
+                          "data": {},
+                          "children": [
+                            {
+                              "kind": "markdown_commonmark_contracts::nodes::Text",
+                              "span": {
+                                "end": 40,
+                                "start": 37
+                              },
+                              "data": {
+                                "value": "one"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "markdown_generic_contracts::table::CellData",
+                      "span": {
+                        "end": 50,
+                        "start": 45
+                      },
+                      "data": {
+                        "alignment": "right"
+                      },
+                      "children": [
+                        {
+                          "kind": "markdown_generic_contracts::math::InlineMathData",
+                          "span": {
+                            "end": 50,
+                            "start": 45
+                          },
+                          "data": {
+                            "tex": "two"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "| left | right |\n| :--- | ---: |\n| **one** | $two$ |"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 16,
+                "start": 0
+              },
+              "data": {
+                "value": "| left | right |"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 17,
+                "start": 16
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 32,
+                "start": 17
+              },
+              "data": {
+                "value": "| :--- | ---: |"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 33,
+                "start": 32
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 35,
+                "start": 33
+              },
+              "data": {
+                "value": "| "
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Strong",
+              "span": {
+                "end": 42,
+                "start": 35
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 40,
+                    "start": 37
+                  },
+                  "data": {
+                    "value": "one"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 45,
+                "start": 42
+              },
+              "data": {
+                "value": " | "
+              }
+            },
+            {
+              "kind": "markdown_generic_contracts::math::InlineMathData",
+              "span": {
+                "end": 50,
+                "start": 45
+              },
+              "data": {
+                "tex": "two"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 52,
+                "start": 50
+              },
+              "data": {
+                "value": " |"
+              }
+            }
+          ],
+          "source": "| left | right |\n| :--- | ---: |\n| **one** | $two$ |"
+        }
+      }
+    },
+    "name": "table",
+    "source": "| left | right |\n| :--- | ---: |\n| **one** | $two$ |"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 29,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_trap_contracts::stamp::StampData",
+                  "span": {
+                    "end": 7,
+                    "start": 0
+                  },
+                  "data": {
+                    "literal": ":stamp:"
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 8,
+                    "start": 7
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_trap_contracts::stamp::StampData",
+                  "span": {
+                    "end": 21,
+                    "start": 8
+                  },
+                  "data": {
+                    "literal": ":stamp.large:"
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 22,
+                    "start": 21
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_trap_contracts::stamp::StampData",
+                  "span": {
+                    "end": 29,
+                    "start": 22
+                  },
+                  "data": {
+                    "literal": ":@user:"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": ":stamp: :stamp.large: :@user:"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_trap_contracts::stamp::StampData",
+              "span": {
+                "end": 7,
+                "start": 0
+              },
+              "data": {
+                "literal": ":stamp:"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 8,
+                "start": 7
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_trap_contracts::stamp::StampData",
+              "span": {
+                "end": 21,
+                "start": 8
+              },
+              "data": {
+                "literal": ":stamp.large:"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 22,
+                "start": 21
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_trap_contracts::stamp::StampData",
+              "span": {
+                "end": 29,
+                "start": 22
+              },
+              "data": {
+                "literal": ":@user:"
+              }
+            }
+          ],
+          "source": ":stamp: :stamp.large: :@user:"
+        }
+      }
+    },
+    "name": "stamp",
+    "source": ":stamp: :stamp.large: :@user:"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 45,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_trap_contracts::reference::ReferenceData",
+                  "span": {
+                    "end": 45,
+                    "start": 0
+                  },
+                  "data": {
+                    "id": "user-id",
+                    "label": "@user",
+                    "type": "user"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "!{\"type\":\"user\",\"id\":\"user-id\",\"raw\":\"@user\"}"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_trap_contracts::reference::ReferenceData",
+              "span": {
+                "end": 45,
+                "start": 0
+              },
+              "data": {
+                "id": "user-id",
+                "label": "@user",
+                "type": "user"
+              }
+            }
+          ],
+          "source": "!{\"type\":\"user\",\"id\":\"user-id\",\"raw\":\"@user\"}"
+        }
+      }
+    },
+    "name": "user reference",
+    "source": "!{\"type\":\"user\",\"id\":\"user-id\",\"raw\":\"@user\"}"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 48,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_trap_contracts::reference::ReferenceData",
+                  "span": {
+                    "end": 48,
+                    "start": 0
+                  },
+                  "data": {
+                    "id": "group-id",
+                    "label": "@group",
+                    "type": "group"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "!{\"type\":\"group\",\"id\":\"group-id\",\"raw\":\"@group\"}"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_trap_contracts::reference::ReferenceData",
+              "span": {
+                "end": 48,
+                "start": 0
+              },
+              "data": {
+                "id": "group-id",
+                "label": "@group",
+                "type": "group"
+              }
+            }
+          ],
+          "source": "!{\"type\":\"group\",\"id\":\"group-id\",\"raw\":\"@group\"}"
+        }
+      }
+    },
+    "name": "group reference",
+    "source": "!{\"type\":\"group\",\"id\":\"group-id\",\"raw\":\"@group\"}"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 54,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_trap_contracts::reference::ReferenceData",
+                  "span": {
+                    "end": 54,
+                    "start": 0
+                  },
+                  "data": {
+                    "id": "channel-id",
+                    "label": "#channel",
+                    "type": "channel"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "!{\"type\":\"channel\",\"id\":\"channel-id\",\"raw\":\"#channel\"}"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_trap_contracts::reference::ReferenceData",
+              "span": {
+                "end": 54,
+                "start": 0
+              },
+              "data": {
+                "id": "channel-id",
+                "label": "#channel",
+                "type": "channel"
+              }
+            }
+          ],
+          "source": "!{\"type\":\"channel\",\"id\":\"channel-id\",\"raw\":\"#channel\"}"
+        }
+      }
+    },
+    "name": "channel reference",
+    "source": "!{\"type\":\"channel\",\"id\":\"channel-id\",\"raw\":\"#channel\"}"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 48,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::InlineCode",
+                  "span": {
+                    "end": 48,
+                    "start": 0
+                  },
+                  "data": {
+                    "literal": "!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "`!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}`"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::InlineCode",
+              "span": {
+                "end": 48,
+                "start": 0
+              },
+              "data": {
+                "literal": "!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}"
+              }
+            }
+          ],
+          "source": "`!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}`"
+        }
+      }
+    },
+    "name": "opaque code",
+    "source": "`!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}`"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::CodeBlock",
+              "span": {
+                "end": 54,
+                "start": 0
+              },
+              "data": {
+                "fenced": true,
+                "info": "",
+                "literal": "!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}\n"
+              }
+            }
+          ],
+          "source": "```\n!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}\n```"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::InlineCode",
+              "span": {
+                "end": 54,
+                "start": 0
+              },
+              "data": {
+                "literal": "!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}"
+              }
+            }
+          ],
+          "source": "```\n!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}\n```"
+        }
+      }
+    },
+    "name": "opaque fence",
+    "source": "```\n!{\"type\":\"user\",\"id\":\"hidden\",\"raw\":\"@hidden\"}\n```"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 41,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 41,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "!{\"type\":\"unknown\",\"id\":\"x\",\"raw\":\"text\"}"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "!{\"type\":\"unknown\",\"id\":\"x\",\"raw\":\"text\"}"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 41,
+                "start": 0
+              },
+              "data": {
+                "value": "!{\"type\":\"unknown\",\"id\":\"x\",\"raw\":\"text\"}"
+              }
+            }
+          ],
+          "source": "!{\"type\":\"unknown\",\"id\":\"x\",\"raw\":\"text\"}"
+        }
+      }
+    },
+    "name": "invalid reference",
+    "source": "!{\"type\":\"unknown\",\"id\":\"x\",\"raw\":\"text\"}"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 15,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 15,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "!{\"type\":\"user\""
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "!{\"type\":\"user\""
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 15,
+                "start": 0
+              },
+              "data": {
+                "value": "!{\"type\":\"user\""
+              }
+            }
+          ],
+          "source": "!{\"type\":\"user\""
+        }
+      }
+    },
+    "name": "invalid json",
+    "source": "!{\"type\":\"user\""
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 51,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 11,
+                    "start": 0
+                  },
+                  "data": {
+                    "destination": "http://example.com",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 11,
+                        "start": 0
+                      },
+                      "data": {
+                        "value": "example.com"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 12,
+                    "start": 11
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 37,
+                    "start": 12
+                  },
+                  "data": {
+                    "destination": "https://example.com/a_(b)",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 37,
+                        "start": 12
+                      },
+                      "data": {
+                        "value": "https://example.com/a_(b)"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 38,
+                    "start": 37
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 51,
+                    "start": 38
+                  },
+                  "data": {
+                    "destination": "mailto:a@example.com",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 51,
+                        "start": 38
+                      },
+                      "data": {
+                        "value": "a@example.com"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "example.com https://example.com/a_(b) a@example.com"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 11,
+                "start": 0
+              },
+              "data": {
+                "destination": "http://example.com",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 11,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "example.com"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 12,
+                "start": 11
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 37,
+                "start": 12
+              },
+              "data": {
+                "destination": "https://example.com/a_(b)",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 37,
+                    "start": 12
+                  },
+                  "data": {
+                    "value": "https://example.com/a_(b)"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 38,
+                "start": 37
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 51,
+                "start": 38
+              },
+              "data": {
+                "destination": "mailto:a@example.com",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 51,
+                    "start": 38
+                  },
+                  "data": {
+                    "value": "a@example.com"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "example.com https://example.com/a_(b) a@example.com"
+        }
+      }
+    },
+    "name": "text links",
+    "source": "example.com https://example.com/a_(b) a@example.com"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 43,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 1,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "("
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 25,
+                    "start": 1
+                  },
+                  "data": {
+                    "destination": "https://example.com/path",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 25,
+                        "start": 1
+                      },
+                      "data": {
+                        "value": "https://example.com/path"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 28,
+                    "start": 25
+                  },
+                  "data": {
+                    "value": "). "
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 43,
+                    "start": 28
+                  },
+                  "data": {
+                    "destination": "mailto:a@example.com",
+                    "form": "autolink",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 42,
+                        "start": 29
+                      },
+                      "data": {
+                        "value": "a@example.com"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "(https://example.com/path). <a@example.com>"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 1,
+                "start": 0
+              },
+              "data": {
+                "value": "("
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 25,
+                "start": 1
+              },
+              "data": {
+                "destination": "https://example.com/path",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 25,
+                    "start": 1
+                  },
+                  "data": {
+                    "value": "https://example.com/path"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 28,
+                "start": 25
+              },
+              "data": {
+                "value": "). "
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 43,
+                "start": 28
+              },
+              "data": {
+                "destination": "mailto:a@example.com",
+                "form": "autolink",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 42,
+                    "start": 29
+                  },
+                  "data": {
+                    "value": "a@example.com"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "(https://example.com/path). <a@example.com>"
+        }
+      }
+    },
+    "name": "link punctuation",
+    "source": "(https://example.com/path). <a@example.com>"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 40,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 40,
+                    "start": 0
+                  },
+                  "data": {
+                    "destination": "https://example.com",
+                    "form": "explicit",
+                    "title": "title"
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Strong",
+                      "span": {
+                        "end": 10,
+                        "start": 1
+                      },
+                      "data": {},
+                      "children": [
+                        {
+                          "kind": "markdown_commonmark_contracts::nodes::Text",
+                          "span": {
+                            "end": 8,
+                            "start": 3
+                          },
+                          "data": {
+                            "value": "label"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "[**label**](https://example.com \"title\")"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 40,
+                "start": 0
+              },
+              "data": {
+                "destination": "https://example.com",
+                "form": "explicit",
+                "title": "title"
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Strong",
+                  "span": {
+                    "end": 10,
+                    "start": 1
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 8,
+                        "start": 3
+                      },
+                      "data": {
+                        "value": "label"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "[**label**](https://example.com \"title\")"
+        }
+      }
+    },
+    "name": "explicit links",
+    "source": "[**label**](https://example.com \"title\")"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 37,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 1,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "!"
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Link",
+                  "span": {
+                    "end": 37,
+                    "start": 1
+                  },
+                  "data": {
+                    "destination": "https://example.com/image.png",
+                    "form": "explicit",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 5,
+                        "start": 2
+                      },
+                      "data": {
+                        "value": "alt"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "![alt](https://example.com/image.png)"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 1,
+                "start": 0
+              },
+              "data": {
+                "value": "!"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Link",
+              "span": {
+                "end": 37,
+                "start": 1
+              },
+              "data": {
+                "destination": "https://example.com/image.png",
+                "form": "explicit",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 5,
+                    "start": 2
+                  },
+                  "data": {
+                    "value": "alt"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "![alt](https://example.com/image.png)"
+        }
+      }
+    },
+    "name": "images",
+    "source": "![alt](https://example.com/image.png)"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 28,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 27,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "<script>alert('x')</script>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 44,
+                "start": 29
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 44,
+                    "start": 29
+                  },
+                  "data": {
+                    "value": "<div>text</div>"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "<script>alert('x')</script>\n\n<div>text</div>"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 27,
+                "start": 0
+              },
+              "data": {
+                "value": "<script>alert('x')</script>"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 28,
+                "start": 27
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 29,
+                "start": 28
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 44,
+                "start": 29
+              },
+              "data": {
+                "value": "<div>text</div>"
+              }
+            }
+          ],
+          "source": "<script>alert('x')</script>\n\n<div>text</div>"
+        }
+      }
+    },
+    "name": "literal html",
+    "source": "<script>alert('x')</script>\n\n<div>text</div>"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 4,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 3,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "one"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_trap_contracts::compat::BlankLineData",
+              "span": {
+                "end": 6,
+                "start": 5
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 12,
+                "start": 6
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 11,
+                    "start": 6
+                  },
+                  "data": {
+                    "value": "three"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "one\n\n\nthree\n"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 3,
+                "start": 0
+              },
+              "data": {
+                "value": "one"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 4,
+                "start": 3
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 5,
+                "start": 4
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 6,
+                "start": 5
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 11,
+                "start": 6
+              },
+              "data": {
+                "value": "three"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 12,
+                "start": 11
+              },
+              "data": {}
+            }
+          ],
+          "source": "one\n\n\nthree\n"
+        }
+      }
+    },
+    "name": "blank lines",
+    "source": "one\n\n\nthree\n"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::List",
+              "span": {
+                "end": 25,
+                "start": 0
+              },
+              "data": {
+                "ordered": false,
+                "start": 1,
+                "tight": true
+              },
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::ListItem",
+                  "span": {
+                    "end": 25,
+                    "start": 0
+                  },
+                  "data": {
+                    "marker": "-"
+                  },
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+                      "span": {
+                        "end": 10,
+                        "start": 2
+                      },
+                      "data": {},
+                      "children": [
+                        {
+                          "kind": "markdown_commonmark_contracts::nodes::Text",
+                          "span": {
+                            "end": 8,
+                            "start": 2
+                          },
+                          "data": {
+                            "value": "parent"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::List",
+                      "span": {
+                        "end": 25,
+                        "start": 10
+                      },
+                      "data": {
+                        "ordered": false,
+                        "start": 1,
+                        "tight": true
+                      },
+                      "children": [
+                        {
+                          "kind": "markdown_commonmark_contracts::nodes::ListItem",
+                          "span": {
+                            "end": 25,
+                            "start": 10
+                          },
+                          "data": {
+                            "marker": "-"
+                          },
+                          "children": [
+                            {
+                              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+                              "span": {
+                                "end": 25,
+                                "start": 13
+                              },
+                              "data": {},
+                              "children": [
+                                {
+                                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                                  "span": {
+                                    "end": 18,
+                                    "start": 13
+                                  },
+                                  "data": {
+                                    "value": "child"
+                                  }
+                                },
+                                {
+                                  "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+                                  "span": {
+                                    "end": 21,
+                                    "start": 18
+                                  },
+                                  "data": {}
+                                },
+                                {
+                                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                                  "span": {
+                                    "end": 25,
+                                    "start": 21
+                                  },
+                                  "data": {
+                                    "value": "code"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "- parent\n \t- child\n\t\tcode"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 8,
+                "start": 0
+              },
+              "data": {
+                "value": "- parent"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 11,
+                "start": 8
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 18,
+                "start": 11
+              },
+              "data": {
+                "value": "- child"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 21,
+                "start": 18
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 25,
+                "start": 21
+              },
+              "data": {
+                "value": "code"
+              }
+            }
+          ],
+          "source": "- parent\n \t- child\n\t\tcode"
+        }
+      }
+    },
+    "name": "mixed tab indent",
+    "source": "- parent\n \t- child\n\t\tcode"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 27,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 13,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": "日本語🦀"
+                  }
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+                  "span": {
+                    "end": 15,
+                    "start": 13
+                  },
+                  "data": {}
+                },
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Strong",
+                  "span": {
+                    "end": 25,
+                    "start": 15
+                  },
+                  "data": {},
+                  "children": [
+                    {
+                      "kind": "markdown_commonmark_contracts::nodes::Text",
+                      "span": {
+                        "end": 23,
+                        "start": 17
+                      },
+                      "data": {
+                        "value": "本文"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "source": "日本語🦀\r\n**本文**\r\n"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 13,
+                "start": 0
+              },
+              "data": {
+                "value": "日本語🦀"
+              }
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 15,
+                "start": 13
+              },
+              "data": {}
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Strong",
+              "span": {
+                "end": 25,
+                "start": 15
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 23,
+                    "start": 17
+                  },
+                  "data": {
+                    "value": "本文"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Softbreak",
+              "span": {
+                "end": 27,
+                "start": 25
+              },
+              "data": {}
+            }
+          ],
+          "source": "日本語🦀\r\n**本文**\r\n"
+        }
+      }
+    },
+    "name": "unicode and newlines",
+    "source": "日本語🦀\r\n**本文**\r\n"
+  },
+  {
+    "expected": {
+      "block": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Paragraph",
+              "span": {
+                "end": 29,
+                "start": 0
+              },
+              "data": {},
+              "children": [
+                {
+                  "kind": "markdown_commonmark_contracts::nodes::Text",
+                  "span": {
+                    "end": 29,
+                    "start": 0
+                  },
+                  "data": {
+                    "value": ":stamp: & 🦀 $x$"
+                  }
+                }
+              ]
+            }
+          ],
+          "source": "\\:stamp: &amp; &#x1f980; \\$x$"
+        }
+      },
+      "inline": {
+        "Ok": {
+          "children": [
+            {
+              "kind": "markdown_commonmark_contracts::nodes::Text",
+              "span": {
+                "end": 29,
+                "start": 0
+              },
+              "data": {
+                "value": ":stamp: & 🦀 $x$"
+              }
+            }
+          ],
+          "source": "\\:stamp: &amp; &#x1f980; \\$x$"
+        }
+      }
+    },
+    "name": "escaping",
+    "source": "\\:stamp: &amp; &#x1f980; \\$x$"
+  }
+]

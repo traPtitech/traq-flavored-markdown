@@ -1,0 +1,16 @@
+github.com/tetratelabs/wazero v1.12.0 h1:DuWcpNu/FzgEXgGBDp8J1Spc+CWOvvtvVyjKlaZopYU=
+github.com/tetratelabs/wazero v1.12.0/go.mod h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=
+github.com/traq-markdown-parser/commonmark/go v0.0.0-20260909023357-6ddda2244a2b h1:5e9aQnMsv7kDWa82+DplPablp9GXfUYDwFYdxpdjPmo=
+github.com/traq-markdown-parser/commonmark/go v0.0.0-20260909023357-6ddda2244a2b/go.mod h1:sgtb4r1X0zJCuw8T/qaKxzxXdPia+nFM8JryxySf/MY=
+github.com/traq-markdown-parser/core/go v0.0.0-20260909023020-0e76f9ecfebd h1:J7aiojEH9Cm7WTPBeTCfB5u63s7bA741weClEhP8LfU=
+github.com/traq-markdown-parser/core/go v0.0.0-20260909023020-0e76f9ecfebd/go.mod h1:5fW1PZxUAfzp1h5npW23Dzsx2MexgTeYUsqCEoaGycs=
+github.com/traq-markdown-parser/core/go v0.0.0-20260909075748-a297da3b092a h1:M1K4f1NgwReG+htNuuK33G5/vX0DujDcWXVI5e+NDIA=
+github.com/traq-markdown-parser/core/go v0.0.0-20260909075748-a297da3b092a/go.mod h1:5fW1PZxUAfzp1h5npW23Dzsx2MexgTeYUsqCEoaGycs=
+github.com/traq-markdown-parser/trap-extension/go v0.0.0-20260909023357-7826209493d8 h1:in5Y9aDExYRpBYKOxDBDtSEXNV0VXQcD+v3mxOpvZpE=
+github.com/traq-markdown-parser/trap-extension/go v0.0.0-20260909023357-7826209493d8/go.mod h1:IKElG9O4QP909rvNzZt/YuOrLRBvxYRh11AnXqsQZUw=
+github.com/traq-markdown-parser/trap-extension/go v0.0.0-20260909024215-7121c920ae44 h1:rApzCwpsCDwh1BvsglyU7lixhINgMJOiwE/sUabz3Ik=
+github.com/traq-markdown-parser/trap-extension/go v0.0.0-20260909024215-7121c920ae44/go.mod h1:IKElG9O4QP909rvNzZt/YuOrLRBvxYRh11AnXqsQZUw=
+github.com/traq-markdown-parser/trap-extension/go v0.0.0-20260909025436-c7ed47d47397 h1:4r9BHay4iy0luDYNaXg/qiaEIbbBhX2vNCs5OLLl2Zg=
+github.com/traq-markdown-parser/trap-extension/go v0.0.0-20260909025436-c7ed47d47397/go.mod h1:IKElG9O4QP909rvNzZt/YuOrLRBvxYRh11AnXqsQZUw=
+golang.org/x/sys v0.44.0 h1:ildZl3J4uzeKP07r2F++Op7E9B29JRUy+a27EibtBTQ=
+golang.org/x/sys v0.44.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=

@@ -1,0 +1,92 @@
+{
+  "name": "@traq-markdown-parser/traq",
+  "version": "0.1.0",
+  "private": true,
+  "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./nodes": {
+      "types": "./dist/generated/nodes.d.ts",
+      "import": "./dist/generated/nodes.js"
+    },
+    "./parser.wasm": "./dist/parser.wasm",
+    "./contract.json": "./dist/contract.json",
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "import": "./dist/renderer/index.js"
+    },
+    "./index.css": "./dist/index.css",
+    "./styles/*": "./styles/*.scss"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/embedding.js",
+    "dist/embedding.d.ts",
+    "dist/generated",
+    "dist/parser.wasm",
+    "dist/contract.json",
+    "THIRD_PARTY_NOTICES.md",
+    "dist/renderer",
+    "dist/index.css",
+    "LICENSE",
+    "styles"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test typescript/tests/*.test.mjs && node --test typescript/tests/rendering/*.test.mjs",
+    "typecheck": "tsc -p typescript/tsconfig.json --noEmit && tsc -p examples/typescript/tsconfig.json",
+    "test:rust": "cargo test --workspace --all-features",
+    "test:go": "go -C go test -count=1 ./...",
+    "example:rust": "cargo run -p traq-markdown-example && cargo run -p traq-markdown-grammar --example parse && cargo run -p traq-markdown-processing --example notification && cargo run -p traq-markdown-processing --example compose-text",
+    "example:go": "go -C examples/go run .",
+    "example:ts": "node examples/typescript/main.mts",
+    "examples": "npm run example:rust && npm run example:go && npm run example:ts",
+    "check:package": "node scripts/package-check.mjs",
+    "check:architecture": "node scripts/check-js-boundaries.mjs",
+    "build:ts": "tsc -p typescript/tsconfig.build.json",
+    "build:renderer": "sass --no-source-map styles/index.scss dist/index.css",
+    "check:rendering": "node scripts/check-rendering.mjs",
+    "corpus:collect": "node scripts/corpus/fetch.mjs",
+    "corpus:compare": "node scripts/corpus/compare.mjs",
+    "corpus:report": "node scripts/corpus/report.mjs",
+    "test:corpus": "node --test scripts/corpus/*.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traq-markdown-parser/traq.git"
+  },
+  "author": "traP (https://github.com/traPtitech)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/traq-markdown-parser/traq/issues"
+  },
+  "homepage": "https://github.com/traq-markdown-parser/traq#readme",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "devDependencies": {
+    "@traq-markdown-parser/commonmark": "file:../commonmark",
+    "@traq-markdown-parser/core": "file:../core",
+    "@traq-markdown-parser/trap-extension": "file:../trap-extension",
+    "@types/node": "26.3.0",
+    "esbuild": "^0.25.12",
+    "jest-diff": "^30.2.0",
+    "markdown-it": "^14.1.0",
+    "parse5": "^7.3.0",
+    "sass": "^1.97.3",
+    "typescript": "6.0.3"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@traq-markdown-parser/commonmark": "^0.1.0",
+    "@traq-markdown-parser/core": "^0.1.0",
+    "@traq-markdown-parser/trap-extension": "^0.1.0"
+  }
+}

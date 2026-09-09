@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".."
+  },
+  "include": [
+    "index.ts",
+    "generated/**/*.ts",
+    "tests/package-consumer/*.ts",
+    "../examples/typescript/*.mts",
+    "renderer/**/*.ts",
+    "tests/rendering/types.ts"
+  ]
+}

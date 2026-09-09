@@ -1,0 +1,56 @@
+name: traQ Markdown CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    defaults:
+      run:
+        working-directory: traq
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: traq
+      - uses: actions/checkout@v6
+        with:
+          repository: traq-markdown-parser/core
+          path: core
+      - uses: actions/checkout@v6
+        with:
+          repository: traq-markdown-parser/commonmark
+          path: commonmark
+      - uses: actions/checkout@v6
+        with:
+          repository: traq-markdown-parser/trap-extension
+          path: trap-extension
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: traq/package-lock.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: traq/go/go.mod
+          cache-dependency-path: traq/go/go.sum
+      - run: npm ci && npm run build
+        working-directory: core
+      - run: npm ci && npm run build
+        working-directory: commonmark
+      - run: npm ci && npm run build
+        working-directory: trap-extension
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run test:rust
+      - run: npm run test:go
+      - run: npm run examples
+      - run: npm run check:architecture
+      - run: npm run check:package
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+      - run: git diff --exit-code -- typescript/generated go/*_generated.go
