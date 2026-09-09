@@ -10,24 +10,62 @@ permissions:
   contents: read
 
 jobs:
-  format:
+  install:
+    name: Validate Bun lockfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v7
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 24
-          cache: npm
+          bun-version: 1.3.14
+      - run: bun ci
+
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
       - uses: actions/setup-go@v7
         with:
           go-version: 1.26.0
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - run: npm ci
-      - run: npm run format:check
+      - name: Restore Prettier cache
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.cache/prettier
+          key: prettier-cache-${{ runner.os }}-${{ hashFiles('prettier.config.*', '.prettierignore', 'bun.lock', 'package.json', 'packages/*/package.json') }}
+          restore-keys: |
+            prettier-cache-${{ runner.os }}-
+      - run: bun ci
+      - run: bun run prettier --cache --check .
+      - run: bun run format:rust:check
+      - run: bun run format:go:check
 
-  test:
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Restore ESLint cache
+        uses: actions/cache@v6
+        with:
+          path: .eslintcache
+          key: eslint-cache-${{ runner.os }}-${{ hashFiles('eslint.config.*', 'bun.lock') }}
+          restore-keys: |
+            eslint-cache-${{ runner.os }}-
+      - run: bun ci
+      - run: bun run lint:check
+
+  typescript:
+    name: TypeScript (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -37,17 +75,72 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v7
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            packages/*/package-lock.json
+          bun-version: 1.3.14
       - uses: actions/setup-go@v7
         with:
           go-version: 1.26.0
-          cache-dependency-path: packages/**/go.sum
       - uses: dtolnay/rust-toolchain@stable
-      - run: npm ci
-      - run: npm run ci
+      - run: bun ci
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run test:typescript
+
+  rust:
+    name: Rust (${{ matrix.package }})
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - commonmark
+          - core
+          - trap-extension
+          - traq
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --manifest-path packages/${{ matrix.package }}/Cargo.toml --locked --workspace --all-features
+      - run: cargo clippy --manifest-path packages/${{ matrix.package }}/Cargo.toml --locked --workspace --all-targets --all-features -- -D warnings
+
+  go:
+    name: Go (${{ matrix.module }})
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - packages/commonmark/go
+          - packages/core/go
+          - packages/trap-extension/go
+          - packages/traq/go
+          - packages/traq/examples/go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.26.0
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+      - run: go -C ${{ matrix.module }} test ./...
+
+  generated:
+    name: Validate generated bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.26.0
+      - uses: dtolnay/rust-toolchain@stable
+      - run: bun ci
+      - run: cargo fetch --locked --manifest-path packages/commonmark/Cargo.toml
+      - run: cargo fetch --locked --manifest-path packages/core/Cargo.toml
+      - run: cargo fetch --locked --manifest-path packages/trap-extension/Cargo.toml
+      - run: cargo fetch --locked --manifest-path packages/traq/Cargo.toml
+      - run: bun run build:traq
+      - run: bun run generate:bindings
+      - run: bun run scripts/check-generated.ts

@@ -37,6 +37,7 @@ impl Extractor {
         if options.origin.len() > 2048 {
             return Err("origin_limit");
         }
+
         Ok(Self {
             extractor: ReferenceExtractor::new(&traq::references::preset()?),
             message: traq::message::Extractor::new(&options.origin),
@@ -46,6 +47,7 @@ impl Extractor {
     pub fn extract(&self, document: &Document) -> Result<Extraction, String> {
         let references = self.extractor.extract(document)?;
         let message = self.message.extract(document)?;
+
         Ok(Extraction {
             message_text: message.plain_text,
             attachments: message.attachments,

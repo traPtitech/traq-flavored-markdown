@@ -34,7 +34,7 @@
   "scripts": {
     "build": "tsc -p typescript/tsconfig.json",
     "typecheck": "tsc -p typescript/tsconfig.json --noEmit",
-    "generate:bindings": "node scripts/generate-bindings.mjs"
+    "generate:bindings": "bun run ../../scripts/generate-bindings.ts trap-extension"
   },
   "peerDependencies": {
     "@traq-markdown-parser/core": "^0.1.0",
@@ -43,7 +43,7 @@
   "devDependencies": {
     "typescript": "6.0.3",
     "@types/node": "26.3.0",
-    "@traq-markdown-parser/core": "file:../core",
-    "@traq-markdown-parser/commonmark": "file:../commonmark"
+    "@traq-markdown-parser/core": "workspace:*",
+    "@traq-markdown-parser/commonmark": "workspace:*"
   }
 }

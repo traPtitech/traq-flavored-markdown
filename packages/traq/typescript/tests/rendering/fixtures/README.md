@@ -10,4 +10,4 @@ Rust parser as the direct HTML renderer.
 
 The cases cover blank-line nodes after paragraphs in tight bullet, ordered, and
 nested lists, consecutive blank-line nodes, and a loose-list control. They run
-with `npm test`; the private corpus is not required.
+with `bun test`; the private corpus is not required.

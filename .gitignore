@@ -1,4 +1,15 @@
-node_modules/
-coverage/
-dist/
-target/
+# Dependencies and build output
+**/node_modules/
+**/coverage/
+**/dist/
+**/target/
+*.tsbuildinfo
+.eslintcache
+
+# Local-only files
+**/.private/
+**/.env
+**/.env.*
+*.log
+.DS_Store
+Thumbs.db

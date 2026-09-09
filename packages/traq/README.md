@@ -23,17 +23,17 @@ trap-extension にあります。このリポジトリがそれらに依存し�
 
 ## ビルド
 
-Node.js 24 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target は `rust-toolchain.toml` で固定しています。
+Bun 1.3.14 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target は `rust-toolchain.toml` で固定しています。
 
 ```sh
-npm ci
-npm run build
-npm run examples
+bun install --frozen-lockfile
+bun run build
+bun run examples
 ```
 
-Rust の依存は Cargo が固定した Git revision を取得します。TypeScript のローカルビルドでは、同じ親ディレクトリに core・commonmark・trap-extension を置き、依存順に `npm ci` と `npm run build` を実行しておきます。Wasm・JavaScript・型定義は `dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
+Rust の依存は Cargo が固定した Git revision を取得します。TypeScript のローカルビルドでは、同じ親ディレクトリに core・commonmark・trap-extension を置き、依存順に `bun install --frozen-lockfile` と `bun run build` を実行しておきます。Wasm・JavaScript・型定義は `dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
 
-まだレジストリへ公開していません。TypeScript は4パッケージの `npm pack` アーカイブを利用できます。
+まだレジストリへ公開していません。TypeScript は4パッケージの `bun pm pack` アーカイブを利用できます。
 
 ## TypeScript
 
@@ -162,16 +162,16 @@ Extractor は参照・添付 ID・引用 ID・埋め込み編集計画と、Mark
 
 TypeScript の実装は各リポジトリの責務に合わせて配置しています。
 
-| npm package                            | 責務                                                                   |
+| TypeScript package                     | 責務                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------- |
 | `@traq-markdown-parser/core`           | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
 | `@traq-markdown-parser/commonmark`     | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
 | `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
 | `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・condensed 表示・CSS      |
 
-ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `npm install`・`npm run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `npm run check:package` で4パッケージを pack し、独立した consumer で実行します。
+ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `bun install`・`bun run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `bun run check:package` で4パッケージを pack し、独立した consumer で実行します。
 
-AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `npm run generate:bindings` でそれぞれの契約 crate から再生成できます。
+AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
 
 HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer` の `messageRenderers`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
 
@@ -195,7 +195,7 @@ Wasm の起動は利用側が明示的に行います。`/renderer` を import �
 
 ## Corpus comparison
 
-Use `npm run corpus:collect`, `npm run corpus:compare`, and `npm run corpus:report` to collect messages and generate offline HTML/MHTML difference reports. See [Corpus comparison](docs/CORPUS.md) for inputs, options, and output files.
+Use `bun run corpus:collect`, `bun run corpus:compare`, and `bun run corpus:report` to collect messages and generate offline HTML/MHTML difference reports. See [Corpus comparison](docs/CORPUS.md) for inputs, options, and output files.
 
 Go consumers use `github.com/traq-markdown-parser/traq/go` for presets and artifact pairing. Shared AST/transport live in the core Go module; payload factories live in commonmark and trap-extension. `Extractor.Extract` returns source-preserving message text, references, embedding edits, attachment IDs and citation IDs from the supplied Document. `PlainTextRenderer.Render` independently renders that Document for notifications.
 

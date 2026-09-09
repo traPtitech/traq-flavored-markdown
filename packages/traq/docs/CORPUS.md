@@ -1,12 +1,12 @@
 # Corpus comparison
 
-Run these commands from the `traq` repository after building the four sibling packages with Node.js 24+, Rust, and Go installed. The comparison installs the old renderer at the version locked by S-UI and builds the old Go parser from the selected traQ commit. The defaults use `../../traPtitech/traQ` and `../../traPtitech/traQ_S-UI`; override these paths when your checkouts are elsewhere.
+Run these commands from the `traq` repository after building the four sibling packages with Bun 1.3.14+, Rust, and Go installed. The comparison installs the old renderer at the version locked by S-UI and builds the old Go parser from the selected traQ commit. The defaults use `../../traPtitech/traQ` and `../../traPtitech/traQ_S-UI`; override these paths when your checkouts are elsewhere.
 
 ```sh
-npm run corpus:collect -- --env-file /absolute/path/to/credentials.env --out .private/corpora/sample --max-messages 100000
-npm run corpus:compare -- --corpus .private/corpora/sample/messages.jsonl --traq /path/to/traQ --sui /path/to/traQ_S-UI --origin https://q.trap.jp
-npm run corpus:report -- --data .private/corpora/comparison --format both
-npm run test:corpus
+bun run corpus:collect -- --env-file /absolute/path/to/credentials.env --out .private/corpora/sample --max-messages 100000
+bun run corpus:compare -- --corpus .private/corpora/sample/messages.jsonl --traq /path/to/traQ --sui /path/to/traQ_S-UI --origin https://q.trap.jp
+bun run corpus:report -- --data .private/corpora/comparison --format both
+bun run test:corpus
 ```
 
 The credential file contains `TRAQ_API_BASE_URL` and `BOT_ACCESS_TOKEN`. Alternatively pass `--base-url` and `--token-file`; the latter is a file containing only the token. Collection only makes GET requests, samples public channels in deterministic channel order, and defaults to at most 100,000 messages and 2,000 messages per channel. `--until`, `--max-channels`, `--channel-offset`, and `--per-channel` control sampling. An existing `messages.jsonl` is never overwritten.

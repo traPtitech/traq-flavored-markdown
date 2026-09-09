@@ -1,0 +1,180 @@
+import assert from 'node:assert/strict'
+
+import {
+  embeddingFromUrl,
+  endsWithEmbedding,
+  messageRenderers
+} from '@traq-markdown-parser/traq/renderer'
+import { test } from 'bun:test'
+
+import { commonParser, parser } from './setup.ts'
+
+const origin = 'https://q.example.test',
+  fileId = '00000000-0000-0000-0000-000000000001',
+  messageId = '00000000-0000-0000-0000-000000000002'
+
+const file = origin + '/files/' + fileId,
+  quote = origin + '/messages/' + messageId
+const view = messageRenderers({ origin })
+
+test('message rendering extracts cards, trims trailing bare links, and keeps the AST reusable', () => {
+  const source = '本文\n' + file + '\n' + quote,
+    document = parser.parse(source),
+    snapshot = structuredClone(document)
+  assert.deepEqual(Object.keys(view).sort(), ['condensed', 'standard'])
+  for (const renderer of Object.values(view))
+    assert.deepEqual(Object.keys(renderer), ['render'])
+  const normal = view.standard.render(document),
+    condensed = view.condensed.render(document)
+  assert.equal(normal.renderedText, '<p>本文</p>\n')
+  assert.equal(condensed.renderedText, '本文')
+  assert.equal(normal.rawText, source)
+  assert.deepEqual(normal.embeddings, [
+    { type: 'file', id: fileId },
+    { type: 'message', id: messageId }
+  ])
+  assert.deepEqual(condensed.embeddings, normal.embeddings)
+  assert.deepEqual(document, snapshot)
+  assert.equal(view.standard.render(document).renderedText, normal.renderedText)
+  assert.equal(
+    view.standard
+      .render(parser.parse(file + '\n\n' + quote))
+      .renderedText.includes(file),
+    true
+  )
+})
+
+test('card extraction respects Markdown context and preserves external URL candidates', () => {
+  const source =
+    file +
+    ' mid ' +
+    file +
+    '\n[quoted](' +
+    quote +
+    ')\n!!' +
+    quote +
+    '!!\n`' +
+    quote +
+    '`\nhttps://example.com\nhttps://example.com'
+  assert.deepEqual(view.standard.render(parser.parse(source)).embeddings, [
+    { type: 'file', id: fileId },
+    { type: 'message', id: messageId },
+    { type: 'url', url: 'https://example.com' },
+    { type: 'url', url: 'https://example.com' }
+  ])
+  for (const source of [
+    '!!' + file + '!!',
+    '`' + file + '`',
+    '```\n' + file + '\n```'
+  ])
+    assert.deepEqual(view.standard.render(parser.parse(source)).embeddings, [])
+  assert.equal(embeddingFromUrl(origin + '/channels/test', origin), undefined)
+  assert.equal(embeddingFromUrl(origin + '/files/invalid', origin), undefined)
+  assert.equal(embeddingFromUrl('javascript:alert(1)', origin), undefined)
+  assert.equal(embeddingFromUrl('/files/' + fileId, origin), undefined)
+  assert.deepEqual(embeddingFromUrl(file + '?download=1', origin), {
+    type: 'file',
+    id: fileId
+  })
+  assert.deepEqual(
+    embeddingFromUrl('https://other.test/files/' + fileId, origin),
+    { type: 'url', url: 'https://other.test/files/' + fileId }
+  )
+})
+
+test('condensed labels retained card links without removing explicit labels from message content', () => {
+  const document = parser.parse('[資料](' + file + ') ' + quote + ' 続き')
+  assert.match(view.standard.render(document).renderedText, />資料<\/a>/)
+  const text = view.condensed.render(document).renderedText
+  assert.match(text, />\[\[添付ファイル\]\]<\/a>/)
+  assert.match(text, />\[\[引用メッセージ\]\]<\/a> 続き/)
+  assert.equal(view.condensed.render(parser.parse(file)).renderedText, '')
+  assert.match(
+    view.standard.render(parser.parse('<' + file + '>')).renderedText,
+    /<a /
+  )
+})
+
+test('condensed preserves explicit quote links and their labels', () => {
+  for (const source of [
+    '[AAA](' + quote + ')',
+    '[**AAA**](' + quote + ')',
+    '[AAA][quote]\n\n[quote]: ' + quote,
+    '<' + quote + '>'
+  ]) {
+    const document = parser.parse(source),
+      result = view.condensed.render(document)
+    assert.match(result.renderedText, /<a /)
+    assert.doesNotMatch(result.renderedText, /\[\[引用メッセージ\]\]/)
+    assert.equal(
+      result.renderedText,
+      view.standard.render(document).renderedText.trim().slice(3, -4)
+    )
+    assert.deepEqual(result.embeddings, [{ type: 'message', id: messageId }])
+  }
+})
+
+test('traQ condensed flattens full-document block structure and break nodes', () => {
+  assert.equal(
+    view.condensed.render({
+      source: '<unknown>',
+      children: [{ kind: 'custom', span: { start: 0, end: 9 }, data: {} }]
+    }).renderedText,
+    '&lt;unknown&gt;'
+  )
+  for (const [source, expected] of [
+    ['a\nb', 'a b'],
+    ['a  \nb', 'a b'],
+    ['a\n\nb', 'a b'],
+    ['# heading\n\ntext', '# heading text'],
+    ['- one\n- two', '- one - two'],
+    ['> quote\n> next', '> quote next'],
+    ['| a | b |\n| - | - |\n| c | d |', '| a | b | | c | d |'],
+    ['```\na\nb\n```', '<code>a\nb\n</code>']
+  ])
+    assert.equal(
+      view.condensed.render(parser.parse(source)).renderedText,
+      expected,
+      source
+    )
+  assert.match(view.standard.render(parser.parse('a\nb')).renderedText, /<br>/)
+  assert.doesNotMatch(
+    view.condensed.render(parser.parse('a\n\n\n\nb')).renderedText,
+    /<br>/
+  )
+})
+
+test('condensed renders images as links and restricts math size commands', () => {
+  const images = commonParser()
+  assert.equal(
+    view.condensed.render(images.parse('![alt](https://example.test/a.png)'))
+      .renderedText,
+    '<a href="https://example.test/a.png" data-is-image>alt</a>'
+  )
+  assert.doesNotMatch(
+    view.condensed.render(parser.parse('$\\Huge x$')).renderedText,
+    /size11|katex-display/
+  )
+  assert.doesNotMatch(
+    view.condensed.render(parser.parse('$$x$$')).renderedText,
+    /katex-block|katex-display/
+  )
+  assert.match(
+    view.standard.render(parser.parse('$$x$$')).renderedText,
+    /katex-block/
+  )
+})
+
+test('attachment spacing checks the complete AST instead of its final source line', () => {
+  assert.equal(endsWithEmbedding(parser.parse('本文\n' + file), origin), true)
+  assert.equal(endsWithEmbedding(parser.parse('本文 ' + file), origin), false)
+  assert.equal(endsWithEmbedding(parser.parse('~~~\n' + file), origin), false)
+  assert.equal(
+    endsWithEmbedding(parser.parse('!!' + file + '!!'), origin),
+    false
+  )
+  assert.equal(
+    endsWithEmbedding(parser.parse('[' + file + '](' + file + ')'), origin),
+    false
+  )
+})

@@ -1,0 +1,7 @@
+[install]
+# Match traQ S-UI's supply-chain safeguards with Bun-native settings.
+exact = true
+ignoreScripts = true
+minimumReleaseAge = 604800
+minimumReleaseAgeExcludes = ["qs"]
+saveTextLockfile = true

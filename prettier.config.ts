@@ -1,0 +1,30 @@
+export default {
+  plugins: ['@trivago/prettier-plugin-sort-imports'],
+  importOrder: [
+    '<BUILTIN_MODULES>',
+    '^@traptitech',
+    '<THIRD_PARTY_MODULES>',
+    '^/@/',
+    '^[./]'
+  ],
+  importOrderSeparation: true,
+  importOrderSortSpecifiers: true,
+  importOrderGroupNamespaceSpecifiers: true,
+  printWidth: 80,
+  tabWidth: 2,
+  useTabs: false,
+  semi: false,
+  singleQuote: true,
+  quoteProps: 'as-needed',
+  jsxSingleQuote: false,
+  trailingComma: 'none',
+  bracketSpacing: true,
+  bracketSameLine: false,
+  arrowParens: 'avoid',
+  rangeStart: 0,
+  requirePragma: false,
+  insertPragma: false,
+  proseWrap: 'preserve',
+  htmlWhitespaceSensitivity: 'css',
+  endOfLine: 'auto'
+}

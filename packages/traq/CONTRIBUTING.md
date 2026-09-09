@@ -2,27 +2,27 @@
 
 ## Setup and verification
 
-Use Node.js 24+, Go 1.26+, and rustup. The Rust toolchain and Wasm target are pinned in `rust-toolchain.toml`. Windows additionally needs the MSVC C++ build tools; WSL and Bash are not required.
+Use Bun 1.3.14+, Go 1.26+, and rustup. The Rust toolchain and Wasm target are pinned in `rust-toolchain.toml`. Windows additionally needs the MSVC C++ build tools; WSL and Bash are not required.
 
-Keep core, commonmark, trap-extension and traq as sibling checkouts. Build their npm packages in that dependency order before running the traq checks.
+Keep core, commonmark, trap-extension and traq as sibling checkouts. Build the packages in that dependency order before running the traq checks.
 
 ```sh
-npm ci
-npm run build
-npm test
-npm run typecheck
-npm run test:rust
-npm run test:go
-npm run examples
-npm run check:architecture
-npm run check:package
+bun install --frozen-lockfile
+bun run build
+bun test
+bun run typecheck
+bun run test:rust
+bun run test:go
+bun run examples
+bun run check:architecture
+bun run check:package
 cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 ```
 
 `build` compiles Wasm, exports Rust contracts to `target/node-contracts`, generates TypeScript and Go sources, compiles TypeScript into JavaScript and declarations with `tsc`, and writes the artifact digest to `dist/contract.json`.
 
-`check:package` packs all four npm packages into a fresh temporary consumer and checks public declarations, AST parsing, HTML, CSS, and the Wasm digest. The temporary directory and archives are removed afterwards.
+`check:package` packs all four distributable packages into a fresh temporary consumer and checks public declarations, AST parsing, HTML, CSS, and the Wasm digest. The temporary directory and archives are removed afterwards.
 
 Go tests execute the built Wasm and use `-count=1` to avoid stale test-cache results. Changes to Go concurrency also require `go -C go test -race ./...` with a supported C compiler installed.
 
@@ -37,7 +37,7 @@ Go tests execute the built Wasm and use `-count=1` to avoid stale test-cache res
 | `go/parser.go`                                     | traQ preset and artifact selection over core Go runtime             |
 | core Go module                                     | Shared AST decoding and Wasm runtime                                |
 | commonmark / trap-extension Go modules             | Generated payloads and factories owned by each extension            |
-| `typescript/generated`, `go/*_generated.go`        | Owner composition, presets, processing output and artifact metadata |
+| `typescript/generated`, `go/generated_*.go`        | Owner composition, presets, processing output and artifact metadata |
 | core `scripts/contracts`; traq `scripts/contracts` | Generic code generation; distribution composition                   |
 | `tests/fixtures`                                   | Public cross-language and distribution compatibility fixtures       |
 | `examples/{rust,go,typescript}`                    | Public API consumers                                                |

@@ -1,0 +1,5 @@
+{
+  "explorer.fileNesting.patterns": {
+    "*.go": "${capture}_*.go"
+  }
+}

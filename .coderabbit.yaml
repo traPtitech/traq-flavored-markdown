@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ja
+tone_instructions: '日本語で簡潔かつ具体的にレビューしてください。'
+
+reviews:
+  profile: chill
+  path_filters:
+    - '!**/node_modules/**'
+    - '!**/dist/**'
+    - '!**/target/**'
+    - '!**/generated/**'
+    - '!**/*_generated.*'
+    - '!**/package-lock.json'
+    - '!**/bun.lock'
+    - '!**/bun.lockb'
+    - '!**/Cargo.lock'
+    - '!**/go.sum'
+  path_instructions:
+    - path: '**/*.{ts,tsx,js,mjs,cjs}'
+      instructions: |
+        TypeScript/JavaScript の変更をレビューしてください。
+        - strict な型安全性を保ち、不要な any、型アサーション、重複実装を避ける。
+        - 既存の ESLint と Prettier の設定に従い、import 順序と不要な import を確認する。
+        - 公開 API や挙動を変更する場合は、対応するテストと後方互換性を確認する。
+        - パッケージスクリプトと CI では Node/npm ではなく Bun を使う。
+    - path: '**/*.rs'
+      instructions: |
+        Rust の変更をレビューしてください。
+        - 所有権、借用、ライフタイムを自然に保ち、不要な clone や panic を避ける。
+        - Result/Option のエラー処理、公開 API の安全性、境界条件を確認する。
+        - cargo fmt と cargo clippy の規約に従い、変更に必要なテストを確認する。
+    - path: '**/*.go'
+      instructions: |
+        Go の変更をレビューしてください。
+        - gofmt、明示的なエラー処理、context の伝播、nil と境界条件を確認する。
+        - goroutine、共有状態、リソース解放に競合やリークがないか確認する。
+        - 変更に対応するテストと既存の Go API 互換性を確認する。
+    - path: '.github/workflows/**'
+      instructions: |
+        GitHub Actions の変更をレビューしてください。
+        - 最小権限の permissions、外部入力の扱い、サードパーティ Action の安全性を確認する。
+        - JavaScript の依存関係のインストール、format、lint、test は Bun を使い、Node/npm に戻さない。
+        - Ubuntu と Windows の両方で動くか、キャッシュキーと lockfile の指定が整合しているか確認する。

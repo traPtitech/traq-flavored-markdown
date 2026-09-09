@@ -32,19 +32,19 @@ Rust の版は `rust-toolchain.toml` で固定しています。依存する
 
 TypeScript の実装もこのリポジトリの責務に合わせて配置しています。
 
-| npm package                            | 責務                                                                   |
+| TypeScript package                     | 責務                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------- |
 | `@traq-markdown-parser/core`           | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
 | `@traq-markdown-parser/commonmark`     | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
 | `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
 | `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
 
-ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `npm install`・`npm run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `npm run check:package` で4パッケージを pack し、独立した consumer で実行します。
+ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `bun install`・`bun run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `bun run check:package` で4パッケージを pack し、独立した consumer で実行します。
 
-AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `npm run generate:bindings` でそれぞれの契約 crate から再生成できます。
+AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
 
 HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer/v1` の `messageRenderer`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
 
 ## Go contracts
 
-The Go module is `github.com/traq-markdown-parser/trap-extension/go`. Payloads and node factories are generated from this repository's Rust contracts by `npm run generate:bindings`. The canonical tree and Wasm runtime belong to the core Go module.
+The Go module is `github.com/traq-markdown-parser/trap-extension/go`. Payloads and node factories are generated from this repository's Rust contracts by `bun run generate:bindings`. The canonical tree and Wasm runtime belong to the core Go module.

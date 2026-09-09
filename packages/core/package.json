@@ -47,7 +47,7 @@
   "scripts": {
     "build": "tsc -p typescript/tsconfig.json",
     "typecheck": "tsc -p typescript/tsconfig.json --noEmit",
-    "test": "node --test typescript/tests/*.test.mjs",
+    "test": "bun test ./typescript/tests",
     "test:go": "go -C go test ./..."
   },
   "peerDependencies": {},

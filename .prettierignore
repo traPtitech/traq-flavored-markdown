@@ -6,3 +6,4 @@
 **/testdata
 **/fixtures/**
 **/typescript/generated
+/bun.lock

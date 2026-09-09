@@ -11,22 +11,23 @@ The packages retain their existing public npm names and Go module paths.
 
 ## Development
 
-Install the root tooling and every package's locked dependencies:
+Install Bun, then install the root tooling and every workspace package's locked
+dependencies:
 
 ```sh
-npm ci
-npm run bootstrap
+bun install
 ```
 
 The root commands operate on all four packages in dependency order:
 
 ```sh
-npm run format        # apply Prettier, rustfmt, and gofmt
-npm run format:check  # verify formatting without modifying files
-npm run build         # build all TypeScript packages and the traQ Wasm package
-npm run typecheck     # type-check every TypeScript package
-npm run test          # run TypeScript, Rust, and Go tests
-npm run check         # run the complete local CI suite
+bun run format        # apply Prettier, rustfmt, and gofmt
+bun run format:check  # verify formatting without modifying files
+bun run lint:check    # run ESLint without modifying files
+bun run build         # build all TypeScript packages and the traQ Wasm package
+bun run typecheck     # type-check every TypeScript package
+bun run test          # run TypeScript, Rust, and Go tests
+bun run check         # run the complete local CI suite
 ```
 
 Package-specific implementation scripts remain next to the packages that own

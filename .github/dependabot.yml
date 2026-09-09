@@ -1,0 +1,148 @@
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: '/'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    open-pull-requests-limit: 10
+    groups:
+      types:
+        patterns:
+          - '@types/*'
+      linters-and-formatters:
+        patterns:
+          - '*eslint*'
+          - '*prettier*'
+      patches:
+        update-types:
+          - patch
+        exclude-patterns:
+          - '@types/*'
+          - '*eslint*'
+          - '*prettier*'
+
+  - package-ecosystem: cargo
+    directory: '/packages/commonmark'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: cargo
+    directory: '/packages/core'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: cargo
+    directory: '/packages/trap-extension'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: cargo
+    directory: '/packages/traq'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: gomod
+    directory: '/packages/commonmark/go'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: gomod
+    directory: '/packages/core/go'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: gomod
+    directory: '/packages/trap-extension/go'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: gomod
+    directory: '/packages/traq/go'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+  - package-ecosystem: gomod
+    directory: '/packages/traq/examples/go'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 10
+    groups:
+      non-majors:
+        update-types:
+          - patch
+          - minor
