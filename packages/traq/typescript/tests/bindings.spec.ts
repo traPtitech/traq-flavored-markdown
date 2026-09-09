@@ -1,15 +1,16 @@
-import { goPayload } from '@traq-markdown-parser/core/codegen/go'
-import { javascript } from '@traq-markdown-parser/core/codegen/javascript'
-import { shape } from '@traq-markdown-parser/core/codegen/schema'
+import path from 'path'
+
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
+import { nodeContractsDirectory } from '../../../../scripts/build/node-contracts.ts'
+import { goPayload } from '../../../../scripts/codegen/go.ts'
+import { javascript } from '../../../../scripts/codegen/javascript.ts'
+import { shape } from '../../../../scripts/codegen/schema.ts'
 import { names, nodes } from '../../dist/generated/nodes.js'
 
 const manifest = JSON.parse(
-  await file(
-    new URL('../../target/node-contracts/contracts.json', import.meta.url)
-  ).text()
+  await file(path.join(nodeContractsDirectory(), 'contracts.json')).text()
 ) as { nodes: Record<string, { schema: { required?: string[] } }> }
 
 function example(s) {

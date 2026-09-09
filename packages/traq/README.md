@@ -10,12 +10,12 @@ traQ 向けの Markdown 文法・通知処理の構成と、Rust・WebAssembly�
 
 ## 構成と責任
 
-| 場所                                    | 責任                                                                         |
-| --------------------------------------- | ---------------------------------------------------------------------------- |
-| `crates/grammar`                        | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成                |
-| `crates/processing`                     | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
-| `crates/wasm`                           | 配布する文法・ノード型・処理 API を Wasm として公開                          |
-| `go`・`typescript`・`scripts/contracts` | この配布物に対応する bindings と型生成                                       |
+| 場所                                           | 責任                                                                         |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| `crates/grammar`                               | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成                |
+| `crates/processing`                            | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
+| `crates/wasm`                                  | 配布する文法・ノード型・処理 API を Wasm として公開                          |
+| `go`・`typescript`・ルートの `scripts/codegen` | この配布物に対応する bindings と型生成                                       |
 
 共通機構は core、CommonMark と汎用拡張は commonmark、traP 固有の拡張部品は
 trap-extension にあります。このリポジトリがそれらに依存し、traQ 向けに組み合わせます。
@@ -23,15 +23,15 @@ trap-extension にあります。このリポジトリがそれらに依存し�
 
 ## ビルド
 
-Bun 1.3.14 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target は ルートの `rust-toolchain.toml` で固定しています。
+Bun 1.3.14 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target はルートの `rust-toolchain.toml` で固定しています。
 
 ```sh
 bun install --frozen-lockfile
 bun run build
-bun run examples
+bun run --cwd packages/traq examples
 ```
 
-Rust の依存は Cargo が固定した Git revision を取得します。TypeScript のローカルビルドでは、同じ親ディレクトリに core・commonmark・trap-extension を置き、依存順に `bun install --frozen-lockfile` と `bun run build` を実行しておきます。Wasm・JavaScript・型定義は `dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
+上のコマンドはモノレポのルートから実行します。Rust はルートの Cargo workspace と lockfile を使い、内部の crate はローカルパスから参照します。Wasm・JavaScript・型定義は `packages/traq/dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
 
 まだレジストリへ公開していません。TypeScript は4パッケージの `bun pm pack` アーカイブを利用できます。
 

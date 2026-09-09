@@ -5,7 +5,8 @@
   "description": "trap-extension Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/traq-markdown-parser/trap-extension.git"
+    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "directory": "packages/trap-extension"
   },
   "license": "MIT",
   "sideEffects": false,

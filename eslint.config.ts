@@ -101,7 +101,7 @@ export default [
     }
   },
   {
-    files: ['packages/traq/scripts/corpus/viewer.ts'],
+    files: ['scripts/corpus/viewer.ts'],
     languageOptions: {
       globals: { ...globals.browser, CorpusDiff: 'readonly' }
     }

@@ -7,7 +7,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/traq-markdown-parser/commonmark.git"
+    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "directory": "packages/commonmark"
   },
   "exports": {
     "./nodes": {

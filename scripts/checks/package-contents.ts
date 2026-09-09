@@ -1,6 +1,9 @@
+import path from 'path'
+
 import { $ } from 'bun'
 
-const root = new URL('../', import.meta.url)
+import { packageRoot, traqRoot } from '../paths.ts'
+
 const tempRoot = (
   Bun.env.TEMP ??
   Bun.env.TMP ??
@@ -23,7 +26,7 @@ await $`mkdir -p ${temporaryDirectory}`
 try {
   const archives = []
   for (const repo of packageNames) {
-    const cwd = Bun.fileURLToPath(new URL(`../${repo}/`, root))
+    const cwd = packageRoot(repo)
     const output = await capture(
       bun,
       [
@@ -100,7 +103,7 @@ try {
   ]) {
     await Bun.write(
       `${temporaryDirectory}/${name}.ts`,
-      Bun.file(new URL(`${source}/types.ts`, root))
+      Bun.file(path.join(traqRoot, source, 'types.ts'))
     )
     await capture(
       bun,
@@ -121,13 +124,16 @@ try {
     await Bun.write(
       `${temporaryDirectory}/${name}.ts`,
       Bun.file(
-        new URL(
-          `${source}/${name === 'sdk' ? 'runtime.ts' : 'package-runtime.ts'}`,
-          root
+        path.join(
+          traqRoot,
+          source,
+          name === 'sdk' ? 'runtime.ts' : 'package-runtime.ts'
         )
       )
     )
-    const contract = await Bun.file(new URL('dist/contract.json', root)).json()
+    const contract = await Bun.file(
+      path.join(traqRoot, 'dist', 'contract.json')
+    ).json()
     await Bun.stdout.write(
       await capture(bun, [name + '.ts', contract.sha256], temporaryDirectory)
     )

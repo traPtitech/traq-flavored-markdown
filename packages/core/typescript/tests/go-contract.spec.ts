@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { goContract } from '../../scripts/contracts/go.ts'
+import { goContract } from '../../../../scripts/codegen/go.ts'
 
 test('named string enums remain compatible with Go string fields', () => {
   expect(

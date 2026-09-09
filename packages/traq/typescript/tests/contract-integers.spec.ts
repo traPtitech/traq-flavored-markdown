@@ -1,10 +1,10 @@
-import { goPayload } from '@traq-markdown-parser/core/codegen/go'
-import { javascript } from '@traq-markdown-parser/core/codegen/javascript'
-import { shape } from '@traq-markdown-parser/core/codegen/schema'
 import { pathToFileURL, write } from 'bun'
 import { expect, test } from 'bun:test'
 import ts from 'typescript'
 
+import { goPayload } from '../../../../scripts/codegen/go.ts'
+import { javascript } from '../../../../scripts/codegen/javascript.ts'
+import { shape } from '../../../../scripts/codegen/schema.ts'
 import { withTempDirectory } from './temp-directory.ts'
 
 test('generated numeric payload validators retain Rust integer bounds', async () => {

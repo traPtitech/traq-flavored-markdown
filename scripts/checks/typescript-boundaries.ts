@@ -1,19 +1,23 @@
-const root = new URL('../', import.meta.url)
-for (const [repo, allowed] of [
+import path from 'path'
+
+import { packageRoot } from '../paths.ts'
+
+const packages: [string, string[]][] = [
   ['core', []],
   ['commonmark', ['core', 'commonmark']],
   ['trap-extension', ['core', 'commonmark', 'trap-extension']],
   ['traq', ['core', 'commonmark', 'trap-extension', 'traq']]
-]) {
-  const directory = new URL(`../${repo}/typescript/`, root)
+]
+for (const [repo, allowed] of packages) {
+  const directory = path.join(packageRoot(repo), 'typescript')
   let count = 0
   for await (const relative of new Bun.Glob('**/*.ts').scan({
-    cwd: Bun.fileURLToPath(directory),
+    cwd: directory,
     onlyFiles: true
   })) {
     if (relative.split(/[\\/]/).includes('tests')) continue
     count++
-    const file = new URL(relative.replaceAll('\\', '/'), directory)
+    const file = path.join(directory, relative)
     const source = await Bun.file(file).text()
     if (source.includes('@traptitech/traq-markdown-it'))
       throw new Error(file + ': retired package dependency')

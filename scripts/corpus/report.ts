@@ -3,6 +3,7 @@ import path from 'path'
 import { $ } from 'bun'
 import { build } from 'esbuild'
 
+import { traqRoot } from '../paths.ts'
 import { parseArgs } from './args.ts'
 import { ignoreMask } from './ignore-differences.ts'
 import { readLines } from './read-lines.ts'
@@ -71,7 +72,7 @@ const custom = await Bun.file(new URL('./viewer.css', import.meta.url)).text(),
       await build({
         stdin: {
           contents: "export {diffStringsRaw} from 'jest-diff'",
-          resolveDir: Bun.fileURLToPath(new URL('../../', import.meta.url))
+          resolveDir: traqRoot
         },
         bundle: true,
         write: false,

@@ -5,7 +5,8 @@
   "description": "core Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/traq-markdown-parser/core.git"
+    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "directory": "packages/core"
   },
   "license": "MIT",
   "sideEffects": false,
@@ -30,16 +31,11 @@
     "./validation": {
       "types": "./dist/validation.d.ts",
       "import": "./dist/validation.js"
-    },
-    "./codegen/nodes": "./scripts/contracts/nodes.ts",
-    "./codegen/schema": "./scripts/contracts/schema.ts",
-    "./codegen/javascript": "./scripts/contracts/javascript.ts",
-    "./codegen/go": "./scripts/contracts/go.ts"
+    }
   },
   "files": [
     "dist",
-    "LICENSE",
-    "scripts/contracts"
+    "LICENSE"
   ],
   "scripts": {
     "build": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.build.json",

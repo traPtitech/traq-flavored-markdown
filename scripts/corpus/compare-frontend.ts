@@ -2,6 +2,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
+import { traqRoot } from '../paths.ts'
 import { parseArgs } from './args.ts'
 import { readLines } from './read-lines.ts'
 
@@ -22,7 +23,7 @@ const baselinePackage = Bun.resolveSync(
   path.resolve(values.baseline)
 )
 const { traQMarkdownIt } = await import(Bun.pathToFileURL(baselinePackage).href)
-const sdkPath = Bun.fileURLToPath(new URL('../../', import.meta.url))
+const sdkPath = traqRoot
 const frontendPath = sdkPath
 const { createRuntime, presets } = await import(
   Bun.pathToFileURL(sdkPath + '/dist/index.js').href

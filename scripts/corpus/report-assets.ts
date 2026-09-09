@@ -2,6 +2,7 @@ import path from 'path'
 
 import { parseFragment } from 'parse5'
 
+import { packageRoot, traqRoot } from '../paths.ts'
 import { readLines } from './read-lines.ts'
 
 const readText = file => Bun.file(file).text()
@@ -14,9 +15,7 @@ const escape = s =>
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]
   )
 export async function rendererCss() {
-  const commonmark = Bun.fileURLToPath(
-    new URL('../../../commonmark/', import.meta.url)
-  )
+  const commonmark = packageRoot('commonmark')
   const katexFile = Bun.resolveSync('katex/dist/katex.css', commonmark)
   let math = await readText(katexFile)
   for (const match of [...math.matchAll(/url\(([^)]+)\)/g)]) {
@@ -37,9 +36,7 @@ export async function rendererCss() {
     )
   }
   return (
-    (await readText(new URL('../../dist/index.css', import.meta.url))) +
-    '\n' +
-    math
+    (await readText(path.join(traqRoot, 'dist', 'index.css'))) + '\n' + math
   )
 }
 const allowed = new Set(

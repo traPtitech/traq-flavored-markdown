@@ -21,13 +21,9 @@ const generated = [
 ]
 
 const safeDirectory = `safe.directory=${root}`
-for (const generatedPaths of generated) {
-  const result =
-    await $`git -c ${safeDirectory} diff --exit-code -- ${generatedPaths}`
-      .cwd(root)
-      .nothrow()
-  if (result.exitCode !== 0)
-    throw new Error(
-      `Generated files differ (git exited with ${result.exitCode})`
-    )
-}
+const result =
+  await $`git -c ${safeDirectory} status --porcelain=v1 --untracked-files=all -- ${generated.flat()}`
+    .cwd(root)
+    .quiet()
+if (result.text().trim())
+  throw new Error(`Generated files differ:\n${result.text().trim()}`)

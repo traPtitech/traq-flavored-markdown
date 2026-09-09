@@ -3,6 +3,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
+import { repositoryRoot } from '../paths.ts'
 import { parseArgs, parseEnv } from './args.ts'
 
 export async function collect({
@@ -270,9 +271,7 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
       throw new Error(
         'API base URL and token file, or --env-file with TRAQ_API_BASE_URL/BOT_ACCESS_TOKEN, are required'
       )
-    const privateRoot = Bun.fileURLToPath(
-      new URL('../../.private/corpora/', import.meta.url)
-    )
+    const privateRoot = path.join(repositoryRoot, '.private', 'corpora')
     const output = path.resolve(
       values.out ??
         path.join(

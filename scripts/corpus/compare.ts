@@ -2,20 +2,22 @@ import path from 'path'
 
 import { $ } from 'bun'
 
+import { repositoryRoot, traqRoot } from '../paths.ts'
 import { parseArgs } from './args.ts'
 
-const root = Bun.fileURLToPath(new URL('../../', import.meta.url))
+const root = traqRoot
+const privateRoot = path.join(repositoryRoot, '.private')
 const { values: v } = parseArgs({
   options: {
     corpus: { type: 'string' },
     out: { type: 'string' },
     traq: {
       type: 'string',
-      default: path.resolve(root, '../../traPtitech/traQ')
+      default: path.resolve(repositoryRoot, '../../traPtitech/traQ')
     },
     sui: {
       type: 'string',
-      default: path.resolve(root, '../../traPtitech/traQ_S-UI')
+      default: path.resolve(repositoryRoot, '../../traPtitech/traQ_S-UI')
     },
     'traq-ref': { type: 'string', default: 'origin/master' },
     'sui-ref': { type: 'string', default: 'origin/master' },
@@ -29,9 +31,9 @@ if (!Number.isSafeInteger(Number(v.max)) || Number(v.max) <= 0)
   throw Error('--max must be a positive integer')
 const corpus = path.resolve(v.corpus)
 const out = path.resolve(
-  v.out ?? path.join(root, '.private/corpora/comparison')
+  v.out ?? path.join(privateRoot, 'corpora', 'comparison')
 )
-const baseline = path.join(root, '.private/corpus-baseline')
+const baseline = path.join(privateRoot, 'corpus-baseline')
 await $`mkdir -p ${baseline}`
 await $`mkdir -p ${out}`
 

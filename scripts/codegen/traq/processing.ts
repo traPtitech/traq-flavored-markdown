@@ -1,4 +1,5 @@
-import { goContract } from '@traq-markdown-parser/core/codegen/go'
+import { declarations } from '../declarations.ts'
+import { goContract } from '../go.ts'
 
 type Schema = { title: string; $defs?: Record<string, Schema> }
 
@@ -16,38 +17,22 @@ export async function processingFiles(
       '// Code generated from Rust processing contracts. DO NOT EDIT.\npackage markdown\n'
     ]
   ])
-  const types = new Map()
-  async function declaration(name) {
-    if (types.has(name)) return
-    const source = await Bun.file(`${input}/${name}.ts`).text()
-    types.set(
-      name,
-      source
-        .replace(/\r\n/g, '\n')
-        .replace(/^\/\/[^\n]*\n/gm, '')
-        .replace(/^import type .*;\r?\n/gm, '')
-        .replace(/[ \t]+$/gm, '')
-        .trim()
-    )
-    for (const match of source.matchAll(/from ["']\.\/([^"']+)\.js["']/g))
-      await declaration(match[1])
-  }
+  const types = await declarations(input, Object.keys(schemas))
 
   let go = ''
-  const declarations = new Map()
+  const goDeclarations = new Map()
   function addGo(schema, root = schema) {
     const source = goContract(schema, root)
-    const previous = declarations.get(schema.title)
+    const previous = goDeclarations.get(schema.title)
     if (previous !== undefined && previous !== source)
       throw new Error('Conflicting processing type: ' + schema.title)
     if (previous === undefined) {
-      declarations.set(schema.title, source)
+      goDeclarations.set(schema.title, source)
       go += source
     }
   }
 
   for (const name of Object.keys(schemas)) {
-    await declaration(name)
     const schema = schemas[name]
     addGo(schema)
     for (const [name, definition] of Object.entries(schema.$defs ?? {}))

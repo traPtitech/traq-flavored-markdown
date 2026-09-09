@@ -1,10 +1,10 @@
-import { goNodes } from '@traq-markdown-parser/core/codegen/go'
-import { nodeFiles } from '@traq-markdown-parser/core/codegen/nodes'
 import { write } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { presetFiles } from '../../scripts/contracts/presets.ts'
-import { typescriptFiles } from '../../scripts/contracts/typescript.ts'
+import { goNodes } from '../../../../scripts/codegen/go.ts'
+import { nodeFiles } from '../../../../scripts/codegen/nodes.ts'
+import { typescriptFiles } from '../../../../scripts/codegen/traq/nodes-typescript.ts'
+import { presetFiles } from '../../../../scripts/codegen/traq/presets.ts'
 import { withTempDirectory } from './temp-directory.ts'
 
 test('new Rust-exported payloads and presets generate both host APIs', async () => {
@@ -60,7 +60,7 @@ test('new Rust-exported payloads and presets generate both host APIs', async () 
 
 test('Rust processing options and nested results generate without host changes', async () => {
   const { processingFiles } =
-    await import('../../scripts/contracts/processing.ts')
+    await import('../../../../scripts/codegen/traq/processing.ts')
   await withTempDirectory('processing-contract-', async directory => {
     const object = (title: string, properties: Record<string, unknown>) => ({
       title,
