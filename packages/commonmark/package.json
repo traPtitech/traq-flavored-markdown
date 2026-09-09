@@ -1,0 +1,69 @@
+{
+  "name": "@traq-markdown-parser/commonmark",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "commonmark Markdown contracts and HTML rendering.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traq-markdown-parser/commonmark.git"
+  },
+  "exports": {
+    "./nodes": {
+      "types": "./dist/generated/commonmark.d.ts",
+      "import": "./dist/generated/commonmark.js"
+    },
+    "./generic/nodes": {
+      "types": "./dist/generated/generic.d.ts",
+      "import": "./dist/generated/generic.js"
+    },
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "import": "./dist/renderer/index.js"
+    },
+    "./generic/renderer": {
+      "types": "./dist/renderer/extensions/index.d.ts",
+      "import": "./dist/renderer/extensions/index.js"
+    },
+    "./generic/math": {
+      "types": "./dist/renderer/extensions/math.d.ts",
+      "import": "./dist/renderer/extensions/math.js"
+    },
+    "./highlight": {
+      "types": "./dist/renderer/highlight.d.ts",
+      "import": "./dist/renderer/highlight.js"
+    },
+    "./policy": {
+      "types": "./dist/renderer/policy.d.ts",
+      "import": "./dist/renderer/policy.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p typescript/tsconfig.json",
+    "typecheck": "tsc -p typescript/tsconfig.json --noEmit",
+    "generate:bindings": "node scripts/generate-bindings.mjs"
+  },
+  "peerDependencies": {
+    "@traq-markdown-parser/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@traq-markdown-parser/core": "file:../core",
+    "@types/katex": "^0.16.8",
+    "@types/node": "26.3.0",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "entities": "^4.5.0",
+    "highlight.js": "^11.11.1",
+    "katex": "^0.16.47"
+  }
+}

@@ -1,0 +1,22 @@
+[workspace]
+members = [
+    "crates/contracts",
+    "crates/extensions/contracts",
+    "crates/extensions/syntax",
+    "crates/extensions/text",
+    "crates/syntax",
+    "crates/text",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+strip = true
