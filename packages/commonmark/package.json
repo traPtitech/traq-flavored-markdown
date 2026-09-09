@@ -64,6 +64,6 @@
   "dependencies": {
     "entities": "^4.5.0",
     "highlight.js": "^11.11.1",
-    "katex": "^0.16.47"
+    "katex": "^0.18.5"
   }
 }
