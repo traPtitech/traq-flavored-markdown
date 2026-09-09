@@ -6,7 +6,7 @@ traQ 向けの Markdown 文法・通知処理の構成と、Rust・WebAssembly�
 - Go module: **`github.com/traq-markdown-parser/traq/go`**
 - Wasm: ABI **3** / AST **4**
 
-文法の実装は [core](https://github.com/traq-markdown-parser/core)、[commonmark](https://github.com/traq-markdown-parser/commonmark)、[trap-extension](https://github.com/traq-markdown-parser/trap-extension) にあります。このリポジトリで配布するプリセットを選び、Wasm と対応する型を生成します。
+文法の実装は [core](../core/README.md)、[commonmark](../commonmark/README.md)、[trap-extension](../trap-extension/README.md) にあります。このリポジトリで配布するプリセットを選び、Wasm と対応する型を生成します。
 
 ## 構成と責任
 
@@ -23,7 +23,7 @@ trap-extension にあります。このリポジトリがそれらに依存し�
 
 ## ビルド
 
-Bun 1.3.14 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target は `rust-toolchain.toml` で固定しています。
+Bun 1.3.14 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target は ルートの `rust-toolchain.toml` で固定しています。
 
 ```sh
 bun install --frozen-lockfile
@@ -114,7 +114,7 @@ DB に保存するのは永続的な文法バージョンです。SDK と Wasm �
 
 TypeScript の `presets.commonmark` / `presets.traq.v1`、Go の `PresetCommonMark` / `PresetTraQV1` は Rust が公開するプリセットから生成します。独自の文法は Rust で組み立て、配布層からプリセットとして公開して再ビルドします。ホスト API は文法からのパーサー生成、解析、解放を提供します。
 
-Wasm のホスト実装は TypeScript の `index.ts` と Go の `parser.go` です。共通 AST 型と payload guard の検証部品は core、構文の生成型はそれぞれのリポジトリが所有します。文法ビルダー、Plugin / Rule のミラー、文法ハンドル、worker pool は持ちません。
+Wasm のホスト実装は TypeScript の `index.ts` と Go の `parser.go` です。共通 AST 型と payload guard の検証部品は core、構文の生成型はそれぞれのパッケージが所有します。文法ビルダー、Plugin / Rule のミラー、文法ハンドル、worker pool は持ちません。
 
 HTML 描画の共通基盤は core、構文別の描画は commonmark と trap-extension が担当します。traQ の描画構成・condensed 表示・CSS はこのリポジトリの `typescript/renderer` が所有します。
 
@@ -160,7 +160,7 @@ Extractor は参照・添付 ID・引用 ID・埋め込み編集計画と、Mark
 
 ## TypeScript / HTML rendering
 
-TypeScript の実装は各リポジトリの責務に合わせて配置しています。
+TypeScript の実装は各パッケージの責務に合わせて配置しています。
 
 | TypeScript package                     | 責務                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------- |
@@ -169,7 +169,7 @@ TypeScript の実装は各リポジトリの責務に合わせて配置してい
 | `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
 | `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・condensed 表示・CSS      |
 
-ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `bun install`・`bun run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `bun run check:package` で4パッケージを pack し、独立した consumer で実行します。
+開発手順は [ルートの README](../../README.md) を参照してください。ルートで `bun install`・`bun run build` を実行すると、4パッケージを依存順にビルドします。`bun run check:package` は4パッケージを pack し、独立した consumer で配布内容を検証します。
 
 AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
 

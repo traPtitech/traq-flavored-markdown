@@ -21,13 +21,13 @@ cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 ```
 
-Rust の版は `rust-toolchain.toml`、外部依存の版は manifest と `Cargo.lock` で固定しています。core は Git の確定 revision から取得されるため、他の checkout は不要です。CommonMark の652仕様例を同梱して検証します。出典・ライセンスは [fixtures](tests/fixtures/README.md) を参照してください。
+Rust の版は ルートの `rust-toolchain.toml`、外部依存の版は manifest と `Cargo.lock` で固定しています。core は同じ workspace のローカルパスから参照します。CommonMark の652仕様例を同梱して検証します。出典・ライセンスは [fixtures](tests/fixtures/README.md) を参照してください。
 
 ## 境界
 
-依存先は [core](https://github.com/traq-markdown-parser/core) です。traP / traQ の文法・preset・アプリケーション方針は知りません。
+依存先は [core](../core/README.md) です。traP / traQ の文法・preset・アプリケーション方針は知りません。
 
-traP 固有の拡張部品は [trap-extension](https://github.com/traq-markdown-parser/trap-extension)、traQ 向けの構成と Wasm・TypeScript / Go bindings は [traq](https://github.com/traq-markdown-parser/traq)、HTML と CSS は [traq-markdown-it](https://github.com/traPtitech/traq-markdown-it) にあります。
+traP 固有の拡張部品は [trap-extension](../trap-extension/README.md)、traQ 向けの構成と Wasm・TypeScript / Go bindings は [traq](../traq/README.md)、HTML 描画は各パッケージの `typescript/renderer`、traQ の CSS は traq パッケージにあります。
 
 ## TypeScript / HTML rendering
 
@@ -40,11 +40,11 @@ TypeScript の実装もこのリポジトリの責務に合わせて配置して
 | `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
 | `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
 
-ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `bun install`・`bun run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `bun run check:package` で4パッケージを pack し、独立した consumer で実行します。
+開発手順は [ルートの README](../../README.md) を参照してください。ルートで `bun install`・`bun run build` を実行すると、4パッケージを依存順にビルドします。`bun run check:package` は4パッケージを pack し、独立した consumer で配布内容を検証します。
 
 AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
 
-HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer/v1` の `messageRenderer`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
+HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer` の `messageRenderers`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
 
 ## Go contracts
 

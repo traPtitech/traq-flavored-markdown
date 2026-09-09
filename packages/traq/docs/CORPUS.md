@@ -1,6 +1,6 @@
 # Corpus comparison
 
-Run these commands from the `traq` repository after building the four sibling packages with Bun 1.3.14+, Rust, and Go installed. The comparison installs the old renderer at the version locked by S-UI and builds the old Go parser from the selected traQ commit. The defaults use `../../traPtitech/traQ` and `../../traPtitech/traQ_S-UI`; override these paths when your checkouts are elsewhere.
+Run these commands from the monorepo root after `bun install` and `bun run build`, with Bun 1.3.14+, Rust, and Go installed. The comparison installs the old renderer at the version locked by S-UI and builds the old Go parser from the selected traQ commit. Pass the traQ and S-UI checkout paths explicitly with `--traq` and `--sui` when comparing against local applications.
 
 ```sh
 bun run corpus:collect -- --env-file /absolute/path/to/credentials.env --out .private/corpora/sample --max-messages 100000

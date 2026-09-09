@@ -15,7 +15,7 @@
 
 ## 開発
 
-Rust は `rust-toolchain.toml` で固定しています。他のリポジトリの checkout は不要です。
+Rust は ルートの `rust-toolchain.toml` で固定しています。他のリポジトリの checkout は不要です。
 
 ```sh
 cargo test --workspace --all-features
@@ -24,13 +24,13 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo run -p markdown-codec --example round_trip
 ```
 
-## リポジトリの境界
+## パッケージの境界
 
-- [commonmark](https://github.com/traq-markdown-parser/commonmark): 標準文法と汎用拡張
-- [trap-extension](https://github.com/traq-markdown-parser/trap-extension): traP 固有の構文・描画・抽出部品
-- [traq](https://github.com/traq-markdown-parser/traq): traQ の文法・処理の構成、Wasm 配布、TypeScript / Go bindings
+- [commonmark](../commonmark/README.md): 標準文法と汎用拡張
+- [trap-extension](../trap-extension/README.md): traP 固有の構文・描画・抽出部品
+- [traq](../traq/README.md): traQ の文法・処理の構成、Wasm 配布、TypeScript / Go bindings
 
-core はこれらへ依存しません。テストにも独立した契約型を使います。リポジトリ内の crate は同じ版で管理し、外部からは確定した Git revision を指定して利用します。レジストリへの公開はまだ行っていません。
+core はこれらへ依存しません。テストにも独立した契約型を使います。workspace 内の crate はローカルパスで参照します。レジストリへの公開はまだ行っていません。
 
 ## TypeScript / HTML rendering
 
@@ -43,11 +43,11 @@ TypeScript の実装もこのリポジトリの責務に合わせて配置して
 | `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
 | `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
 
-ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `bun install`・`bun run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `bun run check:package` で4パッケージを pack し、独立した consumer で実行します。
+開発手順は [ルートの README](../../README.md) を参照してください。ルートで `bun install`・`bun run build` を実行すると、4パッケージを依存順にビルドします。`bun run check:package` は4パッケージを pack し、独立した consumer で配布内容を検証します。
 
 AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
 
-HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer/v1` の `messageRenderer`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
+HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer` の `messageRenderers`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
 
 ## Go
 
