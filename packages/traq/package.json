@@ -80,7 +80,7 @@
     "esbuild": "^0.25.12",
     "jest-diff": "^30.2.0",
     "markdown-it": "^14.1.0",
-    "parse5": "^7.3.0",
+    "parse5": "^8.0.1",
     "sass": "^1.97.3",
     "typescript": "6.0.3"
   },
