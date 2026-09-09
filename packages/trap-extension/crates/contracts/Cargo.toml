@@ -1,0 +1,25 @@
+[package]
+name = "markdown-trap-contracts"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "trap node payloads, independent of parsing and rendering."
+
+[features]
+contracts = ["dep:ts-rs", "dep:schemars"]
+
+[dependencies]
+markdown-ast = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
+markdown-definitions = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
+serde = { version = "1", features = ["derive"] }
+ts-rs = { version = "12", optional = true, features = ["serde-json-impl"] }
+schemars = { version = "1.2.2", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[example]]
+name = "export-trap-types"
+path = "examples/export-types.rs"
+required-features = ["contracts"]
