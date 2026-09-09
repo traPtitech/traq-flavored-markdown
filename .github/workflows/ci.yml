@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.26.0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: npm ci
+      - run: npm run format:check
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/*/package-lock.json
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.26.0
+          cache-dependency-path: packages/**/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run ci
