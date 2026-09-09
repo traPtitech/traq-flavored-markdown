@@ -1,4 +1,7 @@
-export async function typescriptFiles(manifest, input) {
+export async function typescriptFiles(
+  manifest: { nodes: Record<string, { group: string }> },
+  input: string
+) {
   const files = new Map()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
   const packages = {

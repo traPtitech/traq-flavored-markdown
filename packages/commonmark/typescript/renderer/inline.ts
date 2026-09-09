@@ -5,7 +5,7 @@ import {
   escapeHtml
 } from '@traq-markdown-parser/core/html'
 import type { Node } from '@traq-markdown-parser/core/renderer'
-import { Plugin } from '@traq-markdown-parser/core/renderer'
+import type { Plugin } from '@traq-markdown-parser/core/renderer'
 
 import type { Options } from './options.js'
 

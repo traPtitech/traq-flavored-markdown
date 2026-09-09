@@ -29,6 +29,7 @@ test('processing consumes the supplied AST and returns metadata without renderin
   expect(output.references.mentions.length).toBe(1)
   expect(extractor.extract(document)).toEqual(output)
   expect(document).toEqual(original)
+  // @ts-expect-error This verifies that extract rejects source text at runtime.
   expect(() => extractor.extract(source)).toThrow()
   const invalid = structuredClone(document)
   invalid.children[0].span.end = source.length + 1
@@ -48,7 +49,9 @@ test('one extractor accepts ASTs from different grammar versions', async () => {
   const source =
     '!{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@alice"}'
   for (const version of ['commonmark', 'traq.v1', 'commonmark']) {
-    const output = extractor.extract(parsers.get(version).parse(source))
+    const parser = parsers.get(version)
+    if (!parser) throw new Error(`Missing parser: ${version}`)
+    const output = extractor.extract(parser.parse(source))
     expect(output.references.mentions.length).toBe(
       version === 'commonmark' ? 0 : 1
     )
@@ -72,7 +75,9 @@ test('AST processing configuration and instances have independent lifetimes', as
     expect(configured.extract(document).attachments.length).toBe(1)
     expect(plain.extract(document).attachments.length).toBe(0)
     for (const options of [{ origin: 'x'.repeat(2049) }, { extra: true }]) {
-      expect(() => runtime.createExtractor(options)).toThrow()
+      expect(() =>
+        runtime.createExtractor(options as { origin: string })
+      ).toThrow()
     }
     const large = parser.parse('x'.repeat(60000))
     expect(plain.extract(large).messageText).toBe(large.source)

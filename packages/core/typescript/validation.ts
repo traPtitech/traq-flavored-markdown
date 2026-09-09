@@ -28,7 +28,7 @@ export const object = (value: unknown): value is Record<string, unknown> =>
 
 export function fields<
   R extends Record<string, Check>,
-  O extends Record<string, Check> = {}
+  O extends Record<string, Check> = Record<never, Check>
 >(
   value: unknown,
   required: R,

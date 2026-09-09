@@ -52,7 +52,7 @@
   "scripts": {
     "build": "bun run scripts/build.ts",
     "build:renderer": "sass --no-source-map styles/index.scss dist/index.css",
-    "build:ts": "tsc -p typescript/tsconfig.build.json",
+    "build:ts": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.build.json",
     "check:architecture": "bun run scripts/check-js-boundaries.ts",
     "check:package": "bun run scripts/package-check.ts",
     "check:rendering": "bun run scripts/check-rendering.ts",
@@ -68,7 +68,7 @@
     "test:corpus": "bun test ./scripts/corpus",
     "test:go": "go -C go test -count=1 ./...",
     "test:rust": "cargo test --workspace --all-features",
-    "typecheck": "tsc -p typescript/tsconfig.json --noEmit && tsc -p examples/typescript/tsconfig.json"
+    "typecheck": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.json && node ../../node_modules/@typescript/native/bin/tsc -p examples/typescript/tsconfig.json"
   },
   "devDependencies": {
     "@traq-markdown-parser/commonmark": "workspace:*",

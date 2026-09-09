@@ -24,10 +24,9 @@ test('traQ presentation combines tables, marks, spoilers, math, and highlighted 
   ])
     expect(html.includes(expected)).toBeTruthy()
   expect(view.render(parser.parse('one\ntwo'))).toMatch(/one<br>\ntwo/)
-  expect(
-    view.render(parser.parseInline('$\\invalidcommand$')),
+  expect(view.render(parser.parseInline('$\\invalidcommand$'))).toMatch(
     /katex-error/
-  ).toMatch(/katex-error/)
+  )
 })
 
 test('stamp stores are isolated and unrecognized effects preserve escaped source', () => {
@@ -86,19 +85,16 @@ test('reference highlighting and link/image policies belong to each renderer', (
   expect(html).toMatch(/message-group-link-highlight/)
   expect(html).toMatch(/href="#channel-c"/)
   expect(
-    view.render(common.parseInline('![x](https://unlisted.example/x.png)')),
-    /<img/
+    view.render(common.parseInline('![x](https://unlisted.example/x.png)'))
   ).not.toMatch(/<img/)
   expect(
-    view.render(common.parseInline('![x](https://trap.jp/x.png)')),
-    /<img/
+    view.render(common.parseInline('![x](https://trap.jp/x.png)'))
   ).toMatch(/<img/)
   const custom = renderer(
     rendering.html({ validateImage: () => true, validateLink: () => false })
   )
   expect(
-    custom.render(common.parseInline('![x](https://unlisted.example/x.png)')),
-    /<img/
+    custom.render(common.parseInline('![x](https://unlisted.example/x.png)'))
   ).toMatch(/<img/)
   expect(
     custom.render(parser.parseInline('[x](https://example.com)')),
@@ -109,7 +105,9 @@ test('reference highlighting and link/image policies belong to each renderer', (
 test('table handlers reject forged row and cell payloads', () => {
   const view = renderer(rendering.html())
   const document = parser.parse('| a |\n| - |\n| b |')
-  const cell = document.children[0].children[0].children[0]
+  const cell = document.children[0].children[0].children[0] as {
+    data: { alignment: string }
+  }
   cell.data.alignment = 'left;position:fixed'
   expect(() => view.render(document)).toThrow(/Invalid table cell/)
 })

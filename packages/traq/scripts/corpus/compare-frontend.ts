@@ -83,6 +83,7 @@ const report = {
   ),
   beforeInitializationMs,
   afterInitializationMs,
+  wallSeconds: 0,
   warnings: 0,
   timed:
     'Parse + render; 200 warmups; alternating before/after order; I/O excluded; same deterministic Store'

@@ -1,4 +1,12 @@
-export function parseArgs({ options = {}, args = Bun.argv.slice(2) } = {}) {
+type Option = { default?: string; type?: string }
+
+export function parseArgs({
+  options = {},
+  args = Bun.argv.slice(2)
+}: {
+  options?: Record<string, Option>
+  args?: string[]
+} = {}) {
   const values = Object.fromEntries(
     Object.entries(options)
       .filter(([, option]) => option.default !== undefined)
@@ -18,8 +26,8 @@ export function parseArgs({ options = {}, args = Bun.argv.slice(2) } = {}) {
   return { values }
 }
 
-export function parseEnv(source) {
-  const values = {}
+export function parseEnv(source: string) {
+  const values: Record<string, string> = {}
   for (const [index, line] of source.split(/\r?\n/).entries()) {
     const value = line.trim()
     if (!value || value.startsWith('#')) continue

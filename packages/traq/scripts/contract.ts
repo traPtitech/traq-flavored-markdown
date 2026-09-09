@@ -9,7 +9,11 @@ const bytes = await Bun.file(
   new URL('../dist/parser.wasm', import.meta.url)
 ).bytes()
 const { instance } = await WebAssembly.instantiate(bytes, {})
-const wasm = instance.exports
+const wasm = instance.exports as unknown as {
+  contract_ptr: () => number
+  contract_len: () => number
+  memory: WebAssembly.Memory
+}
 const pointer = wasm.contract_ptr()
 const length = wasm.contract_len()
 const metadata = JSON.parse(

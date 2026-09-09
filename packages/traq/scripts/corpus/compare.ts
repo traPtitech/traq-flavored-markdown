@@ -88,7 +88,7 @@ const legacyPackage = Bun.resolveSync(
   '@traptitech/traq-markdown-it',
   path.resolve(baseline)
 )
-const { traQMarkdownIt } = await import(Bun.pathToFileURL(legacyPackage).href)
+await import(Bun.pathToFileURL(legacyPackage).href)
 const katexBefore = await packageVersion('katex', baseline)
 const highlightBefore = await packageVersion('highlight.js', baseline)
 if (katexBefore !== katexVersion || highlightBefore !== highlightVersion)

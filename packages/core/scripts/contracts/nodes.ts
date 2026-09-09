@@ -3,11 +3,14 @@ import path from 'path'
 import { javascript } from './javascript.ts'
 import { quoted as q } from './schema.ts'
 
-export async function nodeFiles(manifest, input) {
-  const entries = Object.entries(manifest.nodes).map(([key, node]) => [
-    key,
-    node.schema
-  ])
+type Manifest = {
+  nodes: Record<string, { group: string; schema: { title: string } }>
+}
+
+export async function nodeFiles(manifest: Manifest, input: string) {
+  const entries: [string, { title: string }][] = Object.entries(
+    manifest.nodes
+  ).map(([key, node]) => [key, node.schema])
   const groups = Map.groupBy(entries, ([key]) => manifest.nodes[key].group)
   const files = new Map()
   for (const [group, entries] of groups) {

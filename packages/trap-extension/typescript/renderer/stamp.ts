@@ -103,7 +103,7 @@ const hexReg = /0x(?<color>[0-9a-fA-F]{6})(?<effects>.*)/
 
 const renderHslStamp = (match: RegExpExecArray) => {
   // HSL: hsl(..., ...%, ...%)
-  const { color, effects } = match.groups!
+  const { color = '', effects = '' } = match.groups ?? {}
 
   return renderStampDomWithStyle(
     `:${match[0]}:`,
@@ -116,7 +116,7 @@ const renderHslStamp = (match: RegExpExecArray) => {
 
 const renderHexStamp = (match: RegExpExecArray) => {
   // Hex: 0x......
-  const { color, effects } = match.groups!
+  const { color = '', effects = '' } = match.groups ?? {}
 
   return renderStampDomWithStyle(
     `:${match[0]}:`,

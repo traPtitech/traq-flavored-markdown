@@ -11,10 +11,9 @@ const goFilePaths = [
   ...new Bun.Glob('**/*.go').scanSync({
     cwd: packagesRoot,
     onlyFiles: true,
-    dot: true,
-    ignore: ['**/node_modules/**', '**/target/**']
+    dot: true
   })
-]
+].filter(file => !/(?:^|\/)(?:node_modules|target)\//.test(file))
 const result = await $`gofmt ${check ? '-l' : '-w'} ${goFilePaths}`
   .cwd(packagesRoot)
   .nothrow()

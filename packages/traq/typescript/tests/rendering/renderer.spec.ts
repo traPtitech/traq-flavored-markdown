@@ -22,8 +22,8 @@ test('rendering returns HTML and exposes no parser or token adapter', () => {
     '<strong>bold</strong>'
   )
   expect(Object.keys(view).sort()).toEqual(['render'])
-  expect(html.installParser).toBeUndefined()
-  expect(html.traQMarkdownIt).toBeUndefined()
+  expect((html as Record<string, unknown>).installParser).toBeUndefined()
+  expect((html as Record<string, unknown>).traQMarkdownIt).toBeUndefined()
 })
 
 test('replacement preserves defaults and earlier snapshots', () => {
@@ -77,8 +77,8 @@ test('composition validates selected names without changing earlier presets', ()
       .add(new html.Plugin(other.new('different')))
       .build()
   ).toThrow(/Duplicate name/)
-  expect(() => html.renderer({})).toThrow(/Expected renderer Preset/)
-  expect(() => new html.Plugin('name')).toThrow(/declaration/)
+  expect(() => html.renderer({} as never)).toThrow(/Expected renderer Preset/)
+  expect(() => new html.Plugin('name' as never)).toThrow(/declaration/)
 })
 
 test('custom HTML handlers receive escaped text helpers and rendered children', () => {
@@ -96,7 +96,7 @@ test('custom HTML handlers receive escaped text helpers and rendered children', 
   expect(view.render(parser.parseInline('**<x>**'))).toBe(
     '<b title="&quot;&lt;&amp;">&lt;x&gt;</b>'
   )
-  plugin.replace(common.nodes.Strong, () => [])
+  plugin.replace(common.nodes.Strong, () => [] as unknown as string)
   expect(() =>
     html.renderer(build(plugin)).render(parser.parse('**x**'))
   ).toThrow(/HTML strings/)
@@ -167,11 +167,13 @@ test('CommonMark owns link policy and rejects malformed known payloads', () => {
     view.render(parser.parseInline('[link](https://example.com)'))
   ).not.toMatch(/href=/)
   const document = parser.parseInline('[label](https://example.com)')
-  document.children[0].data.destination = 'javascript:alert(1)'
+  ;(document.children[0].data as { destination: string }).destination =
+    'javascript:alert(1)'
   expect(html.renderer(common.preset()).render(document)).toBe('label')
   const heading = parser.parse('# title')
   expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
-  heading.children[0].data.level = '1 onclick="alert(1)"'
+  ;(heading.children[0].data as { level: string }).level =
+    '1 onclick="alert(1)"'
   expect(() => html.renderer(common.preset()).render(heading)).toThrow(
     /Invalid render payload/
   )

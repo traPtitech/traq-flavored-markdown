@@ -3,12 +3,20 @@ import { $ } from 'bun'
 import { goNodes } from '../packages/core/scripts/contracts/go.ts'
 import { nodeFiles } from '../packages/core/scripts/contracts/nodes.ts'
 
+type Manifest = {
+  buildId: string
+  limits: { inputBytes: number; memoryBytes: number }
+  nodes: Record<string, { group: string; schema: { title: string } }>
+  presets: Record<string, unknown>
+  processing: Record<string, { title: string; $defs?: Record<string, unknown> }>
+}
+
 const repositoryRoot = Bun.fileURLToPath(new URL('../', import.meta.url))
 const resolvePath = (base, ...parts) =>
   Bun.fileURLToPath(new URL(parts.join('/'), Bun.pathToFileURL(`${base}/`)))
 
-const readManifest = input =>
-  Bun.file(resolvePath(input, 'contracts.json')).json()
+const readManifest = (input: string) =>
+  Bun.file(resolvePath(input, 'contracts.json')).json() as Promise<Manifest>
 
 const runCommand = (command, cwd = repositoryRoot) =>
   $`${command[0]} ${command.slice(1)}`.cwd(cwd)

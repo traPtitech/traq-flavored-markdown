@@ -38,8 +38,10 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
       maxMessages: 2,
       perChannel: 5,
       delayMs: 0,
-      fetchImpl,
-      progress: x => logs.push(x)
+      fetchImpl: fetchImpl as typeof fetch,
+      progress: x => {
+        logs.push(x)
+      }
     })
     expect(result.messages).toBe(2)
     expect(calls.length).toBe(2)
@@ -48,7 +50,7 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
     )
       .trim()
       .split('\n')
-      .map(JSON.parse)
+      .map(line => JSON.parse(line))
     expect(saved[0].source).toBe('**private text**')
     expect(saved[0].id).not.toBe('a')
     expect(saved[0].userId).toBeUndefined()
@@ -59,7 +61,7 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
         baseUrl: 'https://traq.example/',
         token: 'test-token',
         output: directory,
-        fetchImpl
+        fetchImpl: fetchImpl as typeof fetch
       })
     ).rejects.toMatchObject({ code: 'EEXIST' })
     console.log(

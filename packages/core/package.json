@@ -42,10 +42,10 @@
     "scripts/contracts"
   ],
   "scripts": {
-    "build": "tsc -p typescript/tsconfig.json",
+    "build": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.build.json",
     "test": "bun test ./typescript/tests",
     "test:go": "go -C go test ./...",
-    "typecheck": "tsc -p typescript/tsconfig.json --noEmit"
+    "typecheck": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.json"
   },
   "engines": {
     "node": ">=24"

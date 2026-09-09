@@ -1,4 +1,6 @@
-export function goNodes(manifest) {
+export function goNodes(manifest: {
+  nodes: Record<string, { group: string }>
+}) {
   const groups = [
     ...new Set(Object.values(manifest.nodes).map(node => node.group))
   ]

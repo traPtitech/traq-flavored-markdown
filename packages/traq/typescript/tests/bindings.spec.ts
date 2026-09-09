@@ -10,7 +10,7 @@ const manifest = JSON.parse(
   await file(
     new URL('../../target/node-contracts/contracts.json', import.meta.url)
   ).text()
-)
+) as { nodes: Record<string, { schema: { required?: string[] } }> }
 
 function example(s) {
   if (s.kind === 'string') return 'value'
@@ -23,10 +23,11 @@ function example(s) {
 
 test('generated optional TypeScript guards enforce every exported payload shape', () => {
   for (const [name, schema] of Object.entries(manifest.nodes).map(
-    ([key, value]) => [key, value.schema]
+    ([key, value]): [string, { required?: string[] }] => [key, value.schema]
   )) {
     const valid = example(shape(schema)),
       check = nodes.get(name)
+    if (!check) throw new Error(`Missing generated validator: ${name}`)
     expect(check(valid)).toBeTruthy()
     expect(check({ ...valid, unexpected: true })).toBeFalsy()
     expect(check(null)).toBeFalsy()
@@ -37,14 +38,17 @@ test('generated optional TypeScript guards enforce every exported payload shape'
       expect(check({ ...valid, [field]: [] })).toBeFalsy()
     }
   }
+  const reference = nodes.get(names.Reference)
+  const cell = nodes.get(names.Cell)
+  if (!reference || !cell) throw new Error('Missing generated validator')
   expect(
-    !nodes.get(names.Reference)({
+    !reference({
       type: 'other',
       id: 'u',
       label: '@u'
     })
   ).toBeTruthy()
-  expect(!nodes.get(names.Cell)({ alignment: 'other' })).toBeTruthy()
+  expect(!cell({ alignment: 'other' })).toBeTruthy()
 })
 
 test('unsupported schema constraints fail generation instead of weakening validation', () => {

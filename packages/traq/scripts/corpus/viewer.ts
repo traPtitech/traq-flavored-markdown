@@ -1,4 +1,11 @@
 'use strict'
+declare const CorpusDiff: {
+  diffStringsRaw(
+    before: string,
+    after: string,
+    checkLines: boolean
+  ): [number, string][]
+}
 const meta = JSON.parse(document.getElementById('metadata').textContent),
   payload = JSON.parse(document.getElementById('payload').textContent)
 document.getElementById('metadata').remove()
@@ -8,7 +15,7 @@ const labels = {
   inline: 'traQ_S-UI · インライン',
   notification: 'traQ · 通知'
 }
-const el = id => document.getElementById(id),
+const el = id => document.getElementById(id) as HTMLElement & HTMLInputElement,
   num = n => Number(n).toLocaleString('ja-JP')
 let outputView = 'rendered'
 const viewSelect = document.createElement('select')
@@ -218,8 +225,8 @@ async function show() {
   const total = hits === null ? meta.counts[mode] : hits.length
   const pages = Math.max(1, Math.ceil(total / 50))
   page = Math.min(Math.max(1, page), pages)
-  el('page').value = page
-  el('page').max = pages
+  el('page').value = String(page)
+  el('page').max = String(pages)
   el('pages').textContent = num(pages)
   el('previous').disabled = page <= 1
   el('next').disabled = page >= pages
@@ -228,7 +235,10 @@ async function show() {
     ' 件' +
     (hits === null ? '' : ' / 全 ' + num(meta.counts[mode]) + ' 件')
   for (const b of el('modes').children)
-    b.setAttribute('aria-pressed', String(b.dataset.mode === mode))
+    b.setAttribute(
+      'aria-pressed',
+      String((b as HTMLElement).dataset.mode === mode)
+    )
   let rows = []
   if (total) {
     if (hits === null) rows = await load(mode, page - 1)
@@ -270,7 +280,7 @@ el('page').onchange = () => {
 }
 const filtersBar = document.createElement('div')
 filtersBar.className = 'filters'
-const filterInputs = {}
+const filterInputs: Record<string, HTMLInputElement> = {}
 for (const [id, label, title] of [
   [
     'whitespace',

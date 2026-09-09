@@ -36,7 +36,15 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       const validate = nodes.get('example::Numeric')
       for (const value of [0, 1, maximum])
         expect(validate({ value })).toBe(true)
-      for (const value of [-1, maximum + 1, 0.5, null, '1', NaN, Infinity])
+      for (const value of [
+        -1,
+        Number(maximum) + 1,
+        0.5,
+        null,
+        '1',
+        NaN,
+        Infinity
+      ])
         expect(validate({ value })).toBe(false)
       expect(validate({})).toBe(false)
       expect(validate({ value: 1, extra: 1 })).toBe(false)
@@ -49,7 +57,9 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       expect(() =>
         shape({ ...schema.properties.value, multipleOf: 2 })
       ).toThrow(/Unsupported schema keyword/)
-      const withoutMaximum = { ...schema.properties.value }
+      const withoutMaximum: { maximum?: string | number } = {
+        ...schema.properties.value
+      }
       delete withoutMaximum.maximum
       expect(shape(withoutMaximum).max).toBe(maximum)
     })

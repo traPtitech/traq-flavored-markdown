@@ -90,7 +90,7 @@ function configureCommonCondensed(common: Plugin, options: Options) {
 
   common.replace(
     names.Image,
-    checked(names.Image, isKnownNode, (n, ctx) => {
+    checked(names.Image, isKnownNode, (n, _ctx) => {
       const label = escapeHtml(n.data.label_source)
 
       if (!(options.validateLink ?? defaultPolicy)(n.data.destination))

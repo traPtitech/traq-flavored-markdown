@@ -30,6 +30,7 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
         cause: { code: 'resource_limit', resource: 'input_bytes' }
       })
   }
+  // @ts-expect-error This verifies the runtime boundary for non-string input.
   expect(() => core.parse(2)).toThrow(TypeError)
   expect(core.parseInline('**x**').children[0].kind).toBe(names.Strong)
   expect(core.parse('\ufefftext🦀').source).toBe('\ufefftext🦀')
@@ -57,7 +58,10 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
         'resource_limit'
       )
     }
-    expect(core.parse('after').children[0].children[0].data.value).toBe('after')
+    const document = core.parse('after') as unknown as {
+      children: [{ children: [{ data: { value: string } }] }]
+    }
+    expect(document.children[0].children[0].data.value).toBe('after')
   }
   const columns = 7500
   const outputError = captureError(() =>
@@ -123,7 +127,14 @@ test('artifact pairing, preset selection, disposal and isolated results', async 
 
 test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async () => {
   const { instance } = await WebAssembly.instantiate(bytes, {})
-  const wasm = instance.exports,
+  const wasm = instance.exports as unknown as {
+      abi_version: () => number
+      configure: () => number
+      input_ptr: (length: number) => number
+      memory: WebAssembly.Memory
+      output_ptr: () => number
+      parse: (mode: number) => number
+    },
     encoder = new TextEncoder(),
     decoder = new TextDecoder()
   const call = (operation, input, mode = 0) => {

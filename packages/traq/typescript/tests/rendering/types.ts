@@ -59,7 +59,7 @@ renderer({})
 new Plugin('name')
 declare const context: RenderContext
 const renderedChildren: string = context.render([])
-void [result, openResult, renderedChildren]
+void [result, messageHtml, condensedHtml, openResult, renderedChildren]
 
 // @ts-expect-error Choose a message presentation before rendering.
 messageView.render(parser.parse('text'))

@@ -2,9 +2,12 @@ import js from '@eslint/js'
 import stylistic from '@stylistic/eslint-plugin'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import prettier from 'eslint-config-prettier'
-import unicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
+
+const recommendedTypescriptRules = tseslint.configs[
+  'flat/recommended'
+] as unknown as object[]
 
 export default [
   {
@@ -21,12 +24,8 @@ export default [
       'bun.lock'
     ]
   },
-  js.configs.all,
-  ...tseslint.configs['flat/all'],
-  {
-    ...unicorn.configs.all,
-    files: ['**/*.{js,mjs,ts,mts}']
-  },
+  js.configs.recommended,
+  ...recommendedTypescriptRules,
   prettier,
   {
     plugins: {

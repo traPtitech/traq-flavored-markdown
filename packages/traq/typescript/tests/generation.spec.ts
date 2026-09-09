@@ -62,12 +62,13 @@ test('Rust processing options and nested results generate without host changes',
   const { processingFiles } =
     await import('../../scripts/contracts/processing.ts')
   await withTempDirectory('processing-contract-', async directory => {
-    const object = (title, properties) => ({
+    const object = (title: string, properties: Record<string, unknown>) => ({
       title,
       type: 'object',
       additionalProperties: false,
       properties,
-      required: Object.keys(properties)
+      required: Object.keys(properties),
+      $defs: undefined as Record<string, { title: string }> | undefined
     })
     const details = object('Details', {
       labels: { type: 'array', items: { type: 'string' } }

@@ -8,7 +8,9 @@ import { expect, test } from 'bun:test'
 
 test('core renders custom AST nodes without a grammar or Wasm runtime', () => {
   const declaration = new Declaration('custom')
-  const plugin = new Plugin(declaration).on('text', (n, c) => c.escape(n.data))
+  const plugin = new Plugin(declaration).on('text', (n, c) =>
+    c.escape(n.data as string)
+  )
   const builder = new PresetBuilder().add(plugin)
   const view = renderer(builder.build())
   const document = {
@@ -30,8 +32,8 @@ test('fallback and child rendering have no block or inline mode', () => {
   const declaration = new Declaration('containers')
   const plugin = new Plugin(declaration)
     .on('container', (node, ctx) => {
-      expect(ctx.inline).toBeUndefined()
-      expect(ctx.blocks).toBeUndefined()
+      expect('inline' in ctx).toBeFalse()
+      expect('blocks' in ctx).toBeFalse()
       return ctx.render(node.children)
     })
     .on('explicit', (node, ctx) => ctx.fallback(node))
@@ -53,10 +55,13 @@ test('fallback and child rendering have no block or inline mode', () => {
     expect(plain.render(input)).toBe('&lt;猫&gt;')
     expect(custom.render(input)).toBe('<aside>&lt;猫&gt;</aside>')
   }
+  // @ts-expect-error This verifies that invalid fallback values are rejected at runtime.
   expect(() => builder.build({ fallback: 42 })).toThrow(
     /Expected render fallback/
   )
   expect(() =>
-    renderer(builder.build({ fallback: () => [] })).render(document)
+    renderer(builder.build({ fallback: () => [] as unknown as string })).render(
+      document
+    )
   ).toThrow(/HTML string/)
 })

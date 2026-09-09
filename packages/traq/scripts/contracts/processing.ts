@@ -1,6 +1,11 @@
 import { goContract } from '@traq-markdown-parser/core/codegen/go'
 
-export async function processingFiles(schemas, input) {
+type Schema = { title: string; $defs?: Record<string, Schema> }
+
+export async function processingFiles(
+  schemas: Record<string, Schema>,
+  input: string
+) {
   const files = new Map([
     [
       'typescript/generated/processing.ts',

@@ -16,7 +16,7 @@ export async function collect({
   delayMs = 300,
   until = new Date().toISOString(),
   fetchImpl = fetch,
-  progress = () => {}
+  progress = (_value: unknown) => {}
 }) {
   const base = new URL(baseUrl)
   if (
@@ -64,7 +64,9 @@ export async function collect({
     bytes: 0,
     lengths: {},
     contains: {},
-    rawText: true
+    rawText: true,
+    channelOffset,
+    availableChannels: 0
   }
   const seen = new Set()
   async function get(relative) {
@@ -126,8 +128,9 @@ export async function collect({
   // Never overwrite an existing corpus on a rerun.
   const messagesFile = path.join(output, 'messages.jsonl')
   if (await Bun.file(messagesFile).exists()) {
-    const error = new Error('The corpus already exists')
-    error.code = 'EEXIST'
+    const error = Object.assign(new Error('The corpus already exists'), {
+      code: 'EEXIST'
+    })
     throw error
   }
   const sink = Bun.file(messagesFile).writer()
@@ -232,7 +235,7 @@ export async function collect({
     report.status = 'failed'
     throw error
   } finally {
-    await sink.close()
+    await sink.end()
     const manifest = path.join(output, 'manifest.json')
     await Bun.write(manifest, JSON.stringify(report, null, 2) + '\n')
     if (!Bun.env.WINDIR) await $`chmod 600 ${manifest}`
@@ -254,7 +257,7 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
         until: { type: 'string' }
       }
     })
-    let config = {}
+    let config: Record<string, string> = {}
     if (values['env-file']) {
       try {
         config = parseEnv(await Bun.file(values['env-file']).text())
@@ -262,8 +265,8 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
         throw new Error('Could not read env file')
       }
     }
-    const baseUrl = values['base-url'] ?? config.TRAQ_API_BASE_URL
-    if (!baseUrl || !(values['token-file'] || config.BOT_ACCESS_TOKEN))
+    const baseUrl = values['base-url'] ?? config['TRAQ_API_BASE_URL']
+    if (!baseUrl || !(values['token-file'] || config['BOT_ACCESS_TOKEN']))
       throw new Error(
         'API base URL and token file, or --env-file with TRAQ_API_BASE_URL/BOT_ACCESS_TOKEN, are required'
       )
@@ -284,7 +287,7 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
     try {
       token = values['token-file']
         ? (await Bun.file(values['token-file']).text()).trim()
-        : config.BOT_ACCESS_TOKEN.trim()
+        : config['BOT_ACCESS_TOKEN'].trim()
     } catch {
       throw new Error('Could not read token file')
     }
