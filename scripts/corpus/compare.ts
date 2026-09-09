@@ -37,8 +37,8 @@ const baseline = path.join(privateRoot, 'corpus-baseline')
 await $`mkdir -p ${baseline}`
 await $`mkdir -p ${out}`
 
-const run = async (cmd, args, cwd = root) => {
-  await $`${cmd} ${args}`.cwd(cwd)
+const run = async (cmd, args, cwd = root, env = Bun.env) => {
+  await $`${cmd} ${args}`.cwd(cwd).env(env)
 }
 const git = async (repo, args) =>
   (await $`git -C ${path.resolve(repo)} ${args}`.quiet()).text().trim()
@@ -107,6 +107,7 @@ await Bun.write(
   JSON.stringify(versions, null, 2)
 )
 const goRoot = path.join(baseline, 'notification')
+const go = args => run('go', args, goRoot, { ...Bun.env, GOWORK: 'off' })
 await $`mkdir -p ${path.join(goRoot, 'go-before')}`
 
 for (const name of ['parser.go', 'spoiler.go'])
@@ -126,9 +127,20 @@ const version = name => {
   if (!match) throw Error('Missing baseline dependency ' + name)
   return match[1]
 }
+const localGoModule = name =>
+  JSON.stringify(
+    path.join(repositoryRoot, 'packages', name, 'go').replaceAll('\\', '/')
+  )
 await Bun.write(
   path.join(goRoot, 'go.mod'),
-  `module corpuscomparison\n\ngo 1.26.0\n\nrequire (\n github.com/gofrs/uuid ${version('github.com/gofrs/uuid')}\n github.com/json-iterator/go ${version('github.com/json-iterator/go')}\n github.com/traq-markdown-parser/traq/go v0.1.0\n)\nreplace github.com/traq-markdown-parser/traq/go => ${JSON.stringify(path.join(root, 'go').replaceAll('\\', '/'))}\n`
+  `module corpuscomparison\n\ngo 1.26.0\n\nrequire (\n github.com/gofrs/uuid ${version('github.com/gofrs/uuid')}\n github.com/json-iterator/go ${version('github.com/json-iterator/go')}\n github.com/traq-markdown-parser/traq/go v0.1.0\n)\n` +
+    ['core', 'commonmark', 'trap-extension', 'traq']
+      .map(
+        name =>
+          `replace github.com/traq-markdown-parser/${name}/go => ${localGoModule(name)}`
+      )
+      .join('\n') +
+    '\n'
 )
 await Bun.write(
   path.join(goRoot, 'config.json'),
@@ -137,7 +149,7 @@ await Bun.write(
     wasm: path.join(root, 'dist/parser.wasm')
   })
 )
-await run('go', ['mod', 'tidy'], goRoot)
+await go(['mod', 'tidy'])
 await run(Bun.argv[0], [
   Bun.fileURLToPath(new URL('./compare-frontend.ts', import.meta.url)),
   '--corpus',
@@ -151,22 +163,18 @@ await run(Bun.argv[0], [
   '--origin',
   v.origin
 ])
-await run(
-  'go',
-  [
-    'run',
-    '.',
-    '-corpus',
-    corpus,
-    '-out',
-    out,
-    '-max',
-    v.max,
-    '-config',
-    path.join(goRoot, 'config.json')
-  ],
-  goRoot
-)
+await go([
+  'run',
+  '.',
+  '-corpus',
+  corpus,
+  '-out',
+  out,
+  '-max',
+  v.max,
+  '-config',
+  path.join(goRoot, 'config.json')
+])
 await run(Bun.argv[0], [
   Bun.fileURLToPath(new URL('./report.ts', import.meta.url)),
   '--data',

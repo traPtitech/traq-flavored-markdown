@@ -83,7 +83,6 @@ async function generateContractGroup(
       'cargo',
       'run',
       '--locked',
-      '--offline',
       '-p',
       crate,
       '--features',
