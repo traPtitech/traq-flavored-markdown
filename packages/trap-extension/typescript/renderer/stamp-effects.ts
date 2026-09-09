@@ -1,31 +1,31 @@
 export const animeEffects = [
-    "rotate",
-    "rotate-inv",
-    "wiggle",
-    "parrot",
-    "zoom",
-    "inversion",
-    "turn",
-    "turn-v",
-    "happa",
-    "pyon",
-    "flashy",
-    "pull",
-    "atsumori",
-    "stretch",
-    "stretch-v",
-    "conga",
-    "conga-inv",
-    "marquee",
-    "marquee-inv",
-    "rainbow",
-    "ascension",
-    "shake",
-    "party",
-    "attract",
-] as const;
+  'rotate',
+  'rotate-inv',
+  'wiggle',
+  'parrot',
+  'zoom',
+  'inversion',
+  'turn',
+  'turn-v',
+  'happa',
+  'pyon',
+  'flashy',
+  'pull',
+  'atsumori',
+  'stretch',
+  'stretch-v',
+  'conga',
+  'conga-inv',
+  'marquee',
+  'marquee-inv',
+  'rainbow',
+  'ascension',
+  'shake',
+  'party',
+  'attract'
+] as const
 
-export const sizeEffects = ["ex-large", "large", "small"] as const;
+export const sizeEffects = ['ex-large', 'large', 'small'] as const
 
-export type AnimeEffect = (typeof animeEffects)[number];
-export type SizeEffect = (typeof sizeEffects)[number];
+export type AnimeEffect = (typeof animeEffects)[number]
+export type SizeEffect = (typeof sizeEffects)[number]

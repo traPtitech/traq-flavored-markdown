@@ -2,14 +2,14 @@
 
 文法に依存しない Markdown 処理の基盤です。CommonMark や traP の具体的な構文・ノード型・preset は含みません。
 
-| crate | 責務 |
-| --- | --- |
-| `markdown-ast` | 型付き AST、原文、UTF-8 span |
-| `markdown-definitions` / `markdown-definitions-derive` | 宣言の同一性、ノードの型情報 |
-| `markdown-parser` | 文法の組み立て、ルール実行、処理量の制限 |
-| `markdown-renderer` | AST の描画・テキスト生成基盤 |
-| `markdown-extractor` | AST からの情報抽出基盤 |
-| `markdown-codec` | 登録されたノード契約に基づく JSON encode / decode |
+| crate                                                  | 責務                                              |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| `markdown-ast`                                         | 型付き AST、原文、UTF-8 span                      |
+| `markdown-definitions` / `markdown-definitions-derive` | 宣言の同一性、ノードの型情報                      |
+| `markdown-parser`                                      | 文法の組み立て、ルール実行、処理量の制限          |
+| `markdown-renderer`                                    | AST の描画・テキスト生成基盤                      |
+| `markdown-extractor`                                   | AST からの情報抽出基盤                            |
+| `markdown-codec`                                       | 登録されたノード契約に基づく JSON encode / decode |
 
 各 crate の README に API の例があります。
 
@@ -36,12 +36,12 @@ core はこれらへ依存しません。テストにも独立した契約型を
 
 TypeScript の実装もこのリポジトリの責務に合わせて配置しています。
 
-| npm package | 責務 |
-| --- | --- |
-| `@traq-markdown-parser/core` | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
-| `@traq-markdown-parser/commonmark` | CommonMark・汎用拡張の生成ノード型と HTML 描画 |
-| `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画 |
-| `@traq-markdown-parser/traq` | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS |
+| npm package                            | 責務                                                                   |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| `@traq-markdown-parser/core`           | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
+| `@traq-markdown-parser/commonmark`     | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
+| `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
+| `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
 
 ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `npm install`・`npm run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `npm run check:package` で4パッケージを pack し、独立した consumer で実行します。
 

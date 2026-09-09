@@ -15,7 +15,8 @@ import { names } from '@traq-markdown-parser/traq/nodes'
 const runtime = await createRuntime(wasmBytes)
 try {
   const parser = runtime.createParser(presets.traq.v1)
-  for (const node of parser.parseInline('[資料](https://example.com)').children) {
+  for (const node of parser.parseInline('[資料](https://example.com)')
+    .children) {
     if (node.kind === names.Link) console.log(node.data.destination)
   }
 } finally {

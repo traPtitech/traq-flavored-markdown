@@ -1,8 +1,10 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { renderer } from '@traq-markdown-parser/core/renderer'
+import test from 'node:test'
+
 import * as rendering from '@traq-markdown-parser/traq/renderer'
+import { renderer } from '@traq-markdown-parser/core/renderer'
+
 import { parser } from './setup.mjs'
 
 const fixtures = JSON.parse(

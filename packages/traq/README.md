@@ -10,12 +10,12 @@ traQ 向けの Markdown 文法・通知処理の構成と、Rust・WebAssembly�
 
 ## 構成と責任
 
-| 場所 | 責任 |
-| --- | --- |
-| `crates/grammar` | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成 |
-| `crates/processing` | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
-| `crates/wasm` | 配布する文法・ノード型・処理 API を Wasm として公開 |
-| `go`・`typescript`・`scripts/contracts` | この配布物に対応する bindings と型生成 |
+| 場所                                    | 責任                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| `crates/grammar`                        | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成                |
+| `crates/processing`                     | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
+| `crates/wasm`                           | 配布する文法・ノード型・処理 API を Wasm として公開                          |
+| `go`・`typescript`・`scripts/contracts` | この配布物に対応する bindings と型生成                                       |
 
 共通機構は core、CommonMark と汎用拡張は commonmark、traP 固有の拡張部品は
 trap-extension にあります。このリポジトリがそれらに依存し、traQ 向けに組み合わせます。
@@ -112,7 +112,6 @@ DB に保存するのは永続的な文法バージョンです。SDK と Wasm �
 旧実装を旧文法に残します。変更のないルールや AST の処理コードを文法ごとに複製する必要はありません。
 既存の v1 AST fixture は互換性検証に使い、文法を更新する目的で期待値を上書きしません。
 
-
 TypeScript の `presets.commonmark` / `presets.traq.v1`、Go の `PresetCommonMark` / `PresetTraQV1` は Rust が公開するプリセットから生成します。独自の文法は Rust で組み立て、配布層からプリセットとして公開して再ビルドします。ホスト API は文法からのパーサー生成、解析、解放を提供します。
 
 Wasm のホスト実装は TypeScript の `index.ts` と Go の `parser.go` です。共通 AST 型と payload guard の検証部品は core、構文の生成型はそれぞれのリポジトリが所有します。文法ビルダー、Plugin / Rule のミラー、文法ハンドル、worker pool は持ちません。
@@ -163,12 +162,12 @@ Extractor は参照・添付 ID・引用 ID・埋め込み編集計画と、Mark
 
 TypeScript の実装は各リポジトリの責務に合わせて配置しています。
 
-| npm package | 責務 |
-| --- | --- |
-| `@traq-markdown-parser/core` | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
-| `@traq-markdown-parser/commonmark` | CommonMark・汎用拡張の生成ノード型と HTML 描画 |
-| `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画 |
-| `@traq-markdown-parser/traq` | Wasm / Go / TypeScript 配布、traQ の描画構成・condensed 表示・CSS |
+| npm package                            | 責務                                                                   |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| `@traq-markdown-parser/core`           | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
+| `@traq-markdown-parser/commonmark`     | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
+| `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
+| `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・condensed 表示・CSS      |
 
 ローカル開発では4リポジトリを同じ親ディレクトリに置き、core → commonmark → trap-extension → traq の順に `npm install`・`npm run build` を実行します。npm パッケージはまだ未公開です。配布検証は traq の `npm run check:package` で4パッケージを pack し、独立した consumer で実行します。
 
@@ -179,17 +178,17 @@ HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/tr
 ### HTML の利用例
 
 ```ts
-import { createRuntime, presets } from "@traq-markdown-parser/traq";
-import { messageRenderers } from "@traq-markdown-parser/traq/renderer";
-import "@traq-markdown-parser/traq/index.css";
+import { createRuntime, presets } from '@traq-markdown-parser/traq'
+import '@traq-markdown-parser/traq/index.css'
+import { messageRenderers } from '@traq-markdown-parser/traq/renderer'
 
-const runtime = await createRuntime(wasmBytes);
-const parser = runtime.createParser(presets.traq.v1);
-const view = messageRenderers({ origin: "https://q.example.test" });
-const document = parser.parse(source);
-const { renderedText, embeddings } = view.standard.render(document);
-const condensed = view.condensed.render(document);
-runtime.dispose();
+const runtime = await createRuntime(wasmBytes)
+const parser = runtime.createParser(presets.traq.v1)
+const view = messageRenderers({ origin: 'https://q.example.test' })
+const document = parser.parse(source)
+const { renderedText, embeddings } = view.standard.render(document)
+const condensed = view.condensed.render(document)
+runtime.dispose()
 ```
 
 Wasm の起動は利用側が明示的に行います。`/renderer` を import しても Wasm runtime は読み込みません。描画のカスタマイズは `@traq-markdown-parser/core/renderer` の `Plugin`・`PresetBuilder` と、各構文の `/renderer` を利用します。

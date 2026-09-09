@@ -1,14 +1,16 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
-import MarkdownIt from 'markdown-it'
-import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
-import * as commonNodes from '@traq-markdown-parser/commonmark/nodes'
-import * as html from '@traq-markdown-parser/core/renderer'
-import * as common from '@traq-markdown-parser/commonmark/renderer'
+import test from 'node:test'
+
 import * as generic from '@traq-markdown-parser/commonmark/generic/renderer'
-import * as trap from '@traq-markdown-parser/trap-extension/renderer'
+import * as commonNodes from '@traq-markdown-parser/commonmark/nodes'
+import * as common from '@traq-markdown-parser/commonmark/renderer'
+import * as html from '@traq-markdown-parser/core/renderer'
 import * as trapNodes from '@traq-markdown-parser/trap-extension/nodes'
+import * as trap from '@traq-markdown-parser/trap-extension/renderer'
 import * as traq from '@traq-markdown-parser/traq/renderer'
+import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
+import MarkdownIt from 'markdown-it'
+
 import { commonParser, parser } from './setup.mjs'
 
 const build = plugin => new html.PresetBuilder().add(plugin).build()
@@ -145,10 +147,7 @@ test('empty presets escape source without implicitly enabling CommonMark', () =>
       }
     ]
   }
-  assert.equal(
-    view.render(document),
-    '&lt;script&gt;日本語&lt;/script&gt;'
-  )
+  assert.equal(view.render(document), '&lt;script&gt;日本語&lt;/script&gt;')
 })
 
 test('tight lists preserve paragraphs owned by blockquotes and nested loose lists', () => {

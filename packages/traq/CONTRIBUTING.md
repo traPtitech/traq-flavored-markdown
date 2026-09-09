@@ -28,19 +28,19 @@ Go tests execute the built Wasm and use `-count=1` to avoid stale test-cache res
 
 ## Ownership
 
-| Location | Responsibility |
-| --- | --- |
-| crates/grammar | traQ grammar presets and the distribution catalog |
-| crates/processing | traQ notification and extraction presets |
-| crates/wasm | Wasm ABI, distribution catalog, registered node contract list |
-| `typescript/index.ts` | TypeScript Wasm transport and lifecycle |
-| `go/parser.go` | traQ preset and artifact selection over core Go runtime |
-| core Go module | Shared AST decoding and Wasm runtime |
-| commonmark / trap-extension Go modules | Generated payloads and factories owned by each extension |
-| `typescript/generated`, `go/*_generated.go` | Owner composition, presets, processing output and artifact metadata |
-| core `scripts/contracts`; traq `scripts/contracts` | Generic code generation; distribution composition |
-| `tests/fixtures` | Public cross-language and distribution compatibility fixtures |
-| `examples/{rust,go,typescript}` | Public API consumers |
+| Location                                           | Responsibility                                                      |
+| -------------------------------------------------- | ------------------------------------------------------------------- |
+| crates/grammar                                     | traQ grammar presets and the distribution catalog                   |
+| crates/processing                                  | traQ notification and extraction presets                            |
+| crates/wasm                                        | Wasm ABI, distribution catalog, registered node contract list       |
+| `typescript/index.ts`                              | TypeScript Wasm transport and lifecycle                             |
+| `go/parser.go`                                     | traQ preset and artifact selection over core Go runtime             |
+| core Go module                                     | Shared AST decoding and Wasm runtime                                |
+| commonmark / trap-extension Go modules             | Generated payloads and factories owned by each extension            |
+| `typescript/generated`, `go/*_generated.go`        | Owner composition, presets, processing output and artifact metadata |
+| core `scripts/contracts`; traq `scripts/contracts` | Generic code generation; distribution composition                   |
+| `tests/fixtures`                                   | Public cross-language and distribution compatibility fixtures       |
+| `examples/{rust,go,typescript}`                    | Public API consumers                                                |
 
 Bindings are authored in `.ts`; `.js` and `.d.ts` are build outputs. Rust is the source of truth for generated payload types and validators. Do not hand-edit generated files. HTML implementations belong to their core / CommonMark / traP owners; traQ composes them and owns its presentation CSS.
 

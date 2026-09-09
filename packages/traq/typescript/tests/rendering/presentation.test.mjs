@@ -1,8 +1,10 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
-import { renderer } from '@traq-markdown-parser/core/renderer'
+import test from 'node:test'
+
 import * as rendering from '@traq-markdown-parser/traq/renderer'
-import { parser, commonParser } from './setup.mjs'
+import { renderer } from '@traq-markdown-parser/core/renderer'
+
+import { commonParser, parser } from './setup.mjs'
 
 test('traQ presentation combines tables, marks, spoilers, math, and highlighted code', () => {
   const view = renderer(rendering.html())
@@ -87,9 +89,7 @@ test('reference highlighting and link/image policies belong to each renderer', t
   assert.match(html, /message-group-link-highlight/)
   assert.match(html, /href="#channel-c"/)
   assert.doesNotMatch(
-    view.render(
-      common.parseInline('![x](https://unlisted.example/x.png)')
-    ),
+    view.render(common.parseInline('![x](https://unlisted.example/x.png)')),
     /<img/
   )
   assert.match(
@@ -100,9 +100,7 @@ test('reference highlighting and link/image policies belong to each renderer', t
     rendering.html({ validateImage: () => true, validateLink: () => false })
   )
   assert.match(
-    custom.render(
-      common.parseInline('![x](https://unlisted.example/x.png)')
-    ),
+    custom.render(common.parseInline('![x](https://unlisted.example/x.png)')),
     /<img/
   )
   assert.equal(

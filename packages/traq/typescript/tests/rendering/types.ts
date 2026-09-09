@@ -1,25 +1,27 @@
+import * as rendering from '@traq-markdown-parser/traq/renderer'
+import { isKnownNode, names } from '@traq-markdown-parser/commonmark/nodes'
+import { plugin } from '@traq-markdown-parser/commonmark/renderer'
 import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
 import {
-  createRuntime,
-  presets,
-  type Document
-} from '@traq-markdown-parser/traq'
-import { names, isKnownNode } from '@traq-markdown-parser/commonmark/nodes'
-import {
-  renderer,
   Plugin,
   PresetBuilder,
-  type RenderContext
+  type RenderContext,
+  renderer
 } from '@traq-markdown-parser/core/renderer'
-import { plugin } from '@traq-markdown-parser/commonmark/renderer'
-import * as rendering from '@traq-markdown-parser/traq/renderer'
 import type { Store } from '@traq-markdown-parser/trap-extension/renderer'
+import {
+  type Document,
+  createRuntime,
+  presets
+} from '@traq-markdown-parser/traq'
 
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)
 const view = renderer(rendering.html())
 const result: string = view.render(parser.parse('text'))
-const messageView = rendering.messageRenderers({ origin: 'https://q.example.test' })
+const messageView = rendering.messageRenderers({
+  origin: 'https://q.example.test'
+})
 const messageHtml: string = messageView.standard.render(
   parser.parse('text')
 ).renderedText
@@ -60,12 +62,12 @@ const renderedChildren: string = context.render([])
 void [result, openResult, renderedChildren]
 
 // @ts-expect-error Choose a message presentation before rendering.
-messageView.render(parser.parse("text"))
+messageView.render(parser.parse('text'))
 // @ts-expect-error Each message renderer exposes only render.
-messageView.condensed.renderInline(parser.parse("text"))
+messageView.condensed.renderInline(parser.parse('text'))
 
 // @ts-expect-error Core renderers also expose only render.
-view.renderInline(parser.parseInline("text"))
+view.renderInline(parser.parseInline('text'))
 
 // @ts-expect-error Child rendering has no inline mode.
 context.inline([])

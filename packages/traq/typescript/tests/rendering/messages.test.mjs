@@ -1,11 +1,13 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
+import test from 'node:test'
+
 import {
-  messageRenderers,
   embeddingFromUrl,
-  endsWithEmbedding
+  endsWithEmbedding,
+  messageRenderers
 } from '@traq-markdown-parser/traq/renderer'
-import { parser, commonParser } from './setup.mjs'
+
+import { commonParser, parser } from './setup.mjs'
 
 const origin = 'https://q.example.test',
   fileId = '00000000-0000-0000-0000-000000000001',
@@ -87,7 +89,10 @@ test('condensed labels retained card links without removing explicit labels from
   assert.match(text, />\[\[添付ファイル\]\]<\/a>/)
   assert.match(text, />\[\[引用メッセージ\]\]<\/a> 続き/)
   assert.equal(view.condensed.render(parser.parse(file)).renderedText, '')
-  assert.match(view.standard.render(parser.parse('<' + file + '>')).renderedText, /<a /)
+  assert.match(
+    view.standard.render(parser.parse('<' + file + '>')).renderedText,
+    /<a /
+  )
 })
 
 test('condensed preserves explicit quote links and their labels', () => {
@@ -155,13 +160,22 @@ test('condensed renders images as links and restricts math size commands', t => 
     view.condensed.render(parser.parse('$$x$$')).renderedText,
     /katex-block|katex-display/
   )
-  assert.match(view.standard.render(parser.parse('$$x$$')).renderedText, /katex-block/)
+  assert.match(
+    view.standard.render(parser.parse('$$x$$')).renderedText,
+    /katex-block/
+  )
 })
 
 test('attachment spacing checks the complete AST instead of its final source line', () => {
   assert.equal(endsWithEmbedding(parser.parse('本文\n' + file), origin), true)
   assert.equal(endsWithEmbedding(parser.parse('本文 ' + file), origin), false)
   assert.equal(endsWithEmbedding(parser.parse('~~~\n' + file), origin), false)
-  assert.equal(endsWithEmbedding(parser.parse('!!' + file + '!!'), origin), false)
-  assert.equal(endsWithEmbedding(parser.parse('[' + file + '](' + file + ')'), origin), false)
+  assert.equal(
+    endsWithEmbedding(parser.parse('!!' + file + '!!'), origin),
+    false
+  )
+  assert.equal(
+    endsWithEmbedding(parser.parse('[' + file + '](' + file + ')'), origin),
+    false
+  )
 })

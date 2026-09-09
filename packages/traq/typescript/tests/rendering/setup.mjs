@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { after } from 'node:test'
+
 import { createRuntime, presets } from '@traq-markdown-parser/traq'
 
 export const wasmBytes = await readFile(

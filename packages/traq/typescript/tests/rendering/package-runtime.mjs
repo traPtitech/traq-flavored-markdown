@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { createRuntime, presets } from '@traq-markdown-parser/traq'
-import { renderer, PresetBuilder } from '@traq-markdown-parser/core/renderer'
-import { plugin } from '@traq-markdown-parser/commonmark/renderer'
+
 import * as rendering from '@traq-markdown-parser/traq/renderer'
+import { plugin } from '@traq-markdown-parser/commonmark/renderer'
+import { PresetBuilder, renderer } from '@traq-markdown-parser/core/renderer'
+import { createRuntime, presets } from '@traq-markdown-parser/traq'
 
 assert.throws(() => import.meta.resolve('markdown-it'), {
   code: 'ERR_MODULE_NOT_FOUND'
@@ -30,7 +31,9 @@ try {
     'background-color: #ff0000'
   ])
     assert(output.includes(text), text)
-  const messages = rendering.messageRenderers({ origin: 'https://q.example.test' })
+  const messages = rendering.messageRenderers({
+    origin: 'https://q.example.test'
+  })
   const message = parser.parse(
     'hello\nhttps://q.example.test/files/00000000-0000-0000-0000-000000000001'
   )

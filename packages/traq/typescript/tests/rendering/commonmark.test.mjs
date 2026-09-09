@@ -1,10 +1,12 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import test from 'node:test'
+
+import { preset } from '@traq-markdown-parser/commonmark/renderer'
+import { renderer } from '@traq-markdown-parser/core/renderer'
 import MarkdownIt from 'markdown-it'
 import { escapeHtml } from 'markdown-it/lib/common/utils.mjs'
-import { renderer } from '@traq-markdown-parser/core/renderer'
-import { preset } from '@traq-markdown-parser/commonmark/renderer'
+
 import { commonParser } from './setup.mjs'
 
 const fixtures = JSON.parse(

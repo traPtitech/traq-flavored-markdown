@@ -1,55 +1,56 @@
-import { names, isKnownNode } from "@traq-markdown-parser/trap-extension/nodes";
-import { checked, escapeHtml } from "@traq-markdown-parser/core/html";
-import { Plugin as Declaration } from "@traq-markdown-parser/core/definitions";
-import { Plugin } from "@traq-markdown-parser/core/renderer";
-import { validateLink as defaultPolicy } from "@traq-markdown-parser/commonmark/policy";
-import { renderReference } from "./reference.js";
-import { stampRenderer } from "./stamp.js";
-import type { Options } from "./types.js";
+import { validateLink as defaultPolicy } from '@traq-markdown-parser/commonmark/policy'
+import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
+import { checked, escapeHtml } from '@traq-markdown-parser/core/html'
+import { Plugin } from '@traq-markdown-parser/core/renderer'
+import { isKnownNode, names } from '@traq-markdown-parser/trap-extension/nodes'
 
-export type { Options, Store } from "./types.js";
+import { renderReference } from './reference.js'
+import { stampRenderer } from './stamp.js'
+import type { Options } from './types.js'
 
-const declaration = Declaration.group("trap").new("presentation");
+export type { Options, Store } from './types.js'
+
+const declaration = Declaration.group('trap').new('presentation')
 
 export function plugin({
   store,
   baseUrl,
-  validateLink = defaultPolicy,
+  validateLink = defaultPolicy
 }: Options = {}) {
-  const result = new Plugin(declaration);
+  const result = new Plugin(declaration)
 
   result.on(
     names.Reference,
-    checked(names.Reference, isKnownNode, (node) =>
-      renderReference(node, store, validateLink),
-    ),
-  );
+    checked(names.Reference, isKnownNode, node =>
+      renderReference(node, store, validateLink)
+    )
+  )
 
   result.on(
     names.Spoiler,
     checked(
       names.Spoiler,
       isKnownNode,
-      (n, ctx) => '<span class="spoiler">' + ctx.render(n.children) + "</span>",
-    ),
-  );
+      (n, ctx) => '<span class="spoiler">' + ctx.render(n.children) + '</span>'
+    )
+  )
 
   result.on(
     names.BlankLine,
-    checked(names.BlankLine, isKnownNode, () => "<br>\n"),
-  );
+    checked(names.BlankLine, isKnownNode, () => '<br>\n')
+  )
 
   result.on(
     names.Embedding,
-    checked(names.Embedding, isKnownNode, (node) => escapeHtml(node.data.literal)),
-  );
+    checked(names.Embedding, isKnownNode, node => escapeHtml(node.data.literal))
+  )
 
-  const stamp = stampRenderer({ store, baseUrl });
+  const stamp = stampRenderer({ store, baseUrl })
 
   result.on(
     names.Stamp,
-    checked(names.Stamp, isKnownNode, (node) => stamp(node.data.literal)),
-  );
+    checked(names.Stamp, isKnownNode, node => stamp(node.data.literal))
+  )
 
-  return result;
+  return result
 }

@@ -1,59 +1,60 @@
-import { goNodes } from "@traq-markdown-parser/core/codegen/go";
-import { execFileSync } from "node:child_process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { nodeFiles } from "@traq-markdown-parser/core/codegen/nodes";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { execFileSync } from 'node:child_process'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+import { goNodes } from '@traq-markdown-parser/core/codegen/go'
+import { nodeFiles } from '@traq-markdown-parser/core/codegen/nodes'
+
+const root = fileURLToPath(new URL('../', import.meta.url))
 async function generateGroup(group, crate) {
-  const input = path.join(root, "target", "typescript-contracts", group);
+  const input = path.join(root, 'target', 'typescript-contracts', group)
 
   execFileSync(
-    "cargo",
+    'cargo',
     [
-      "run",
-      "--locked",
-      "--offline",
-      "-p",
+      'run',
+      '--locked',
+      '--offline',
+      '-p',
       crate,
-      "--features",
-      "contracts",
-      "--example",
+      '--features',
+      'contracts',
+      '--example',
       `export-${group}-types`,
-      "--",
-      input,
+      '--',
+      input
     ],
-    { cwd: root, stdio: "inherit", windowsHide: true },
-  );
+    { cwd: root, stdio: 'inherit', windowsHide: true }
+  )
 
   const manifest = JSON.parse(
-    await readFile(path.join(input, "contracts.json")),
-  );
+    await readFile(path.join(input, 'contracts.json'))
+  )
   const goPath = path.join(
     root,
-    "go",
-    group === "generic" ? "generic" : "",
-    "nodes_generated.go",
-  );
-  await mkdir(path.dirname(goPath), { recursive: true });
+    'go',
+    group === 'generic' ? 'generic' : '',
+    'nodes_generated.go'
+  )
+  await mkdir(path.dirname(goPath), { recursive: true })
   const entries = Object.entries(manifest.nodes).map(([key, node]) => [
     key,
-    node.schema,
-  ]);
-  await writeFile(goPath, goNodes(entries, group));
+    node.schema
+  ])
+  await writeFile(goPath, goNodes(entries, group))
 
-  execFileSync("gofmt", ["-w", goPath], { windowsHide: true });
+  execFileSync('gofmt', ['-w', goPath], { windowsHide: true })
   for (const [name, source] of await nodeFiles(manifest, input)) {
-    const output = path.join(root, "typescript", "generated", name);
-    await mkdir(path.dirname(output), { recursive: true });
-    await writeFile(output, source);
+    const output = path.join(root, 'typescript', 'generated', name)
+    await mkdir(path.dirname(output), { recursive: true })
+    await writeFile(output, source)
   }
 }
 
 for (const [group, crate] of [
-  ["commonmark", "markdown-commonmark-contracts"],
-  ["generic", "markdown-generic-contracts"],
+  ['commonmark', 'markdown-commonmark-contracts'],
+  ['generic', 'markdown-generic-contracts']
 ]) {
-  await generateGroup(group, crate);
+  await generateGroup(group, crate)
 }

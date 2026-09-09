@@ -1,134 +1,135 @@
-import type { Node } from "@traq-markdown-parser/core/renderer";
-import type { Options } from "./options.js";
-import { names, isKnownNode } from "@traq-markdown-parser/commonmark/nodes";
+import { isKnownNode, names } from '@traq-markdown-parser/commonmark/nodes'
 import {
   attributes,
-  escapeHtml,
   checked,
-} from "@traq-markdown-parser/core/html";
-import { Plugin } from "@traq-markdown-parser/core/renderer";
+  escapeHtml
+} from '@traq-markdown-parser/core/html'
+import type { Node } from '@traq-markdown-parser/core/renderer'
+import { Plugin } from '@traq-markdown-parser/core/renderer'
+
+import type { Options } from './options.js'
 
 function imageText(nodes: Node[] = [], source: string): string {
   return nodes
-    .map((node) => {
+    .map(node => {
       if (!isKnownNode(node))
         return new TextDecoder().decode(
           new TextEncoder()
             .encode(source)
-            .subarray(node.span.start, node.span.end),
-        );
+            .subarray(node.span.start, node.span.end)
+        )
 
       switch (node.kind) {
         case names.Text:
-          return node.data.value;
+          return node.data.value
         case names.HtmlInline:
-          return node.data.literal;
+          return node.data.literal
         case names.Softbreak:
         case names.Hardbreak:
-          return "\n";
+          return '\n'
         case names.InlineCode:
-          return node.data.literal;
+          return node.data.literal
         default:
-          return imageText(node.children, source);
+          return imageText(node.children, source)
       }
     })
-    .join("");
+    .join('')
 }
 
 function titleAttribute(title: string | null) {
-  return title === null ? "" : attributes([["title", title]]);
+  return title === null ? '' : attributes([['title', title]])
 }
 
 type InlineOptions = Required<
-  Pick<Options, "validateLink" | "validateImage" | "breaks" | "linkAttributes">
->;
+  Pick<Options, 'validateLink' | 'validateImage' | 'breaks' | 'linkAttributes'>
+>
 
 export function registerInlineHandlers(
   result: Plugin,
-  { validateLink, validateImage, breaks, linkAttributes }: InlineOptions,
+  { validateLink, validateImage, breaks, linkAttributes }: InlineOptions
 ) {
-  const linkAttrs = attributes(Object.entries(linkAttributes));
+  const linkAttrs = attributes(Object.entries(linkAttributes))
 
   result.on(
     names.Text,
-    checked(names.Text, isKnownNode, (n) => escapeHtml(n.data.value)),
-  );
+    checked(names.Text, isKnownNode, n => escapeHtml(n.data.value))
+  )
 
   result.on(
     names.InlineCode,
     checked(
       names.InlineCode,
       isKnownNode,
-      (n) => "<code>" + escapeHtml(n.data.literal) + "</code>",
-    ),
-  );
+      n => '<code>' + escapeHtml(n.data.literal) + '</code>'
+    )
+  )
 
   result.on(
     names.Softbreak,
-    checked(names.Softbreak, isKnownNode, () => (breaks ? "<br>\n" : "\n")),
-  );
+    checked(names.Softbreak, isKnownNode, () => (breaks ? '<br>\n' : '\n'))
+  )
 
   result.on(
     names.Hardbreak,
-    checked(names.Hardbreak, isKnownNode, () => "<br>\n"),
-  );
+    checked(names.Hardbreak, isKnownNode, () => '<br>\n')
+  )
 
   result.on(
     names.Emphasis,
     checked(
       names.Emphasis,
       isKnownNode,
-      (n, ctx) => "<em>" + ctx.render(n.children) + "</em>",
-    ),
-  );
+      (n, ctx) => '<em>' + ctx.render(n.children) + '</em>'
+    )
+  )
 
   result.on(
     names.Strong,
     checked(
       names.Strong,
       isKnownNode,
-      (n, ctx) => "<strong>" + ctx.render(n.children) + "</strong>",
-    ),
-  );
+      (n, ctx) => '<strong>' + ctx.render(n.children) + '</strong>'
+    )
+  )
 
   result.on(
     names.Link,
     checked(names.Link, isKnownNode, (n, ctx) => {
-      const content = ctx.render(n.children);
+      const content = ctx.render(n.children)
 
-      if (!validateLink(n.data.destination)) return content;
+      if (!validateLink(n.data.destination)) return content
 
       return (
-        "<a" +
-        attributes([["href", n.data.destination]]) +
+        '<a' +
+        attributes([['href', n.data.destination]]) +
         linkAttrs +
         titleAttribute(n.data.title) +
-        ">" +
+        '>' +
         content +
-        "</a>"
-      );
-    }),
-  );
+        '</a>'
+      )
+    })
+  )
 
   result.on(
     names.Image,
     checked(names.Image, isKnownNode, (n, ctx) => {
-      if (!validateImage(n.data.destination)) return ctx.fallback(n);
+      if (!validateImage(n.data.destination)) return ctx.fallback(n)
 
       return (
-        "<img" +
+        '<img' +
         attributes([
-          ["src", n.data.destination],
-          ["alt", imageText(n.children, ctx.source)],
+          ['src', n.data.destination],
+          ['alt', imageText(n.children, ctx.source)]
         ]) +
         titleAttribute(n.data.title) +
-        ">"
-      );
-    }),
-  );
+        '>'
+      )
+    })
+  )
 
   result.on(
     names.HtmlInline,
-    checked(names.HtmlInline, isKnownNode, (n) => escapeHtml(n.data.literal)),
-  );
+    checked(names.HtmlInline, isKnownNode, n => escapeHtml(n.data.literal))
+  )
 }
