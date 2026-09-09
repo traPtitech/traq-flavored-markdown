@@ -59,7 +59,7 @@
     "@traq-markdown-parser/core": "workspace:*",
     "@types/katex": "^0.16.8",
     "@types/node": "26.3.0",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "dependencies": {
     "entities": "^4.5.0",
