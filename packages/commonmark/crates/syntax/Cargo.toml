@@ -8,7 +8,7 @@ publish.workspace = true
 [dependencies]
 markdown-parser = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
 markdown-commonmark-contracts = { path = "../contracts" }
-unicode-general-category = "0.6"
+unicode-general-category = "1.1"
 mdurl = "0.3"
 idna = "0.3"
 regex = "1"
