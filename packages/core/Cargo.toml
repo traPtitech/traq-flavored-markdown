@@ -1,0 +1,23 @@
+[workspace]
+members = [
+    "crates/ast",
+    "crates/codec",
+    "crates/definitions-derive",
+    "crates/definitions",
+    "crates/extractor",
+    "crates/parser",
+    "crates/renderer",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+strip = true

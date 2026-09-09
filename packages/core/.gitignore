@@ -1,0 +1,13 @@
+**/target/
+**/node_modules/
+/dist/
+/coverage/
+/.private/
+*.log
+*.tsbuildinfo
+**/.env
+**/.env.*
+.DS_Store
+Thumbs.db
+
+/node_modules/

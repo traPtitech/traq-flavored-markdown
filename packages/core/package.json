@@ -1,0 +1,58 @@
+{
+  "name": "@traq-markdown-parser/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "core Markdown contracts and HTML rendering.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traq-markdown-parser/core.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/ast.d.ts",
+      "import": "./dist/ast.js"
+    },
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "import": "./dist/renderer/index.js"
+    },
+    "./definitions": {
+      "types": "./dist/renderer/definitions.d.ts",
+      "import": "./dist/renderer/definitions.js"
+    },
+    "./html": {
+      "types": "./dist/renderer/html.d.ts",
+      "import": "./dist/renderer/html.js"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.ts",
+      "import": "./dist/validation.js"
+    },
+    "./codegen/nodes": "./scripts/contracts/nodes.mjs",
+    "./codegen/schema": "./scripts/contracts/schema.mjs",
+    "./codegen/javascript": "./scripts/contracts/javascript.mjs",
+    "./codegen/go": "./scripts/contracts/go.mjs"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "scripts/contracts"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p typescript/tsconfig.json",
+    "typecheck": "tsc -p typescript/tsconfig.json --noEmit",
+    "test": "node --test typescript/tests/*.test.mjs",
+    "test:go": "go -C go test ./..."
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "@types/node": "26.3.0"
+  }
+}
