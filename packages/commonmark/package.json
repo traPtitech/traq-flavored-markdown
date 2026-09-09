@@ -62,7 +62,7 @@
     "typescript": "6.0.3"
   },
   "dependencies": {
-    "entities": "^4.5.0",
+    "entities": "^8.0.0",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.47"
   }
