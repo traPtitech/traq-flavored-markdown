@@ -77,7 +77,7 @@
     "@traq-markdown-parser/core": "workspace:*",
     "@traq-markdown-parser/trap-extension": "workspace:*",
     "@types/node": "26.3.0",
-    "esbuild": "^0.25.12",
+    "esbuild": "^0.28.2",
     "jest-diff": "^30.2.0",
     "markdown-it": "^14.1.0",
     "parse5": "^7.3.0",
