@@ -1,0 +1,17 @@
+{
+  "name": "traq-markdown-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "format": "prettier --cache --write .",
+    "format:check": "prettier --cache --check ."
+  },
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "6.0.2",
+    "prettier": "3.9.6"
+  }
+}

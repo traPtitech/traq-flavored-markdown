@@ -1,0 +1,8 @@
+go 1.26.0
+
+use (
+  ./packages/core/go
+  ./packages/commonmark/go
+  ./packages/trap-extension/go
+  ./packages/traq/go
+)
