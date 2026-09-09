@@ -32,6 +32,12 @@ const readManifest = (input: string) =>
 const runCommand = (command: string[], cwd = repositoryRoot) =>
   $`${command[0]} ${command.slice(1)}`.cwd(cwd)
 
+const runCargo = (command: string[], cwd = repositoryRoot) =>
+  runCommand(command, cwd).env({
+    ...Bun.env,
+    CARGO_TARGET_DIR: cargoTargetDirectory()
+  })
+
 const writeFiles = async (
   root: string,
   files: Map<string, string>,
@@ -73,12 +79,8 @@ async function generateContractGroup(
   crate: string
 ) {
   const root = packageRoot(packageName)
-  const input = path.join(
-    cargoTargetDirectory(root),
-    'typescript-contracts',
-    group
-  )
-  await runCommand(
+  const input = path.join(cargoTargetDirectory(), 'typescript-contracts', group)
+  await runCargo(
     [
       'cargo',
       'run',

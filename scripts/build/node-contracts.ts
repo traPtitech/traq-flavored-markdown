@@ -2,14 +2,14 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { cargoTargetDirectory, traqRoot } from '../paths.ts'
+import { cargoTargetDirectory, repositoryRoot } from '../paths.ts'
 
-export const traqTargetDirectory = () => cargoTargetDirectory(traqRoot)
+export const traqTargetDirectory = cargoTargetDirectory
 export const nodeContractsDirectory = () =>
   path.join(traqTargetDirectory(), 'node-contracts')
 
 const cargo = () =>
-  $.cwd(traqRoot).env({
+  $.cwd(repositoryRoot).env({
     ...Bun.env,
     CARGO_TARGET_DIR: traqTargetDirectory()
   })

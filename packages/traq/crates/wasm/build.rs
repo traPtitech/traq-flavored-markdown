@@ -30,16 +30,17 @@ fn main() {
     let mut hash = DefaultHasher::new();
     for path in [
         "src",
-        "../grammar/src",
-        "../grammar/Cargo.toml",
-        "../processing/src",
-        "../processing/Cargo.toml",
+        "../grammar",
+        "../processing",
+        "../../../core/crates",
+        "../../../commonmark/crates",
+        "../../../trap-extension/crates",
         "build.rs",
         "Cargo.toml",
-        "../../Cargo.toml",
-        "../../Cargo.lock",
-        "../../rust-toolchain.toml",
-        "../../.cargo/config.toml",
+        "../../../../Cargo.toml",
+        "../../../../Cargo.lock",
+        "../../../../rust-toolchain.toml",
+        "../../../../.cargo/config.toml",
     ] {
         input(Path::new(path), &mut hash);
     }

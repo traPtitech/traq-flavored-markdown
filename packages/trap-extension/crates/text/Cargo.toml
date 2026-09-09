@@ -6,6 +6,5 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-markdown-renderer = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
+markdown-renderer.workspace = true
 markdown-trap-contracts = { path = "../contracts" }
-

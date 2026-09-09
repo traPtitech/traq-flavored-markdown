@@ -5,4 +5,5 @@ use (
 	./packages/core/go
 	./packages/trap-extension/go
 	./packages/traq/go
+	./packages/traq/examples/go
 )

@@ -1,0 +1,55 @@
+[workspace]
+members = [
+  "packages/core/crates/ast",
+  "packages/core/crates/codec",
+  "packages/core/crates/definitions-derive",
+  "packages/core/crates/definitions",
+  "packages/core/crates/extractor",
+  "packages/core/crates/parser",
+  "packages/core/crates/renderer",
+  "packages/commonmark/crates/contracts",
+  "packages/commonmark/crates/extensions/contracts",
+  "packages/commonmark/crates/extensions/syntax",
+  "packages/commonmark/crates/extensions/text",
+  "packages/commonmark/crates/syntax",
+  "packages/commonmark/crates/text",
+  "packages/trap-extension/crates/contracts",
+  "packages/trap-extension/crates/extraction",
+  "packages/trap-extension/crates/syntax",
+  "packages/trap-extension/crates/text",
+  "packages/traq/crates/grammar",
+  "packages/traq/crates/processing",
+  "packages/traq/crates/wasm",
+  "packages/traq/examples/rust"
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+markdown-ast = { path = "packages/core/crates/ast" }
+markdown-codec = { path = "packages/core/crates/codec" }
+markdown-definitions = { path = "packages/core/crates/definitions" }
+markdown-extractor = { path = "packages/core/crates/extractor" }
+markdown-parser = { path = "packages/core/crates/parser" }
+markdown-renderer = { path = "packages/core/crates/renderer" }
+markdown-commonmark = { path = "packages/commonmark/crates/syntax" }
+markdown-commonmark-contracts = { path = "packages/commonmark/crates/contracts" }
+markdown-commonmark-text = { path = "packages/commonmark/crates/text" }
+markdown-generic-contracts = { path = "packages/commonmark/crates/extensions/contracts" }
+markdown-generic-syntax = { path = "packages/commonmark/crates/extensions/syntax" }
+markdown-generic-text = { path = "packages/commonmark/crates/extensions/text" }
+markdown-trap-contracts = { path = "packages/trap-extension/crates/contracts" }
+markdown-trap-extraction = { path = "packages/trap-extension/crates/extraction" }
+markdown-trap-syntax = { path = "packages/trap-extension/crates/syntax" }
+markdown-trap-text = { path = "packages/trap-extension/crates/text" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+strip = true

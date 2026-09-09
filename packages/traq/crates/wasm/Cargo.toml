@@ -26,14 +26,14 @@ required-features = ["contracts"]
 
 [dependencies]
 traq-markdown-processing = { path = "../processing" }
-markdown-parser = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
+markdown-parser.workspace = true
 traq-markdown-grammar = { path = "../grammar" }
-markdown-codec = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
-markdown-ast = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
-markdown-definitions = { git = "https://github.com/traq-markdown-parser/core.git", rev = "1ccba0a7a63f7128873b4490e8f0b1c5b8714099", version = "0.1.0" }
-markdown-commonmark-contracts = { git = "https://github.com/traq-markdown-parser/commonmark.git", rev = "00fdb814d980ee4e326eb6a05d8ff4bba289d291", version = "0.1.0" }
-markdown-generic-contracts = { git = "https://github.com/traq-markdown-parser/commonmark.git", rev = "00fdb814d980ee4e326eb6a05d8ff4bba289d291", version = "0.1.0" }
-markdown-trap-contracts = { git = "https://github.com/traq-markdown-parser/trap-extension.git", rev = "c7ed47d4739765e6bd9e25468d4c9dfa4f271d61", version = "0.1.0" }
+markdown-codec.workspace = true
+markdown-ast.workspace = true
+markdown-definitions.workspace = true
+markdown-commonmark-contracts.workspace = true
+markdown-generic-contracts.workspace = true
+markdown-trap-contracts.workspace = true
 ts-rs = { version = "12", optional = true, features = ["serde-json-impl"] }
 schemars = { version = "1.2.2", optional = true }
 serde = { version = "1", features = ["derive"] }
