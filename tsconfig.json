@@ -13,6 +13,7 @@
     "eslint.config.ts",
     "prettier.config.ts",
     "scripts/**/*.ts",
+    "corpus/**/*.ts",
     "packages/*/scripts/**/*.ts"
   ]
 }
