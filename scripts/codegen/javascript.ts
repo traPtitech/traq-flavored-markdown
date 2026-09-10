@@ -1,13 +1,14 @@
+import type { RawSchema, Shape } from './schema.ts'
 import { quoted as q, shape, typeName } from './schema.ts'
 
-function validator(s) {
+function validator(s: Shape): string {
   if (s.kind === 'string' || s.kind === 'boolean') return s.kind
   if (s.kind === 'integer')
     return `(value) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
-  if (s.kind === 'enum') return 'oneOf(' + s.values.map(q).join(',') + ')'
+  if (s.kind === 'enum') return 'oneOf(' + s.values.map(v => q(v)).join(',') + ')'
   if (s.kind === 'nullable') return 'nullable(' + validator(s.inner) + ')'
   if (s.kind === 'object') {
-    const fields = required =>
+    const fields = (required: boolean) =>
       '{' +
       s.fields
         .filter(f => f.required === required)
@@ -19,7 +20,10 @@ function validator(s) {
   throw new Error('Unsupported validator')
 }
 
-export function javascript(entries, fieldsImport = '../fields.js') {
+export function javascript(
+  entries: [string, RawSchema][],
+  fieldsImport = '../fields.js'
+) {
   const used = new Set()
   for (const [, schema] of entries) {
     const name = typeName(schema).toLowerCase()

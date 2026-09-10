@@ -3,7 +3,7 @@
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": false,
+    "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "lib": ["ESNext", "DOM"],

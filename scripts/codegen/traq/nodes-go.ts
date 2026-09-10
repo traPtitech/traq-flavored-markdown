@@ -4,11 +4,12 @@ export function goNodes(manifest: {
   const groups = [
     ...new Set(Object.values(manifest.nodes).map(node => node.group))
   ]
-  const packages = {
+  const packages: Record<string, string> = {
     commonmark: 'commonmark/go',
     generic: 'commonmark/go/generic',
     trap: 'trap-extension/go'
   }
+
   return (
     '// Code generated from Rust contract ownership. DO NOT EDIT.\npackage markdown\nimport (\n "github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"\n' +
     groups

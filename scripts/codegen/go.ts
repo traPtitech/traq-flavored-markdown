@@ -1,36 +1,42 @@
+import type { ObjectShape, RawSchema, Shape } from './schema.ts'
 import { quoted as q, shape, typeName } from './schema.ts'
 
-const fieldName = name =>
+const fieldName = (name: string) =>
   name === 'id'
     ? 'ID'
-    : name.replace(/(^|_)([a-z])/g, (_, p, c) => c.toUpperCase())
+    : name.replace(/(^|_)([a-z])/g, (_: string, p: string, c: string) =>
+        c.toUpperCase()
+      )
 
-function goType(s) {
+function goType(s: Shape): string {
   if (s.kind === 'string' || s.kind === 'enum') return 'string'
   if (s.kind === 'boolean') return 'bool'
   if (s.kind === 'integer') return s.format
   if (s.kind === 'nullable') return '*' + goType(s.inner)
   if (s.kind === 'array') return '[]' + goType(s.items)
   if (s.kind === 'object') return s.name ?? `struct {${fields(s)}}`
-  throw new Error('Unsupported Go field: ' + s.kind)
+  throw new Error('Unsupported Go field: ' + (s as Shape).kind)
 }
 
-const fields = s =>
+const fields = (s: ObjectShape) =>
   s.fields
     .map(f => `${fieldName(f.name)} ${goType(f.shape)} \`json:${q(f.name)}\``)
     .join('\n')
 
-export function goContract(schema, root = schema) {
+export function goContract(schema: RawSchema, root = schema) {
   const contract = shape(schema, root)
 
   if (contract.kind === 'enum') {
     return `type ${typeName(schema)} = string\n`
   }
+  if (contract.kind !== 'object') {
+    throw new Error('Contract must be object or enum')
+  }
 
   return `type ${typeName(schema)} struct {\n${fields(contract)}\n}\n`
 }
 
-export function goPayload(wireName, schema) {
+export function goPayload(wireName: string, schema: RawSchema) {
   const name = typeName(schema),
     s = shape(schema)
   if (s.kind !== 'object') throw new Error('Payload must be object')
@@ -43,7 +49,7 @@ export function goPayload(wireName, schema) {
   )
 }
 
-export function goNodes(entries, packageName = 'nodes') {
+export function goNodes(entries: [string, RawSchema][], packageName = 'nodes') {
   const names = entries.map(([, schema]) => typeName(schema))
   if (new Set(names).size !== names.length)
     throw new Error('Duplicate generated payload type')

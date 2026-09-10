@@ -1,5 +1,5 @@
 // JSONL is delimited by LF; U+2028 and U+2029 can occur inside JSON strings.
-export async function* readLines(file) {
+export async function* readLines(file: string) {
   let pending = ''
   const decoder = new TextDecoder()
   for await (const chunk of Bun.file(file).stream()) {

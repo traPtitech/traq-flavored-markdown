@@ -30,7 +30,7 @@ test('traQ presentation combines tables, marks, spoilers, math, and highlighted 
 })
 
 test('stamp stores are isolated and unrecognized effects preserve escaped source', () => {
-  const make = origin =>
+  const make = (origin: string) =>
     renderer(
       rendering.html({
         store: {
@@ -105,7 +105,7 @@ test('reference highlighting and link/image policies belong to each renderer', (
 test('table handlers reject forged row and cell payloads', () => {
   const view = renderer(rendering.html())
   const document = parser.parse('| a |\n| - |\n| b |')
-  const cell = document.children[0].children[0].children[0] as {
+  const cell = document.children![0]!.children![0]!.children![0]! as {
     data: { alignment: string }
   }
   cell.data.alignment = 'left;position:fixed'

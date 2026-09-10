@@ -14,17 +14,17 @@ const temporaryDirectory = `${tempRoot}/markdown-packages-${Bun.randomUUIDv7()}`
 if (!temporaryDirectory.startsWith(`${tempRoot}/`))
   throw new Error('Invalid temporary path')
 const bun = Bun.argv[0]
-const archiveName = archive =>
+const archiveName = (archive: string) =>
   archive.slice(
     Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
   )
 const packageNames = ['core', 'commonmark', 'trap-extension', 'traq']
-const capture = async (command, args, cwd) => {
+const capture = async (command: string, args: string[], cwd: string) => {
   return (await $.cwd(cwd)`${command} ${args}`.quiet()).text()
 }
 await $`mkdir -p ${temporaryDirectory}`
 try {
-  const archives = []
+  const archives: string[] = []
   for (const repo of packageNames) {
     const cwd = packageRoot(repo)
     const output = await capture(

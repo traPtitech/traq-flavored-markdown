@@ -1,21 +1,23 @@
+import type { RawSchema } from './schema.ts'
 import { declarations } from './declarations.ts'
 import { javascript } from './javascript.ts'
 import { quoted as q } from './schema.ts'
 
 type Manifest = {
-  nodes: Record<string, { group: string; schema: { title: string } }>
+  nodes: Record<string, { group: string; schema: RawSchema }>
 }
 
 export async function nodeFiles(manifest: Manifest, input: string) {
-  const entries: [string, { title: string }][] = Object.entries(
-    manifest.nodes
-  ).map(([key, node]) => [key, node.schema])
+  const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
+    ([key, node]) => [key, node.schema]
+  )
   const groups = Map.groupBy(entries, ([key]) => manifest.nodes[key].group)
-  const files = new Map()
+  const files = new Map<string, string>()
   for (const [group, entries] of groups) {
+    if (!group || !entries) continue
     const types = await declarations(
       input,
-      entries.map(([, schema]) => schema.title)
+      entries.map(([, schema]) => schema.title ?? '')
     )
 
     files.set(

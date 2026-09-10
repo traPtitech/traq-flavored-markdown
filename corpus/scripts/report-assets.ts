@@ -2,18 +2,22 @@ import path from 'path'
 
 import { parseFragment } from 'parse5'
 
-import { packageRoot, traqRoot } from '../../scripts/paths.ts'
+import { packageRoot } from '../../scripts/paths.ts'
 import { readLines } from './read-lines.ts'
 
-const readText = file => Bun.file(file).text()
-const readBase64 = async file =>
+const readText = (file: string) => Bun.file(file).text()
+const readBase64 = async (file: string) =>
   new Uint8Array(await Bun.file(file).arrayBuffer()).toBase64()
 
-const escape = s =>
-  s.replace(
-    /[&<>"]/g,
-    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]
-  )
+const escape = (s: string) => {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+  }
+  return s.replace(/[&<>"]/g, c => map[c]!)
+}
 export async function rendererCss() {
   const commonmark = packageRoot('commonmark')
   const katexFile = Bun.resolveSync('katex/dist/katex.css', commonmark)
@@ -35,48 +39,72 @@ export async function rendererCss() {
         ')'
     )
   }
-  return (
-    (await readText(path.join(traqRoot, 'dist', 'index.css'))) + '\n' + math
+  const fixture = packageRoot('traq')
+  const renderer = await readText(
+    path.join(fixture, 'typescript/tests/rendering/fixtures/renderer.css')
   )
+  return math + '\n' + renderer
 }
-const allowed = new Set(
-  'p div span pre code br hr strong b em i del s ins mark sub sup a ul ol li blockquote h1 h2 h3 h4 h5 h6 table thead tbody tr td th cite svg path line'.split(
-    ' '
-  )
-)
-const attrs = new Set([
-  'class',
-  'title',
-  'colspan',
-  'rowspan',
-  'start',
-  'aria-hidden',
-  'viewBox',
-  'd',
-  'width',
-  'height',
-  'x1',
-  'x2',
-  'y1',
-  'y2'
-])
-const styles = new Set([
-  'height',
-  'width',
-  'min-width',
-  'vertical-align',
-  'margin-right',
-  'margin-left',
-  'top',
-  'background-color',
-  'text-align'
-])
-export function inertHtml(html) {
-  const render = node => {
-    if (node.nodeName === '#text') return escape(node.value)
+
+type HtmlNode = {
+  nodeName: string
+  tagName?: string
+  attrs?: { name: string; value: string }[]
+  value?: string
+  childNodes?: HtmlNode[]
+}
+
+export function inertHtml(html: string) {
+  const allowed = new Set([
+    'a',
+    'b',
+    'blockquote',
+    'br',
+    'code',
+    'em',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'hr',
+    'img',
+    'li',
+    'ol',
+    'p',
+    'pre',
+    'strong',
+    'span',
+    'sub',
+    'sup',
+    'table',
+    'tbody',
+    'td',
+    'th',
+    'thead',
+    'tr',
+    'ul'
+  ])
+  const attrs = new Set([
+    'alt',
+    'class',
+    'data-channel-id',
+    'data-id',
+    'data-user-id',
+    'href',
+    'src',
+    'title'
+  ])
+  const styles = new Set(['display', 'height', 'max-height', 'max-width', 'width'])
+  const render = (node: HtmlNode): string => {
+    if (node.nodeName === '#text') return escape(node.value ?? '')
     if (!node.tagName) return ''
     const values = Object.fromEntries(
-      (node.attrs ?? []).map(a => [a.name, a.value])
+      (node.attrs ?? []).map((a: { name: string; value: string }) => [
+        a.name,
+        a.value
+      ])
     )
     if (node.tagName === 'img')
       return (
@@ -95,7 +123,7 @@ export function inertHtml(html) {
       if (attrs.has(key)) attributes += ' ' + key + '="' + escape(value) + '"'
     const style = (values.style ?? '')
       .split(';')
-      .filter(part => {
+      .filter((part: string) => {
         const index = part.indexOf(':')
         return (
           index > 0 &&
@@ -110,9 +138,11 @@ export function inertHtml(html) {
       ? open
       : open + (node.childNodes ?? []).map(render).join('') + '</' + name + '>'
   }
-  return parseFragment(html).childNodes.map(render).join('')
+  const fragment = parseFragment(html) as unknown as { childNodes: HtmlNode[] }
+  return fragment.childNodes.map(render).join('')
 }
-export function mhtml(html) {
+
+export function mhtml(html: string) {
   const boundary = '----markdown-corpus-report'
   const encoded = new TextEncoder().encode(html).toBase64()
   return [
@@ -126,19 +156,33 @@ export function mhtml(html) {
     'Content-Transfer-Encoding: base64',
     'Content-Location: https://markdown-report.invalid/differences.html',
     '',
-    encoded.match(/.{1,76}/g).join('\r\n'),
+    encoded.match(/.{1,76}/g)?.join('\r\n'),
     '--' + boundary + '--',
     ''
   ].join('\r\n')
 }
-export async function writeMhtml(data, out, css, custom, meta) {
-  const labels = { render: '通常', inline: 'インライン', notification: '通知' },
-    rows = { render: [], inline: [], notification: [] }
+export async function writeMhtml(
+  data: string,
+  out: string,
+  css: string,
+  custom: string,
+  meta: { messages: number } & Record<string, unknown>
+) {
+  const labels: Record<string, string> = {
+      render: '通常',
+      inline: 'インライン',
+      notification: '通知'
+    },
+    rows: Record<string, string[]> = {
+      render: [],
+      inline: [],
+      notification: []
+    }
   for (const file of ['sui-differences.jsonl', 'traq-differences.jsonl'])
     for await (const line of readLines(path.join(data, file))) {
       if (!line) continue
       const r = JSON.parse(line)
-      const show = value =>
+      const show = (value: string) =>
         r.mode === 'notification'
           ? '<pre class="notification">' + escape(value) + '</pre>'
           : '<div class="markdown-body">' + inertHtml(value) + '</div>'

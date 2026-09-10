@@ -6,12 +6,13 @@ import * as trapNodes from '@traq-markdown-parser/trap-extension/nodes'
 import * as trap from '@traq-markdown-parser/trap-extension/renderer'
 import * as traq from '@traq-markdown-parser/traq/renderer'
 import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
+import type { Plugin } from '@traq-markdown-parser/core/renderer'
 import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
 
 import { commonParser, parser } from './setup.ts'
 
-const build = plugin => new html.PresetBuilder().add(plugin).build()
+const build = (plugin: Plugin) => new html.PresetBuilder().add(plugin).build()
 
 test('rendering returns HTML and exposes no parser or token adapter', () => {
   const view = html.renderer(common.preset())

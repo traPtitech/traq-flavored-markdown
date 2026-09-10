@@ -38,12 +38,13 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
   const runtime = await createRuntime(bytes)
   const parser = runtime.createParser(presets.traq.v1)
   const extractor = runtime.createExtractor({ origin: '' })
-  const process = source => extractor.extract(parser.parse(source))
-  const embed = source =>
+  const process = (source: string) => extractor.extract(parser.parse(source))
+  const embed = (source: string) =>
     embedReferences(
       source,
       process(source).embedding,
-      (kind, name) => identities[kind]?.[name]
+      (kind: string, name: string) =>
+        (identities as Record<string, Record<string, string>>)[kind]?.[name]
     )
 
   try {

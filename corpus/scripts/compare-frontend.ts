@@ -20,7 +20,7 @@ if (!values.corpus || !values.out)
 await $`mkdir -p ${values.out}`
 const baselinePackage = Bun.resolveSync(
   '@traptitech/traq-markdown-it',
-  path.resolve(values.baseline)
+  path.resolve(values.baseline!)
 )
 const { traQMarkdownIt } = await import(Bun.pathToFileURL(baselinePackage).href)
 const sdkPath = traqRoot
@@ -32,17 +32,17 @@ const { messageRenderers } = await import(
   Bun.pathToFileURL(frontendPath + '/dist/renderer/index.js').href
 )
 const origin = values.origin
-const store = {
+const store: Record<string, unknown> = {
   getMe: () => ({ id: 'viewer' }),
   getUser: () => undefined,
-  getChannel: id => ({ id }),
+  getChannel: (id: string) => ({ id }),
   getUserGroup: () => undefined,
-  getStampByName: name => ({ name, fileId: 'stamp' }),
+  getStampByName: (name: string) => ({ name, fileId: 'stamp' }),
   getUserByName: () => ({ iconFileId: 'icon' }),
-  generateUserHref: id => '#u-' + encodeURIComponent(id),
-  generateUserGroupHref: id => '#g-' + encodeURIComponent(id),
-  generateChannelHref: id => '#c-' + encodeURIComponent(id),
-  generateStampHref: id => '/api/v3/files/' + encodeURIComponent(id)
+  generateUserHref: (id: string) => '#u-' + encodeURIComponent(id),
+  generateUserGroupHref: (id: string) => '#g-' + encodeURIComponent(id),
+  generateChannelHref: (id: string) => '#c-' + encodeURIComponent(id),
+  generateStampHref: (id: string) => '/api/v3/files/' + encodeURIComponent(id)
 }
 let start = performance.now()
 const baseline = new traQMarkdownIt(store, [], origin)
@@ -56,18 +56,17 @@ const afterInitializationMs = performance.now() - start
 const profiles = [
   {
     mode: 'render',
-    before: s => baseline.render(s),
-    after: s => view.standard.render(parser.parse(s))
+    before: (s: string) => baseline.render(s),
+    after: (s: string) => view.standard.render(parser.parse(s))
   },
   {
     mode: 'inline',
-    before: s => baseline.renderInline(s),
-    after: s => view.condensed.render(parser.parse(s))
+    before: (s: string) => baseline.renderInline(s),
+    after: (s: string) => view.condensed.render(parser.parse(s))
   }
 ]
-const timings = Object.fromEntries(
-  profiles.map(p => [p.mode, { before: [], after: [] }])
-)
+const timings: Record<string, { before: number[]; after: number[] }> =
+  Object.fromEntries(profiles.map(p => [p.mode, { before: [], after: [] }]))
 const report = {
   execution: 'standalone',
   messages: 0,
@@ -91,8 +90,8 @@ const report = {
 }
 const logger = console.warn
 console.warn = () => report.warnings++
-const lines = () => readLines(values.corpus)
-const execute = f => {
+const lines = () => readLines(values.corpus!)
+const execute = (f: () => { renderedText: string; embeddings?: unknown }) => {
   const start = performance.now()
   try {
     const value = f(),
@@ -103,18 +102,19 @@ const execute = f => {
       ms,
       error: false
     }
-  } catch (e) {
+  } catch (e: unknown) {
+    const err = e as { cause?: unknown; name?: string }
     return {
-      html: '解析エラー: ' + (e.cause ? JSON.stringify(e.cause) : e.name),
+      html: '解析エラー: ' + (err.cause ? JSON.stringify(err.cause) : err.name),
       ms: performance.now() - start,
       error: true
     }
   }
 }
-function summary(a) {
+function summary(a: number[]) {
   a.sort((x, y) => x - y)
   const total = a.reduce((s, n) => s + n, 0)
-  const q = p => (a[Math.floor((a.length - 1) * p)] ?? 0) * 1000
+  const q = (p: number) => (a[Math.floor((a.length - 1) * p)] ?? 0) * 1000
   return {
     calls: a.length,
     totalMs: total,

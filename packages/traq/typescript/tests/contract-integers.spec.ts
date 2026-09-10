@@ -4,14 +4,14 @@ import ts from 'typescript'
 
 import { goPayload } from '../../../../scripts/codegen/go.ts'
 import { javascript } from '../../../../scripts/codegen/javascript.ts'
-import { shape } from '../../../../scripts/codegen/schema.ts'
+import { type IntegerShape, shape } from '../../../../scripts/codegen/schema.ts'
 import { withTempDirectory } from './temp-directory.ts'
 
 test('generated numeric payload validators retain Rust integer bounds', async () => {
   for (const [format, maximum] of [
     ['uint8', 255],
     ['uint32', 0xffffffff]
-  ]) {
+  ] as const) {
     const schema = {
       title: 'Numeric',
       type: 'object',
@@ -61,7 +61,7 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
         ...schema.properties.value
       }
       delete withoutMaximum.maximum
-      expect(shape(withoutMaximum).max).toBe(maximum)
+      expect((shape(withoutMaximum) as IntegerShape).max).toBe(maximum)
     })
   }
 })

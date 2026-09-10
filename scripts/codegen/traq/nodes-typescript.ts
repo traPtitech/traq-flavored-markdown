@@ -2,9 +2,9 @@ export async function typescriptFiles(
   manifest: { nodes: Record<string, { group: string }> },
   input: string
 ) {
-  const files = new Map()
+  const files = new Map<string, string>()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
-  const packages = {
+  const packages: Record<string, string> = {
     commonmark: 'commonmark/nodes',
     generic: 'commonmark/generic/nodes',
     trap: 'trap-extension/nodes'

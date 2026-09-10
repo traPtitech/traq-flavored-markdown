@@ -1,6 +1,7 @@
 import { write } from 'bun'
 import { expect, test } from 'bun:test'
 
+import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
 import { goNodes } from '../../../../scripts/codegen/go.ts'
 import { nodeFiles } from '../../../../scripts/codegen/nodes.ts'
 import { typescriptFiles } from '../../../../scripts/codegen/traq/nodes-typescript.ts'
@@ -62,13 +63,13 @@ test('Rust processing options and nested results generate without host changes',
   const { processingFiles } =
     await import('../../../../scripts/codegen/traq/processing.ts')
   await withTempDirectory('processing-contract-', async directory => {
-    const object = (title: string, properties: Record<string, unknown>) => ({
+    const object = (title: string, properties: Record<string, RawSchema>): RawSchema => ({
       title,
       type: 'object',
       additionalProperties: false,
       properties,
       required: Object.keys(properties),
-      $defs: undefined as Record<string, { title: string }> | undefined
+      $defs: undefined as Record<string, RawSchema> | undefined
     })
     const details = object('Details', {
       labels: { type: 'array', items: { type: 'string' } }
@@ -104,11 +105,11 @@ test('Rust processing options and nested results generate without host changes',
     expect(go).toMatch(/Compact bool/)
     expect(go).toMatch(/Batches \[\]Details/)
     expect(go).toMatch(/Labels \[\]string/)
-    expect(go.match(/type Details struct/g)).toHaveLength(1)
+    expect(go!.match(/type Details struct/g)).toHaveLength(1)
     const ts = files.get('typescript/generated/processing.ts')
     expect(ts).toMatch(/compact:boolean/)
     expect(ts).toMatch(/batches:Array<Details>/)
-    expect(ts.match(/export type Details/g)).toHaveLength(1)
+    expect(ts!.match(/export type Details/g)).toHaveLength(1)
     output.$defs = {
       Details: object('Details', { other: { type: 'boolean' } })
     }

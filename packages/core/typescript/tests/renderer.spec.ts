@@ -38,7 +38,7 @@ test('fallback and child rendering have no block or inline mode', () => {
     })
     .on('explicit', (node, ctx) => ctx.fallback(node))
   const builder = new PresetBuilder().add(plugin)
-  const options = { fallback: text => `<aside>${text}</aside>` }
+  const options = { fallback: (text: string) => `<aside>${text}</aside>` }
   const custom = renderer(builder.build(options))
   options.fallback = () => 'changed'
   const plain = renderer(builder.build())

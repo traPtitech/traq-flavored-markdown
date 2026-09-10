@@ -65,10 +65,7 @@ export default [
           caughtErrorsIgnorePattern: '^_'
         }
       ],
-      'unused-imports/no-unused-imports': 'warn',
-      'unused-imports/no-unused-vars': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
-      'no-empty-function': 'off',
+      'unused-imports/no-unused-imports': 'error',
       '@typescript-eslint/no-empty-function': 'error',
       '@typescript-eslint/no-empty-interface': 'error'
     }

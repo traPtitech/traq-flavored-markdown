@@ -37,26 +37,26 @@ const baseline = path.join(privateRoot, 'corpus-baseline')
 await $`mkdir -p ${baseline}`
 await $`mkdir -p ${out}`
 
-const run = async (cmd, args, cwd = root, env = Bun.env) => {
+const run = async (cmd: string, args: string[], cwd = root, env = Bun.env) => {
   await $`${cmd} ${args}`.cwd(cwd).env(env)
 }
-const git = async (repo, args) =>
+const git = async (repo: string, args: string[]) =>
   (await $`git -C ${path.resolve(repo)} ${args}`.quiet()).text().trim()
-const show = async (repo, ref, file) =>
+const show = async (repo: string, ref: string, file: string) =>
   (await git(repo, ['show', ref + ':' + file])) + '\n'
 
 const versions = {
-  suiMaster: await git(v.sui, ['rev-parse', v['sui-ref']]),
-  traqMaster: await git(v.traq, ['rev-parse', v['traq-ref']]),
+  suiMaster: await git(v.sui!, ['rev-parse', v['sui-ref']!]),
+  traqMaster: await git(v.traq!, ['rev-parse', v['traq-ref']!]),
   renderer: await git(root, ['rev-parse', 'HEAD']),
   processor: await git(root, ['rev-parse', 'HEAD'])
 }
 
-const lock = JSON.parse(await show(v.sui, v['sui-ref'], 'package-lock.json'))
+const lock = JSON.parse(await show(v.sui!, v['sui-ref']!, 'package-lock.json'))
 const rendererVersion =
   lock.packages['node_modules/@traptitech/traq-markdown-it'].version
 
-const packageVersion = async (name, parent) =>
+const packageVersion = async (name: string, parent: string) =>
   JSON.parse(
     await Bun.file(
       Bun.resolveSync(`${name}/package.json`, path.resolve(parent))
@@ -107,27 +107,27 @@ await Bun.write(
   JSON.stringify(versions, null, 2)
 )
 const goRoot = path.join(baseline, 'notification')
-const go = args => run('go', args, goRoot, { ...Bun.env, GOWORK: 'off' })
+const go = (args: string[]) => run('go', args, goRoot, { ...Bun.env, GOWORK: 'off' } as Record<string, string>)
 await $`mkdir -p ${path.join(goRoot, 'go-before')}`
 
 for (const name of ['parser.go', 'spoiler.go'])
   await Bun.write(
     path.join(goRoot, 'go-before', name),
-    await show(v.traq, v['traq-ref'], 'utils/message/' + name)
+    await show(v.traq!, v['traq-ref']!, 'utils/message/' + name)
   )
 await Bun.write(
   path.join(goRoot, 'main.go'),
   Bun.file(new URL('./notification/main.go', import.meta.url))
 )
 
-const goMod = await show(v.traq, v['traq-ref'], 'go.mod')
-const version = name => {
+const goMod = await show(v.traq!, v['traq-ref']!, 'go.mod')
+const version = (name: string) => {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const match = goMod.match(new RegExp('\\s' + escaped + '\\s+(\\S+)'))
   if (!match) throw Error('Missing baseline dependency ' + name)
   return match[1]
 }
-const localGoModule = name =>
+const localGoModule = (name: string) =>
   JSON.stringify(
     path.join(repositoryRoot, 'packages', name, 'go').replaceAll('\\', '/')
   )
@@ -145,7 +145,7 @@ await Bun.write(
 await Bun.write(
   path.join(goRoot, 'config.json'),
   JSON.stringify({
-    origin: v.origin,
+    origin: v.origin!,
     wasm: path.join(root, 'dist/parser.wasm')
   })
 )
@@ -157,11 +157,11 @@ await run(Bun.argv[0], [
   '--out',
   out,
   '--max',
-  v.max,
+  v.max!,
   '--baseline',
   baseline,
   '--origin',
-  v.origin
+  v.origin!
 ])
 await go([
   'run',
@@ -171,7 +171,7 @@ await go([
   '-out',
   out,
   '-max',
-  v.max,
+  v.max!,
   '-config',
   path.join(goRoot, 'config.json')
 ])
@@ -182,7 +182,7 @@ await run(Bun.argv[0], [
   '--out',
   out,
   '--format',
-  v.format
+  v.format!
 ])
 console.log(
   JSON.stringify({ out, messagesLimit: Number(v.max), format: v.format })

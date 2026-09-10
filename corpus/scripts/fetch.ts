@@ -18,6 +18,18 @@ export async function collect({
   until = new Date().toISOString(),
   fetchImpl = fetch,
   progress = (_value: unknown) => {}
+}: {
+  baseUrl: string
+  token: string
+  output: string
+  maxMessages?: number
+  maxChannels?: number
+  channelOffset?: number
+  perChannel?: number
+  delayMs?: number
+  until?: string
+  fetchImpl?: typeof fetch
+  progress?: (value: unknown) => void
 }) {
   const base = new URL(baseUrl)
   if (
@@ -48,7 +60,7 @@ export async function collect({
   )
     throw new Error('Invalid delay or date')
   const salt = crypto.getRandomValues(new Uint8Array(32))
-  const anonymous = id =>
+  const anonymous = (id: string) =>
     new Bun.CryptoHasher('sha256', salt).update(id).digest('hex').slice(0, 24)
   const report = {
     format: 1,
@@ -63,14 +75,14 @@ export async function collect({
     inaccessibleChannels: 0,
     messages: 0,
     bytes: 0,
-    lengths: {},
-    contains: {},
+    lengths: {} as Record<string, number>,
+    contains: {} as Record<string, number>,
     rawText: true,
     channelOffset,
     availableChannels: 0
   }
   const seen = new Set()
-  async function get(relative) {
+  async function get(relative: string) {
     const url = new URL(relative, base)
     if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname))
       throw new Error('Request escaped API origin')
@@ -141,12 +153,12 @@ export async function collect({
       throw new Error('Could not read public channel list')
     // Stable hash order avoids selecting only the first tree branches; include archived channels.
     const channels = list.public
-      .filter(c => typeof c.id === 'string')
-      .map(c => ({
-        id: c.id,
-        key: new Bun.CryptoHasher('sha256').update(c.id).digest('hex')
+      .filter((c: unknown) => typeof (c as { id?: string }).id === 'string')
+      .map((c: unknown) => ({
+        id: (c as { id: string }).id,
+        key: new Bun.CryptoHasher('sha256').update((c as { id: string }).id).digest('hex')
       }))
-      .sort((a, b) => a.key.localeCompare(b.key))
+      .sort((a: { key: string }, b: { key: string }) => a.key.localeCompare(b.key))
       .slice(channelOffset, channelOffset + maxChannels)
     report.channelOffset = channelOffset
     report.availableChannels = list.public.length

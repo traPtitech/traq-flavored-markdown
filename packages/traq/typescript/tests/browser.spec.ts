@@ -3,7 +3,12 @@ import { expect, test } from 'bun:test'
 
 import { buildId } from '../../dist/generated/artifact.js'
 import { names } from '../../dist/generated/nodes.js'
-import { createRuntime, isKnownNode, presets } from '../../dist/index.js'
+import type { Parser } from '../../dist/index.js'
+import {
+  createRuntime,
+  isKnownNode,
+  presets
+} from '../../dist/index.js'
 
 const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
@@ -96,7 +101,7 @@ test('artifact pairing, preset selection, disposal and isolated results', async 
   expect(() => runtime.createParser('traq.invalid')).toThrow(/Markdown:/)
   const traq = runtime.createParser(presets.traq.v1)
   const common = runtime.createParser(presets.commonmark)
-  let replacement
+  let replacement: Parser
   try {
     const first = traq.parseInline(':stamp:')
     expect(first.children[0].kind).toBe(names.Stamp)
@@ -137,7 +142,7 @@ test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async
     },
     encoder = new TextEncoder(),
     decoder = new TextDecoder()
-  const call = (operation, input, mode = 0) => {
+  const call = (operation: string, input: string | Uint8Array, mode = 0) => {
     const encoded = typeof input === 'string' ? encoder.encode(input) : input
     const pointer = wasm.input_ptr(encoded.length)
     new Uint8Array(wasm.memory.buffer, pointer, encoded.length).set(encoded)
@@ -152,8 +157,8 @@ test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async
   expect(wasm.abi_version()).toBe(3)
   expect(call('configure', 'traq.bad').error).toBeTruthy()
   expect(call('configure', 'traq.v1').configured).toBe(buildId)
-  expect(call('parse', new Uint8Array([255]))).toEqual({
-    error: { code: 'invalid_utf8' }
+  expect(call('parse', new Uint8Array([255])).error).toEqual({
+    code: 'invalid_utf8'
   })
   expect(call('parse', 'x', 99).error).toBeTruthy()
   expect(call('parse', 'ok').document.source).toBe('ok')
@@ -169,7 +174,7 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
     await file(
       new URL('../../tests/fixtures/commonmark-0.31.2.json', import.meta.url)
     ).text()
-  )
+  ) as Array<{ example: number; markdown: string }>
   try {
     for (const fixtureName of ['traq-v1-commonmark', 'traq-v1-extensions']) {
       const cases = JSON.parse(
@@ -180,20 +185,34 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
           )
         ).text()
       )
-      for (const fixture of cases)
+      for (const fixture of cases as Array<{
+        example: number
+        expected: { block: unknown; inline: unknown }
+        source?: string
+      }>)
         for (const [mode, method] of [
           ['block', 'parse'],
           ['inline', 'parseInline']
         ]) {
-          const expected = fixture.expected[mode]
+          const expected = fixture.expected[mode as 'block' | 'inline']
           const source =
             fixture.source ??
-            commonmark.find(c => c.example === fixture.example).markdown
-          if ('Ok' in expected)
-            expect(parser[method](source)).toEqual(expected.Ok)
-          else {
-            const error = captureError(() => parser[method](source))
-            expect((error as { cause: unknown })?.cause).toEqual(expected.Err)
+            commonmark.find(c => c.example === fixture.example)!.markdown
+          if ('Ok' in (expected as object)) {
+            const parsed =
+              method === 'parse'
+                ? parser.parse(source)
+                : parser.parseInline(source)
+            expect(parsed as unknown).toEqual((expected as { Ok: unknown }).Ok)
+          } else {
+            const error = captureError(() =>
+              method === 'parse'
+                ? parser.parse(source)
+                : parser.parseInline(source)
+            )
+            expect((error as { cause?: unknown })?.cause).toEqual(
+              (expected as { Err: unknown }).Err
+            )
           }
         }
     }
@@ -222,7 +241,7 @@ test('Wasm input views respect their byte range and are copied before async work
 test('a valid parser Wasm from a different Rust build is rejected', async () => {
   const other = bytes.slice()
   const id = new TextEncoder().encode(buildId)
-  const indexOfBytes = (source, target, start = 0) => {
+  const indexOfBytes = (source: Uint8Array, target: Uint8Array, start = 0) => {
     for (
       let position = start;
       position <= source.length - target.length;

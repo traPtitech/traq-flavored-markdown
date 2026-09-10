@@ -3,7 +3,6 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": "../../..",
-    "strict": false,
     "target": "ESNext",
     "lib": ["ESNext", "DOM"],
     "allowImportingTsExtensions": true

@@ -12,19 +12,20 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
   )
   await $`mkdir -p ${directory}`
   try {
-    const calls = [],
-      logs = []
-    const fetchImpl = async (url, options) => {
-      calls.push(String(url))
-      expect(options.method).toBe('GET')
-      expect(options.redirect).toBe('error')
-      expect(options.headers.Authorization).toBe('Bearer test-token')
+    const calls: string[] = [],
+      logs: unknown[] = []
+    const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? new URL(input) : input instanceof URL ? input : new URL((input as Request).url)
+      calls.push(url.toString())
+      expect(init?.method).toBe('GET')
+      expect(init?.redirect).toBe('error')
+      expect((init?.headers as Record<string, string>)?.Authorization).toBe('Bearer test-token')
       if (url.pathname.endsWith('/channels'))
         return Response.json({
           public: [{ id: 'channel-a' }],
           dm: [{ id: 'private-dm' }]
         })
-      expect(String(url)).not.toContain('private-dm')
+      expect(url.toString()).not.toContain('private-dm')
       expect(url.searchParams.get('limit')).toBe('2')
       return Response.json([
         { id: 'a', userId: 'author', content: '**private text**' },

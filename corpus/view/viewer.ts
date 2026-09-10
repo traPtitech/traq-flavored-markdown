@@ -6,17 +6,18 @@ declare const CorpusDiff: {
     checkLines: boolean
   ): [number, string][]
 }
-const meta = JSON.parse(document.getElementById('metadata').textContent),
-  payload = JSON.parse(document.getElementById('payload').textContent)
-document.getElementById('metadata').remove()
-document.getElementById('payload').remove()
+const meta = JSON.parse(document.getElementById('metadata')!.textContent!),
+  payload = JSON.parse(document.getElementById('payload')!.textContent!)
+document.getElementById('metadata')!.remove()
+document.getElementById('payload')!.remove()
 const labels = {
   render: 'traQ_S-UI · 通常',
   inline: 'traQ_S-UI · インライン',
   notification: 'traQ · 通知'
 }
-const el = id => document.getElementById(id) as HTMLElement & HTMLInputElement,
-  num = n => Number(n).toLocaleString('ja-JP')
+const el = (id: string) =>
+    document.getElementById(id) as HTMLElement & HTMLInputElement,
+  num = (n: number | string) => Number(n).toLocaleString('ja-JP')
 let outputView = 'rendered'
 const viewSelect = document.createElement('select')
 viewSelect.id = 'output-view'
@@ -37,7 +38,7 @@ viewSelect.onchange = () => {
 }
 let mode = 'render',
   page = 1,
-  hits = null,
+  hits: [number, number][] | null = null,
   generation = 0,
   filterGeneration = 0
 const cache = new Map()
@@ -45,7 +46,8 @@ el('overview').textContent =
   `${num(meta.messages)} 件を比較 · 差分のある結果のみ · 1ページ 50件 · 単独ファイルでオフライン閲覧`
 for (const key of Object.keys(labels)) {
   const b = document.createElement('button')
-  b.textContent = labels[key] + '  ' + num(meta.counts[key])
+  b.textContent =
+    labels[key as keyof typeof labels] + '  ' + num(meta.counts[key])
   b.dataset.mode = key
   b.addEventListener('click', () => {
     mode = key
@@ -73,21 +75,29 @@ const styleNames = [
   'background-color',
   'text-align'
 ]
-function renderHTML(html) {
+function renderHTML(html: string) {
   const template = document.createElement('template')
   template.innerHTML = html
-  const copy = node => {
-    if (node.nodeType === 3) return document.createTextNode(node.data)
+  const copy = (node: {
+    nodeType: number
+    data?: string
+    localName?: string
+    getAttribute?: (attr: string) => string | null
+    hasAttribute?: (attr: string) => boolean
+    style?: { getPropertyValue: (key: string) => string }
+    childNodes?: NodeList
+  }): Node => {
+    if (node.nodeType === 3) return document.createTextNode(node.data!)
     if (node.nodeType !== 1) return document.createTextNode('')
     if (node.localName === 'img') {
       const span = document.createElement('span')
       span.className = 'r-image'
       span.textContent =
-        '[画像: ' + (node.getAttribute('alt') || '外部画像') + ']'
+        '[画像: ' + (node.getAttribute?.('alt') || '外部画像') + ']'
       return span
     }
-    if (!allowed.has(node.localName)) return document.createTextNode('')
-    const name = node.localName === 'a' ? 'span' : node.localName
+    if (!allowed.has(node.localName!)) return document.createTextNode('')
+    const name = node.localName === 'a' ? 'span' : node.localName!
     const value = ['svg', 'path', 'line'].includes(name)
       ? document.createElementNS('http://www.w3.org/2000/svg', name)
       : document.createElement(name)
@@ -107,25 +117,26 @@ function renderHTML(html) {
       'y1',
       'y2'
     ])
-      if (node.hasAttribute(attr))
-        value.setAttribute(attr, node.getAttribute(attr))
+      if (node.hasAttribute?.(attr))
+        value.setAttribute(attr, node.getAttribute!(attr)!)
     for (const key of styleNames) {
-      const text = node.style.getPropertyValue(key)
+      const text = node.style!.getPropertyValue(key)
       if (text && !/url|var\(|attr\(/i.test(text))
         value.style.setProperty(key, text)
     }
     if (node.localName === 'a') {
       value.classList.add('r-link')
-      value.title = node.getAttribute('href') || 'リンク'
+      ;(value as HTMLAnchorElement).title =
+        node.getAttribute?.('href') || 'リンク'
     }
-    for (const child of node.childNodes) value.append(copy(child))
+    for (const child of node.childNodes!) value.append(copy(child))
     return value
   }
   const result = document.createDocumentFragment()
   for (const child of template.content.childNodes) result.append(copy(child))
   return result
 }
-async function load(m, index) {
+async function load(m: string, index: number) {
   const key = m + ':' + index
   if (cache.has(key)) return cache.get(key)
   const bytes = Uint8Array.from(atob(payload[m][index]), c => c.charCodeAt(0))
@@ -138,8 +149,8 @@ async function load(m, index) {
   return rows
 }
 
-function highlightedPair(before, after) {
-  let parts,
+function highlightedPair(before: string, after: string) {
+  let parts: [number, string][],
     coarse = false
   // ponytail: bound character diff cost; large outputs retain exact text with coarser changed ranges.
   if (before.length + after.length <= 12000)
@@ -173,20 +184,21 @@ function highlightedPair(before, after) {
         '長い出力のため、共通の先頭・末尾を除いた変更範囲をまとめて強調しています。文字列は省略していません。'
   }
   for (const part of parts) {
-    const op = part[0],
+    const op = part[0] as number,
       value = part[1]
     if (!value) continue
     for (let i = 0; i < 2; i++) {
       if (op === (i === 0 ? 1 : -1)) continue
       const node = document.createElement(op === 0 ? 'span' : 'mark')
-      if (op) node.className = op === -1 ? 'diff-removed' : 'diff-added'
+      if (op)
+        node.setAttribute('class', op === -1 ? 'diff-removed' : 'diff-added')
       node.textContent = value
       sides[i].append(node)
     }
   }
   return sides
 }
-function cell(row, text, isSource) {
+function cell(row: { index: number }, text: string, isSource: boolean) {
   const td = document.createElement('td')
   if (isSource) {
     const label = document.createElement('div')
@@ -196,7 +208,7 @@ function cell(row, text, isSource) {
     expand.className = 'expand'
     expand.textContent = '展開'
     expand.addEventListener('click', () => {
-      const tr = td.parentElement
+      const tr = td.parentElement!
       const open = tr.classList.toggle('expanded')
       expand.textContent = open ? '折りたたむ' : '展開'
     })
@@ -239,7 +251,8 @@ async function show() {
       'aria-pressed',
       String((b as HTMLElement).dataset.mode === mode)
     )
-  let rows = []
+  let rows: { index: number; source: string; before: string; after: string }[] =
+    []
   if (total) {
     if (hits === null) rows = await load(mode, page - 1)
     else
@@ -298,7 +311,7 @@ for (const [id, label, title] of [
   filtersBar.append(labelNode)
   filterInputs[id] = input
 }
-document.querySelector('.toolbar').after(filtersBar)
+document.querySelector('.toolbar')!.after(filtersBar)
 async function applyFilters() {
   const token = ++filterGeneration,
     selectedMode = mode,
@@ -310,7 +323,7 @@ async function applyFilters() {
     return show()
   }
   const flags = meta.filters[selectedMode],
-    found = []
+    found: [number, number][] = []
   for (let chunk = 0; chunk < payload[selectedMode].length; chunk++) {
     const rows = q ? await load(selectedMode, chunk) : null
     if (token !== filterGeneration) return
@@ -344,12 +357,13 @@ for (const name of [
   head.append(th)
 }
 table.append(head)
-const f = n => Number(n).toLocaleString('ja-JP', { maximumFractionDigits: 2 })
+const f = (n: number | string) =>
+  Number(n).toLocaleString('ja-JP', { maximumFractionDigits: 2 })
 for (const key of Object.keys(labels)) {
   const data = key === 'notification' ? meta.traq : meta.sui.modes[key],
     tr = document.createElement('tr')
   for (const text of [
-    labels[key],
+    labels[key as keyof typeof labels],
     f(data.before.meanUs) + ' / ' + f(data.after.meanUs),
     f(data.before.p50Us) + ' / ' + f(data.after.p50Us),
     f(data.before.p95Us) + ' / ' + f(data.after.p95Us),

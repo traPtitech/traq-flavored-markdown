@@ -2,10 +2,15 @@ import path from 'path'
 
 import { traqRoot } from '../paths.ts'
 
-const compress = async (format, bytes) =>
+const compress = async (
+  format: CompressionFormat,
+  bytes: Uint8Array<ArrayBuffer>
+) =>
   (
     await new Response(
-      new Blob([bytes]).stream().pipeThrough(new CompressionStream(format))
+      new Blob([bytes.buffer])
+        .stream()
+        .pipeThrough(new CompressionStream(format))
     ).arrayBuffer()
   ).byteLength
 
@@ -31,7 +36,7 @@ export async function writeWasmContract() {
     sha256: new Bun.CryptoHasher('sha256').update(bytes).digest('hex'),
     bytes: bytes.length,
     gzipBytes: await compress('gzip', bytes),
-    brotliBytes: await compress('brotli', bytes)
+    brotliBytes: await compress('brotli' as CompressionFormat, bytes)
   }
   await Bun.write(
     path.join(traqRoot, 'dist', 'contract.json'),

@@ -16,14 +16,15 @@ import {
   traqRoot
 } from './paths.ts'
 
-type Schema = { title: string; $defs?: Record<string, Schema> }
+import type { RawSchema } from './codegen/schema.ts'
+import type { PresetTree } from './codegen/traq/presets.ts'
 
 type Manifest = {
   buildId: string
   limits: { inputBytes: number; memoryBytes: number }
-  nodes: Record<string, { group: string; schema: { title: string } }>
-  presets: Record<string, unknown>
-  processing: Record<string, Schema>
+  nodes: Record<string, { group: string; schema: RawSchema }>
+  presets: PresetTree
+  processing: Record<string, RawSchema>
 }
 
 const readManifest = (input: string) =>
@@ -104,10 +105,9 @@ async function generateContractGroup(
     ...(group === 'generic' ? ['generic'] : []),
     'generated_nodes.go'
   )
-  const entries = Object.entries(manifest.nodes).map(([key, node]) => [
-    key,
-    node.schema
-  ])
+  const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
+    ([key, node]) => [key, node.schema]
+  )
   await Bun.write(goPath, contractGoNodes(entries, group))
   await runCommand(['gofmt', '-w', goPath])
 

@@ -6,19 +6,21 @@ import { expect, test } from 'bun:test'
 import { nodeContractsDirectory } from '../../../../scripts/build/node-contracts.ts'
 import { goPayload } from '../../../../scripts/codegen/go.ts'
 import { javascript } from '../../../../scripts/codegen/javascript.ts'
-import { shape } from '../../../../scripts/codegen/schema.ts'
+import { type Shape, shape } from '../../../../scripts/codegen/schema.ts'
 import { names, nodes } from '../../dist/generated/nodes.js'
 
 const manifest = JSON.parse(
   await file(path.join(nodeContractsDirectory(), 'contracts.json')).text()
 ) as { nodes: Record<string, { schema: { required?: string[] } }> }
 
-function example(s) {
+function example(s: Shape): unknown {
   if (s.kind === 'string') return 'value'
   if (s.kind === 'integer') return s.min
   if (s.kind === 'boolean') return false
   if (s.kind === 'enum') return s.values[0]
   if (s.kind === 'nullable') return null
+  if (s.kind === 'array') return [example(s.items)]
+
   return Object.fromEntries(s.fields.map(f => [f.name, example(f.shape)]))
 }
 
@@ -26,14 +28,14 @@ test('generated optional TypeScript guards enforce every exported payload shape'
   for (const [name, schema] of Object.entries(manifest.nodes).map(
     ([key, value]): [string, { required?: string[] }] => [key, value.schema]
   )) {
-    const valid = example(shape(schema)),
+    const valid = example(shape(schema)) as Record<string, unknown>,
       check = nodes.get(name)
     if (!check) throw new Error(`Missing generated validator: ${name}`)
     expect(check(valid)).toBeTruthy()
     expect(check({ ...valid, unexpected: true })).toBeFalsy()
     expect(check(null)).toBeFalsy()
     for (const field of schema.required ?? []) {
-      const missing = { ...valid }
+      const missing: Record<string, unknown> = { ...valid }
       delete missing[field]
       expect(check(missing)).toBeFalsy()
       expect(check({ ...valid, [field]: [] })).toBeFalsy()

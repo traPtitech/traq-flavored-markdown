@@ -17,16 +17,16 @@ const { values } = parseArgs({
   }
 })
 if (!values.data) throw new Error('--data required')
-if (!['html', 'mhtml', 'both'].includes(values.format))
+if (!['html', 'mhtml', 'both'].includes(values.format!))
   throw new Error('Invalid format')
 values.out = path.resolve(values.out ?? values.data)
 await $`mkdir -p ${values.out}`
 
-const filterMasks = { render: [], inline: [], notification: [] }
-const chunks = { render: [], inline: [], notification: [] },
-  pending = { render: [], inline: [], notification: [] },
-  counts = { render: 0, inline: 0, notification: 0 }
-function flush(mode) {
+const filterMasks: Record<string, number[]> = { render: [], inline: [], notification: [] }
+const chunks: Record<string, string[]> = { render: [], inline: [], notification: [] },
+  pending: Record<string, string[]> = { render: [], inline: [], notification: [] },
+  counts: Record<string, number> = { render: 0, inline: 0, notification: 0 }
+function flush(mode: string) {
   if (!pending[mode].length) return
   chunks[mode].push(
     Bun.gzipSync(JSON.stringify(pending[mode]), { level: 9 }).toBase64()
