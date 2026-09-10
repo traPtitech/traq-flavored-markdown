@@ -1,7 +1,7 @@
 // Code generated from Rust contracts. DO NOT EDIT.
 package commonmark
 
-import "github.com/traq-markdown-parser/core/go/ast"
+import "github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"
 
 const BlockquoteName = "markdown_commonmark_contracts::nodes::Blockquote"
 

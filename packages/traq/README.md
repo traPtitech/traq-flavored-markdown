@@ -3,7 +3,7 @@
 traQ 向けの Markdown 文法・通知処理の構成と、Rust・WebAssembly・Go・TypeScript 向けの配布を所有します。文法・AST の契約・検証は Rust が所有します。
 
 - npm: **`@traq-markdown-parser/traq`**
-- Go module: **`github.com/traq-markdown-parser/traq/go`**
+- Go module: **`github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go`**
 - Wasm: ABI **3** / AST **4**
 
 文法の実装は [core](../core/README.md)、[commonmark](../commonmark/README.md)、[trap-extension](../trap-extension/README.md) にあります。このリポジトリで配布するプリセットを選び、Wasm と対応する型を生成します。
@@ -57,7 +57,7 @@ try {
 ## Go
 
 ```go
-import markdown "github.com/traq-markdown-parser/traq/go"
+import markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go"
 
 runtime, err := markdown.NewRuntime(ctx, wasmBytes)
 if err != nil { return err }
@@ -197,6 +197,6 @@ Wasm の起動は利用側が明示的に行います。`/renderer` を import �
 
 Use `bun run corpus:collect`, `bun run corpus:compare`, and `bun run corpus:report` to collect messages and generate offline HTML/MHTML difference reports. See [Corpus comparison](docs/CORPUS.md) for inputs, options, and output files.
 
-Go consumers use `github.com/traq-markdown-parser/traq/go` for presets and artifact pairing. Shared AST/transport live in the core Go module; payload factories live in commonmark and trap-extension. `Extractor.Extract` returns source-preserving message text, references, embedding edits, attachment IDs and citation IDs from the supplied Document. `PlainTextRenderer.Render` independently renders that Document for notifications.
+Go consumers use `github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go` for presets and artifact pairing. Shared AST/transport live in the core Go module; payload factories live in commonmark and trap-extension. `Extractor.Extract` returns source-preserving message text, references, embedding edits, attachment IDs and citation IDs from the supplied Document. `PlainTextRenderer.Render` independently renders that Document for notifications.
 
 Embedding edits are also shared: Rust derives `output.embedding` from the same AST. Pass that plan and an application identity resolver to `embedReferences` (TypeScript) or `EmbedReferences` (Go). `output.embedding.unembeddedText` restores reference labels for copying, and `mentionsUser` checks the extracted references. See [processing presets](crates/processing/README.md) for the editing rules.

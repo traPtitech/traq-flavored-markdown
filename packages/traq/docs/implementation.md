@@ -4,7 +4,7 @@
 
 文法の構成、解析、ノードの型と意味検証は Rust にあります。このリポジトリ内の `crates/grammar/src/bindings/mod.rs` で配布する文法を選び、`crates/wasm/src/node_types.rs` に配布するノード契約を登録します。Rust の文法ビルダーで独自構成を作り、catalog の preset として公開すると、その名前を TypeScript / Go に生成します。
 
-Rust API は [parser core](https://github.com/traq-markdown-parser/core/blob/main/crates/parser/README.md) と [traQ presets](https://github.com/traq-markdown-parser/traq/blob/main/crates/grammar/README.md) を参照してください。ネイティブ Rust では引き続き Plugin / Rule の追加・削除・並べ替えを利用できます。
+Rust API は [parser core](https://github.com/uni-kakurenbo/traq-markdown-engine/packages/core/blob/main/crates/parser/README.md) と [traQ presets](https://github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/blob/main/crates/grammar/README.md) を参照してください。ネイティブ Rust では引き続き Plugin / Rule の追加・削除・並べ替えを利用できます。
 
 ## TypeScript
 
@@ -34,8 +34,8 @@ try {
 
 ```go
 import (
- markdown "github.com/traq-markdown-parser/traq/go"
- commonmark "github.com/traq-markdown-parser/commonmark/go"
+ markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go"
+ commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/commonmark/go"
 )
 
 runtime, err := markdown.NewRuntime(ctx, wasmBytes)
@@ -74,7 +74,7 @@ Wasm ABI 3 は input buffer、`configure`、`parse(mode)`、output buffer の小
 
 core の `/renderer` は受け取った Document から HTML を作ります。レンダラーの Plugin 宣言・登録・合成も core が所有します。構文別の handler は commonmark と trap-extension、traQ の構成と condensed 表示 は traq の `/renderer` が所有します。文法を構成する Rust の Plugin とは別の API です。
 
-通知・参照抽出のネイティブ Rust API は [processing](https://github.com/traq-markdown-parser/traq/tree/main/crates/processing) にあります。保存済みメッセージの文法版は利用側で管理し、原文を対応するプリセットで再解析します。永続 AST の互換層は設けません。
+通知・参照抽出のネイティブ Rust API は [processing](https://github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/tree/main/crates/processing) にあります。保存済みメッセージの文法版は利用側で管理し、原文を対応するプリセットで再解析します。永続 AST の互換層は設けません。
 
 ## AST consumers
 

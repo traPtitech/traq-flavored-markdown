@@ -2,10 +2,10 @@
 package markdown
 
 import (
-	commonmark "github.com/traq-markdown-parser/commonmark/go"
-	generic "github.com/traq-markdown-parser/commonmark/go/generic"
-	"github.com/traq-markdown-parser/core/go/ast"
-	trap "github.com/traq-markdown-parser/trap-extension/go"
+	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/commonmark/go"
+	generic "github.com/uni-kakurenbo/traq-markdown-engine/packages/commonmark/go/generic"
+	"github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"
+	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/trap-extension/go"
 )
 
 type Document = ast.Document

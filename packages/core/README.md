@@ -51,6 +51,6 @@ HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/tr
 
 ## Go
 
-The `github.com/traq-markdown-parser/core/go` module owns `ast` (shared tree and decoding) and `binding` (the Wasm ABI runtime). It has no CommonMark or traQ preset dependency. Node payloads come from the owning extension modules. Run `go -C go test ./...` to check it.
+The `github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go` module owns `ast` (shared tree and decoding) and `binding` (the Wasm ABI runtime). It has no CommonMark or traQ preset dependency. Node payloads come from the owning extension modules. Run `go -C go test ./...` to check it.
 
 HTML renderers expose `render(document)`. Handlers render children with `ctx.render(nodes)`. The default fallback returns HTML-escaped source without adding markup. Configure it with `PresetBuilder.build({ fallback: escapedSource => ... })`. Paragraphs, headings, and other HTML structure belong to node handlers; core has no block/inline rendering mode.

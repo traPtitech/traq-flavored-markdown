@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/traq-markdown-parser/core/go/binding"
+	"github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/binding"
 )
 
 // PlainTextRenderer renders an AST using the traQ PlainText policy owned by Rust.

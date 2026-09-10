@@ -10,11 +10,11 @@ export function goNodes(manifest: {
     trap: 'trap-extension/go'
   }
   return (
-    '// Code generated from Rust contract ownership. DO NOT EDIT.\npackage markdown\nimport (\n "github.com/traq-markdown-parser/core/go/ast"\n' +
+    '// Code generated from Rust contract ownership. DO NOT EDIT.\npackage markdown\nimport (\n "github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"\n' +
     groups
       .map(
         group =>
-          group + ' "github.com/traq-markdown-parser/' + packages[group] + '"'
+          group + ' "github.com/uni-kakurenbo/traq-markdown-engine/packages/' + packages[group] + '"'
       )
       .join('\n') +
     '\n)\n' +

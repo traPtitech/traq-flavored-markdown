@@ -11,4 +11,4 @@
 
 結果の Serialize は camelCase の JSON フィールド名を使います。
 これは具体的な参照結果の出力であり、AST や抽出 core に JSON を要求しません。
-実行例は [processing](https://github.com/traq-markdown-parser/traq/blob/main/crates/processing/examples/notification.rs) を参照してください。
+実行例は [processing](https://github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/blob/main/crates/processing/examples/notification.rs) を参照してください。

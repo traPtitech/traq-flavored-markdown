@@ -46,4 +46,4 @@ HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/tr
 
 ## Go contracts
 
-The Go module is `github.com/traq-markdown-parser/trap-extension/go`. Payloads and node factories are generated from this repository's Rust contracts by `bun run generate:bindings`. The canonical tree and Wasm runtime belong to the core Go module.
+The Go module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/trap-extension/go`. Payloads and node factories are generated from this repository's Rust contracts by `bun run generate:bindings`. The canonical tree and Wasm runtime belong to the core Go module.
