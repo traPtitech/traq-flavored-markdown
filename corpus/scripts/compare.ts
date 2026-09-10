@@ -133,11 +133,11 @@ const localGoModule = name =>
   )
 await Bun.write(
   path.join(goRoot, 'go.mod'),
-  `module corpuscomparison\n\ngo 1.26.0\n\nrequire (\n github.com/gofrs/uuid ${version('github.com/gofrs/uuid')}\n github.com/json-iterator/go ${version('github.com/json-iterator/go')}\n github.com/traq-markdown-parser/traq/go v0.1.0\n)\n` +
+  `module corpuscomparison\n\ngo 1.26.0\n\nrequire (\n github.com/gofrs/uuid ${version('github.com/gofrs/uuid')}\n github.com/json-iterator/go ${version('github.com/json-iterator/go')}\n github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go v0.1.0\n)\n` +
     ['core', 'commonmark', 'trap-extension', 'traq']
       .map(
         name =>
-          `replace github.com/traq-markdown-parser/${name}/go => ${localGoModule(name)}`
+          `replace github.com/uni-kakurenbo/traq-markdown-engine/packages/${name}/go => ${localGoModule(name)}`
       )
       .join('\n') +
     '\n'
