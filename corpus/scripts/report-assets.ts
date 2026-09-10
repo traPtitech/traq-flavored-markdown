@@ -2,7 +2,7 @@ import path from 'path'
 
 import { parseFragment } from 'parse5'
 
-import { packageRoot, traqRoot } from '../paths.ts'
+import { packageRoot, traqRoot } from '../../scripts/paths.ts'
 import { readLines } from './read-lines.ts'
 
 const readText = file => Bun.file(file).text()

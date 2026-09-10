@@ -14,7 +14,10 @@ export function goNodes(manifest: {
     groups
       .map(
         group =>
-          group + ' "github.com/uni-kakurenbo/traq-markdown-engine/packages/' + packages[group] + '"'
+          group +
+          ' "github.com/uni-kakurenbo/traq-markdown-engine/packages/' +
+          packages[group] +
+          '"'
       )
       .join('\n') +
     '\n)\n' +

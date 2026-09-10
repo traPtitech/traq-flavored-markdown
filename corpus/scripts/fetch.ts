@@ -3,7 +3,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { repositoryRoot } from '../paths.ts'
+import { repositoryRoot } from '../../scripts/paths.ts'
 import { parseArgs, parseEnv } from './args.ts'
 
 export async function collect({

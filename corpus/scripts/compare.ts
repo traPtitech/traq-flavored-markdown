@@ -2,7 +2,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { repositoryRoot, traqRoot } from '../paths.ts'
+import { repositoryRoot, traqRoot } from '../../scripts/paths.ts'
 import { parseArgs } from './args.ts'
 
 const root = traqRoot

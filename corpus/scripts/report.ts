@@ -3,7 +3,7 @@ import path from 'path'
 import { $ } from 'bun'
 import { build } from 'esbuild'
 
-import { traqRoot } from '../paths.ts'
+import { traqRoot } from '../../scripts/paths.ts'
 import { parseArgs } from './args.ts'
 import { ignoreMask } from './ignore-differences.ts'
 import { readLines } from './read-lines.ts'

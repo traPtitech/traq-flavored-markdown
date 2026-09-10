@@ -76,6 +76,7 @@ export default [
   {
     files: [
       'scripts/**/*.{mjs,ts}',
+      'corpus/scripts/**/*.{mjs,ts}',
       'packages/**/scripts/**/*.{js,mjs,ts,mts}'
     ],
     languageOptions: {
@@ -101,7 +102,7 @@ export default [
     }
   },
   {
-    files: ['scripts/corpus/viewer.ts'],
+    files: ['corpus/view/viewer.ts'],
     languageOptions: {
       globals: { ...globals.browser, CorpusDiff: 'readonly' }
     }
