@@ -1,4 +1,4 @@
-# traq-markdown-engine
+# traQ Flavored Markdown Engine
 
 Markdown parsing, rendering and extraction for traQ, implemented in Rust with
 TypeScript and Go bindings. The repository groups code by responsibility, then
@@ -33,6 +33,7 @@ Plugins are composable syntax and AST processing components. Core has no depende
 on a concrete plugin; the SDK selects and combines plugins for traQ. Each package keeps its
 Rust crates, TypeScript implementation and Go module together. The npm names are
 independent of directory names; Go module paths follow their directories.
+They can be installed and composed independently, but release with one shared version.
 
 Repository tooling lives in [scripts](scripts), with SDK-specific generation and
 packaging in [packages/sdk/scripts](packages/sdk/scripts). The standalone

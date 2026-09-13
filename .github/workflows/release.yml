@@ -3,18 +3,15 @@ name: Release npm packages
 on:
   push:
     tags:
-      - 'core@*'
-      - 'commonmark-plugin@*'
-      - 'traq-plugin@*'
-      - 'sdk@*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing package tag to release
+        description: Shared release tag (v<version>)
         required: true
         type: string
       dry_run:
-        description: Validate and pack without publishing
+        description: Validate the selected branch without publishing (live runs use the tag)
         required: true
         default: true
         type: boolean
@@ -23,7 +20,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: npm-publish-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  group: npm-publish
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -38,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -59,10 +57,10 @@ jobs:
           targets: wasm32-unknown-unknown
           components: clippy,rustfmt
       - run: bun ci
-      - name: Validate release label
+      - name: Validate shared version and internal dependencies
         run: bun run release -- "$RELEASE_TAG" --check
       - run: bun run check
-      - name: Publish package
+      - name: Release all four packages in dependency order
         run: |
           if [ "$PUBLISH" = true ]; then
             bun run release -- "$RELEASE_TAG" --publish

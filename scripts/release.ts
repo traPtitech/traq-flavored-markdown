@@ -1,117 +1,191 @@
 import path from 'node:path'
 
-import { type PackageName, packageRoot } from './paths.ts'
+import { type PackageName, packageRoot, repositoryRoot } from './paths.ts'
 
 const registry = 'https://registry.npmjs.org'
-const packages: Record<PackageName, string> = {
-  core: '@traq-markdown-engine/core',
-  'commonmark-plugin': '@traq-markdown-engine/commonmark-plugin',
-  'traq-plugin': '@traq-markdown-engine/traq-plugin',
-  sdk: '@traq-markdown-engine/sdk'
-}
+const packageNames: PackageName[] = [
+  'core',
+  'commonmark-plugin',
+  'traq-plugin',
+  'sdk'
+]
+const packageName = (name: PackageName) => `@traq-markdown-engine/${name}`
+const workspaces = packageNames.map(name => `--workspace=${packageName(name)}`)
 const versionPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
 
-type Mode = 'check' | 'dry-run' | 'publish'
+type Mode = 'prepare' | 'check' | 'dry-run' | 'publish'
 
 export type Release = {
-  name: PackageName
   version: string
   tag: 'latest' | 'next'
   mode: Mode
 }
 
-type Manifest = {
+export type Manifest = {
   name: string
   version: string
   private?: boolean
   publishConfig?: { access?: string; registry?: string }
+  peerDependencies?: Record<string, string>
+}
+
+export type Workspace = {
+  root: Manifest
+  packages: Record<PackageName, Manifest>
 }
 
 const usage =
-  'usage: bun scripts/release.ts <core|commonmark-plugin|traq-plugin|sdk>@<version> [--check|--dry-run|--publish]'
+  'usage: bun scripts/release.ts v<version> [--prepare|--check|--dry-run|--publish]'
 
 const validVersion = (version: string) => {
   const match = version.match(versionPattern)
-  if (!match || match[5] || !Bun.semver.satisfies(version, `=${version}`))
-    return false
-  return !match[4]?.split('.').some(id => /^0\d+$/.test(id))
+  return (
+    !!match &&
+    !match[5] &&
+    Bun.semver.satisfies(version, `=${version}`) &&
+    !match[4]?.split('.').some(identifier => /^0\d+$/.test(identifier))
+  )
 }
+
+const internalPeers = (manifest: Manifest) =>
+  Object.entries(manifest.peerDependencies ?? {}).filter(([dependency]) =>
+    packageNames.some(name => packageName(name) === dependency)
+  )
 
 export const parseRelease = (args: string[]): Release => {
-  const [selector, ...options] = args
-  const [name, version, ...rest] = selector?.split('@') ?? []
-  if (
-    !name ||
-    !version ||
-    rest.length ||
-    !Object.hasOwn(packages, name) ||
-    !validVersion(version)
-  )
+  const [label, ...options] = args
+  const version = label?.startsWith('v') ? label.slice(1) : undefined
+  if (!version || !validVersion(version) || options.length > 1)
     throw new Error(usage)
-  if (options.length > 1) throw new Error(usage)
-
   const mode =
-    options[0] === '--check'
-      ? 'check'
-      : options[0] === '--publish'
-        ? 'publish'
-        : !options.length || options[0] === '--dry-run'
-          ? 'dry-run'
-          : undefined
+    options[0] === '--prepare'
+      ? 'prepare'
+      : options[0] === '--check'
+        ? 'check'
+        : options[0] === '--publish'
+          ? 'publish'
+          : !options.length || options[0] === '--dry-run'
+            ? 'dry-run'
+            : undefined
   if (!mode) throw new Error(usage)
-  return {
-    name: name as PackageName,
-    version,
-    tag: version.includes('-') ? 'next' : 'latest',
-    mode
-  }
+  return { version, tag: version.includes('-') ? 'next' : 'latest', mode }
 }
 
-export const validateRelease = async (release: Release) => {
-  const manifest = (await Bun.file(
-    path.join(packageRoot(release.name), 'package.json')
-  ).json()) as Manifest
+export const validateWorkspace = (workspace: Workspace, version?: string) => {
   if (
-    manifest.name !== packages[release.name] ||
-    manifest.version !== release.version ||
-    manifest.private !== undefined ||
-    manifest.publishConfig?.access !== 'public' ||
-    manifest.publishConfig.registry !== registry
+    workspace.root.name !== 'traq-markdown-engine' ||
+    workspace.root.private !== true
   )
-    throw new Error(`release selector does not match ${release.name} manifest`)
+    throw new Error('root manifest does not match the synchronized release')
+  if (
+    version !== undefined &&
+    (!validVersion(version) || workspace.root.version !== version)
+  )
+    throw new Error('root manifest does not match the synchronized release')
+
+  for (const name of packageNames) {
+    const manifest = workspace.packages[name]
+    if (
+      manifest.name !== packageName(name) ||
+      manifest.private !== undefined ||
+      manifest.publishConfig?.access !== 'public' ||
+      manifest.publishConfig.registry !== registry
+    )
+      throw new Error(
+        `${name} manifest does not match the synchronized release`
+      )
+    if (version !== undefined && manifest.version !== version)
+      throw new Error(
+        `${name} manifest does not match the synchronized release`
+      )
+    if (
+      version !== undefined &&
+      internalPeers(manifest).some(([, peerVersion]) => peerVersion !== version)
+    )
+      throw new Error(`${name} peer dependencies do not match the release`)
+  }
 }
 
-export const runRelease = async (args: string[]) => {
-  const release = parseRelease(args)
-  await validateRelease(release)
-  if (release.mode === 'check') {
-    console.log(
-      `${release.name}@${release.version} is ready for ${release.tag}`
+const readWorkspace = async (): Promise<Workspace> => ({
+  root: (await Bun.file(
+    path.join(repositoryRoot, 'package.json')
+  ).json()) as Manifest,
+  packages: Object.fromEntries(
+    await Promise.all(
+      packageNames.map(
+        async name =>
+          [
+            name,
+            (await Bun.file(
+              path.join(packageRoot(name), 'package.json')
+            ).json()) as Manifest
+          ] as const
+      )
     )
-    return
-  }
+  ) as Record<PackageName, Manifest>
+})
 
-  const command = [
-    process.platform === 'win32' ? 'npm.cmd' : 'npm',
-    'publish',
-    '--ignore-scripts',
-    '--access',
-    'public',
-    '--registry',
-    registry,
-    '--tag',
-    release.tag,
-    ...(release.mode === 'dry-run' ? ['--dry-run'] : [])
-  ]
-  const subprocess = Bun.spawn(command, {
-    cwd: packageRoot(release.name),
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+
+const run = async (args: string[]) => {
+  const subprocess = Bun.spawn(args, {
+    cwd: repositoryRoot,
     stdin: 'inherit',
     stdout: 'inherit',
     stderr: 'inherit'
   })
-  if ((await subprocess.exited) !== 0)
-    throw new Error(`npm publish failed for ${release.name}`)
+  if ((await subprocess.exited) !== 0) throw new Error(`${args[0]} failed`)
+}
+
+export const runRelease = async (args: string[]) => {
+  const release = parseRelease(args)
+  const workspace = await readWorkspace()
+  if (release.mode === 'prepare') {
+    validateWorkspace(workspace)
+    await run([
+      npm,
+      'version',
+      release.version,
+      ...workspaces,
+      '--include-workspace-root',
+      '--workspaces-update=false',
+      '--git-tag-version=false',
+      '--ignore-scripts',
+      '--allow-same-version'
+    ])
+    for (const name of packageNames) {
+      const fields = internalPeers(workspace.packages[name]).map(
+        ([peer]) => `peerDependencies.${peer}=${release.version}`
+      )
+      if (fields.length)
+        await run([
+          npm,
+          'pkg',
+          'set',
+          ...fields,
+          `--workspace=${packageName(name)}`
+        ])
+    }
+    validateWorkspace(await readWorkspace(), release.version)
+    await run([Bun.argv[0], 'install', '--lockfile-only', '--ignore-scripts'])
+    return
+  }
+
+  validateWorkspace(workspace, release.version)
+  if (release.mode === 'check') return
+  await run([
+    npm,
+    'publish',
+    ...workspaces,
+    '--ignore-scripts',
+    '--access',
+    'public',
+    `--registry=${registry}`,
+    '--tag',
+    release.tag,
+    ...(release.mode === 'dry-run' ? ['--dry-run'] : [])
+  ])
 }
 
 if (Bun.main === Bun.fileURLToPath(import.meta.url))

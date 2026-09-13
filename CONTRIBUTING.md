@@ -108,32 +108,62 @@ APIs.
 
 Only these four packages are published publicly to npm:
 
-| Selector            | npm package                               | Package directory             |
-| ------------------- | ----------------------------------------- | ----------------------------- |
-| `core`              | `@traq-markdown-engine/core`              | `packages/core`               |
-| `commonmark-plugin` | `@traq-markdown-engine/commonmark-plugin` | `packages/plugins/commonmark` |
-| `traq-plugin`       | `@traq-markdown-engine/traq-plugin`       | `packages/plugins/traq`       |
-| `sdk`               | `@traq-markdown-engine/sdk`               | `packages/sdk`                |
+| npm package                               | Package directory             |
+| ----------------------------------------- | ----------------------------- |
+| `@traq-markdown-engine/core`              | `packages/core`               |
+| `@traq-markdown-engine/commonmark-plugin` | `packages/plugins/commonmark` |
+| `@traq-markdown-engine/traq-plugin`       | `packages/plugins/traq`       |
+| `@traq-markdown-engine/sdk`               | `packages/sdk`                |
 
-The root workspace and `tools` workspaces stay private. Packages release
-independently; the release process does not change versions or automatically
-release dependent packages. Before creating a tag, set the selected package's
-version in its `package.json` and ensure internal peer-dependency ranges describe
-the intended compatibility.
+The root workspace and `tools` workspaces stay private. The public packages
+are independently installable and composable, but every release synchronizes
+the root and all four package versions. Internal peer dependencies must use the
+same exact version. Releases never update external dependencies, tools, Rust
+crates, Go modules, or their versions.
 
-Release tags are `core@<version>`, `commonmark-plugin@<version>`,
-`traq-plugin@<version>`, or `sdk@<version>`. The tag version must match the
-selected package's `package.json`. Use the release command to validate a release
-locally; it runs `npm publish --dry-run` by default. `--publish` is the only mode
-that performs a live publish.
+Release tags are `v<version>`. The tag version must match the root and all four
+package `package.json` versions, and every sibling peer dependency must use that
+exact version. `bun run release` defaults to a dry run; `--publish` is the only
+mode that performs a live publish.
 
 ```sh
-bun run release -- core@0.1.0             # pack and dry-run the selected package
-bun run release -- core@0.1.0 --check     # validate selector and version only
-bun run release -- core@0.1.0 --publish   # publish the selected package
+bun run release -- v0.1.1 --prepare  # synchronize manifests, peer dependencies, and bun.lock
+bun run release -- v0.1.1 --check    # validate manifests and peer graph without packing or network access
+bun run release -- v0.1.1            # pack all packages and dry-run publishing
+bun run release -- v0.1.1 --publish  # publish all packages
 ```
 
-### Initial publication
+`--prepare` is a thin wrapper around native npm workspace commands. It updates the
+root and all four public package versions with `npm version`, sets internal peer
+dependencies to the exact version with `npm pkg set`, and lets Bun update
+`bun.lock`. It does not create a tag or commit and does not reify dependencies.
+It preserves external dependencies and the versions of tools, Rust crates, and Go
+modules.
+
+### Normal release
+
+Prepare and validate a release before committing its synchronized manifests and
+lockfile. Push the commit before pushing its release tag.
+
+```sh
+bun run release -- v0.1.1 --prepare
+bun run check
+bun run release -- v0.1.1
+git add package.json packages/core/package.json packages/plugins/commonmark/package.json packages/plugins/traq/package.json packages/sdk/package.json bun.lock
+git commit -m "Release v0.1.1"
+git push
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+The `v*` release workflow publishes all four workspaces with one native
+`npm publish` invocation, in dependency order: core, commonmark-plugin,
+traq-plugin, then SDK. It names all four workspace paths explicitly; a parent
+workspace selector would not include the nested plugin workspaces. Stable versions
+use the `latest` dist-tag; prereleases use `next`. Global `npm-publish` concurrency
+serializes queued releases.
+
+### Initial trusted-publisher bootstrap
 
 Use Node 24 with npm 11.17.0 and Bun 1.3.14. Sign in interactively with an npm
 account that has two-factor authentication and owns the `@traq-markdown-engine`
@@ -145,14 +175,11 @@ npm login
 bun install --frozen-lockfile
 bun run build
 bun run check
-bun run release -- core@0.1.0 --publish
-bun run release -- commonmark-plugin@0.1.0 --publish
-bun run release -- traq-plugin@0.1.0 --publish
-bun run release -- sdk@0.1.0 --publish
+bun run release -- v0.1.0 --publish
 ```
 
-Publish the initial `0.1.0` packages in that dependency order. After each package
-exists on npm, open its package settings and add a GitHub Actions trusted publisher:
+After the initial release exists on npm, open each package's settings and add a
+GitHub Actions trusted publisher:
 
 - Organization or user: `uni-kakurenbo`
 - Repository: `traq-markdown-engine`
@@ -163,10 +190,27 @@ exists on npm, open its package settings and add a GitHub Actions trusted publis
 
 Configure this publisher for each of the four packages. The
 `.github/workflows/release.yml` workflow uses GitHub Actions OIDC, builds the
-workspace, and runs `bun run check` before publishing only the package selected
-by its tag. Stable tags publish with the `latest` dist-tag; prerelease tags publish
-with `next`. Future releases only require pushing the matching release tag after
-the package version and peer-dependency ranges are ready.
+workspace, runs `bun run check`, and publishes the synchronized set for a `v*`
+tag. A manual workflow dispatch accepts a `v<version>` tag and defaults to a dry
+run; dry runs use the selected branch and do not require that tag to exist. A live
+manual dispatch checks out `refs/tags/<tag>` before publishing.
+
+Native npm publishing is sequential rather than atomic and stops on the first
+failure. A published version is immutable, so do not rerun the full release after
+a partial failure. Use `npm view` to identify the packages already published, then
+from the same unchanged tag and a build that passed `bun run check`, publish only
+the remaining workspaces. For example, if core and commonmark-plugin were
+published, run:
+
+```sh
+npm publish --workspace=packages/plugins/traq --workspace=packages/sdk --access public --ignore-scripts --tag latest
+```
+
+Use `--tag next` for a prerelease. npm does not retry a partial release
+automatically.
+
+If a local `min-release-age` policy hides newly published versions from `npm view`,
+add `--min-release-age-exclude=@traq-markdown-engine/*` to that inspection command.
 
 See npm's [trusted-publishing guide](https://docs.npmjs.com/trusted-publishers/)
 and [`npm trust` reference](https://docs.npmjs.com/cli/v11/commands/npm-trust/)

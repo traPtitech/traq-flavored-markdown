@@ -2,52 +2,99 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
-import { packageRoot } from './paths.ts'
-import { parseRelease, validateRelease } from './release.ts'
+import { type PackageName, packageRoot, repositoryRoot } from './paths.ts'
+import { type Manifest, parseRelease, validateWorkspace } from './release.ts'
 
-test('release selectors choose the matching stable or prerelease dist-tag', () => {
-  const stable = parseRelease(['core@1.2.3'])
-  expect(stable).toEqual({
-    name: 'core',
+const names = {
+  core: '@traq-markdown-engine/core',
+  commonmark: '@traq-markdown-engine/commonmark-plugin',
+  traq: '@traq-markdown-engine/traq-plugin',
+  sdk: '@traq-markdown-engine/sdk'
+}
+
+const manifest = (
+  name: string,
+  peerDependencies?: Record<string, string>
+): Manifest => ({
+  name,
+  version: '0.1.0',
+  publishConfig: { access: 'public', registry: 'https://registry.npmjs.org' },
+  ...(peerDependencies && { peerDependencies })
+})
+
+const workspace = () => ({
+  root: { name: 'traq-markdown-engine', version: '0.1.0', private: true },
+  packages: {
+    core: manifest(names.core),
+    'commonmark-plugin': manifest(names.commonmark, { [names.core]: '0.1.0' }),
+    'traq-plugin': manifest(names.traq, {
+      [names.core]: '0.1.0',
+      [names.commonmark]: '0.1.0'
+    }),
+    sdk: manifest(names.sdk, {
+      [names.core]: '0.1.0',
+      [names.commonmark]: '0.1.0',
+      [names.traq]: '0.1.0'
+    })
+  }
+})
+
+test('release labels are strict and choose the dist-tag', () => {
+  expect(parseRelease(['v1.2.3'])).toEqual({
     version: '1.2.3',
     tag: 'latest',
     mode: 'dry-run'
   })
-  expect(parseRelease(['sdk@1.2.3-rc.1', '--publish'])).toEqual({
-    name: 'sdk',
+  expect(parseRelease(['v1.2.3-rc.1', '--publish'])).toEqual({
     version: '1.2.3-rc.1',
     tag: 'next',
     mode: 'publish'
   })
-})
-
-test('release validation requires the current package manifest', async () => {
-  const manifest = (await Bun.file(
-    path.join(packageRoot('core'), 'package.json')
-  ).json()) as { version: string }
-  const current = parseRelease([`core@${manifest.version}`])
-  await expect(validateRelease(current)).resolves.toBeUndefined()
-
-  const differentVersion = manifest.version === '0.0.0' ? '0.0.1' : '0.0.0'
-  await expect(
-    validateRelease({ ...current, version: differentVersion })
-  ).rejects.toThrow('release selector does not match core manifest')
-})
-
-test('release selectors reject invalid input', () => {
-  for (const selector of [
-    'unknown@0.1.0',
-    'core@01.1.0',
-    'core@0.1',
-    'core@0.1.0-beta.01',
-    'core@0.1.0+build.7',
-    'core@0.1.0@next',
-    'toString@0.1.0'
-  ])
-    expect(() => parseRelease([selector])).toThrow('usage:')
+  for (const label of ['1.2.3', 'core@1.2.3', 'v01.2.3', 'v1.2.3+build.1'])
+    expect(() => parseRelease([label])).toThrow('usage:')
   expect(() => parseRelease([])).toThrow('usage:')
-  expect(() => parseRelease(['core@0.1.0', '--invalid'])).toThrow('usage:')
-  expect(() => parseRelease(['core@0.1.0', '--check', '--publish'])).toThrow(
+  expect(() => parseRelease(['v1.2.3', '--unknown'])).toThrow('usage:')
+  expect(() => parseRelease(['v1.2.3', '--check', '--publish'])).toThrow(
     'usage:'
   )
+})
+
+test('workspace validation rejects version and peer mismatches', () => {
+  expect(() => validateWorkspace(workspace(), '0.1.0')).not.toThrow()
+  const versionMismatch = workspace()
+  versionMismatch.packages.sdk.version = '0.1.1'
+  expect(() => validateWorkspace(versionMismatch, '0.1.0')).toThrow(
+    'sdk manifest does not match'
+  )
+  const peerMismatch = workspace()
+  peerMismatch.packages['traq-plugin'].peerDependencies![names.commonmark] =
+    '0.1.1'
+  expect(() => validateWorkspace(peerMismatch, '0.1.0')).toThrow(
+    'peer dependencies'
+  )
+  expect(() => validateWorkspace(peerMismatch)).not.toThrow()
+})
+
+test('repository root keeps the four package versions and peers synchronized', async () => {
+  const root = (await Bun.file(
+    path.join(repositoryRoot, 'package.json')
+  ).json()) as Manifest
+  const packages = Object.fromEntries(
+    await Promise.all(
+      (
+        ['core', 'commonmark-plugin', 'traq-plugin', 'sdk'] as PackageName[]
+      ).map(
+        async name =>
+          [
+            name,
+            (await Bun.file(
+              path.join(packageRoot(name), 'package.json')
+            ).json()) as Manifest
+          ] as const
+      )
+    )
+  ) as ReturnType<typeof workspace>['packages']
+  expect(() =>
+    validateWorkspace({ root, packages }, root.version)
+  ).not.toThrow()
 })
