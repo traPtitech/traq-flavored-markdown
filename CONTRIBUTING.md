@@ -124,7 +124,9 @@ crates, Go modules, or their versions.
 Release tags are `v<version>`. The tag version must match the root and all four
 package `package.json` versions, and every sibling peer dependency must use that
 exact version. `bun run release` defaults to a dry run; `--publish` is the only
-mode that performs a live publish.
+mode that performs a live publish. A dry run also checks the npm registry, so its
+version must be unpublished and match the manifests on the selected branch.
+Prepare an unreleased version before testing a release.
 
 ```sh
 bun run release -- v0.1.1 --prepare  # synchronize manifests, peer dependencies, and bun.lock
@@ -158,9 +160,9 @@ git push origin v0.1.1
 
 The `v*` release workflow publishes all four workspaces with one native
 `npm publish` invocation, in dependency order: core, commonmark-plugin,
-traq-plugin, then SDK. It names all four workspace paths explicitly; a parent
-workspace selector would not include the nested plugin workspaces. Stable versions
-use the `latest` dist-tag; prereleases use `next`. Global `npm-publish` concurrency
+traq-plugin, then SDK. It names all four workspaces explicitly; a parent workspace
+selector would not include the nested plugin workspaces. Stable versions use the
+`latest` dist-tag; prereleases use `next`. Global `npm-publish` concurrency
 serializes queued releases.
 
 ### Initial trusted-publisher bootstrap
