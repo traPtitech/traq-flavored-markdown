@@ -1,6 +1,6 @@
-import type { RawSchema } from './schema.ts'
 import { declarations } from './declarations.ts'
 import { javascript } from './javascript.ts'
+import type { RawSchema } from './schema.ts'
 import { quoted as q } from './schema.ts'
 
 type Manifest = {

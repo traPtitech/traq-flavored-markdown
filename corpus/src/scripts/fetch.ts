@@ -3,7 +3,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { repositoryRoot } from '../../scripts/paths.ts'
+import { repositoryRoot } from '../../../scripts/paths.ts'
 import { parseArgs, parseEnv } from './args.ts'
 
 export async function collect({
@@ -156,9 +156,13 @@ export async function collect({
       .filter((c: unknown) => typeof (c as { id?: string }).id === 'string')
       .map((c: unknown) => ({
         id: (c as { id: string }).id,
-        key: new Bun.CryptoHasher('sha256').update((c as { id: string }).id).digest('hex')
+        key: new Bun.CryptoHasher('sha256')
+          .update((c as { id: string }).id)
+          .digest('hex')
       }))
-      .sort((a: { key: string }, b: { key: string }) => a.key.localeCompare(b.key))
+      .sort((a: { key: string }, b: { key: string }) =>
+        a.key.localeCompare(b.key)
+      )
       .slice(channelOffset, channelOffset + maxChannels)
     report.channelOffset = channelOffset
     report.availableChannels = list.public.length

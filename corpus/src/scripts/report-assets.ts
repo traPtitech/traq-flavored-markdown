@@ -2,7 +2,7 @@ import path from 'path'
 
 import { parseFragment } from 'parse5'
 
-import { packageRoot } from '../../scripts/paths.ts'
+import { packageRoot } from '../../../scripts/paths.ts'
 import { readLines } from './read-lines.ts'
 
 const readText = (file: string) => Bun.file(file).text()
@@ -40,9 +40,7 @@ export async function rendererCss() {
     )
   }
   const fixture = packageRoot('traq')
-  const renderer = await readText(
-    path.join(fixture, 'typescript/tests/rendering/fixtures/renderer.css')
-  )
+  const renderer = await readText(path.join(fixture, 'dist/index.css'))
   return math + '\n' + renderer
 }
 
@@ -96,7 +94,13 @@ export function inertHtml(html: string) {
     'src',
     'title'
   ])
-  const styles = new Set(['display', 'height', 'max-height', 'max-width', 'width'])
+  const styles = new Set([
+    'display',
+    'height',
+    'max-height',
+    'max-width',
+    'width'
+  ])
   const render = (node: HtmlNode): string => {
     if (node.nodeName === '#text') return escape(node.value ?? '')
     if (!node.tagName) return ''

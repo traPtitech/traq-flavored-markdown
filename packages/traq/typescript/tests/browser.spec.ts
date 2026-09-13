@@ -4,11 +4,7 @@ import { expect, test } from 'bun:test'
 import { buildId } from '../../dist/generated/artifact.js'
 import { names } from '../../dist/generated/nodes.js'
 import type { Parser } from '../../dist/index.js'
-import {
-  createRuntime,
-  isKnownNode,
-  presets
-} from '../../dist/index.js'
+import { createRuntime, isKnownNode, presets } from '../../dist/index.js'
 
 const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)

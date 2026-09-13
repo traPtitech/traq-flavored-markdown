@@ -5,7 +5,8 @@ function validator(s: Shape): string {
   if (s.kind === 'string' || s.kind === 'boolean') return s.kind
   if (s.kind === 'integer')
     return `(value) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
-  if (s.kind === 'enum') return 'oneOf(' + s.values.map(v => q(v)).join(',') + ')'
+  if (s.kind === 'enum')
+    return 'oneOf(' + s.values.map(v => q(v)).join(',') + ')'
   if (s.kind === 'nullable') return 'nullable(' + validator(s.inner) + ')'
   if (s.kind === 'object') {
     const fields = (required: boolean) =>

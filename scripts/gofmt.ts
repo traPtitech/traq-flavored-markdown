@@ -10,8 +10,7 @@ if (!check && args.length !== 0) {
 const goFilePaths = [
   ...new Bun.Glob('**/*.go').scanSync({
     cwd: repositoryRoot,
-    onlyFiles: true,
-    dot: true
+    onlyFiles: true
   })
 ].filter(
   file => !/(?:^|\/)(?:\.git|\.private|node_modules|target)\//.test(file)

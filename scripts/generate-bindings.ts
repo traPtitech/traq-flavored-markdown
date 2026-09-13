@@ -5,9 +5,11 @@ import { $ } from 'bun'
 import { exportNodeContracts } from './build/node-contracts.ts'
 import { goNodes as contractGoNodes } from './codegen/go.ts'
 import { nodeFiles } from './codegen/nodes.ts'
+import type { RawSchema } from './codegen/schema.ts'
 import { goNodes as traqGoNodes } from './codegen/traq/nodes-go.ts'
 import { typescriptFiles } from './codegen/traq/nodes-typescript.ts'
 import { presetFiles } from './codegen/traq/presets.ts'
+import type { PresetTree } from './codegen/traq/presets.ts'
 import { processingFiles } from './codegen/traq/processing.ts'
 import {
   cargoTargetDirectory,
@@ -15,9 +17,6 @@ import {
   repositoryRoot,
   traqRoot
 } from './paths.ts'
-
-import type { RawSchema } from './codegen/schema.ts'
-import type { PresetTree } from './codegen/traq/presets.ts'
 
 type Manifest = {
   buildId: string

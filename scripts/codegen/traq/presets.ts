@@ -10,10 +10,7 @@ function leaves(tree: PresetTree, path: string[] = []): string[][] {
   )
 }
 
-function named(
-  tree: PresetTree,
-  path: string[] = []
-): Record<string, unknown> {
+function named(tree: PresetTree, path: string[] = []): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(tree).map(([key, value]) => [
       key,
@@ -27,7 +24,7 @@ function named(
 export function presetFiles(tree: PresetTree): Map<string, string> {
   const paths = leaves(tree)
   const goName = (part: string) =>
-    ({ traq: 'TraQ', commonmark: 'CommonMark' } as Record<string, string>)[
+    (({ traq: 'TraQ', commonmark: 'CommonMark' }) as Record<string, string>)[
       part
     ] ?? part[0].toUpperCase() + part.slice(1)
   return new Map([

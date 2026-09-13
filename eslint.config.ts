@@ -2,6 +2,8 @@ import js from '@eslint/js'
 import stylistic from '@stylistic/eslint-plugin'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import prettier from 'eslint-config-prettier'
+import reactPlugin from 'eslint-plugin-react'
+import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
 
@@ -73,7 +75,7 @@ export default [
   {
     files: [
       'scripts/**/*.{mjs,ts}',
-      'corpus/scripts/**/*.{mjs,ts}',
+      'corpus/src/scripts/**/*.{mjs,ts}',
       'packages/**/scripts/**/*.{js,mjs,ts,mts}'
     ],
     languageOptions: {
@@ -99,9 +101,40 @@ export default [
     }
   },
   {
-    files: ['corpus/view/viewer.ts'],
+    files: ['corpus/src/view/**/*.ts', 'corpus/src/view/**/*.tsx'],
     languageOptions: {
+      parserOptions: { ecmaFeatures: { jsx: true } },
       globals: { ...globals.browser, CorpusDiff: 'readonly' }
+    },
+    plugins: {
+      react: reactPlugin,
+      'react-hooks': reactHooksPlugin
+    },
+    settings: {
+      react: { version: '18.2.0' }
+    },
+    rules: {
+      ...reactPlugin.configs.recommended.rules,
+      ...reactHooksPlugin.configs.recommended.rules,
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react/jsx-no-target-blank': 'error',
+      'react/jsx-key': 'error',
+      'react/no-unknown-property': 'error',
+      'react/jsx-no-useless-fragment': 'warn',
+      'react/jsx-boolean-value': 'error',
+      'react/jsx-curly-brace-presence': [
+        'error',
+        { props: 'never', children: 'never' }
+      ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ]
     }
   }
 ]

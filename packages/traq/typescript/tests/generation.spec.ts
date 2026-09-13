@@ -1,9 +1,9 @@
 import { write } from 'bun'
 import { expect, test } from 'bun:test'
 
-import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
 import { goNodes } from '../../../../scripts/codegen/go.ts'
 import { nodeFiles } from '../../../../scripts/codegen/nodes.ts'
+import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
 import { typescriptFiles } from '../../../../scripts/codegen/traq/nodes-typescript.ts'
 import { presetFiles } from '../../../../scripts/codegen/traq/presets.ts'
 import { withTempDirectory } from './temp-directory.ts'
@@ -63,7 +63,10 @@ test('Rust processing options and nested results generate without host changes',
   const { processingFiles } =
     await import('../../../../scripts/codegen/traq/processing.ts')
   await withTempDirectory('processing-contract-', async directory => {
-    const object = (title: string, properties: Record<string, RawSchema>): RawSchema => ({
+    const object = (
+      title: string,
+      properties: Record<string, RawSchema>
+    ): RawSchema => ({
       title,
       type: 'object',
       additionalProperties: false,

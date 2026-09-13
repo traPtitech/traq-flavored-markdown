@@ -15,11 +15,18 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
     const calls: string[] = [],
       logs: unknown[] = []
     const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === 'string' ? new URL(input) : input instanceof URL ? input : new URL((input as Request).url)
+      const url =
+        typeof input === 'string'
+          ? new URL(input)
+          : input instanceof URL
+            ? input
+            : new URL((input as Request).url)
       calls.push(url.toString())
       expect(init?.method).toBe('GET')
       expect(init?.redirect).toBe('error')
-      expect((init?.headers as Record<string, string>)?.Authorization).toBe('Bearer test-token')
+      expect((init?.headers as Record<string, string>)?.Authorization).toBe(
+        'Bearer test-token'
+      )
       if (url.pathname.endsWith('/channels'))
         return Response.json({
           public: [{ id: 'channel-a' }],

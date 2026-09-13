@@ -1,6 +1,6 @@
-import type { RawSchema } from '../schema.ts'
 import { declarations } from '../declarations.ts'
 import { goContract } from '../go.ts'
+import type { RawSchema } from '../schema.ts'
 
 export async function processingFiles(
   schemas: Record<string, RawSchema>,
@@ -40,7 +40,10 @@ export async function processingFiles(
   }
   const tsPath = 'typescript/generated/processing.ts'
   const goPath = 'go/generated_processing.go'
-  files.set(tsPath, (files.get(tsPath) ?? '') + [...types.values()].join('\n') + '\n')
+  files.set(
+    tsPath,
+    (files.get(tsPath) ?? '') + [...types.values()].join('\n') + '\n'
+  )
   files.set(goPath, (files.get(goPath) ?? '') + go)
   return files
 }

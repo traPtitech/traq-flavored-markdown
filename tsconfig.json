@@ -6,6 +6,8 @@
     "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
     "lib": ["ESNext", "DOM"],
     "types": ["bun"]
   },
@@ -14,6 +16,7 @@
     "prettier.config.ts",
     "scripts/**/*.ts",
     "corpus/**/*.ts",
+    "corpus/**/*.tsx",
     "packages/*/scripts/**/*.ts"
   ]
 }

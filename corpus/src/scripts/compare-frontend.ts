@@ -2,7 +2,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { traqRoot } from '../../scripts/paths.ts'
+import { traqRoot } from '../../../scripts/paths.ts'
 import { parseArgs } from './args.ts'
 import { readLines } from './read-lines.ts'
 
