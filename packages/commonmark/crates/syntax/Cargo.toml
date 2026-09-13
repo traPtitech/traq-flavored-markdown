@@ -10,7 +10,7 @@ markdown-parser = { git = "https://github.com/traq-markdown-parser/core.git", re
 markdown-commonmark-contracts = { path = "../contracts" }
 unicode-general-category = "1.1"
 mdurl = "0.3"
-idna = "0.3"
+idna = "1.1"
 regex = "1"
 
 [dev-dependencies]
