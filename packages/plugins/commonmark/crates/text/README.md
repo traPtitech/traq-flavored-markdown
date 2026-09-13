@@ -1,9 +1,12 @@
 # markdown-commonmark-text
 
-CommonMark の AST を文字列にする描画 Plugin。文法の parser や traQ に依存しない。
-`plugin()` は通常のノード、`html::plugin()` は HTML ノードを扱う。
-リンクはラベル、コードは内容、リストは番号や箇条書き記号を出力する。
-HTML ノードの内容は文字列として出力するため、HTML 描画先へ渡す際のエスケープは利用側の責務。
+Plain-text renderer plugins for CommonMark ASTs. They do not depend on the
+CommonMark parser or traQ implementation. `plugin()` handles ordinary nodes and
+`html::plugin()` handles HTML nodes.
+
+Links render their labels, code renders its content, and lists include their
+markers. HTML node contents are returned as text, so a consumer that passes the
+result to an HTML sink is responsible for escaping it.
 
 ```rust
 use markdown_commonmark_contracts::Link;
@@ -19,7 +22,7 @@ let renderer = Renderer::new(&builder.build()?);
 # Ok::<(), &'static str>(())
 ```
 
-呼び出し側に clone を要求せず、共有済み実装の Plugin を値で返す。
-同じ factory の既定 Plugin は同じ snapshot を共有する。
-replace で編集するとその Plugin だけが変わり、以後の factory 呼び出しや既存の構成には影響しない。
-段落間の改行を保持する。通知向けの空白整理や送信は、この package には含めない。
+Factories return shared plugin snapshots by value. Replacing a handler changes
+only that returned plugin; it does not affect future factory calls or existing
+presets. Paragraph boundaries are preserved. Notification-specific whitespace
+normalization and delivery belong to higher-level processing.

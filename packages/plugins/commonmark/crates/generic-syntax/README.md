@@ -1,11 +1,12 @@
 # markdown-generic-syntax
 
-数式、表、取り消し線、mark、linkify を個別の plugin として提供する。
-各モジュールの `plugin()` を `GrammarBuilder::add` / `remove` に渡す。
-rule の参照を使い、利用側が CommonMark のルールに対する順序を指定する。
+Provides independent plugins for math, tables, strikethrough, mark, and
+linkification. Add or remove each module's `plugin()` from a `GrammarBuilder`;
+the caller chooses its order relative to CommonMark rules.
 
-ノード型は `markdown-generic-contracts`、リンクとテキストは
-`markdown-commonmark-contracts` が所有する。区切り処理や URL の扱いは
-CommonMark の補助処理を共有する。traQ 固有の文法には依存しない。
+The generic contracts crate owns extension node types, and the CommonMark
+contracts crate owns the link and text nodes. Delimiter and URL handling reuse
+CommonMark helpers. This crate has no traQ-specific syntax dependency.
 
-第三者由来のアルゴリズム・データの通知は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照。
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for notices covering
+third-party algorithms and data.

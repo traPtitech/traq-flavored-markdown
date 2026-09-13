@@ -1,10 +1,12 @@
 # markdown-trap-syntax
 
-traP の JSON 参照、スタンプ、spoiler と traQ V1 の互換ルールを提供する。
-各モジュールの `plugin()` は独立して文法に追加・削除できる。
-構文の優先順位と組み合わせは配布層の preset が決める。
+Provides traP JSON references, stamps, spoilers, and traQ V1 compatibility
+rules. Each module's `plugin()` can be added to or removed from a grammar
+independently; a distribution preset chooses the final priority and combination.
 
-ノード型は `markdown-trap-contracts` が所有する。参照情報の抽出や通知の表示は
-この package の責務ではない。CommonMark の区切り・引用・URL 処理を利用する。
+`markdown-trap-contracts` owns the payload types. Reference extraction,
+notification rendering, and URL classification are outside this crate. The
+implementation reuses CommonMark delimiter, quote, and URL handling.
 
-第三者由来のアルゴリズムの通知は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照。
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for notices covering
+third-party algorithms.

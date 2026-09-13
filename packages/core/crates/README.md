@@ -1,20 +1,21 @@
-# Core
+# Core crates
 
-文法に依存しない共通機構を管理する系列です。各行が独立した Cargo package です。
+These independently published Cargo packages provide the grammar-independent
+layers of the engine.
 
-| ディレクトリ                         | package                     | 責務                               |
-| ------------------------------------ | --------------------------- | ---------------------------------- |
-| [ast](ast/README.md)                 | markdown-ast                | 文法・serde 非依存の型付き AST     |
-| [definitions](definitions/README.md) | markdown-definitions        | Plugin の共有宣言と型メタデータ    |
-| definitions-derive                   | markdown-definitions-derive | NodeType の derive 実装            |
-| [parser](parser/README.md)           | markdown-parser             | 文法を組み合わせて実行する機構     |
-| [renderer](renderer/README.md)       | markdown-renderer           | 型付き handler による描画          |
-| [extractor](extractor/README.md)     | markdown-extractor          | 型付き handler による情報抽出      |
-| [codec](codec/README.md)             | markdown-codec              | 登録されたノード契約の JSON 入出力 |
+| Directory                            | Package                       | Purpose                                       |
+| ------------------------------------ | ----------------------------- | --------------------------------------------- |
+| [ast](ast/README.md)                 | `markdown-ast`                | Typed AST with no grammar or serde dependency |
+| [definitions](definitions/README.md) | `markdown-definitions`        | Shared plugin declarations and node metadata  |
+| `definitions-derive`                 | `markdown-definitions-derive` | `NodeType` derive implementation              |
+| [parser](parser/README.md)           | `markdown-parser`             | Grammar composition and rule execution        |
+| [renderer](renderer/README.md)       | `markdown-renderer`           | Typed handler-based rendering                 |
+| [extractor](extractor/README.md)     | `markdown-extractor`          | Typed handler-based extraction                |
+| [codec](codec/README.md)             | `markdown-codec`              | JSON transport for registered node contracts  |
 
-通常の依存はこの系列の内部と外部ライブラリに限定します。
-AST だけの利用に parser・renderer・serde は必要ありません。
-parser / renderer / extractor は codec に依存せず、native AST を共有できます。
+The AST can be used without a parser, renderer, codec, or serde. Parsers,
+renderers, and extractors share native ASTs without depending on the codec.
+CommonMark and traP packages depend on this layer but are versioned separately.
 
-配下の package は同じ版で管理します。CommonMark・traP 系列とは独立して更新できます。
-ルートの workspace で開発し、[検証手順](../README.md#開発)に従います。
+Develop from the repository root; see the [development guide](../README.md) for
+common commands.

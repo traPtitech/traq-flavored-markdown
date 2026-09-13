@@ -1,22 +1,20 @@
-# CommonMark と汎用拡張
+# CommonMark and generic extension crates
 
-CommonMark と、数式・表・linkify などの汎用拡張を管理する系列です。
-各行は独立した Cargo package で、共通のリリース単位として扱います。
+These independently published crates implement CommonMark and reusable Markdown
+extensions such as math, tables, and linkification.
 
-| ディレクトリ               | package                       | 責務                                  |
-| -------------------------- | ----------------------------- | ------------------------------------- |
-| contracts                  | markdown-commonmark-contracts | CommonMark のノード型・検証・共有宣言 |
-| [syntax](syntax/README.md) | markdown-commonmark           | CommonMark の構文ルールと HTML 構文   |
-| [text](text/README.md)     | markdown-commonmark-text      | CommonMark のテキスト描画             |
-| generic-contracts          | markdown-generic-contracts    | 汎用拡張のノード型                    |
-| generic-syntax             | markdown-generic-syntax       | 数式・表・linkify などの構文ルール    |
-| generic-text               | markdown-generic-text         | 汎用拡張のテキスト描画                |
+| Directory                  | Package                         | Purpose                                             |
+| -------------------------- | ------------------------------- | --------------------------------------------------- |
+| `contracts`                | `markdown-commonmark-contracts` | CommonMark nodes, validation, and declarations      |
+| [syntax](syntax/README.md) | `markdown-commonmark`           | CommonMark parsing rules and HTML syntax            |
+| [text](text/README.md)     | `markdown-commonmark-text`      | CommonMark plain-text rendering                     |
+| `generic-contracts`        | `markdown-generic-contracts`    | Generic extension nodes                             |
+| `generic-syntax`           | `markdown-generic-syntax`       | Math, table, mark, strikethrough, and linkify rules |
+| `generic-text`             | `markdown-generic-text`         | Generic extension plain-text rendering              |
 
-構文実装と描画実装はノード契約だけを共有し、互いの実装へ依存しません。
-この系列の通常の依存先は core と同系列に限定し、traP の拡張や preset を参照しません。
+Syntax and rendering share node contracts, not implementation dependencies. A
+consumer's `GrammarBuilder` chooses which plugins form a grammar, so an exact
+CommonMark composition remains possible. This family depends on core, never on
+traP extensions or traQ presets.
 
-package に拡張が含まれることと、文法として採用することは別です。
-採用する Plugin は利用側の GrammarBuilder が選択し、厳密な CommonMark の構成も維持できます。
-
-配下の package は同じ版で管理します。core・traP 系列とは独立して更新できます。
-ルートの workspace で開発し、[共通の検証と更新手順](../../../../CONTRIBUTING.md)に従います。
+Develop from the repository root; see the [development guide](../../../../CONTRIBUTING.md).

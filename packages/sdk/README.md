@@ -1,32 +1,36 @@
-# sdk: traQ Markdown
+# SDK: traQ Markdown
 
-traQ 向けの Markdown 文法・通知処理の構成と、Rust・WebAssembly・Go・TypeScript 向けの配布を所有します。文法・AST の契約・検証は Rust が所有します。
+This package assembles the Markdown grammar used by traQ and distributes it for
+Rust, WebAssembly, TypeScript, and Go. Rust owns grammar definitions, AST
+contracts, and validation; the SDK exposes the supported presets and host APIs.
 
-- npm: **`@traq-markdown-engine/sdk`**
-- Go module: **`github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go`**
+- npm: `@traq-markdown-engine/sdk`
+- Go module: `github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go`
 
-文法の実装は [core](../core/README.md)、[commonmark-plugin](../plugins/commonmark/README.md)、[traq-plugin](../plugins/traq/README.md) にあります。このリポジトリで配布するプリセットを選び、Wasm と対応する型を生成します。
+The grammar implementations live in [core](../core/README.md),
+[commonmark-plugin](../plugins/commonmark/README.md), and
+[traq-plugin](../plugins/traq/README.md). This package combines those layers
+for traQ.
 
-## 構成と責任
+## Contents
 
-| 場所                          | 責任                                                                         |
-| ----------------------------- | ---------------------------------------------------------------------------- |
-| `crates/grammar`              | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成                |
-| `crates/processing`           | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
-| `crates/wasm`                 | 配布する文法・ノード型・処理 API を Wasm として公開                          |
-| `go`・`typescript`・`scripts` | この配布物に対応する bindings と型生成                                       |
+| Location                      | Purpose                                                       |
+| ----------------------------- | ------------------------------------------------------------- |
+| `crates/grammar`              | Published grammar presets                                     |
+| `crates/processing`           | traQ plain-text rendering, extraction, and embedding policies |
+| `crates/wasm`                 | Wasm interface for the shipped grammar and processing APIs    |
+| `typescript`, `go`, `scripts` | Host bindings and generated contract types                    |
 
-共通機構は core、CommonMark と汎用拡張は commonmark、traP 固有の拡張部品は
-traq-plugin にあります。このリポジトリがそれらに依存し、traQ 向けに組み合わせます。
-下位の部品はこの配布物に依存しません。bindings はここで選んだ型とプリセットに対応します。
+Follow the repository [development guide](../../CONTRIBUTING.md) to build and
+verify the SDK. Build artifacts are written to `dist/`; generated TypeScript and
+Go sources are committed and must be regenerated from their Rust contracts.
 
-## ビルド
+## Parse Markdown
 
-環境準備、ビルド、検証は [ルートの CONTRIBUTING](../../CONTRIBUTING.md) に従います。Wasm・JavaScript・型定義は `packages/sdk/dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
+Create one runtime from the shipped Wasm bytes, then create parsers for the
+presets your application supports. A runtime and its parsers can be reused.
 
-まだレジストリへ公開していません。TypeScript は4パッケージの `bun pm pack` アーカイブを利用できます。
-
-## TypeScript
+### TypeScript
 
 ```ts
 import { createRuntime, presets } from '@traq-markdown-engine/sdk'
@@ -41,11 +45,13 @@ try {
 }
 ```
 
-`wasmBytes` は `Uint8Array` です。Bun では `Bun.file(new URL(import.meta.resolve('@traq-markdown-engine/sdk/parser.wasm'))).bytes()` で読み、ブラウザーでは `new Uint8Array(await response.arrayBuffer())` を渡します。Runtime と Parser は再利用できます。同じ Runtime から異なるプリセットの Parser も作成できます。
+`wasmBytes` is a `Uint8Array`. With Bun, load
+`@traq-markdown-engine/sdk/parser.wasm` with `Bun.file(...).bytes()`; in a
+browser, pass `new Uint8Array(await response.arrayBuffer())`. Node payload types
+and optional guards are exported by the CommonMark and traQ plugin packages.
+`@traq-markdown-engine/sdk/nodes` exports the complete node-name catalog.
 
-ノード型は判別可能な union です。文法別の payload 型と任意利用の guard は `@traq-markdown-engine/commonmark-plugin/nodes`・`@traq-markdown-engine/commonmark-plugin/generic/nodes`・`@traq-markdown-engine/traq-plugin/nodes`、配布物全体の一覧は `@traq-markdown-engine/sdk/nodes` から利用できます。
-
-## Go
+### Go
 
 ```go
 import markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go"
@@ -57,137 +63,58 @@ defer runtime.Close(ctx)
 parser, err := runtime.NewParser(ctx, markdown.PresetTraQV1)
 if err != nil { return err }
 defer parser.Close(ctx)
+
 document, err := parser.Parse(ctx, "**hello** :stamp:")
+if err != nil { return err }
 ```
 
-`Parse` / `ParseInline` は `*markdown.Document` を返します。`Node.Data` の具体的な型も Rust から生成します。Runtime は Wasm のコンパイル結果を共有します。一つの Parser の呼び出しは直列化し、並列実行には同じ Runtime から Parser を複数作ります。`Parser.Close` はその Parser だけ、`Runtime.Close` は配下の全 Parser を解放します。
+`Parse` and `ParseInline` return `*markdown.Document`; concrete `Node.Data`
+types are generated from Rust contracts. Calls to one parser are serialized. For
+parallel parsing, create multiple parsers from the same runtime. Closing a
+runtime closes all of its parsers, extractors, and renderers.
 
-## 文法の変更
+## Render and extract a document
 
-文法バージョンは、本文がどの構文規則で書かれたかを示す永続的な識別子です。
-パッケージのバージョンとは独立しており、パッケージを更新しても既存の識別子の意味を変えません。
-processing・renderer には独立した文法バージョンを設けず、選択された文法が生成した AST を処理します。
-
-文法のレジストリは Rust の `bindings::grammars()` にあります。
-`bindings::parser(version)` が名前から Grammar を選び、Parser を生成します。
-Go / TypeScript には文法構成を複製せず、Wasm 境界では文法バージョンの文字列を渡します。
-`presets.traq.v1` / `PresetTraQV1` はその文字列を表す生成済み定数です。
-Rust の配布層がバージョンを解決し、共通のパーサー生成や処理機構は文法バージョンを知りません。
-
-TypeScript の `runtime.createParser(version)`、
-Go の `NewParser(ctx, Preset(version))` に
-DB から読み出したバージョンを指定できます。未知のバージョンはエラーになり、最新文法への暗黙の置き換えはしません。
-同じ Runtime から作成したパーサーを `Map<string, Parser>` に保持して使い分けられます。
+Parsing produces a `Document` that can be passed directly to other consumers;
+none of them parses the Markdown source again. The TypeScript renderer works on
+the host, while the Go plain-text renderer and extractors call the native Rust
+implementation through the same runtime.
 
 ```ts
-import type { Parser } from '@traq-markdown-engine/sdk'
-
-const parsers = new Map<string, Parser>()
-for (const message of messages) {
-  let parser = parsers.get(message.grammarVersion)
-  if (!parser) {
-    parser = runtime.createParser(message.grammarVersion)
-    parsers.set(message.grammarVersion, parser)
-  }
-  const document = parser.parse(message.text)
-  const result = view.render(document)
-}
-```
-
-DB に保存するのは永続的な文法バージョンです。SDK と Wasm の対応を確認するビルド ID は
-保存用バージョンではなく、パッケージ更新後も同じ文法バージョンで旧文法を選択できます。
-
-新しい文法は Rust の文法定義と `crates/grammar/src/presets/exports.rs` の公開カタログに追加します。
-選択レジストリと Go / TypeScript の定数はこのカタログを使うため、言語ごとの分岐や processing / renderer のバージョン追加は不要です。
-既存文法の共有ルールを変更するときは、旧文法の解釈を維持してください。解釈を変えるルールだけを分離し、
-旧実装を旧文法に残します。変更のないルールや AST の処理コードを文法ごとに複製する必要はありません。
-既存の v1 AST fixture は互換性検証に使い、文法を更新する目的で期待値を上書きしません。
-
-TypeScript の `presets.commonmark` / `presets.traq.v1`、Go の `PresetCommonMark` / `PresetTraQV1` は Rust が公開するプリセットから生成します。独自の文法は Rust で組み立て、配布層からプリセットとして公開して再ビルドします。ホスト API は文法からのパーサー生成、解析、解放を提供します。
-
-Wasm のホスト実装は TypeScript の `index.ts` と Go の `parser.go` です。共通 AST 型と payload guard の検証部品は core、構文の生成型はそれぞれのパッケージが所有します。文法ビルダー、Plugin / Rule のミラー、文法ハンドル、worker pool は持ちません。
-
-HTML 描画の共通基盤は core、構文別の描画は commonmark-plugin と traq-plugin が担当します。traQ の描画構成・condensed 表示・CSS はこのリポジトリの `typescript/renderer` が所有します。
-
-[API と実装](docs/implementation.md)、[実行例](examples/README.md)、[開発と検証](../../CONTRIBUTING.md) を参照してください。
-
-## AST からの描画と抽出
-
-Parser が返す Document を renderer と extractor に直接渡します。文法を選択するのは Parser だけです。
-TypeScript の HTML renderer はホスト上で AST を描画し、Extractor と Go の PlainTextRenderer は
-渡された AST を Wasm の Rust 実装に渡します。Markdown 原文の再解析は行いません。
-
-```ts
-const parser = runtime.createParser(presets.traq.v1)
-const extractor = runtime.createExtractor({ origin: 'https://q.example.test' })
-const document = parser.parse('**hello** !!secret!!')
-const { references, embedding, messageText } = extractor.extract(document)
-const html = view.render(document)
-```
-
-```go
-parser, err := runtime.NewParser(ctx, markdown.PresetTraQV1)
-if err != nil { return err }
-extractor, err := runtime.NewExtractor(ctx, markdown.ExtractorOptions{Origin: origin})
-if err != nil { return err }
-renderer, err := runtime.NewPlainTextRenderer(ctx, markdown.RendererOptions{Origin: origin})
-if err != nil { return err }
-document, err := parser.Parse(ctx, "**hello** !!secret!!")
-if err != nil { return err }
-metadata, err := extractor.Extract(ctx, document)
-if err != nil { return err }
-notification, err := renderer.Render(ctx, document)
-```
-
-各 instance は同じ Runtime のコンパイル結果を共有し、独立した設定を持ちます。
-Go の呼び出し直列化・キャンセル規則は各 instance に適用され、Runtime の解放で全 instance を閉じます。
-ネイティブ Rust は `traq_markdown_processing::extraction::Extractor` と
-`rendering::PlainTextRenderer` が `&Document` を借用します。
-
-PlainTextRenderer は spoiler をマスクし、空白を正規化した一行の通知テキストを返します。
-Extractor は参照・添付 ID・引用 ID・埋め込み編集計画と、Markdown 記法を保つ `messageText` を返します。
-参照は文書順・重複・spoiler 内を保持し、コード内の文字列は抽出しません。
-`origin` が空なら traQ のファイル・メッセージ URL を通常の URL として扱います。
-
-## TypeScript / HTML rendering
-
-TypeScript の実装は各パッケージの責務に合わせて配置しています。
-
-| TypeScript package                        | 責務                                                                   |
-| ----------------------------------------- | ---------------------------------------------------------------------- |
-| `@traq-markdown-engine/core`              | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
-| `@traq-markdown-engine/commonmark-plugin` | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
-| `@traq-markdown-engine/traq-plugin`       | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
-| `@traq-markdown-engine/sdk`               | Wasm / Go / TypeScript 配布、traQ の描画構成・condensed 表示・CSS      |
-
-開発手順は [ルートの README](../../README.md) を参照してください。ルートで `bun install`・`bun run build` を実行すると、4パッケージを依存順にビルドします。`bun run check:package` は4パッケージを pack し、独立した consumer で配布内容を検証します。
-
-AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、SDK の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark-plugin と traq-plugin の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
-
-HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-engine/sdk/renderer` の `messageRenderers`、CSS は `@traq-markdown-engine/sdk/index.css` を利用します。
-
-### HTML の利用例
-
-```ts
-import { createRuntime, presets } from '@traq-markdown-engine/sdk'
 import '@traq-markdown-engine/sdk/index.css'
 import { messageRenderers } from '@traq-markdown-engine/sdk/renderer'
 
-const runtime = await createRuntime(wasmBytes)
 const parser = runtime.createParser(presets.traq.v1)
+const extractor = runtime.createExtractor({ origin: 'https://q.example.test' })
 const view = messageRenderers({ origin: 'https://q.example.test' })
-const document = parser.parse(source)
-const { renderedText, embeddings } = view.standard.render(document)
-const condensed = view.condensed.render(document)
-runtime.dispose()
+const document = parser.parse('**hello** !!secret!!')
+
+const extraction = extractor.extract(document)
+const html = view.standard.render(document)
 ```
 
-Wasm の起動は利用側が明示的に行います。`/renderer` を import しても Wasm runtime は読み込みません。描画のカスタマイズは `@traq-markdown-engine/core/renderer` の `Plugin`・`PresetBuilder` と、各構文の `/renderer` を利用します。
+`messageRenderers` provides `standard` and `condensed` HTML renderers. The
+extractor returns source-preserving message text, references, attachment and
+citation IDs, and an embedding plan. See [processing presets](crates/processing/README.md)
+for their behavior and [examples](examples/README.md) for complete Rust, Go, and
+TypeScript programs.
 
-## Corpus comparison
+## Grammar versions
 
-Use `bun run corpus:collect`, `bun run corpus:compare`, and `bun run corpus:report` to collect messages and generate offline HTML/MHTML difference reports. See the [corpus comparison tool](../../tools/corpus/README.md) for inputs, options, and output files.
+Grammar versions identify the rules used to write a message. Store that value
+with the source and create a parser for the stored version when reading it back.
+Unknown versions fail rather than silently selecting a newer grammar.
 
-Go consumers use `github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go` for presets and artifact pairing. Shared AST/transport live in the core Go module; payload factories live in commonmark-plugin and traq-plugin. `Extractor.Extract` returns source-preserving message text, references, embedding edits, attachment IDs and citation IDs from the supplied Document. `PlainTextRenderer.Render` independently renders that Document for notifications.
+`presets.traq.v1` and `PresetTraQV1` are generated from the Rust preset catalog.
+Custom grammars are composed in Rust and published through that catalog; the
+TypeScript and Go APIs intentionally do not mirror the Rust grammar builder.
+When behavior changes, preserve the existing preset and add a new version rather
+than changing how stored content is interpreted.
 
-Embedding edits are also shared: Rust derives `output.embedding` from the same AST. Pass that plan and an application identity resolver to `embedReferences` (TypeScript) or `EmbedReferences` (Go). `output.embedding.unembeddedText` restores reference labels for copying, and `mentionsUser` checks the extracted references. See [processing presets](crates/processing/README.md) for the editing rules.
+## Further reading
+
+- [Implementation notes](docs/implementation.md) describe runtime lifecycles,
+  transport contracts, generated bindings, and resource limits.
+- [Grammar presets](crates/grammar/README.md) describe native Rust composition.
+- [Corpus comparison](../../tools/corpus/README.md) documents compatibility
+  testing against existing traQ behavior.

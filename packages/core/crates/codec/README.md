@@ -1,28 +1,39 @@
 # markdown-codec
 
-型付き AST と JSON の境界。`codec.register::<List>()?` のように型を登録した codec を再利用し、
-`codec.encode(&document)` / `codec.decode(&json)` で変換する。
-core に具体型の一覧はなく、配布物がノード型の組み合わせを登録する。
-登録する型は NodeData、NodeType、Serialize、DeserializeOwned を実装する。
-NodeType は共有定義の `#[derive(NodeType)]` で生成する。Plugin や明示 ID、契約版の指定は不要。
+The JSON transport for typed ASTs. Register the contract types used by a
+distribution, then reuse the codec to encode and decode documents:
 
-すべてのノードは `{ kind, span, data, children }` の共通形式を使う。
-`children` は空の場合に省略する。data は契約側の struct を直接直列化し、
-途中でノードごとの JSON Value を作らない。
+```rust
+codec.register::<List>()?;
+let json = codec.encode(&document)?;
+let document = codec.decode(&json)?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
 
-入力は生成された型のキーから具体型へ復元し、`NodeData::validate` を呼ぶ。
-未知の契約・包みの未知フィールド・重複フィールド・不正な原文位置は拒否する。
-payload の未知フィールドの扱いは契約型の serde 定義で指定する。
-一つの codec に同じ Rust 型または同じキーを重複登録できない。失敗しても既存の登録は変わらない。
-キーは登録時だけ生成し、ノードごとの変換では登録済みの値を再利用する。
+Core has no fixed list of node types. A registered type implements `NodeData`,
+`NodeType`, `Serialize`, and `DeserializeOwned`; `#[derive(NodeType)]` generates
+its transport metadata. Plugins and explicit contract-version IDs are not part
+of registration.
 
-AST は原文から再生成する中間データ。型名や定義モジュールの変更をまたぐ互換性は保証しない。
-producer / consumer は互換性のある共有定義と生成済み bindings を使う。
-型のキーが一致しても、payload の形や意味が一致するとは限らない。
+## Format and validation
 
-既定の制限は JSON 8 MiB、原文65,536 bytes、16,384 nodes、深さ64。
-出力時も型・位置・資源制限を検査する。受信側では decode_with_limits で制限を指定できる。
-文法版の選択や parser / renderer の保持・キャッシュは担当しない。
+Documents use `{ source, children }`; nodes use `{ kind, span, data, children }`.
+Empty `children` are omitted. Payload data is serialized directly from its
+contract type.
 
-JSON に表せない値（非有限の f64 など）の扱いは、契約型の検証または serde 表現で定義する。
-AST が PartialEq の型を保持できることと、その値が JSON で往復できることは別の条件。
+Decoding selects a registered concrete type from `kind`, then validates it and
+the complete tree. It rejects unknown contracts, unknown or duplicate wrapper
+fields, duplicate registrations, and invalid source positions. Payload field
+handling is defined by the payload's serde implementation. Failed registration
+does not change existing registrations, and registered keys are reused instead
+of regenerated for every node.
+
+## Compatibility and limits
+
+AST JSON is an intermediate exchange format, not a persistent compatibility
+format. Producers and consumers must share compatible definitions and generated
+bindings; matching type keys alone do not guarantee payload compatibility.
+
+Default limits are 8 MiB of JSON, 65,536 source bytes, 16,384 nodes, and depth 64. Encoding validates type, position, and resource limits too.
+`decode_with_limits` accepts custom limits. Grammar selection and parser or
+renderer lifecycle management are outside this crate.

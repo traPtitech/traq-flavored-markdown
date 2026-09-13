@@ -1,13 +1,16 @@
-# traP 拡張部品
+# traP extension crates
 
-| ディレクトリ                       | package                  | 責務                                   |
-| ---------------------------------- | ------------------------ | -------------------------------------- |
-| contracts                          | markdown-trap-contracts  | 参照・スタンプ・spoiler などのノード型 |
-| syntax                             | markdown-trap-syntax     | traP 固有の構文と互換ルール            |
-| [text](text/README.md)             | markdown-trap-text       | traP 拡張のテキスト描画                |
-| [extraction](extraction/README.md) | markdown-trap-extraction | 参照情報の抽出                         |
+| Directory                          | Package                    | Purpose                                                 |
+| ---------------------------------- | -------------------------- | ------------------------------------------------------- |
+| `contracts`                        | `markdown-trap-contracts`  | Nodes for references, stamps, spoilers, and blank lines |
+| `syntax`                           | `markdown-trap-syntax`     | traP syntax and compatibility rules                     |
+| [text](text/README.md)             | `markdown-trap-text`       | Plain-text rendering for traP nodes                     |
+| [extraction](extraction/README.md) | `markdown-trap-extraction` | Reference extraction                                    |
 
-contracts は文法や描画の実装から独立し、text / extraction は parser に依存しません。
-traQ の文法プリセットと通知・参照抽出プリセットは
-[SDK](https://github.com/uni-kakurenbo/traq-markdown-engine/tree/main/packages/sdk/crates) にあります。
-各 crate はこの workspace 内で同じ版を使い、core・commonmark-plugin・SDK とは独立して更新できます。
+Contracts are independent of parsing and rendering. Text rendering and
+extraction do not depend on a parser. The SDK owns traQ grammar presets and its
+notification and reference-processing presets; see the
+[SDK crates](https://github.com/uni-kakurenbo/traq-markdown-engine/tree/main/packages/sdk/crates).
+
+These crates share a version within the workspace and are versioned independently
+of the core, CommonMark, and SDK families.

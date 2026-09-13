@@ -1,16 +1,20 @@
 # markdown-commonmark
 
-CommonMark の block / inline ルール。parser core と CommonMark のノード契約を利用する。
-traQ の文法や配布 package には依存しない。
+The CommonMark block and inline syntax implementation. It depends on parser
+core and CommonMark node contracts, not on traQ grammar or distribution code.
 
-`Syntax::default()` が基本ルールと text provider を持つ plugin、拡張の配置に使う
-`inline` / `block` のルール参照を返す。HTML は `html::plugin()` として選択する。
-`LinkOptions` は構文の認識と URL 処理を設定する。
+`Syntax::default()` provides the base rules, text provider, and `inline`/`block`
+rule references used to position extensions. Add HTML support with
+`html::plugin()`. `LinkOptions` configures link recognition and URL handling.
 
-文法の順序は利用側の `GrammarBuilder` が決める。数式や spoiler の追加のために
-CommonMark の実装を編集する必要はない。
+An application's `GrammarBuilder` determines the final rule order. Adding math
+or spoilers does not require changing the CommonMark implementation.
 
-[CommonMark だけを組み立てる例](examples/compose.rs):
-`cargo run -p markdown-commonmark --example compose`
+Run the standalone composition example with:
 
-第三者由来のアルゴリズム・データの通知は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照。
+```sh
+cargo run -p markdown-commonmark --example compose
+```
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for notices covering
+third-party algorithms and data.

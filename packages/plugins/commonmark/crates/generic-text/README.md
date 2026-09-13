@@ -1,11 +1,14 @@
 # markdown-generic-text
 
-数式、表、mark、取り消し線のテキスト描画。parser や traQ、CommonMark の実装に依存しない。
-ノードの契約と renderer core のみを参照する。
+Plain-text renderer plugins for math, tables, mark, and strikethrough. The crate
+depends only on renderer core and the corresponding node contracts, not on a
+parser or a traQ implementation.
 
-`math::plugin()` / `table::plugin()` / `mark::plugin()` / `strikethrough::plugin()` を
-PresetBuilder の add / remove に渡す。設定不要で、共有済みの Plugin を値で返す。
-呼び出し側の clone は不要。型ごとの変更は Plugin::replace を使う。
+Add `math::plugin()`, `table::plugin()`, `mark::plugin()`, or
+`strikethrough::plugin()` to a `PresetBuilder`. The factories return shareable
+plugins by value; callers do not need to clone them. Use `Plugin::replace` to
+customize a handler for one plugin instance.
 
-数式は TeX 本文、表はセル間の `|` と行末改行、装飾は子のテキストを出力する。
-linkify は CommonMark の Link ノードを生成するため、専用の描画 Plugin は不要。
+Math renders its TeX source, tables render cells separated by `|` and rows with
+a trailing newline, and decorations render their children. Linkify produces
+CommonMark `Link` nodes and therefore needs no renderer plugin of its own.

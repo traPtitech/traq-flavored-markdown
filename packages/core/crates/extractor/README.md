@@ -1,12 +1,13 @@
 # markdown-extractor
 
-型付き handler で AST から情報を集計する。core の依存は AST と共有宣言のみ。
-文法、parser、renderer、codec、traQ 固有の集計型には依存しない。
+Collects information from a typed AST with typed handlers. It depends only on
+the AST and shared declarations, not on a grammar, parser, renderer, codec, or
+traQ-specific result type.
 
 ```rust
 use markdown_ast::{Document, Node, NodeData, Span};
 use markdown_definitions::Plugin as Declaration;
-use markdown_extractor::{Plugin, PresetBuilder, Extractor};
+use markdown_extractor::{Extractor, Plugin, PresetBuilder};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Reference(String);
@@ -28,19 +29,18 @@ assert_eq!(extractor.extract(&document)?, ["id"]);
 # Ok::<(), &'static str>(())
 ```
 
-集計型は `extract` で `Default` を要求し、呼び出しごとに新しく生成する。
-同じ extractor の plugin は共通の集計型を使う。集計型に Clone / Send / Sync は要求しない。
-handler のクロージャは Send + Sync で、preset と生成済み extractor 間で共有する。
+The result type must implement `Default`; every call gets a new result. Handlers
+are `Send + Sync` and are shared by extractors built from a preset, but the
+result type does not need `Clone`, `Send`, or `Sync`.
 
-Plugin → PresetBuilder → Preset → Extractor の所有権と add / remove は renderer と同様。
-型別 handler の重複は拒否し、登録後の Plugin 編集は既存の構成を変更しない。
-エラーコードは static str。失敗した抽出の途中結果は返さない。
+Plugins are snapshot-based. Adding, removing, or editing a plugin never changes
+an existing builder, preset, or extractor. Duplicate handlers are rejected.
 
-全ノードを検証してから、文書順（親、子孫、次の兄弟）に一度ずつ handler を呼ぶ。
-未登録の型も検証し、子孫を走査する。登録がなければ集計のみ省略する。
-原文の再解析や renderer の表示結果からの抽出はしない。
-検証上限は原文65,536 bytes、16,384 nodes、深さ64。
-handler の処理や集計結果の大きさは、信頼する拡張コードの責務。
+`extract` validates the whole tree and visits every node in document order
+(parent, descendants, next sibling). Unhandled nodes are still validated and
+traversed. The default validation limits are 65,536 source bytes, 16,384 nodes,
+and depth 64. Handlers own the limits of their work and result sizes.
 
-`extract_validated(ValidatedDocument)` は、他の consumer と共有する不変借用に対して木の再検証を省く。
-呼び出しごとの新しい集計結果と全ノードの走査は維持する。通常の `extract(&Document)` は毎回検証する。
+Use `extract_validated(ValidatedDocument)` to avoid repeating validation when
+sharing an immutable document with other consumers. It still creates a fresh
+result and traverses all nodes.

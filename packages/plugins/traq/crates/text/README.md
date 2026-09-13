@@ -1,14 +1,17 @@
 # markdown-trap-text
 
-traP 固有ノードのテキスト描画。parser / extractor の実装には依存しない。
+Plain-text renderer plugins for traP nodes. They do not depend on parser or
+extractor implementations.
 
-`references::plugin()` / `stamp::plugin()` / `spoiler::plugin()` / `compat::plugin()` を
-PresetBuilder の add / remove に渡す。設定不要で、共有済みの Plugin を値で返す。
-呼び出し側の clone は不要。型ごとの変更は Plugin::replace を使う。
+Add `references::plugin()`, `stamp::plugin()`, `spoiler::plugin()`, or
+`compat::plugin()` to a `PresetBuilder`. The factories return shareable plugins
+by value; callers do not need to clone them. Use `Plugin::replace` to customize
+one handler.
 
-参照は表示ラベル、スタンプは literal、互換用の空行は改行として出力する。
-spoiler は子の表示結果を chars() で数え、改行以外を █ に置換する。
-通知の送信先抽出、URL の分類、空白の整理は別の処理。
+References render their display labels, stamps render their literals, and
+compatibility blank lines render as newlines. Spoilers replace every non-newline
+character of rendered children with `█`. Notification delivery, URL
+classification, and whitespace normalization are higher-level responsibilities.
 
-[各文法の Plugin を組み合わせる実行例](https://github.com/uni-kakurenbo/traq-markdown-engine/blob/main/packages/sdk/crates/processing/examples/compose-text.rs):
-traq リポジトリで `cargo run -p traq-markdown-processing --example compose-text` を実行します。
+For a composition example, run `cargo run -p traq-markdown-processing --example
+compose-text` from the repository root.

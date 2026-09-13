@@ -1,41 +1,31 @@
-# traq-plugin: traP Markdown extensions
+# traQ plugin
 
-traP 固有の Markdown 拡張部品を提供します。traQ 向けの組み合わせと配布は
-[SDK](../../sdk/README.md) が所有します。
+This package provides the traP-specific Markdown extensions used by traQ. The
+[SDK](../../sdk/README.md) chooses their grammar order and ships the resulting
+presets, bindings, and application policies.
 
-| crate                      | 責務                                      |
-| -------------------------- | ----------------------------------------- |
-| `markdown-trap-contracts`  | スタンプ、参照、spoiler、空行のノード契約 |
-| `markdown-trap-syntax`     | traP 拡張の構文解析                       |
-| `markdown-trap-text`       | traP ノードのテキスト描画                 |
-| `markdown-trap-extraction` | 参照などの抽出                            |
+| Crate                      | Purpose                                                 |
+| -------------------------- | ------------------------------------------------------- |
+| `markdown-trap-contracts`  | Nodes for stamps, references, spoilers, and blank lines |
+| `markdown-trap-syntax`     | traP syntax                                             |
+| `markdown-trap-text`       | Plain-text rendering for traP nodes                     |
+| `markdown-trap-extraction` | Reference extraction                                    |
 
-各ルールの Plugin を、利用側の GrammarBuilder / PresetBuilder に追加して使います。
-文法の選択と順序、通知 URL の表示方針、処理結果の組み合わせは利用側で決めます。
-[SDK の構成・実行例](../../sdk/crates/processing)
-を参照してください。
+Add the individual rule plugins to an application's `GrammarBuilder` or
+`PresetBuilder`. The caller selects their order and decides notification URL
+display and how processing results are combined.
 
-## 開発
+## Boundaries
 
-共通の環境準備と検証は [ルートの CONTRIBUTING](../../../CONTRIBUTING.md) に従います。依存する
-[core](../../core/README.md) と
-[commonmark-plugin](../commonmark/README.md) は同じ workspace のローカルパスから参照します。SDK の構成・配布には依存しません。
+This package uses [core](../../core/README.md) and
+[commonmark-plugin](../commonmark/README.md) from the same workspace. It does
+not depend on SDK composition or distribution code.
 
-## TypeScript / HTML rendering
+The TypeScript package exports generated node types and HTML renderers. The Go
+module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go`;
+its payloads and node factories are generated from these Rust contracts. The
+shared AST and Wasm runtime remain in the core Go module.
 
-TypeScript の実装もこのリポジトリの責務に合わせて配置しています。
-
-| TypeScript package                        | 責務                                                                   |
-| ----------------------------------------- | ---------------------------------------------------------------------- |
-| `@traq-markdown-engine/core`              | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
-| `@traq-markdown-engine/commonmark-plugin` | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
-| `@traq-markdown-engine/traq-plugin`       | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
-| `@traq-markdown-engine/sdk`               | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
-
-AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、SDK の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark-plugin と traq-plugin の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
-
-HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-engine/sdk/renderer` の `messageRenderers`、CSS は `@traq-markdown-engine/sdk/index.css` を利用します。
-
-## Go contracts
-
-The Go module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go`. Payloads and node factories are generated from this repository's Rust contracts by `bun run generate:bindings`. The canonical tree and Wasm runtime belong to the core Go module.
+Follow the repository [development guide](../../../CONTRIBUTING.md). See the
+[processing presets](../../sdk/crates/processing/README.md) for the traQ
+composition and runnable examples.
