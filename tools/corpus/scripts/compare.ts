@@ -28,7 +28,7 @@ const { values: v } = parseArgs({
     'traq-ref': { type: 'string', default: 'origin/master' },
     'sui-ref': { type: 'string', default: 'origin/master' },
     origin: { type: 'string', default: 'https://q.trap.jp' },
-    max: { type: 'string', default: '100000' }
+    max: { type: 'string', default: '1000000' }
   }
 })
 
