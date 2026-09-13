@@ -19,12 +19,9 @@ pub(crate) fn catalog() -> Catalog {
     let stamp = catalog.plugin(trap::stamp::plugin());
     let compat = catalog.plugin(trap::compat::plugin());
 
-    let commonmark = catalog
-        .preset(&super::commonmark::builder())
-        .expect("valid CommonMark preset");
-    let v1 = catalog
-        .preset(&super::traq::v1::builder())
-        .expect("valid traQ preset");
+    for preset in crate::bindings::PRESETS {
+        catalog.preset(&(preset.builder)()).expect("valid preset");
+    }
 
     catalog.exports = json!({
         "plugins": {
@@ -43,7 +40,7 @@ pub(crate) fn catalog() -> Catalog {
                 "compat": compat,
             }
         },
-        "presets": { "commonmark": commonmark, "traq": { "v1": v1 } }
+        "presets": crate::bindings::preset_exports()
     });
     catalog
 }

@@ -1,5 +1,5 @@
 //! PlainText rendering policy for traQ messages.
-use markdown_ast::Document;
+use markdown_ast::{Document, ValidatedDocument, ValidationError};
 use markdown_renderer::Renderer;
 use serde::{Deserialize, Serialize};
 
@@ -25,9 +25,17 @@ impl PlainTextRenderer {
     }
 
     pub fn render(&self, document: &Document) -> Result<String, &'static str> {
+        self.render_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
+    }
+
+    /// Share one validation with other native consumers during this borrow.
+    pub fn render_validated(
+        &self,
+        document: ValidatedDocument<'_>,
+    ) -> Result<String, &'static str> {
         Ok(self
             .renderer
-            .render(document)?
+            .render_validated(document)?
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" "))

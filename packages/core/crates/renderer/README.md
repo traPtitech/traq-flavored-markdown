@@ -44,4 +44,5 @@ render は原文位置・ノード固有の検証・未対応型を全子孫に�
 上限は元の通知 renderer と同じ: 原文65,536 bytes、16,384 nodes、深さ64、
 出力1 MiB、append の累積8 MiB。handler の処理自体は信頼する Rust コード。
 
-この crate はクロージャ方式の core。公開 SDK の移植は進行中。
+`render_validated(ValidatedDocument)` は、他の consumer と共有する不変借用に対して木の再検証を省く。
+未対応型の確認と描画ごとの出力・処理量上限は維持する。通常の `render(&Document)` は毎回検証する。

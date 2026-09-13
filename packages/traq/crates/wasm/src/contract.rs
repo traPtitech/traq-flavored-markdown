@@ -5,7 +5,7 @@ static CONTRACT: LazyLock<String> = LazyLock::new(|| {
         "abiVersion": 3,
         "astVersion": 4,
         "buildId": env!("MARKDOWN_BUILD_ID"),
-        "presets": traq_markdown_grammar::bindings::bundled().exports["presets"],
+        "presets": traq_markdown_grammar::bindings::preset_exports(),
         "limits": {
             "inputBytes": super::limits::MAX_INPUT,
             "outputBytes": super::limits::MAX_OUTPUT,

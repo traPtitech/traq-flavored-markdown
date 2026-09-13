@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -95,6 +96,34 @@ func TestASTConsumers(t *testing.T) {
 	if string(after) != string(original) {
 		t.Fatal("consumers changed document")
 	}
+
+	t.Run("source edit ordering and recoverable errors", func(t *testing.T) {
+		doc, err := parser.ParseInline(ctx, user+" "+user)
+		if err != nil {
+			t.Fatal(err)
+		}
+		check := func(document *Document) {
+			t.Helper()
+			result, err := extractor.Extract(ctx, document)
+			if err != nil || result.MessageText != "@alice @alice" || result.Embedding.UnembeddedText != "@alice @alice" {
+				t.Fatalf("source edits: %+v %v", result, err)
+			}
+		}
+		reordered := *doc
+		reordered.Children = slices.Clone(doc.Children)
+		slices.Reverse(reordered.Children)
+		check(&reordered)
+		duplicated := *doc
+		duplicated.Children = append(slices.Clone(doc.Children), doc.Children...)
+		check(&duplicated)
+		crossing := *doc
+		crossing.Children = slices.Clone(doc.Children)
+		crossing.Children[len(crossing.Children)-1].Span.Start = doc.Children[0].Span.End - 1
+		if _, err := extractor.Extract(ctx, &crossing); err == nil {
+			t.Fatal("accepted crossing source edits")
+		}
+		check(doc)
+	})
 
 	url := "https://q.example.test/files/" + id
 	if text, err := plain.Render(ctx, parse(url)); err != nil || text != url {

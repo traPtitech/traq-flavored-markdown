@@ -7,6 +7,40 @@ const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
 ).bytes()
 
+test('source edits handle reordered and duplicate AST nodes without trapping', async () => {
+  const runtime = await createRuntime(bytes)
+  try {
+    const parser = runtime.createParser(presets.traq.v1)
+    const extractor = runtime.createExtractor({ origin: '' })
+    const reference = (name: string) =>
+      '!' +
+      JSON.stringify({
+        type: 'user',
+        id: '00000000-0000-0000-0000-000000000001',
+        raw: '@' + name
+      })
+    const document = parser.parseInline(
+      reference('alice') + ' ' + reference('bob')
+    )
+    const reordered = structuredClone(document)
+    reordered.children.reverse()
+    const duplicated = structuredClone(document)
+    duplicated.children.push(...document.children)
+    for (const candidate of [reordered, duplicated]) {
+      const result = extractor.extract(candidate)
+      expect(result.messageText).toBe('@alice @bob')
+      expect(result.embedding.unembeddedText).toBe('@alice @bob')
+    }
+    const crossing = structuredClone(document)
+    const last = crossing.children.at(-1)!
+    last.span.start = crossing.children[0].span.end - 1
+    expect(() => extractor.extract(crossing)).toThrow('overlapping_edits')
+    expect(extractor.extract(document).messageText).toBe('@alice @bob')
+  } finally {
+    runtime.dispose()
+  }
+})
+
 test('processing consumes the supplied AST and returns metadata without rendering', async () => {
   const runtime = await createRuntime(bytes)
   const parser = runtime.createParser(presets.traq.v1)

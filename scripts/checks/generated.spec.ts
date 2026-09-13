@@ -1,6 +1,7 @@
 import { rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 
+import { $ } from 'bun'
 import { expect, test } from 'bun:test'
 
 import { repositoryRoot } from '../paths.ts'
@@ -85,5 +86,20 @@ test('generated checks compare isolated generated files', async () => {
     } finally {
       if (!restored) await rename(backup, directory)
     }
+  })
+})
+
+test('snapshots allow an external formatter to replace file contents', async () => {
+  await withTempDirectory('generated-format-', async root => {
+    const artifact = path.join(root, 'artifact.ts')
+    await Bun.write(artifact, '// original\n'.repeat(4096))
+    await expect(
+      checkGenerated(
+        async () => {
+          await $`${Bun.argv[0]} -e ${'require("node:fs").writeFileSync(process.argv.at(-1), "// formatted\\n")'} ${artifact}`.quiet()
+        },
+        { directories: [], files: [artifact] }
+      )
+    ).rejects.toThrow('~ ' + generatedPath(artifact))
   })
 })

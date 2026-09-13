@@ -1,5 +1,5 @@
 use crate::{Preset, Result};
-use markdown_ast::{Document, Node, ValidationError, ValidationLimits};
+use markdown_ast::{Document, Node, ValidatedDocument, ValidationError};
 use std::cell::Cell;
 
 pub struct Renderer {
@@ -14,7 +14,12 @@ impl Renderer {
     }
 
     pub fn render(&self, doc: &Document) -> Result<String> {
-        validate_document(doc)?;
+        self.render_validated(ValidatedDocument::new(doc).map_err(ValidationError::code)?)
+    }
+
+    /// Reuse validation when several consumers share one immutable document.
+    pub fn render_validated(&self, document: ValidatedDocument<'_>) -> Result<String> {
+        let doc = document.document();
         self.ensure_supported_nodes(&doc.children)?;
 
         Context {
@@ -38,17 +43,6 @@ impl Renderer {
 
         Ok(())
     }
-}
-
-fn validate_document(doc: &Document) -> Result<()> {
-    doc.validate(ValidationLimits::default())
-        .map_err(|error| match error {
-            ValidationError::InvalidSpan | ValidationError::InvalidNode => "invalid_node",
-            ValidationError::SourceBytes | ValidationError::Nodes | ValidationError::Depth => {
-                "resource_limit"
-            }
-        })?;
-    Ok(())
 }
 
 pub struct Context<'a> {

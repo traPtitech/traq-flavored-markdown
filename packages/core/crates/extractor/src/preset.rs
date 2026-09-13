@@ -1,5 +1,5 @@
 use crate::{Plugin, Result, plugin::Handler};
-use markdown_definitions::validate_names;
+use markdown_definitions::handlers::HandlerRegistry;
 use std::{any::TypeId, collections::HashMap, sync::Arc};
 
 /// Immutable, reusable handlers. No parser or runtime resources are retained.
@@ -8,7 +8,7 @@ pub struct Preset<R> {
 }
 
 pub struct PresetBuilder<R> {
-    plugins: Vec<Plugin<R>>,
+    registry: HandlerRegistry<Handler<R>>,
 }
 
 impl<R> PresetBuilder<R> {
@@ -18,52 +18,19 @@ impl<R> PresetBuilder<R> {
 
     /// Check the whole plugin before changing the builder.
     pub fn add(&mut self, plugin: &Plugin<R>) -> Result<&mut Self> {
-        for existing in &self.plugins {
-            if existing.same(plugin) {
-                return Err("duplicate_plugin");
-            }
-            if plugin
-                .handlers
-                .keys()
-                .any(|id| existing.handlers.contains_key(id))
-            {
-                return Err("duplicate_handler");
-            }
-        }
-
-        self.plugins.push(plugin.clone());
+        self.registry.add(&plugin.handlers)?;
         Ok(self)
     }
 
     /// Remove the registered implementation snapshot, as in GrammarBuilder.
     pub fn remove(&mut self, plugin: &Plugin<R>) -> Result<&mut Self> {
-        let index = self
-            .plugins
-            .iter()
-            .position(|p| p.same(plugin))
-            .ok_or("missing_plugin")?;
-
-        self.plugins.remove(index);
+        self.registry.remove(&plugin.handlers)?;
         Ok(self)
     }
 
     pub fn build(self) -> Result<Preset<R>> {
-        validate_names(self.plugins.iter().map(|plugin| &plugin.declaration))
-            .map_err(|_| "duplicate_name")?;
-
-        let handlers = self
-            .plugins
-            .iter()
-            .flat_map(|plugin| {
-                plugin
-                    .handlers
-                    .iter()
-                    .map(|(id, handler)| (*id, handler.clone()))
-            })
-            .collect();
-
         Ok(Preset {
-            handlers: Arc::new(handlers),
+            handlers: self.registry.build()?,
         })
     }
 }
@@ -78,14 +45,14 @@ impl<R> Clone for Preset<R> {
 impl<R> Clone for PresetBuilder<R> {
     fn clone(&self) -> Self {
         Self {
-            plugins: self.plugins.clone(),
+            registry: self.registry.clone(),
         }
     }
 }
 impl<R> Default for PresetBuilder<R> {
     fn default() -> Self {
         Self {
-            plugins: Vec::new(),
+            registry: HandlerRegistry::default(),
         }
     }
 }

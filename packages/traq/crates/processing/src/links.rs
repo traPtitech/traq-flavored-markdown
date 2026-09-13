@@ -1,10 +1,10 @@
 //! traQ URL meaning, independent of Markdown nodes and output formats.
-//! Matching preserves the notification prototype's existing lexical policy.
+//! Exact lexical matching shared with TypeScript through traq-links.json.
 
 #[derive(Debug, PartialEq)]
-pub enum Target<'a> {
-    File { id: &'a str },
-    Message { id: &'a str },
+pub enum Target {
+    File { id: String },
+    Message { id: String },
 }
 
 pub struct Links {
@@ -18,23 +18,30 @@ impl Links {
         }
     }
 
-    pub fn classify<'a>(&self, url: &'a str) -> Option<Target<'a>> {
+    pub fn classify(&self, url: &str) -> Option<Target> {
         if self.origin.is_empty() {
             return None;
         }
         let path = url.strip_prefix(&self.origin)?.split(['?', '#']).next()?;
-        if let Some(id) = path.strip_prefix("/files/").filter(|id| is_canonical(id)) {
-            Some(Target::File { id })
+        if let Some(id) = path
+            .strip_prefix("/files/")
+            .filter(|id| is_hyphenated_uuid(id))
+        {
+            Some(Target::File {
+                id: id.to_ascii_lowercase(),
+            })
         } else {
             let id = path
                 .strip_prefix("/messages/")
-                .filter(|id| is_canonical(id))?;
-            Some(Target::Message { id })
+                .filter(|id| is_hyphenated_uuid(id))?;
+            Some(Target::Message {
+                id: id.to_ascii_lowercase(),
+            })
         }
     }
 }
 
-pub fn is_canonical(value: &str) -> bool {
+fn is_hyphenated_uuid(value: &str) -> bool {
     value.len() == 36
         && value.bytes().enumerate().all(|(i, b)| {
             if [8, 13, 18, 23].contains(&i) {
@@ -48,34 +55,25 @@ pub fn is_canonical(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const ID: &str = "00000000-0000-0000-0000-000000000001";
 
     #[test]
-    fn classification_checks_origin_path_and_id_boundaries() {
-        let links = Links::new("https://q.example.test/");
-        for suffix in ["", "?download=1", "#part", "?download=1#part"] {
-            assert_eq!(
-                links.classify(&format!("https://q.example.test/files/{ID}{suffix}")),
-                Some(Target::File { id: ID })
-            );
+    fn shared_url_contract() {
+        #[derive(serde::Deserialize)]
+        struct Fixture {
+            name: String,
+            origin: String,
+            url: String,
+            target: serde_json::Value,
         }
-        for url in [
-            format!("https://q.example.test.evil/files/{ID}"),
-            format!("https://q.example.test@evil/files/{ID}"),
-            format!("http://q.example.test/files/{ID}"),
-            format!("https://other.example.test/files/{ID}"),
-            format!("https://q.example.test/files/{ID}/extra"),
-            format!("https://q.example.test/files/{ID}/"),
-            format!("https://q.example.test/files/{ID}a"),
-            format!("https://q.example.test/prefix/files/{ID}"),
-            format!("/files/{ID}"),
-            "https://q.example.test/files/not-a-uuid".into(),
-        ] {
-            assert_eq!(links.classify(&url), None, "{url}");
+        let fixtures: Vec<Fixture> =
+            serde_json::from_str(include_str!("../../../tests/fixtures/traq-links.json")).unwrap();
+        for fixture in fixtures {
+            let target = match Links::new(&fixture.origin).classify(&fixture.url) {
+                Some(Target::File { id }) => serde_json::json!({"type": "file", "id": id}),
+                Some(Target::Message { id }) => serde_json::json!({"type": "message", "id": id}),
+                None => serde_json::Value::Null,
+            };
+            assert_eq!(target, fixture.target, "{}", fixture.name);
         }
-        assert_eq!(
-            Links::new("").classify(&format!("https://q.example.test/files/{ID}")),
-            None
-        );
     }
 }

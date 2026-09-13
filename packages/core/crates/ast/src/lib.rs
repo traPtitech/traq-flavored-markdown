@@ -8,7 +8,7 @@ mod validation;
 
 pub use data::{NodeData, NodeKind};
 pub use node::Node;
-pub use validation::{ValidationError, ValidationLimits};
+pub use validation::{ValidatedDocument, ValidationError, ValidationLimits};
 
 /// A half-open UTF-8 byte range in the original source.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

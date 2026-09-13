@@ -40,6 +40,41 @@ impl std::fmt::Display for ValidationError {
 
 impl std::error::Error for ValidationError {}
 
+impl ValidationError {
+    /// Common consumer error category; detailed validation errors remain available.
+    pub fn code(self) -> &'static str {
+        match self {
+            Self::InvalidSpan | Self::InvalidNode => "invalid_node",
+            Self::SourceBytes | Self::Nodes | Self::Depth => "resource_limit",
+        }
+    }
+}
+
+/// A document checked against the default consumer limits for this immutable borrow.
+/// It does not assert codec registration, handler support, or source edit ordering.
+/// Payload implementations must preserve their invariants during the borrow.
+///
+/// ```compile_fail
+/// use markdown_ast::{Document, ValidatedDocument};
+/// let mut document = Document { source: String::new(), children: vec![] };
+/// let validated = ValidatedDocument::new(&document).unwrap();
+/// document.source.push('x');
+/// let _ = validated.document();
+/// ```
+#[derive(Clone, Copy)]
+pub struct ValidatedDocument<'a>(&'a Document);
+
+impl<'a> ValidatedDocument<'a> {
+    pub fn new(document: &'a Document) -> Result<Self, ValidationError> {
+        document.validate(ValidationLimits::default())?;
+        Ok(Self(document))
+    }
+
+    pub fn document(self) -> &'a Document {
+        self.0
+    }
+}
+
 impl Document {
     /// Validate the entire tree and return its node count. No handlers execute.
     ///

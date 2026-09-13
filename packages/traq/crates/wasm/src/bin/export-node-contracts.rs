@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest = serde_json::json!({
         "buildId": env!("MARKDOWN_BUILD_ID"),
         "processing": processing,
-        "presets": traq_markdown_grammar::bindings::bundled().exports["presets"],
+        "presets": traq_markdown_grammar::bindings::preset_exports(),
         "limits": {
             "inputBytes": limits::MAX_INPUT,
             "outputBytes": limits::MAX_OUTPUT,

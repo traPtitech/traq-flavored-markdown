@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'path'
 
@@ -40,12 +42,17 @@ const snapshot = async ({
   files: targetFiles
 }: GeneratedTargets) => {
   const snapshotFiles = new Map<string, string>()
-  for (const file of targetFiles)
-    if (await Bun.file(file).exists())
-      snapshotFiles.set(
-        path.relative(repositoryRoot, file),
-        await Bun.file(file).text()
-      )
+  // Retain content hashes, not file-backed strings, across generator rewrites.
+  const capture = async (file: string) => {
+    try {
+      const hash = createHash('sha256')
+      for await (const chunk of createReadStream(file)) hash.update(chunk)
+      snapshotFiles.set(path.relative(repositoryRoot, file), hash.digest('hex'))
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'ENOENT') throw error
+    }
+  }
+  for (const file of targetFiles) await capture(file)
   for (const directory of directories)
     if (await hasDirectory(directory))
       for await (const relative of new Bun.Glob('**/*').scan({
@@ -53,10 +60,7 @@ const snapshot = async ({
         onlyFiles: true
       })) {
         const file = path.join(directory, relative)
-        snapshotFiles.set(
-          path.relative(repositoryRoot, file),
-          await Bun.file(file).text()
-        )
+        await capture(file)
       }
   return snapshotFiles
 }

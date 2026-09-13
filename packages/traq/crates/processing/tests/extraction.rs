@@ -75,3 +75,88 @@ fn invalid_ast_and_oversized_configuration_are_rejected() {
         "**after**"
     );
 }
+
+#[test]
+fn source_edits_accept_reordered_and_duplicate_nodes_but_reject_crossing_ranges() {
+    use traq_markdown_processing::presets::traq::{embedding, message};
+    let parser = bindings::parser("traq.v1").unwrap();
+    let user = |name: &str| {
+        format!(r#"!{{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@{name}"}}"#)
+    };
+    let original = parser
+        .parse_inline(&format!("{} {}", user("alice"), user("bob")))
+        .unwrap();
+    let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
+
+    let mut reordered = original.clone();
+    reordered.children.reverse();
+    let mut duplicated = original.clone();
+    duplicated.children.extend(original.children.clone());
+    for document in [reordered, duplicated] {
+        assert_eq!(
+            extractor.extract(&document).unwrap().message_text,
+            "@alice @bob"
+        );
+        assert_eq!(
+            embedding::plan(&document).unwrap().unembedded_text,
+            "@alice @bob"
+        );
+    }
+
+    let mut crossing = original.clone();
+    crossing.children.last_mut().unwrap().span.start = original.children[0].span.end - 1;
+    assert_eq!(embedding::plan(&crossing).unwrap_err(), "overlapping_edits");
+    assert_eq!(
+        message::Extractor::new("").extract(&crossing).unwrap_err(),
+        "overlapping_edits"
+    );
+    assert_eq!(
+        extractor.extract(&crossing).unwrap_err(),
+        "overlapping_edits"
+    );
+    assert_eq!(
+        extractor.extract(&original).unwrap().message_text,
+        "@alice @bob"
+    );
+
+    let mut mentions = parser.parse_inline("@alice **@bob**").unwrap();
+    let expected = embedding::plan(&mentions).unwrap();
+    mentions.children.reverse();
+    assert_eq!(embedding::plan(&mentions).unwrap(), expected);
+}
+
+#[test]
+fn aggregate_extraction_validates_each_node_once() {
+    use markdown_ast::{Node, NodeData, Span};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    #[derive(Clone, Debug)]
+    struct Counted(Arc<AtomicUsize>);
+    impl PartialEq for Counted {
+        fn eq(&self, other: &Self) -> bool {
+            Arc::ptr_eq(&self.0, &other.0)
+        }
+    }
+    impl NodeData for Counted {
+        fn validate(&self, _: &[Node]) -> bool {
+            self.0.fetch_add(1, Ordering::Relaxed);
+            true
+        }
+    }
+    let calls = Arc::new(AtomicUsize::new(0));
+    let mut document = Document {
+        source: String::new(),
+        children: vec![Node::leaf(
+            Span { start: 0, end: 0 },
+            Counted(calls.clone()),
+        )],
+    };
+    let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
+    extractor.extract(&document).unwrap();
+    assert_eq!(calls.load(Ordering::Relaxed), 1);
+    // Validation belongs to each call, never to a mutable AST's identity.
+    document.children[0].span.end = 1;
+    assert!(extractor.extract(&document).is_err());
+}

@@ -8,6 +8,8 @@ mod names;
 mod namespace;
 mod node_type;
 
+pub mod handlers;
+
 pub use markdown_definitions_derive::NodeType;
 pub use names::{NameCollision, validate_names};
 pub use namespace::{Plugin, PluginGroup};

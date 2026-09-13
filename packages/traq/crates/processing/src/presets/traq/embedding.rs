@@ -1,5 +1,5 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
-use markdown_ast::{Document, ValidationLimits};
+use markdown_ast::{Document, ValidatedDocument};
 use markdown_commonmark_contracts::{Image, Link, Text};
 use markdown_trap_contracts::{EmbeddingData, ReferenceData};
 use serde::Serialize;
@@ -37,14 +37,15 @@ pub struct EmbeddingPlan {
 }
 
 pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
-    document
-        .validate(ValidationLimits::default())
-        .map_err(|_| "invalid_node")?;
+    plan_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
+}
 
-    u32::try_from(document.source.len()).map_err(|_| "source_too_large")?;
-
+pub(crate) fn plan_validated(
+    document: ValidatedDocument<'_>,
+) -> Result<EmbeddingPlan, &'static str> {
+    let document = document.document();
     let mut result = EmbeddingPlan::default();
-    let mut position = 0;
+    let mut edits = Vec::new();
     let mut pending: Vec<_> = document
         .children
         .iter()
@@ -54,17 +55,9 @@ pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
 
     while let Some((node, allow_embedding)) = pending.pop() {
         if let Some(reference) = node.get::<ReferenceData>() {
-            result
-                .unembedded_text
-                .push_str(&document.source[position..node.span.start]);
-            result.unembedded_text.push_str(&reference.label);
-            position = node.span.end;
+            edits.push((node.span, reference.label.as_str()));
         } else if let Some(embedding) = node.get::<EmbeddingData>() {
-            result
-                .unembedded_text
-                .push_str(&document.source[position..node.span.start]);
-            result.unembedded_text.push_str(&embedding.label);
-            position = node.span.end;
+            edits.push((node.span, embedding.label.as_str()));
         } else if allow_embedding && node.get::<Text>().is_some() {
             collect(
                 &document.source,
@@ -86,9 +79,9 @@ pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
         );
     }
 
-    result
-        .unembedded_text
-        .push_str(&document.source[position..]);
+    result.unembedded_text = crate::edits::apply(&document.source, edits)?;
+    // Keep user/group fallback attempts stable while accepting reordered ASTs.
+    result.candidates.sort_by_key(|candidate| candidate.start);
 
     Ok(result)
 }

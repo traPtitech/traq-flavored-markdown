@@ -3,6 +3,9 @@
 parser と renderer が共有する plugin の宣言と、codec 用の型メタデータ。
 parser / renderer / AST / serde には依存しない。derive の依存はコンパイル時だけに使う。
 
+`handlers` モジュールは renderer / extractor が共有する登録機構。型別 handler の snapshot、
+追加・差し替え・削除の原子性、型と表示名の衝突を管理する。handler の呼び出し方や木の走査は各 consumer が所有する。
+
 ```rust
 use markdown_definitions::{NodeType, Plugin};
 

@@ -1,6 +1,6 @@
 //! Bounded document framing; the caller supplies payload decoding.
 use crate::fields::{Fields, error};
-use markdown_ast::{Document, Node, NodeKind, Span};
+use markdown_ast::{Document, Node, NodeKind, Span, ValidationLimits};
 
 use serde::{
     Deserialize, Deserializer,
@@ -27,11 +27,12 @@ pub struct DecodeLimits {
 
 impl Default for DecodeLimits {
     fn default() -> Self {
+        let tree = ValidationLimits::default();
         Self {
             json_bytes: 8 * 1024 * 1024,
-            source_bytes: 65_536,
-            nodes: 16_384,
-            depth: 64,
+            source_bytes: tree.source_bytes,
+            nodes: tree.nodes,
+            depth: tree.depth,
         }
     }
 }

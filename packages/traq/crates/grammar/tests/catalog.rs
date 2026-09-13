@@ -65,3 +65,25 @@ fn stored_grammar_names_select_independent_parsers_without_fallback() {
         assert!(bindings::parser(version).is_err());
     }
 }
+
+#[test]
+fn named_grammars_share_native_compilations_and_sdk_names() {
+    use traq_markdown_grammar::bindings;
+    assert_eq!(bindings::preset_exports(), bundled().exports["presets"]);
+    assert_eq!(
+        bindings::preset_exports(),
+        serde_json::json!({"commonmark": 0, "traq": {"v1": 1}})
+    );
+    let expected = [
+        ("commonmark", presets::commonmark::grammar()),
+        ("traq.v1", presets::traq::v1::grammar()),
+    ];
+    assert_eq!(bindings::grammars().len(), expected.len());
+    for (name, native) in expected {
+        let selected = bindings::grammar(name).unwrap();
+        assert!(
+            std::ptr::eq(selected.plugins(), native.plugins()),
+            "{name} must reuse the native compilation"
+        );
+    }
+}

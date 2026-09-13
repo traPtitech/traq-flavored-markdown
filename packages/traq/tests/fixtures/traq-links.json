@@ -1,0 +1,203 @@
+[
+  {
+    "name": "file",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "message",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/messages/abcdef00-0000-0000-0000-000000000001",
+    "target": {
+      "type": "message",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "uppercase UUID",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/ABCDEF00-0000-0000-0000-000000000001",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "query",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001?download=1",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "fragment",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001#part",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "query and fragment",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001?download=1#part",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "trailing origin slash",
+    "origin": "https://q.example.test/",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "multiple trailing origin slashes",
+    "origin": "https://q.example.test///",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "http origin",
+    "origin": "http://q.example.test",
+    "url": "http://q.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": {
+      "type": "file",
+      "id": "abcdef00-0000-0000-0000-000000000001"
+    }
+  },
+  {
+    "name": "empty origin",
+    "origin": "",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "external origin",
+    "origin": "https://q.example.test",
+    "url": "https://other.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "origin prefix attack",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test.evil/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "userinfo",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test@evil.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "scheme mismatch",
+    "origin": "https://q.example.test",
+    "url": "http://q.example.test/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "extra path",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001/extra",
+    "target": null
+  },
+  {
+    "name": "trailing slash",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001/",
+    "target": null
+  },
+  {
+    "name": "long UUID",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001a",
+    "target": null
+  },
+  {
+    "name": "short UUID",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-00000000000",
+    "target": null
+  },
+  {
+    "name": "invalid UUID",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/not-a-uuid",
+    "target": null
+  },
+  {
+    "name": "uppercase route",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/FILES/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "relative path",
+    "origin": "https://q.example.test",
+    "url": "/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "prefixed path",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/prefix/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "dot segments",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/prefix/../files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "encoded ID",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/%61bcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "encoded slash",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files%2Fabcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "host case is lexical",
+    "origin": "https://q.example.test",
+    "url": "https://Q.EXAMPLE.TEST/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "explicit default port is lexical",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test:443/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  },
+  {
+    "name": "trailing newline",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test/files/abcdef00-0000-0000-0000-000000000001\n",
+    "target": null
+  },
+  {
+    "name": "fragment before path",
+    "origin": "https://q.example.test",
+    "url": "https://q.example.test#/files/abcdef00-0000-0000-0000-000000000001",
+    "target": null
+  }
+]

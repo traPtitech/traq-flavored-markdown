@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 
 use crate::{References, presets::traq};
-use markdown_ast::Document;
+use markdown_ast::{Document, ValidatedDocument, ValidationError};
 use markdown_extractor::Extractor as ReferenceExtractor;
 use serde::{Deserialize, Serialize};
 
@@ -45,15 +45,21 @@ impl Extractor {
     }
 
     pub fn extract(&self, document: &Document) -> Result<Extraction, String> {
-        let references = self.extractor.extract(document)?;
-        let message = self.message.extract(document)?;
+        let document = ValidatedDocument::new(document).map_err(ValidationError::code)?;
+        self.extract_validated(document)
+    }
+
+    /// Share one validation with other native consumers during this borrow.
+    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> Result<Extraction, String> {
+        let references = self.extractor.extract_validated(document)?;
+        let message = self.message.extract_validated(document)?;
 
         Ok(Extraction {
             message_text: message.plain_text,
             attachments: message.attachments,
             citations: message.citations,
             references,
-            embedding: traq::embedding::plan(document).map_err(str::to_owned)?,
+            embedding: traq::embedding::plan_validated(document).map_err(str::to_owned)?,
         })
     }
 }

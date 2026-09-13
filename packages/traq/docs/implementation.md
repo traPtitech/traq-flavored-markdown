@@ -2,9 +2,9 @@
 
 ## Rust が所有するもの
 
-文法の構成、解析、ノードの型と意味検証は Rust にあります。このリポジトリ内の `crates/grammar/src/bindings/mod.rs` で配布する文法を選び、`crates/wasm/src/node_types.rs` に配布するノード契約を登録します。Rust の文法ビルダーで独自構成を作り、catalog の preset として公開すると、その名前を TypeScript / Go に生成します。
+文法の構成、解析、ノードの型と意味検証は Rust にあります。`crates/grammar/src/bindings/presets.rs` の一覧が配布する文法名・native grammar・編集用 builder を所有し、同じ一覧から TypeScript / Go のプリセット名を生成します。`crates/wasm/src/node_types.rs` に配布するノード契約を登録します。SDK の文法選択は native grammar のキャッシュを直接共有します。編集可能な Catalog API は引き続き利用できます。
 
-Rust API は [parser core](https://github.com/uni-kakurenbo/traq-markdown-engine/packages/core/blob/main/crates/parser/README.md) と [traQ presets](https://github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/blob/main/crates/grammar/README.md) を参照してください。ネイティブ Rust では引き続き Plugin / Rule の追加・削除・並べ替えを利用できます。
+Rust API は [parser core](../../core/crates/parser/README.md) と [traQ presets](../crates/grammar/README.md) を参照してください。ネイティブ Rust では引き続き Plugin / Rule の追加・削除・並べ替えを利用できます。
 
 ## TypeScript
 

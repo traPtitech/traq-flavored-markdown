@@ -2,6 +2,8 @@ import { isKnownNode, names } from '@traq-markdown-parser/commonmark/nodes'
 import type { Document, Node } from '@traq-markdown-parser/core/renderer'
 import { names as trap } from '@traq-markdown-parser/trap-extension/nodes'
 
+import { classifyTraqLink } from './links.js'
+
 export type Embedding =
   | { type: 'file'; id: string }
   | { type: 'message'; id: string }
@@ -21,14 +23,9 @@ export function embeddingFromUrl(
   }
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+  const target = classifyTraqLink(value, origin)
+  if (target) return target
   if (url.origin !== origin) return { type: 'url', url: value }
-
-  const [, kind, id = ''] = url.pathname.split('/')
-  if (
-    (kind === 'files' || kind === 'messages') &&
-    /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(id)
-  )
-    return { type: kind === 'files' ? 'file' : 'message', id }
 }
 
 interface EmbeddingState {

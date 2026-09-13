@@ -1,6 +1,6 @@
 //! Source-preserving message text and attachment/citation extraction from one AST.
 use crate::links::{Links, Target};
-use markdown_ast::{Document, Span, ValidationLimits};
+use markdown_ast::{Document, Span, ValidatedDocument};
 use markdown_commonmark_contracts::{Link, LinkForm};
 use markdown_trap_contracts::{EmbeddingData, EmbeddingKind, ReferenceData};
 use markdown_trap_extraction::normalize_reference_id;
@@ -24,12 +24,17 @@ impl Extractor {
     }
 
     pub fn extract(&self, document: &Document) -> Result<Message, &'static str> {
-        document
-            .validate(ValidationLimits::default())
-            .map_err(|_| "invalid_node")?;
+        self.extract_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
+    }
+
+    pub(crate) fn extract_validated(
+        &self,
+        document: ValidatedDocument<'_>,
+    ) -> Result<Message, &'static str> {
+        let document = document.document();
         let mut message = Message::default();
         let edits = self.collect_edits(document, &mut message);
-        message.plain_text = apply_edits(document, edits);
+        message.plain_text = crate::edits::apply(&document.source, edits)?;
         Ok(message)
     }
 
@@ -64,11 +69,11 @@ impl Extractor {
             {
                 let label = match target {
                     Target::File { id } => {
-                        message.attachments.push(id.to_ascii_lowercase());
+                        message.attachments.push(id);
                         "[添付ファイル]"
                     }
                     Target::Message { id } => {
-                        message.citations.push(id.to_ascii_lowercase());
+                        message.citations.push(id);
                         "[引用メッセージ]"
                     }
                 };
@@ -91,20 +96,4 @@ impl Extractor {
         }
         edits
     }
-}
-
-fn apply_edits<'a>(document: &'a Document, mut edits: Vec<(Span, &'a str)>) -> String {
-    edits.sort_by_key(|(span, _)| (span.start, std::cmp::Reverse(span.end)));
-    let mut plain_text = String::new();
-    let mut position = 0;
-    for (span, replacement) in edits {
-        if span.start < position {
-            continue;
-        }
-        plain_text.push_str(&document.source[position..span.start]);
-        plain_text.push_str(replacement);
-        position = span.end;
-    }
-    plain_text.push_str(&document.source[position..]);
-    plain_text
 }

@@ -5,6 +5,8 @@ import {
 } from '@traq-markdown-parser/traq/renderer'
 import { expect, test } from 'bun:test'
 
+import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }
+import { classifyTraqLink } from '../../renderer/links.js'
 import { commonParser, parser } from './setup.ts'
 
 const origin = 'https://q.example.test',
@@ -14,6 +16,24 @@ const origin = 'https://q.example.test',
 const file = origin + '/files/' + fileId,
   quote = origin + '/messages/' + messageId
 const view = messageRenderers({ origin })
+
+test('URL meaning follows the shared Rust contract', () => {
+  for (const fixture of linkFixtures) {
+    expect(fixture.target, fixture.name).toEqual(
+      classifyTraqLink(fixture.url, fixture.origin) ?? null
+    )
+  }
+  const uppercase = origin + '/files/ABCDEF00-0000-0000-0000-000000000001'
+  expect(embeddingFromUrl(uppercase, origin)).toEqual({
+    type: 'file',
+    id: 'abcdef00-0000-0000-0000-000000000001'
+  })
+  expect(embeddingFromUrl(file + '/extra', origin)).toBeUndefined()
+  expect(embeddingFromUrl(file + '/', origin)).toBeUndefined()
+  expect(
+    view.standard.render(parser.parse(file + '/extra')).renderedText
+  ).toContain(file + '/extra')
+})
 
 test('message rendering extracts cards, trims trailing bare links, and keeps the AST reusable', () => {
   const source = '本文\n' + file + '\n' + quote,
