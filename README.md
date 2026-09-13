@@ -11,6 +11,24 @@ by language within each package.
 | [packages/plugins/traq](packages/plugins/traq/README.md)             | traP references, stamps, spoilers and their rendering/extraction | `@traq-markdown-engine/traq-plugin`       |
 | [packages/sdk](packages/sdk/README.md)                               | traQ presets, presentation, Wasm and SDK distribution            | `@traq-markdown-engine/sdk`               |
 
+## Install from npm
+
+Use Node 24 with npm 11.17.0. Most applications only need the SDK:
+
+```sh
+npm install @traq-markdown-engine/sdk
+```
+
+npm installs the SDK's peer dependencies, so that command includes the core and
+plugin packages once they are available on the public registry. Install a lower
+layer directly only when composing a custom integration:
+
+```sh
+npm install @traq-markdown-engine/core
+npm install @traq-markdown-engine/commonmark-plugin
+npm install @traq-markdown-engine/traq-plugin
+```
+
 Plugins are composable syntax and AST processing components. Core has no dependency
 on a concrete plugin; the SDK selects and combines plugins for traQ. Each package keeps its
 Rust crates, TypeScript implementation and Go module together. The npm names are
@@ -23,9 +41,9 @@ Shared specification data lives in [tests/fixtures](tests/fixtures/README.md).
 
 ## Development
 
-Use Bun 1.3.14+, Go 1.26+, and rustup. The root `rust-toolchain.toml` pins Rust
-and the Wasm target. Windows also requires the MSVC C++ build tools. Install
-the root tooling and workspace dependencies:
+Use Node 24 with npm 11.17.0, Bun 1.3.14+, Go 1.26+, and rustup. The root
+`rust-toolchain.toml` pins Rust and the Wasm target. Windows also requires the
+MSVC C++ build tools. Install the root tooling and workspace dependencies:
 
 ```sh
 bun install
@@ -50,8 +68,9 @@ their source and output paths local.
 Run `bun run build` before individual Wasm or Go tests. `bun run check` also builds
 the corpus viewer and verifies generated sources and packed consumers. Individual
 package commands are available with `bun run --cwd packages/sdk test`, for example.
-See [CONTRIBUTING](CONTRIBUTING.md) for the build pipeline, ownership, fixtures and
-verification, and [traQ examples](packages/sdk/examples/README.md) for API usage.
+See [CONTRIBUTING](CONTRIBUTING.md) for the build pipeline, ownership, fixtures,
+verification, and npm publishing process, and [traQ examples](packages/sdk/examples/README.md)
+for API usage.
 
 TypeScript, JavaScript, JSON, Markdown, YAML, and styles use the Prettier rules
 from traQ S-UI. Rust and Go use their standard formatters, `cargo fmt` and

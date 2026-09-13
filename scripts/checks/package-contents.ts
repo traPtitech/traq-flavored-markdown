@@ -14,6 +14,7 @@ const temporaryDirectory = `${tempRoot}/markdown-packages-${Bun.randomUUIDv7()}`
 if (!temporaryDirectory.startsWith(`${tempRoot}/`))
   throw new Error('Invalid temporary path')
 const bun = Bun.argv[0]
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const archiveName = (archive: string) =>
   archive.slice(
     Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
@@ -32,36 +33,22 @@ try {
   const archives: string[] = []
   for (const repo of packageNames) {
     const cwd = packageRoot(repo)
-    const output = await capture(
-      bun,
-      [
-        'pm',
-        'pack',
-        '--dry-run',
-        '--ignore-scripts',
-        '--destination',
-        temporaryDirectory
-      ],
-      cwd
-    )
-    const archive = (
+    const [packed] = JSON.parse(
       await capture(
-        bun,
+        npm,
         [
-          'pm',
           'pack',
-          '--quiet',
+          '--json',
           '--ignore-scripts',
-          '--destination',
+          '--pack-destination',
           temporaryDirectory
         ],
         cwd
       )
-    ).trim()
+    ) as { filename: string; files: { path: string }[] }[]
+    const archive = path.join(temporaryDirectory, packed.filename)
     archives.push(archive)
-    const files = new Set(
-      [...output.matchAll(/^packed\s+\S+\s+(.+)$/gm)].map(([, name]) => name)
-    )
+    const files = new Set(packed.files.map(file => file.path))
     for (const name of [
       'LICENSE',
       'dist/renderer/index.js',
@@ -90,14 +77,14 @@ try {
     })
   )
   await capture(
-    bun,
+    npm,
     [
       'install',
       '--ignore-scripts',
       '--no-save',
-      '--no-progress',
-      '--omit',
-      'peer'
+      '--no-audit',
+      '--no-fund',
+      '--registry=https://registry.npmjs.org'
     ],
     temporaryDirectory
   )
@@ -141,6 +128,9 @@ try {
     ).json()
     await Bun.stdout.write(
       await capture(bun, [name + '.ts', contract.sha256], temporaryDirectory)
+    )
+    await Bun.stdout.write(
+      await capture('node', [name + '.ts', contract.sha256], temporaryDirectory)
     )
   }
   console.log(

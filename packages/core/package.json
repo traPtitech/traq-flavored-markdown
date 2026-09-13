@@ -1,7 +1,6 @@
 {
   "name": "@traq-markdown-engine/core",
   "version": "0.1.0",
-  "private": true,
   "description": "core Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
@@ -9,6 +8,10 @@
     "directory": "packages/core"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "sideEffects": false,
   "type": "module",
   "exports": {

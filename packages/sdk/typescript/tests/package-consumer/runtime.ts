@@ -1,3 +1,7 @@
+import { deepStrictEqual } from 'node:assert'
+import { readFile } from 'node:fs/promises'
+import { argv } from 'node:process'
+
 import { createRuntime, presets } from '@traq-markdown-engine/sdk'
 import { names } from '@traq-markdown-engine/traq-plugin/nodes'
 
@@ -5,8 +9,7 @@ const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
 }
 
-const readBytes = async (url: URL) =>
-  new Uint8Array(await (await fetch(url)).arrayBuffer())
+const readBytes = async (url: URL) => new Uint8Array(await readFile(url))
 
 const bytes = await readBytes(
   new URL(import.meta.resolve('@traq-markdown-engine/sdk/parser.wasm'))
@@ -17,9 +20,7 @@ const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))
 const hash = [...digest]
   .map(byte => byte.toString(16).padStart(2, '0'))
   .join('')
-const expectedHash = (
-  globalThis as typeof globalThis & { Bun: { argv: string[] } }
-).Bun.argv[2]
+const expectedHash = argv[2]
 check(hash === expectedHash, 'Packed Wasm hash does not match the contract')
 try {
   check(
@@ -27,8 +28,9 @@ try {
     'Packed parser did not load the traQ preset'
   )
   const extractor = runtime.createExtractor({ origin: '' })
-  check(
-    Bun.deepEquals(extractor.extract(parser.parse('**hello**')), {
+  deepStrictEqual(
+    extractor.extract(parser.parse('**hello**')),
+    {
       messageText: '**hello**',
       embedding: { candidates: [], unembeddedText: '**hello**' },
       attachments: [],
@@ -39,7 +41,7 @@ try {
         channelLinks: [],
         embeddings: []
       }
-    }),
+    },
     'Packed extractor returned an unexpected result'
   )
 } finally {

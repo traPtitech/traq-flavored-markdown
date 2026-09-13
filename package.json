@@ -35,6 +35,7 @@
     "lint": "eslint --fix --cache .",
     "lint:check": "eslint --cache --max-warnings=0 .",
     "lint:rust": "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "release": "bun run scripts/release.ts",
     "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go",
     "test:corpus": "bun run --cwd tools/corpus test",
     "test:go": "go -C packages/core/go test -count=1 ./... && go -C packages/plugins/commonmark/go test -count=1 ./... && go -C packages/plugins/traq/go test -count=1 ./... && go -C packages/sdk/go test -count=1 ./... && go -C packages/sdk/examples/go test -count=1 ./...",

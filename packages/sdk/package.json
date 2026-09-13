@@ -1,7 +1,6 @@
 {
   "name": "@traq-markdown-engine/sdk",
   "version": "0.1.0",
-  "private": true,
   "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
   "homepage": "https://github.com/uni-kakurenbo/traq-markdown-engine#readme",
   "bugs": {
@@ -13,6 +12,10 @@
     "directory": "packages/sdk"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "author": "traP (https://github.com/traPtitech)",
   "sideEffects": [
     "./dist/index.css"

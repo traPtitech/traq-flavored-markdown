@@ -1,8 +1,8 @@
 # Development
 
-Use Bun 1.3.14+, Go 1.26+, and rustup. The Rust toolchain and Wasm target are pinned
-in `rust-toolchain.toml`. Windows additionally needs the MSVC C++ build tools;
-WSL and Bash are not required.
+Use Node 24 with npm 11.17.0, Bun 1.3.14+, Go 1.26+, and rustup. The Rust toolchain
+and Wasm target are pinned in `rust-toolchain.toml`. Windows additionally needs the
+MSVC C++ build tools; WSL and Bash are not required.
 
 Run shared commands from the repository root:
 
@@ -103,6 +103,74 @@ not include `markdown-codec`. Native Rust and Go/Wasm exercise 787 frozen
 notification expectations. TypeScript/Wasm covers extraction, and TypeScript
 covers HTML rendering. Packed consumers and examples exercise public processing
 APIs.
+
+## Publishing to npm
+
+Only these four packages are published publicly to npm:
+
+| Selector            | npm package                               | Package directory             |
+| ------------------- | ----------------------------------------- | ----------------------------- |
+| `core`              | `@traq-markdown-engine/core`              | `packages/core`               |
+| `commonmark-plugin` | `@traq-markdown-engine/commonmark-plugin` | `packages/plugins/commonmark` |
+| `traq-plugin`       | `@traq-markdown-engine/traq-plugin`       | `packages/plugins/traq`       |
+| `sdk`               | `@traq-markdown-engine/sdk`               | `packages/sdk`                |
+
+The root workspace and `tools` workspaces stay private. Packages release
+independently; the release process does not change versions or automatically
+release dependent packages. Before creating a tag, set the selected package's
+version in its `package.json` and ensure internal peer-dependency ranges describe
+the intended compatibility.
+
+Release tags are `core@<version>`, `commonmark-plugin@<version>`,
+`traq-plugin@<version>`, or `sdk@<version>`. The tag version must match the
+selected package's `package.json`. Use the release command to validate a release
+locally; it runs `npm publish --dry-run` by default. `--publish` is the only mode
+that performs a live publish.
+
+```sh
+bun run release -- core@0.1.0             # pack and dry-run the selected package
+bun run release -- core@0.1.0 --check     # validate selector and version only
+bun run release -- core@0.1.0 --publish   # publish the selected package
+```
+
+### Initial publication
+
+Use Node 24 with npm 11.17.0 and Bun 1.3.14. Sign in interactively with an npm
+account that has two-factor authentication and owns the `@traq-markdown-engine`
+organization. Verify that scope ownership before publishing; this repository does
+not establish it.
+
+```sh
+npm login
+bun install --frozen-lockfile
+bun run build
+bun run check
+bun run release -- core@0.1.0 --publish
+bun run release -- commonmark-plugin@0.1.0 --publish
+bun run release -- traq-plugin@0.1.0 --publish
+bun run release -- sdk@0.1.0 --publish
+```
+
+Publish the initial `0.1.0` packages in that dependency order. After each package
+exists on npm, open its package settings and add a GitHub Actions trusted publisher:
+
+- Organization or user: `uni-kakurenbo`
+- Repository: `traq-markdown-engine`
+- Workflow filename: `release.yml`
+- Environment: leave empty unless the workflow later uses a GitHub environment.
+- Allowed action: enable direct `npm publish`; new trusted-publisher configurations
+  otherwise allow staged publishing only.
+
+Configure this publisher for each of the four packages. The
+`.github/workflows/release.yml` workflow uses GitHub Actions OIDC, builds the
+workspace, and runs `bun run check` before publishing only the package selected
+by its tag. Stable tags publish with the `latest` dist-tag; prerelease tags publish
+with `next`. Future releases only require pushing the matching release tag after
+the package version and peer-dependency ranges are ready.
+
+See npm's [trusted-publishing guide](https://docs.npmjs.com/trusted-publishers/)
+and [`npm trust` reference](https://docs.npmjs.com/cli/v11/commands/npm-trust/)
+for the current npm UI and trusted-publisher details.
 
 ## Dependencies and module paths
 

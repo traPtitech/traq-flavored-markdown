@@ -1,8 +1,9 @@
+import { readFile } from 'node:fs/promises'
+
 import * as rendering from '@traq-markdown-engine/sdk/renderer'
 import { plugin } from '@traq-markdown-engine/commonmark-plugin/renderer'
 import { PresetBuilder, renderer } from '@traq-markdown-engine/core/renderer'
 import { createRuntime, presets } from '@traq-markdown-engine/sdk'
-import { file } from 'bun'
 
 const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
@@ -19,17 +20,18 @@ check(
   'markdown-it unexpectedly escaped into the packed package'
 )
 
-const css = await file(
-  new URL(import.meta.resolve('@traq-markdown-engine/sdk/index.css'))
-).text()
+const css = await readFile(
+  new URL(import.meta.resolve('@traq-markdown-engine/sdk/index.css')),
+  'utf8'
+)
 check(
   css.includes('.markdown-body') && css.includes('.emoji'),
   'Packed CSS is missing expected selectors'
 )
 const runtime = await createRuntime(
-  await file(
+  await readFile(
     new URL(import.meta.resolve('@traq-markdown-engine/sdk/parser.wasm'))
-  ).bytes()
+  )
 )
 try {
   const parser = runtime.createParser(presets.traq.v1)
