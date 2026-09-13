@@ -75,7 +75,7 @@ export default [
   {
     files: [
       'scripts/**/*.{mjs,ts}',
-      'corpus/src/scripts/**/*.{mjs,ts}',
+      'tools/corpus/scripts/**/*.{mjs,ts}',
       'packages/**/scripts/**/*.{js,mjs,ts,mts}'
     ],
     languageOptions: {
@@ -101,7 +101,7 @@ export default [
     }
   },
   {
-    files: ['corpus/src/view/**/*.ts', 'corpus/src/view/**/*.tsx'],
+    files: ['tools/corpus/viewer/**/*.ts', 'tools/corpus/viewer/**/*.tsx'],
     languageOptions: {
       parserOptions: { ecmaFeatures: { jsx: true } },
       globals: { ...globals.browser, CorpusDiff: 'readonly' }

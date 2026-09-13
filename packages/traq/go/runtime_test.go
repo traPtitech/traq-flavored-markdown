@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/commonmark/go"
-	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/trap-extension/go"
+	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go"
+	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/trap/go"
 )
 
 func TestRuntimeOwnership(t *testing.T) {

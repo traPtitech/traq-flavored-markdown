@@ -6,16 +6,16 @@ traQ 向けの Markdown 文法・通知処理の構成と、Rust・WebAssembly�
 - Go module: **`github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go`**
 - Wasm: ABI **3** / AST **4**
 
-文法の実装は [core](../core/README.md)、[commonmark](../commonmark/README.md)、[trap-extension](../trap-extension/README.md) にあります。このリポジトリで配布するプリセットを選び、Wasm と対応する型を生成します。
+文法の実装は [core](../core/README.md)、[commonmark](../plugins/commonmark/README.md)、[trap-extension](../plugins/trap/README.md) にあります。このリポジトリで配布するプリセットを選び、Wasm と対応する型を生成します。
 
 ## 構成と責任
 
-| 場所                                           | 責任                                                                         |
-| ---------------------------------------------- | ---------------------------------------------------------------------------- |
-| `crates/grammar`                               | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成                |
-| `crates/processing`                            | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
-| `crates/wasm`                                  | 配布する文法・ノード型・処理 API を Wasm として公開                          |
-| `go`・`typescript`・ルートの `scripts/codegen` | この配布物に対応する bindings と型生成                                       |
+| 場所                          | 責任                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| `crates/grammar`              | CommonMark・汎用拡張・traP 拡張を選択し、文法プリセットを構成                |
+| `crates/processing`           | AST を受け取る PlainText renderer と extractor、および traQ 向けの方針を構成 |
+| `crates/wasm`                 | 配布する文法・ノード型・処理 API を Wasm として公開                          |
+| `go`・`typescript`・`scripts` | この配布物に対応する bindings と型生成                                       |
 
 共通機構は core、CommonMark と汎用拡張は commonmark、traP 固有の拡張部品は
 trap-extension にあります。このリポジトリがそれらに依存し、traQ 向けに組み合わせます。
@@ -23,15 +23,7 @@ trap-extension にあります。このリポジトリがそれらに依存し�
 
 ## ビルド
 
-Bun 1.3.14 以降、Go 1.26 以降、rustup が必要です。Rust と Wasm target はルートの `rust-toolchain.toml` で固定しています。
-
-```sh
-bun install --frozen-lockfile
-bun run build
-bun run --cwd packages/traq examples
-```
-
-上のコマンドはモノレポのルートから実行します。Rust はルートの Cargo workspace と lockfile を使い、内部の crate はローカルパスから参照します。Wasm・JavaScript・型定義は `packages/traq/dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
+環境準備、ビルド、検証は [ルートの CONTRIBUTING](../../CONTRIBUTING.md) に従います。Wasm・JavaScript・型定義は `packages/traq/dist/` に出力します。Rust から生成する TypeScript / Go のソースと、対応する Rust ビルド ID はソース管理します。バイナリと SDK は同じソース・固定依存から生成した組を配布してください。
 
 まだレジストリへ公開していません。TypeScript は4パッケージの `bun pm pack` アーカイブを利用できます。
 
@@ -118,7 +110,7 @@ Wasm のホスト実装は TypeScript の `index.ts` と Go の `parser.go` で�
 
 HTML 描画の共通基盤は core、構文別の描画は commonmark と trap-extension が担当します。traQ の描画構成・condensed 表示・CSS はこのリポジトリの `typescript/renderer` が所有します。
 
-[API と実装](docs/implementation.md)、[実行例](examples/README.md)、[開発と検証](CONTRIBUTING.md) を参照してください。
+[API と実装](docs/implementation.md)、[実行例](examples/README.md)、[開発と検証](../../CONTRIBUTING.md) を参照してください。
 
 ## AST からの描画と抽出
 
@@ -195,7 +187,7 @@ Wasm の起動は利用側が明示的に行います。`/renderer` を import �
 
 ## Corpus comparison
 
-Use `bun run corpus:collect`, `bun run corpus:compare`, and `bun run corpus:report` to collect messages and generate offline HTML/MHTML difference reports. See [Corpus comparison](docs/CORPUS.md) for inputs, options, and output files.
+Use `bun run corpus:collect`, `bun run corpus:compare`, and `bun run corpus:report` to collect messages and generate offline HTML/MHTML difference reports. See the [corpus comparison tool](../../tools/corpus/README.md) for inputs, options, and output files.
 
 Go consumers use `github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go` for presets and artifact pairing. Shared AST/transport live in the core Go module; payload factories live in commonmark and trap-extension. `Extractor.Extract` returns source-preserving message text, references, embedding edits, attachment IDs and citation IDs from the supplied Document. `PlainTextRenderer.Render` independently renders that Document for notifications.
 

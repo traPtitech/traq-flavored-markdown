@@ -16,12 +16,16 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
     let traq = traq_markdown_grammar::presets::traq::v1::parser();
     let mut count = 0;
 
-    for (file, parser) in [
-        ("commonmark-0.31.2.json", &commonmark),
-        ("traq-v1-extensions.json", &traq),
+    for (file, parser, directory) in [
+        (
+            "commonmark-0.31.2.json",
+            &commonmark,
+            "../../../../tests/fixtures",
+        ),
+        ("traq-v1-extensions.json", &traq, "../../tests/fixtures"),
     ] {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures")
+            .join(directory)
             .join(file);
         let cases: Vec<Value> = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         for case in cases {

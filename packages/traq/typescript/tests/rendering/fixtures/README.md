@@ -1,6 +1,6 @@
-# CommonMark fixtures
+# Renderer fixtures
 
-Unmodified 652 examples from John MacFarlane’s [CommonMark 0.31.2 specification](https://spec.commonmark.org/0.31.2/spec.json), licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+The CommonMark fixtures are shared from the [root fixture directory](../../../../../../tests/fixtures/README.md).
 
 `renderer-corpus-regressions.json` contains synthetic, minimal examples of a
 rendering regression found while comparing 100,000 private corpus messages.

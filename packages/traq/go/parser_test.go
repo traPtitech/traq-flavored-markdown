@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/commonmark/go"
-	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/trap-extension/go"
+	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go"
+	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/trap/go"
 )
 
 func parserFor(t *testing.T, preset Preset) *Parser {
@@ -36,7 +36,7 @@ func parserFor(t *testing.T, preset Preset) *Parser {
 
 func TestFixtureAST(t *testing.T) {
 	p := parserFor(t, PresetTraQV1)
-	raw, err := os.ReadFile("../tests/fixtures/commonmark-0.31.2.json")
+	raw, err := os.ReadFile("../../../tests/fixtures/commonmark-0.31.2.json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,7 +8,10 @@ import { commonParser } from './setup.ts'
 
 const fixtures = JSON.parse(
   await file(
-    new URL('./fixtures/commonmark-0.31.2.json', import.meta.url)
+    new URL(
+      '../../../../../tests/fixtures/commonmark-0.31.2.json',
+      import.meta.url
+    )
   ).text()
 )
 

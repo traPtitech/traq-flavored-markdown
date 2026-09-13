@@ -35,7 +35,7 @@ try {
 ```go
 import (
  markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go"
- commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/commonmark/go"
+ commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go"
 )
 
 runtime, err := markdown.NewRuntime(ctx, wasmBytes)

@@ -38,10 +38,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.build.json",
+    "build": "bun run ../../scripts/tsc.ts -p typescript/tsconfig.build.json",
     "test": "bun test ./typescript/tests",
     "test:go": "go -C go test ./...",
-    "typecheck": "node ../../node_modules/@typescript/native/bin/tsc -p typescript/tsconfig.json"
+    "typecheck": "bun run ../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "engines": {
     "node": ">=24"

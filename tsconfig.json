@@ -1,22 +1,9 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "skipLibCheck": true,
-    "jsx": "react-jsx",
-    "lib": ["ESNext", "DOM"],
-    "types": ["bun"]
-  },
+  "extends": "./tsconfig.base.json",
   "include": [
     "eslint.config.ts",
     "prettier.config.ts",
     "scripts/**/*.ts",
-    "corpus/**/*.ts",
-    "corpus/**/*.tsx",
-    "packages/*/scripts/**/*.ts"
+    "packages/**/scripts/**/*.ts"
   ]
 }

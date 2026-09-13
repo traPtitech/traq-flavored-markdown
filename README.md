@@ -1,13 +1,25 @@
 # traq-markdown-engine
 
-Monorepo for the traQ Markdown parser packages:
+Markdown parsing, rendering and extraction for traQ, implemented in Rust with
+TypeScript and Go bindings. The repository groups code by responsibility, then
+by language within each package.
 
-- `@traq-markdown-parser/core`
-- `@traq-markdown-parser/commonmark`
-- `@traq-markdown-parser/trap-extension`
-- `@traq-markdown-parser/traq`
+| Directory                                                            | Responsibility                                                   | npm package                            |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------- |
+| [packages/core](packages/core/README.md)                             | Grammar-independent AST, parser, renderer, extractor and codec   | `@traq-markdown-parser/core`           |
+| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark and reusable syntax/rendering extensions              | `@traq-markdown-parser/commonmark`     |
+| [packages/plugins/trap](packages/plugins/trap/README.md)             | traP references, stamps, spoilers and their rendering/extraction | `@traq-markdown-parser/trap-extension` |
+| [packages/traq](packages/traq/README.md)                             | traQ presets, presentation, Wasm and SDK distribution            | `@traq-markdown-parser/traq`           |
 
-The packages retain their existing public npm names and Go module paths.
+Plugins are composable syntax and AST processing components. Core has no dependency
+on a concrete plugin; traQ selects and combines plugins. Each package keeps its
+Rust crates, TypeScript implementation and Go module together. The npm names are
+independent of directory names; Go module paths follow their directories.
+
+Repository tooling lives in [scripts](scripts), with traQ-specific generation and
+packaging in [packages/traq/scripts](packages/traq/scripts). The standalone
+[corpus tool](tools/corpus/README.md) owns message comparison and report viewing.
+Shared specification data lives in [tests/fixtures](tests/fixtures/README.md).
 
 ## Development
 
@@ -19,26 +31,27 @@ the root tooling and workspace dependencies:
 bun install
 ```
 
-The root commands operate on all four packages in dependency order:
+The root commands operate on all four packages:
 
 ```sh
 bun run format        # apply Prettier, rustfmt, and gofmt
 bun run format:check  # verify formatting without modifying files
 bun run lint:check    # run ESLint without modifying files
-bun run build         # build all TypeScript packages and the traQ Wasm package
+bun run build         # generate all bindings, then build TypeScript, Wasm and CSS
 bun run typecheck     # type-check every TypeScript package
 bun run test          # run TypeScript, Rust, and Go tests
 bun run check         # run the complete local CI suite
 ```
 
-All build, code generation, checks, formatting, and corpus tools live in the
-root `scripts/` directory. Package commands delegate to these shared tools.
-Rust crates share one root Cargo workspace and lockfile; dependencies between
-packages resolve locally. Go modules are connected by the root `go.work`.
+Rust crates share one root Cargo workspace and lockfile. Go modules are connected
+by the root `go.work`. TypeScript packages share compiler options while keeping
+their source and output paths local.
 
-Run `bun run build` before individual Wasm or Go tests. `bun run check` builds
-the required artifacts and runs the CI suite. See [traQ development](packages/traq/CONTRIBUTING.md)
-for ownership, generated contracts, consumer verification, and examples.
+Run `bun run build` before individual Wasm or Go tests. `bun run check` also builds
+the corpus viewer and verifies generated sources and packed consumers. Individual
+package commands are available with `bun run --cwd packages/traq test`, for example.
+See [CONTRIBUTING](CONTRIBUTING.md) for the build pipeline, ownership, fixtures and
+verification, and [traQ examples](packages/traq/examples/README.md) for API usage.
 
 TypeScript, JavaScript, JSON, Markdown, YAML, and styles use the Prettier rules
 from traQ S-UI. Rust and Go use their standard formatters, `cargo fmt` and

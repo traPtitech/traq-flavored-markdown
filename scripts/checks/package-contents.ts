@@ -2,7 +2,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { packageRoot, traqRoot } from '../paths.ts'
+import { type PackageName, packageRoot, traqRoot } from '../paths.ts'
 
 const tempRoot = (
   Bun.env.TEMP ??
@@ -18,7 +18,12 @@ const archiveName = (archive: string) =>
   archive.slice(
     Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
   )
-const packageNames = ['core', 'commonmark', 'trap-extension', 'traq']
+const packageNames: PackageName[] = [
+  'core',
+  'commonmark',
+  'trap-extension',
+  'traq'
+]
 const capture = async (command: string, args: string[], cwd: string) => {
   return (await $.cwd(cwd)`${command} ${args}`.quiet()).text()
 }

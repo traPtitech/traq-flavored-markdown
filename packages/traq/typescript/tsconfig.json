@@ -1,16 +1,7 @@
 {
-  "extends": "./tsconfig.build.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true,
-    "rootDir": "../../..",
-    "target": "ESNext",
-    "lib": ["ESNext", "DOM"],
-    "allowImportingTsExtensions": true
+    "lib": ["ESNext", "DOM"]
   },
-  "include": [
-    "**/*.ts",
-    "../examples/typescript/*.ts",
-    "renderer/**/*.ts",
-    "tests/rendering/types.ts"
-  ]
+  "include": ["**/*.ts", "../examples/typescript/*.ts"]
 }

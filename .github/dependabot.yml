@@ -25,43 +25,7 @@ updates:
           - '*prettier*'
 
   - package-ecosystem: cargo
-    directory: '/packages/commonmark'
-    schedule:
-      interval: monthly
-    cooldown:
-      default-days: 14
-    open-pull-requests-limit: 10
-    groups:
-      non-majors:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: cargo
-    directory: '/packages/core'
-    schedule:
-      interval: monthly
-    cooldown:
-      default-days: 14
-    open-pull-requests-limit: 10
-    groups:
-      non-majors:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: cargo
-    directory: '/packages/trap-extension'
-    schedule:
-      interval: monthly
-    cooldown:
-      default-days: 14
-    open-pull-requests-limit: 10
-    groups:
-      non-majors:
-        update-types:
-          - patch
-          - minor
-  - package-ecosystem: cargo
-    directory: '/packages/traq'
+    directory: '/'
     schedule:
       interval: monthly
     cooldown:
@@ -74,7 +38,7 @@ updates:
           - minor
 
   - package-ecosystem: gomod
-    directory: '/packages/commonmark/go'
+    directory: '/packages/plugins/commonmark/go'
     schedule:
       interval: monthly
     cooldown:
@@ -98,7 +62,7 @@ updates:
           - patch
           - minor
   - package-ecosystem: gomod
-    directory: '/packages/trap-extension/go'
+    directory: '/packages/plugins/trap/go'
     schedule:
       interval: monthly
     cooldown:

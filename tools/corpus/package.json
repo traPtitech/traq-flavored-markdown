@@ -1,0 +1,27 @@
+{
+  "name": "corpus",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build viewer",
+    "collect": "bun run scripts/fetch.ts",
+    "compare": "bun run scripts/compare.ts",
+    "report": "bun run scripts/report.ts",
+    "test": "bun test scripts",
+    "typecheck": "bun run ../../scripts/tsc.ts -p tsconfig.json"
+  },
+  "dependencies": {
+    "jest-diff": "30.5.1",
+    "parse5": "8.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.65",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6",
+    "vite-plugin-singlefile": "^2.0.1"
+  }
+}

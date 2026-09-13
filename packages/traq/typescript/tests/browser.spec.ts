@@ -168,7 +168,10 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
   const parser = runtime.createParser(presets.traq.v1)
   const commonmark = JSON.parse(
     await file(
-      new URL('../../tests/fixtures/commonmark-0.31.2.json', import.meta.url)
+      new URL(
+        '../../../../tests/fixtures/commonmark-0.31.2.json',
+        import.meta.url
+      )
     ).text()
   ) as Array<{ example: number; markdown: string }>
   try {

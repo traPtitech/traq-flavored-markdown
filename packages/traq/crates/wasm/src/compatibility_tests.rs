@@ -25,7 +25,7 @@ fn actual(source: &str) -> Value {
 #[test]
 fn commonmark_inputs_preserve_the_v1_contract() {
     let inputs: Vec<Value> = serde_json::from_str(include_str!(
-        "../../../tests/fixtures/commonmark-0.31.2.json"
+        "../../../../../tests/fixtures/commonmark-0.31.2.json"
     ))
     .unwrap();
     let expected: Vec<Value> = serde_json::from_str(include_str!(

@@ -1,8 +1,8 @@
 import path from 'path'
 
-import { packageRoot } from '../paths.ts'
+import { type PackageName, packageRoot } from '../paths.ts'
 
-const packages: [string, string[]][] = [
+const packages: [PackageName, PackageName[]][] = [
   ['core', []],
   ['commonmark', ['core', 'commonmark']],
   ['trap-extension', ['core', 'commonmark', 'trap-extension']],
@@ -24,7 +24,7 @@ for (const [repo, allowed] of packages) {
     for (const [, name] of source.matchAll(
       /from ['"]@traq-markdown-parser\/([^/'"]+)/g
     ))
-      if (!allowed.includes(name))
+      if (!allowed.includes(name as PackageName))
         throw new Error(file + ': upward dependency ' + name)
     if (repo !== 'core' && /interface (?:Node|Document)\s*[<{]/.test(source))
       throw new Error(file + ': redeclared AST')

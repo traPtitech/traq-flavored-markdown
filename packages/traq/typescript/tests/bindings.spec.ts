@@ -3,11 +3,11 @@ import path from 'path'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { nodeContractsDirectory } from '../../../../scripts/build/node-contracts.ts'
 import { goPayload } from '../../../../scripts/codegen/go.ts'
 import { javascript } from '../../../../scripts/codegen/javascript.ts'
 import { type Shape, shape } from '../../../../scripts/codegen/schema.ts'
 import { names, nodes } from '../../dist/generated/nodes.js'
+import { nodeContractsDirectory } from '../../scripts/node-contracts.ts'
 
 const manifest = JSON.parse(
   await file(path.join(nodeContractsDirectory(), 'contracts.json')).text()

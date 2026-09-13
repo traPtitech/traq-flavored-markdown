@@ -7,16 +7,16 @@ members = [
   "packages/core/crates/extractor",
   "packages/core/crates/parser",
   "packages/core/crates/renderer",
-  "packages/commonmark/crates/contracts",
-  "packages/commonmark/crates/extensions/contracts",
-  "packages/commonmark/crates/extensions/syntax",
-  "packages/commonmark/crates/extensions/text",
-  "packages/commonmark/crates/syntax",
-  "packages/commonmark/crates/text",
-  "packages/trap-extension/crates/contracts",
-  "packages/trap-extension/crates/extraction",
-  "packages/trap-extension/crates/syntax",
-  "packages/trap-extension/crates/text",
+  "packages/plugins/commonmark/crates/contracts",
+  "packages/plugins/commonmark/crates/generic-contracts",
+  "packages/plugins/commonmark/crates/generic-syntax",
+  "packages/plugins/commonmark/crates/generic-text",
+  "packages/plugins/commonmark/crates/syntax",
+  "packages/plugins/commonmark/crates/text",
+  "packages/plugins/trap/crates/contracts",
+  "packages/plugins/trap/crates/extraction",
+  "packages/plugins/trap/crates/syntax",
+  "packages/plugins/trap/crates/text",
   "packages/traq/crates/grammar",
   "packages/traq/crates/processing",
   "packages/traq/crates/wasm",
@@ -37,16 +37,16 @@ markdown-definitions = { path = "packages/core/crates/definitions" }
 markdown-extractor = { path = "packages/core/crates/extractor" }
 markdown-parser = { path = "packages/core/crates/parser" }
 markdown-renderer = { path = "packages/core/crates/renderer" }
-markdown-commonmark = { path = "packages/commonmark/crates/syntax" }
-markdown-commonmark-contracts = { path = "packages/commonmark/crates/contracts" }
-markdown-commonmark-text = { path = "packages/commonmark/crates/text" }
-markdown-generic-contracts = { path = "packages/commonmark/crates/extensions/contracts" }
-markdown-generic-syntax = { path = "packages/commonmark/crates/extensions/syntax" }
-markdown-generic-text = { path = "packages/commonmark/crates/extensions/text" }
-markdown-trap-contracts = { path = "packages/trap-extension/crates/contracts" }
-markdown-trap-extraction = { path = "packages/trap-extension/crates/extraction" }
-markdown-trap-syntax = { path = "packages/trap-extension/crates/syntax" }
-markdown-trap-text = { path = "packages/trap-extension/crates/text" }
+markdown-commonmark = { path = "packages/plugins/commonmark/crates/syntax" }
+markdown-commonmark-contracts = { path = "packages/plugins/commonmark/crates/contracts" }
+markdown-commonmark-text = { path = "packages/plugins/commonmark/crates/text" }
+markdown-generic-contracts = { path = "packages/plugins/commonmark/crates/generic-contracts" }
+markdown-generic-syntax = { path = "packages/plugins/commonmark/crates/generic-syntax" }
+markdown-generic-text = { path = "packages/plugins/commonmark/crates/generic-text" }
+markdown-trap-contracts = { path = "packages/plugins/trap/crates/contracts" }
+markdown-trap-extraction = { path = "packages/plugins/trap/crates/extraction" }
+markdown-trap-syntax = { path = "packages/plugins/trap/crates/syntax" }
+markdown-trap-text = { path = "packages/plugins/trap/crates/text" }
 
 [profile.release]
 opt-level = "s"
