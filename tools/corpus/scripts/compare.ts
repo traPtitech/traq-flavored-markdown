@@ -28,8 +28,7 @@ const { values: v } = parseArgs({
     'traq-ref': { type: 'string', default: 'origin/master' },
     'sui-ref': { type: 'string', default: 'origin/master' },
     origin: { type: 'string', default: 'https://q.trap.jp' },
-    max: { type: 'string', default: '100000' },
-    format: { type: 'string', default: 'both' }
+    max: { type: 'string', default: '100000' }
   }
 })
 
@@ -234,11 +233,7 @@ await run(Bun.argv[0], [
   '--data',
   out,
   '--out',
-  out,
-  '--format',
-  v.format!
+  out
 ])
 
-console.log(
-  JSON.stringify({ out, messagesLimit: Number(v.max), format: v.format })
-)
+console.log(JSON.stringify({ out, messagesLimit: Number(v.max) }))

@@ -6,19 +6,14 @@ import { corpusRoot } from '../../../scripts/paths.ts'
 import { parseArgs, resolveRepositoryPath } from './args.ts'
 import { ignoreMask } from './ignore-differences.ts'
 import { readLines } from './read-lines.ts'
-import { rendererCss, writeMhtml } from './report-assets.ts'
 
 const { values } = parseArgs({
   options: {
     data: { type: 'string' },
-    out: { type: 'string' },
-    format: { type: 'string', default: 'both' }
+    out: { type: 'string' }
   }
 })
 if (!values.data) throw new Error('--data required')
-if (!['html', 'mhtml', 'both'].includes(values.format!)) {
-  throw new Error('Invalid format')
-}
 values.data = resolveRepositoryPath(values.data)
 values.out = resolveRepositoryPath(values.out ?? values.data)
 await $`mkdir -p ${values.out}`
@@ -96,44 +91,24 @@ const metadata = {
   pageSize: 50
 }
 
-let documentLength = 0
+// Build React view
+await $`bun run build`.cwd(corpusRoot).quiet()
 
-if (values.format !== 'mhtml') {
-  // Build React view
-  const corpusDir = corpusRoot
-  await $`bun run build`.cwd(corpusDir).quiet()
+const indexHtmlPath = path.join(corpusRoot, 'dist', 'index.html')
+let html = await Bun.file(indexHtmlPath).text()
 
-  const indexHtmlPath = path.join(corpusDir, 'dist', 'index.html')
-  let html = await Bun.file(indexHtmlPath).text()
+// Inject data
+html = html.replace(
+  '<script type="application/json" id="metadata"></script>',
+  `<script type="application/json" id="metadata">${JSON.stringify(metadata).replaceAll('<', '\\u003c')}</script>`
+)
+html = html.replace(
+  '<script type="application/json" id="payload"></script>',
+  `<script type="application/json" id="payload">${JSON.stringify(chunks)}</script>`
+)
 
-  // Inject data
-  html = html.replace(
-    '<script type="application/json" id="metadata"></script>',
-    `<script type="application/json" id="metadata">${JSON.stringify(metadata).replaceAll('<', '\\u003c')}</script>`
-  )
-  html = html.replace(
-    '<script type="application/json" id="payload"></script>',
-    `<script type="application/json" id="payload">${JSON.stringify(chunks)}</script>`
-  )
-
-  await Bun.write(path.join(values.out, 'differences.html'), html)
-  documentLength = new TextEncoder().encode(html).byteLength
-}
-
-if (values.format !== 'html') {
-  const css = await rendererCss()
-  if (/@import|<\/style/i.test(css)) throw new Error('Unexpected CSS content')
-  const customCssPath = path.join(corpusRoot, 'viewer', 'viewer.css')
-  const custom = await Bun.file(customCssPath).text()
-
-  await writeMhtml(
-    values.data,
-    path.join(values.out, 'differences.mhtml'),
-    css,
-    custom,
-    metadata
-  )
-}
+await Bun.write(path.join(values.out, 'differences.html'), html)
+const documentLength = new TextEncoder().encode(html).byteLength
 
 const excluded = Object.fromEntries(
   Object.entries(filterMasks).map(([mode, flags]) => [

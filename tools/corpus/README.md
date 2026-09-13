@@ -5,7 +5,7 @@ Run these commands from the monorepo root after `bun install` and `bun run build
 ```sh
 bun run corpus:collect -- --env-file /absolute/path/to/credentials.env --out .private/corpora/sample --max-messages 100000
 bun run corpus:compare -- --corpus .private/corpora/sample/messages.jsonl --traq /path/to/traQ --sui /path/to/traQ_S-UI --origin https://q.trap.jp
-bun run corpus:report -- --data .private/corpora/comparison --format both
+bun run corpus:report -- --data .private/corpora/comparison
 bun run test:corpus
 ```
 
@@ -22,9 +22,8 @@ Each UTF-8 JSONL row has a `source` string containing the original message. Coll
 
 Comparison defaults to 100,000 messages and the local `origin/master` refs of both application checkouts. Fetch those refs first if needed. Use `--max`, `--traq-ref`, `--sui-ref`, and `--out` to change them. Both renderers use the same deterministic store, KaTeX version, and highlight.js version to avoid store data and presentation dependency versions obscuring parser differences. The baseline pins both libraries to the versions installed in the current renderer. Comparison verifies the resolved versions before processing messages and records them with the selected revisions.
 
-The result directory contains raw JSONL differences for full rendering, inline rendering, notifications, and embeddings, plus summaries and two self-contained reports:
+The result directory contains raw JSONL differences for full rendering, inline rendering, notifications, and embeddings, plus summaries and one self-contained report:
 
-- `differences.html`: searchable, paginated rich rendering, raw HTML diff, whitespace-only difference filter, and timing statistics.
-- `differences.mhtml`: all rendering and notification differences in one static rich document, with embedded CSS and math fonts. Open with a browser supporting MHTML, such as Chrome or Edge. It includes every row, independently of HTML pagination.
+- `differences.html`: searchable, paginated rich rendering, raw HTML diff, whitespace-only difference filter, and timing statistics. The viewer code, CSS, and comparison data are embedded, so it can be opened directly as an offline file.
 
-External images are shown as placeholders and links are inert. Neither report fetches external message resources. `--format html`, `mhtml`, or `both` selects outputs. Timing measures parsing plus rendering/processing with warmup and alternating order; it excludes corpus I/O and is only a local reference, especially on systems with coarse clocks. A successful comparison reports differences without treating them as test failures; inspect the summaries for parser errors and review behavior changes separately.
+External images are shown as placeholders and links are inert. The report does not fetch external message resources. Open it in a recent Chrome or Edge, as the viewer uses browser APIs for compressed embedded data. Timing measures parsing plus rendering/processing with warmup and alternating order; it excludes corpus I/O and is only a local reference, especially on systems with coarse clocks. A successful comparison reports differences without treating them as test failures; inspect the summaries for parser errors and review behavior changes separately.

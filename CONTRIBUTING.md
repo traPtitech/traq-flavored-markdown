@@ -138,5 +138,5 @@ source, provenance, attribution and the accepted meaning of existing grammar IDs
 
 Fixtures contain no production messages or credentials. Private corpus data stays
 in ignored `.private` directories. Collection, comparison, synthetic sample inputs
-and self-contained reports are documented by the
+and the self-contained report are documented by the
 [corpus tool](tools/corpus/README.md).
