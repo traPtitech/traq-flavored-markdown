@@ -66,7 +66,7 @@ AST の構造・意味・資源制限は Rust の parser と codec が検証し�
 
 生成器は object、string、boolean、文字列 enum、nullable、u8 / u32 を扱います。未対応の形・制約や payload 型名の衝突は生成エラーです。新しい形を追加する場合は生成器を拡張します。通常のノードやプリセット追加では手書きのホスト実装を変更しません。
 
-Wasm ABI 3 は input buffer、`configure`、`parse(mode)`、output buffer の小さな通信面です。各ホスト instance は Parser・Extractor・PlainTextRenderer のいずれかを所有します。Markdown 原文の上限は 64 KiB です。AST を含む通信入出力上限 1 MiB、memory 上限 32 MiB を Rust で定義し、ホストに必要な上限も生成します。
+Wasm ABI は input buffer、`configure`、`parse(mode)`、output buffer の小さな通信面です。各ホスト instance は Parser・Extractor・PlainTextRenderer のいずれかを所有します。Markdown 原文の上限は 64 KiB です。AST を含む通信入出力上限 1 MiB、memory 上限 32 MiB を Rust で定義し、ホストに必要な上限も生成します。
 
 ビルド ID は Rust ソース、Cargo.lock、manifest と固定 toolchain 設定の内容から生成する不一致検出用の値です。改行とパス表記を正規化し、ビルド環境が違っても同じ値になります。配布物の真正性を証明する署名ではありません。`dist/contract.json` は診断用に実際の Wasm の SHA-256 も記録します。
 

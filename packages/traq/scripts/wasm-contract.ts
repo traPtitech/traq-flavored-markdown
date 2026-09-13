@@ -43,7 +43,7 @@ export async function writeWasmContract() {
     JSON.stringify(contract, null, 2) + '\n'
   )
   console.log(
-    `Wasm ABI ${contract.abiVersion} / AST ${contract.astVersion}: ${contract.bytes} bytes, SHA-256 ${contract.sha256}`
+    `Wasm build ${contract.buildId}: ${contract.bytes} bytes, SHA-256 ${contract.sha256}`
   )
 }
 

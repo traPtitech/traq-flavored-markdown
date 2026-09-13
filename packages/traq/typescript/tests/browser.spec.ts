@@ -129,7 +129,6 @@ test('artifact pairing, preset selection, disposal and isolated results', async 
 test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async () => {
   const { instance } = await WebAssembly.instantiate(bytes, {})
   const wasm = instance.exports as unknown as {
-      abi_version: () => number
       configure: () => number
       input_ptr: (length: number) => number
       memory: WebAssembly.Memory
@@ -150,7 +149,6 @@ test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async
       )
     )
   }
-  expect(wasm.abi_version()).toBe(3)
   expect(call('configure', 'traq.bad').error).toBeTruthy()
   expect(call('configure', 'traq.v1').configured).toBe(buildId)
   expect(call('parse', new Uint8Array([255])).error).toEqual({

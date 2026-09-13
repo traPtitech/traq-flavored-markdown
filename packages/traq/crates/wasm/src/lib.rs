@@ -12,16 +12,6 @@ mod nodes;
 use buffers::IO;
 use traq_markdown_grammar::{ParseError, Parser};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn abi_version() -> u32 {
-    3
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn ast_version() -> u32 {
-    4
-}
-
 /// mode: 0=document, 1=inline. Configure the instance before parsing.
 #[unsafe(no_mangle)]
 pub extern "C" fn parse(mode: u32) -> u32 {

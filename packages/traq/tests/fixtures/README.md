@@ -14,8 +14,8 @@ Expected ASTs are checked in as readable JSON. Changes to the accepted syntax
 must be reviewed together with the fixture diff; ordinary builds never regenerate
 expectations from the parser under test.
 
-On 2026-09-08 the fixed AST expectations were mechanically converted from AST 3
-to AST 4: payload fields moved into `data`, and legacy kind/name pairs became
+On 2026-09-08 the fixed AST expectations were mechanically converted to the
+current structure: payload fields moved into `data`, and legacy kind/name pairs became
 generated type keys. Source, payload values, spans, children and parse errors
 were preserved. The new parser was compared against these converted snapshots;
 it was not used to generate replacement expectations.

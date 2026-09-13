@@ -32,7 +32,7 @@ let inline = customized.parse_inline("$x$")?;
 
 [実行例](examples/parse.rs): `cargo run -p traq-markdown-grammar --example parse`
 
-公開 TS / Go SDK の Wasm はこの配布層を利用し、AST 4 の共通形式で結果を受け取る。
+公開 TS / Go SDK の Wasm はこの配布層を利用し、共通の AST 形式で結果を受け取る。SDK と Wasm の対応はビルド ID で確認する。
 
 `bun run check:architecture` で、処理プリセットと拡張部品の依存方向、
 および ネイティブ renderer / extractor が AST codec を使わないことを検査する。
