@@ -1,37 +1,46 @@
+import path from 'path'
+
 import { $ } from 'bun'
 
-import { goNodes } from '../packages/core/scripts/contracts/go.ts'
-import { nodeFiles } from '../packages/core/scripts/contracts/nodes.ts'
+import { generateSdk } from '../packages/sdk/scripts/generate-bindings.ts'
+import { goNodes as contractGoNodes } from './codegen/go.ts'
+import { nodeFiles } from './codegen/nodes.ts'
+import type { RawSchema } from './codegen/schema.ts'
+import { cargoTargetDirectory, packageRoot, repositoryRoot } from './paths.ts'
 
 type Manifest = {
   buildId: string
   limits: { inputBytes: number; memoryBytes: number }
-  nodes: Record<string, { group: string; schema: { title: string } }>
-  presets: Record<string, unknown>
-  processing: Record<string, { title: string; $defs?: Record<string, unknown> }>
+  nodes: Record<string, { group: string; schema: RawSchema }>
 }
 
-const repositoryRoot = Bun.fileURLToPath(new URL('../', import.meta.url))
-const resolvePath = (base, ...parts) =>
-  Bun.fileURLToPath(new URL(parts.join('/'), Bun.pathToFileURL(`${base}/`)))
-
 const readManifest = (input: string) =>
-  Bun.file(resolvePath(input, 'contracts.json')).json() as Promise<Manifest>
+  Bun.file(path.join(input, 'contracts.json')).json() as Promise<Manifest>
 
-const runCommand = (command, cwd = repositoryRoot) =>
+const runCommand = (command: string[], cwd = repositoryRoot) =>
   $`${command[0]} ${command.slice(1)}`.cwd(cwd)
 
-const writeFiles = async (root, files, ...prefix) => {
+const runCargo = (command: string[], cwd = repositoryRoot) =>
+  runCommand(command, cwd).env({
+    ...Bun.env,
+    CARGO_TARGET_DIR: cargoTargetDirectory()
+  })
+
+const writeFiles = async (
+  root: string,
+  files: Map<string, string>,
+  ...prefix: string[]
+) => {
   const paths = []
   for (const [name, source] of files) {
-    const output = resolvePath(root, ...prefix, name)
+    const output = path.join(root, ...prefix, name)
     await Bun.write(output, source)
     paths.push(output)
   }
   return paths
 }
 
-const formatTypescript = async paths => {
+const formatTypescript = async (paths: string[]) => {
   if (!paths.length) return
   await runCommand([
     Bun.argv[0],
@@ -45,22 +54,25 @@ const formatTypescript = async paths => {
 }
 
 const contractGroups = {
-  commonmark: [
+  'commonmark-plugin': [
     ['commonmark', 'markdown-commonmark-contracts'],
     ['generic', 'markdown-generic-contracts']
   ],
-  'trap-extension': [['trap', 'markdown-trap-contracts']]
-}
+  'traq-plugin': [['trap', 'markdown-trap-contracts']]
+} as const
 
-async function generateContractGroup(packageName, group, crate) {
-  const root = resolvePath(repositoryRoot, 'packages', packageName)
-  const input = resolvePath(root, 'target', 'typescript-contracts', group)
-  await runCommand(
+async function generateContractGroup(
+  packageName: keyof typeof contractGroups,
+  group: string,
+  crate: string
+) {
+  const root = packageRoot(packageName)
+  const input = path.join(cargoTargetDirectory(), 'typescript-contracts', group)
+  await runCargo(
     [
       'cargo',
       'run',
       '--locked',
-      '--offline',
       '-p',
       crate,
       '--features',
@@ -74,17 +86,16 @@ async function generateContractGroup(packageName, group, crate) {
   )
 
   const manifest = await readManifest(input)
-  const goPath = resolvePath(
+  const goPath = path.join(
     root,
     'go',
     ...(group === 'generic' ? ['generic'] : []),
     'generated_nodes.go'
   )
-  const entries = Object.entries(manifest.nodes).map(([key, node]) => [
-    key,
-    node.schema
-  ])
-  await Bun.write(goPath, goNodes(entries, group))
+  const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
+    ([key, node]) => [key, node.schema]
+  )
+  await Bun.write(goPath, contractGoNodes(entries, group))
   await runCommand(['gofmt', '-w', goPath])
 
   const typescriptPaths = await writeFiles(
@@ -96,84 +107,50 @@ async function generateContractGroup(packageName, group, crate) {
   await formatTypescript(typescriptPaths)
 }
 
-async function generateContracts(packageName) {
-  for (const [group, crate] of contractGroups[packageName]) {
+export async function generateContracts(
+  packageName: keyof typeof contractGroups
+) {
+  for (const [group, crate] of contractGroups[packageName])
     await generateContractGroup(packageName, group, crate)
-  }
 }
 
-async function generateTraq(inputPath) {
-  const root = resolvePath(repositoryRoot, 'packages', 'traq')
-  const input = inputPath
-    ? Bun.fileURLToPath(Bun.pathToFileURL(inputPath))
-    : resolvePath(root, 'target', 'node-contracts')
-  const manifest = await readManifest(input)
-  const [go, presets, processing, typescript] = await Promise.all([
-    import(
-      Bun.pathToFileURL(resolvePath(root, 'scripts', 'contracts', 'go.ts')).href
-    ),
-    import(
-      Bun.pathToFileURL(resolvePath(root, 'scripts', 'contracts', 'presets.ts'))
-        .href
-    ),
-    import(
-      Bun.pathToFileURL(
-        resolvePath(root, 'scripts', 'contracts', 'processing.ts')
-      ).href
-    ),
-    import(
-      Bun.pathToFileURL(
-        resolvePath(root, 'scripts', 'contracts', 'typescript.ts')
-      ).href
-    )
-  ])
-  const files = await typescript.typescriptFiles(manifest, input)
-  files.set('go/generated_nodes.go', go.goNodes(manifest))
-  for (const [name, source] of presets.presetFiles(manifest.presets)) {
-    files.set(name, source)
+export async function generateBindings(
+  packageName?: keyof typeof contractGroups | 'sdk',
+  input?: string
+) {
+  if (!packageName) {
+    for (const name of Object.keys(contractGroups) as Array<
+      keyof typeof contractGroups
+    >)
+      await generateContracts(name)
+    await generateSdk()
+    return
   }
-  for (const [name, source] of await processing.processingFiles(
-    manifest.processing,
-    input
-  )) {
-    files.set(name, source)
+  if (packageName === 'commonmark-plugin' || packageName === 'traq-plugin') {
+    await generateContracts(packageName)
+    return
   }
-  const typescriptArtifact = [
-    '// Generated for this Wasm build. Do not edit.',
-    `export const buildId = '${manifest.buildId}';`,
-    `export const inputBytes = ${manifest.limits.inputBytes};`,
-    ''
-  ].join('\n')
-  const goArtifact = [
-    '// Code generated for this Wasm build. DO NOT EDIT.',
-    'package markdown',
-    `const buildID = "${manifest.buildId}"`,
-    `const inputBytes = ${manifest.limits.inputBytes}`,
-    `const memoryPages = ${manifest.limits.memoryBytes / 65536}`,
-    ''
-  ].join('\n')
-  files.set('typescript/generated/artifact.ts', typescriptArtifact)
-  files.set('go/generated_artifact.go', goArtifact)
-  const paths = await writeFiles(root, files)
-  await runCommand([
-    'gofmt',
-    '-w',
-    ...paths.filter(name => name.endsWith('.go'))
-  ])
-  await formatTypescript(paths.filter(name => name.endsWith('.ts')))
-  const payloadCount = Object.keys(manifest.nodes).length
-  console.log(
-    `Generated ${files.size} binding files from ${payloadCount} Rust payloads`
-  )
-}
-
-const [packageName, input] = Bun.argv.slice(2)
-if (packageName === 'commonmark' || packageName === 'trap-extension') {
-  await generateContracts(packageName)
-} else if (packageName === 'traq') {
-  await generateTraq(input)
-} else {
+  if (packageName === 'sdk') {
+    await generateSdk(input ? path.resolve(input) : undefined)
+    return
+  }
   throw new Error(
-    'usage: bun scripts/generate-bindings.ts <commonmark|trap-extension|traq> [contracts-dir]'
+    'usage: bun scripts/generate-bindings.ts [commonmark-plugin|traq-plugin|sdk] [contracts-dir]'
   )
+}
+
+if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
+  const [packageName, input, ...rest] = Bun.argv.slice(2)
+  if (
+    rest.length ||
+    (packageName !== undefined &&
+      packageName !== 'commonmark-plugin' &&
+      packageName !== 'traq-plugin' &&
+      packageName !== 'sdk') ||
+    (input !== undefined && packageName !== 'sdk')
+  )
+    throw new Error(
+      'usage: bun scripts/generate-bindings.ts [commonmark-plugin|traq-plugin|sdk] [contracts-dir]'
+    )
+  await generateBindings(packageName, input)
 }

@@ -1,13 +1,7 @@
 {
-  "extends": "./tsconfig.build.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true,
-    "strict": false,
-    "rootDir": "..",
-    "target": "ESNext",
-    "lib": ["ESNext"],
-    "allowImportingTsExtensions": true
+    "lib": ["ESNext"]
   },
-  "include": ["**/*.ts"],
-  "exclude": []
+  "include": ["**/*.ts"]
 }

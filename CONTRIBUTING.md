@@ -1,0 +1,214 @@
+# Development
+
+Use Node 24 with npm 11.17.0, Bun 1.3.14+, Go 1.26+, and rustup. The Rust toolchain
+and Wasm target are pinned in `rust-toolchain.toml`. Windows additionally needs the
+MSVC C++ build tools; WSL and Bash are not required.
+
+Run shared commands from the repository root:
+
+```sh
+bun install --frozen-lockfile
+bun run build
+bun run check
+bun run --cwd packages/sdk examples
+```
+
+## Ownership
+
+| Location                                     | Responsibility                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `packages/core`                              | Grammar-independent AST, declarations, parsing, rendering, extraction and codec |
+| `packages/plugins/commonmark`                | CommonMark and generic extension contracts, syntax and rendering                |
+| `packages/plugins/traq`                      | traP extension contracts, syntax, rendering and extraction                      |
+| `packages/sdk/crates/grammar`                | Published grammar presets and their catalog                                     |
+| `packages/sdk/crates/processing`             | traQ notification, message and extraction policies                              |
+| `packages/sdk/crates/wasm`                   | Wasm ABI and exported contracts                                                 |
+| `packages/sdk/typescript`, `packages/sdk/go` | traQ SDK, preset and artifact selection                                         |
+| `packages/sdk/styles`                        | traQ presentation CSS                                                           |
+| `packages/sdk/scripts`                       | traQ artifact build and distribution-specific code generation                   |
+| `scripts/codegen`                            | Shared Go and TypeScript contract generation, with its tests                    |
+| `scripts/checks`                             | Repository dependency boundaries, generated sources and packaged consumers      |
+| `tools/corpus`                               | Corpus collection/comparison CLI, viewer, dependencies and tests                |
+| `tests/fixtures`                             | Shared CommonMark specification data and attribution                            |
+| `packages/sdk/tests/fixtures`                | Frozen traQ compatibility expectations shared across languages                  |
+
+Keep component code with its owner, grouped into `crates`, `typescript` and `go`.
+Core does not depend on plugins or traQ. Plugins may depend on core; the traP
+syntax also uses CommonMark syntax. The SDK composes these parts for traQ and owns application
+policy. Parser, renderer and extractor share a native AST without depending on
+the codec or Wasm distribution.
+
+A script that knows traQ presets or artifact metadata belongs to the SDK. Shared
+code generators belong to `scripts/codegen`; root entry points coordinate them.
+Keep generator tests beside the generator. Package README files describe their
+APIs and responsibilities; this file owns common development instructions.
+
+## Generation and build
+
+Rust is the source of truth for payload types, validation, presets and processing
+contracts. Bindings are authored in TypeScript; JavaScript and declarations are
+build outputs. Do not hand-edit generated TypeScript or Go files.
+
+The root `build` command runs the following pipeline:
+
+1. Export Rust contracts and generate **all** plugin and SDK bindings.
+2. Compile TypeScript packages in dependency order.
+3. Build and package the traQ Wasm, JavaScript, declarations and CSS, then write
+   `packages/sdk/dist/contract.json` with the artifact digest.
+
+Generated sources remain in each owner's `typescript/generated` and
+`go/generated_*.go`. Intermediate Rust contracts are under `target/`; distributable
+outputs are under each package's `dist/`. Source changes, including path changes
+in the Rust inputs, can change the Wasm build ID. Rebuild and distribute the SDK
+and Wasm together; runtime initialization rejects mismatched IDs.
+
+```sh
+bun run generate:bindings             # update generated sources explicitly
+bun run scripts/generate-bindings.ts commonmark-plugin
+bun run scripts/generate-bindings.ts traq-plugin
+bun run scripts/generate-bindings.ts sdk
+bun run build                         # generate and build the four packages
+bun run check:generated               # regenerate and reject changed sources
+bun run build:corpus                  # build the standalone report viewer
+```
+
+The full `check` command compares generated sources before and after generation
+within its build stage, then compiles and tests those same sources. It performs
+generation once. This checks reproducibility against the working files, including
+added or removed outputs, and does not require a clean Git index. After editing
+Rust contracts, run `build`, review the generated diff, then run `check`.
+
+Individual package `build` and `typecheck` commands are for iteration after the
+root build has prepared dependency outputs. The SDK's individual build regenerates
+its own bindings. Use the root build after changing plugin contracts.
+
+## Verification
+
+`bun run check` runs formatting, lint, dependency boundaries, binding freshness,
+all package and corpus builds, type checking, TypeScript/Rust/Go tests, Clippy and
+packed consumer verification. CI runs this command on Ubuntu and Windows.
+
+`check:package` packs all four distributable packages into a fresh temporary
+consumer and checks public declarations, AST parsing, HTML, CSS and the Wasm
+digest. Temporary files and archives are removed afterwards. API examples are
+available through `bun run --cwd packages/sdk examples`.
+
+Go tests execute the built Wasm. Build first when invoking them separately; use
+`-count=1` when the Wasm artifact changes to avoid stale test-cache results.
+Changes to Go concurrency also require
+`go -C packages/sdk/go test -race ./...` with a supported C compiler installed.
+
+`packages/sdk/crates/processing` borrows native ASTs. Its normal dependencies must
+not include `markdown-codec`. Native Rust and Go/Wasm exercise 787 frozen
+notification expectations. TypeScript/Wasm covers extraction, and TypeScript
+covers HTML rendering. Packed consumers and examples exercise public processing
+APIs.
+
+## Publishing to npm
+
+Only these four packages are published publicly to npm:
+
+| Selector            | npm package                               | Package directory             |
+| ------------------- | ----------------------------------------- | ----------------------------- |
+| `core`              | `@traq-markdown-engine/core`              | `packages/core`               |
+| `commonmark-plugin` | `@traq-markdown-engine/commonmark-plugin` | `packages/plugins/commonmark` |
+| `traq-plugin`       | `@traq-markdown-engine/traq-plugin`       | `packages/plugins/traq`       |
+| `sdk`               | `@traq-markdown-engine/sdk`               | `packages/sdk`                |
+
+The root workspace and `tools` workspaces stay private. Packages release
+independently; the release process does not change versions or automatically
+release dependent packages. Before creating a tag, set the selected package's
+version in its `package.json` and ensure internal peer-dependency ranges describe
+the intended compatibility.
+
+Release tags are `core@<version>`, `commonmark-plugin@<version>`,
+`traq-plugin@<version>`, or `sdk@<version>`. The tag version must match the
+selected package's `package.json`. Use the release command to validate a release
+locally; it runs `npm publish --dry-run` by default. `--publish` is the only mode
+that performs a live publish.
+
+```sh
+bun run release -- core@0.1.0             # pack and dry-run the selected package
+bun run release -- core@0.1.0 --check     # validate selector and version only
+bun run release -- core@0.1.0 --publish   # publish the selected package
+```
+
+### Initial publication
+
+Use Node 24 with npm 11.17.0 and Bun 1.3.14. Sign in interactively with an npm
+account that has two-factor authentication and owns the `@traq-markdown-engine`
+organization. Verify that scope ownership before publishing; this repository does
+not establish it.
+
+```sh
+npm login
+bun install --frozen-lockfile
+bun run build
+bun run check
+bun run release -- core@0.1.0 --publish
+bun run release -- commonmark-plugin@0.1.0 --publish
+bun run release -- traq-plugin@0.1.0 --publish
+bun run release -- sdk@0.1.0 --publish
+```
+
+Publish the initial `0.1.0` packages in that dependency order. After each package
+exists on npm, open its package settings and add a GitHub Actions trusted publisher:
+
+- Organization or user: `uni-kakurenbo`
+- Repository: `traq-markdown-engine`
+- Workflow filename: `release.yml`
+- Environment: leave empty unless the workflow later uses a GitHub environment.
+- Allowed action: enable direct `npm publish`; new trusted-publisher configurations
+  otherwise allow staged publishing only.
+
+Configure this publisher for each of the four packages. The
+`.github/workflows/release.yml` workflow uses GitHub Actions OIDC, builds the
+workspace, and runs `bun run check` before publishing only the package selected
+by its tag. Stable tags publish with the `latest` dist-tag; prerelease tags publish
+with `next`. Future releases only require pushing the matching release tag after
+the package version and peer-dependency ranges are ready.
+
+See npm's [trusted-publishing guide](https://docs.npmjs.com/trusted-publishers/)
+and [`npm trust` reference](https://docs.npmjs.com/cli/v11/commands/npm-trust/)
+for the current npm UI and trusted-publisher details.
+
+## Dependencies and module paths
+
+All Rust crates use the root Cargo workspace and lockfile. Root
+`workspace.dependencies` declares cross-package paths; crates within a package may
+use relative paths. No sibling checkouts or machine-local Cargo patches are needed.
+
+The root `go.work` connects the local Go modules and owns version-specific local
+replacements for their unpublished dependency versions. This keeps workspace
+resolution offline without repeating replacements in every module. `go mod tidy`
+works on an individual module rather than this workspace graph, so use workspace
+tests and `go list -m all` to verify local resolution during development.
+Their module paths match the
+repository layout, including `packages/plugins/commonmark/go` and
+`packages/plugins/traq/go`. Update external Go consumers to those paths when
+migrating from the previous flat layout. The npm package identities are
+`@traq-markdown-engine/core`, `@traq-markdown-engine/commonmark-plugin`,
+`@traq-markdown-engine/traq-plugin`, and `@traq-markdown-engine/sdk`.
+
+`tsconfig.build.base.json` holds shared TypeScript emit options. Packages own their
+source/output selections. `tsconfig.base.json` holds tooling type-check options;
+the corpus has its own configuration. `scripts/tsc.ts` resolves the selected
+compiler independently of package directory depth. The older `typescript`
+dependency checks published declarations against the consumer compiler.
+
+After dependency changes, rebuild and inspect generated contract diffs. The
+corpus owns its viewer dependencies and comparison-specific libraries; shared
+formatting, linting and compiler tools stay at the root.
+
+## Fixtures and corpus
+
+The unmodified CommonMark specification data has one copy in
+[tests/fixtures](tests/fixtures/README.md). traQ's frozen AST and notification
+expectations are in [its fixture directory](packages/sdk/tests/fixtures/README.md).
+Do not regenerate compatibility expectations from the parser under test. Preserve
+source, provenance, attribution and the accepted meaning of existing grammar IDs.
+
+Fixtures contain no production messages or credentials. Private corpus data stays
+in ignored `.private` directories. Collection, comparison, synthetic sample inputs
+and the self-contained report are documented by the
+[corpus tool](tools/corpus/README.md).

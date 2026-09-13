@@ -1,6 +1,6 @@
 import { $ } from 'bun'
 
-const packagesRoot = Bun.fileURLToPath(new URL('../packages/', import.meta.url))
+const repositoryRoot = Bun.fileURLToPath(new URL('../', import.meta.url))
 const args = Bun.argv.slice(2)
 const check = args.length === 1 && args[0] === '--check'
 if (!check && args.length !== 0) {
@@ -9,13 +9,14 @@ if (!check && args.length !== 0) {
 
 const goFilePaths = [
   ...new Bun.Glob('**/*.go').scanSync({
-    cwd: packagesRoot,
-    onlyFiles: true,
-    dot: true
+    cwd: repositoryRoot,
+    onlyFiles: true
   })
-].filter(file => !/(?:^|\/)(?:node_modules|target)\//.test(file))
+].filter(
+  file => !/(?:^|\/)(?:\.git|\.private|node_modules|target)\//.test(file)
+)
 const result = await $`gofmt ${check ? '-l' : '-w'} ${goFilePaths}`
-  .cwd(packagesRoot)
+  .cwd(repositoryRoot)
   .nothrow()
   .quiet()
 if (result.exitCode !== 0) {

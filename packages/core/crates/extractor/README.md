@@ -41,3 +41,6 @@ Plugin → PresetBuilder → Preset → Extractor の所有権と add / remove �
 原文の再解析や renderer の表示結果からの抽出はしない。
 検証上限は原文65,536 bytes、16,384 nodes、深さ64。
 handler の処理や集計結果の大きさは、信頼する拡張コードの責務。
+
+`extract_validated(ValidatedDocument)` は、他の consumer と共有する不変借用に対して木の再検証を省く。
+呼び出しごとの新しい集計結果と全ノードの走査は維持する。通常の `extract(&Document)` は毎回検証する。

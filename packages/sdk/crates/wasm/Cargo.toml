@@ -1,0 +1,40 @@
+[package]
+name = "traq-markdown-wasm"
+version.workspace = true
+description = "WebAssembly interface for the shared Markdown parser."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+contracts = [
+    "markdown-parser/contracts",
+    "dep:ts-rs",
+    "dep:schemars",
+    "markdown-commonmark-contracts/contracts",
+    "markdown-generic-contracts/contracts",
+    "markdown-trap-contracts/contracts",
+    "traq-markdown-processing/contracts",
+]
+
+[[bin]]
+name = "export-node-contracts"
+required-features = ["contracts"]
+
+[dependencies]
+traq-markdown-processing = { path = "../processing" }
+markdown-parser.workspace = true
+traq-markdown-grammar = { path = "../grammar" }
+markdown-codec.workspace = true
+markdown-ast.workspace = true
+markdown-definitions.workspace = true
+markdown-commonmark-contracts.workspace = true
+markdown-generic-contracts.workspace = true
+markdown-trap-contracts.workspace = true
+ts-rs = { version = "12", optional = true, features = ["serde-json-impl"] }
+schemars = { version = "1.2.2", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

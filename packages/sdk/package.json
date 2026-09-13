@@ -1,0 +1,84 @@
+{
+  "name": "@traq-markdown-engine/sdk",
+  "version": "0.1.0",
+  "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
+  "homepage": "https://github.com/uni-kakurenbo/traq-markdown-engine#readme",
+  "bugs": {
+    "url": "https://github.com/uni-kakurenbo/traq-markdown-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "directory": "packages/sdk"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "author": "traP (https://github.com/traPtitech)",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./nodes": {
+      "types": "./dist/generated/nodes.d.ts",
+      "import": "./dist/generated/nodes.js"
+    },
+    "./parser.wasm": "./dist/parser.wasm",
+    "./contract.json": "./dist/contract.json",
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "import": "./dist/renderer/index.js"
+    },
+    "./index.css": "./dist/index.css",
+    "./styles/*": "./styles/*.scss"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/embedding.js",
+    "dist/embedding.d.ts",
+    "dist/generated",
+    "dist/parser.wasm",
+    "dist/contract.json",
+    "THIRD_PARTY_NOTICES.md",
+    "dist/renderer",
+    "dist/index.css",
+    "LICENSE",
+    "styles"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "build:renderer": "sass --no-source-map styles/index.scss dist/index.css",
+    "build:ts": "bun run ../../scripts/tsc.ts -p typescript/tsconfig.build.json",
+    "example:go": "go -C examples/go run .",
+    "example:rust": "cargo run -p traq-markdown-example && cargo run -p traq-markdown-grammar --example parse && cargo run -p traq-markdown-processing --example notification && cargo run -p traq-markdown-processing --example compose-text",
+    "example:ts": "bun run examples/typescript/main.ts",
+    "examples": "bun run example:rust && bun run example:go && bun run example:ts",
+    "generate:bindings": "bun run scripts/generate-bindings.ts",
+    "test": "bun test ./typescript/tests",
+    "test:go": "go -C go test -count=1 ./...",
+    "typecheck": "bun run ../../scripts/tsc.ts -p typescript/tsconfig.json && bun run ../../scripts/tsc.ts -p examples/typescript/tsconfig.json"
+  },
+  "devDependencies": {
+    "@traq-markdown-engine/commonmark-plugin": "workspace:*",
+    "@traq-markdown-engine/core": "workspace:*",
+    "@traq-markdown-engine/traq-plugin": "workspace:*",
+    "markdown-it": "15.0.1",
+    "sass": "1.103.1"
+  },
+  "peerDependencies": {
+    "@traq-markdown-engine/commonmark-plugin": "0.1.0",
+    "@traq-markdown-engine/core": "0.1.0",
+    "@traq-markdown-engine/traq-plugin": "0.1.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

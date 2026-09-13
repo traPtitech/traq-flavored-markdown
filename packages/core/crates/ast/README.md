@@ -36,6 +36,11 @@ codec の受信時は AST を構築する前にも入力を検査する。
 検証結果はキャッシュしないため、後から AST を編集した場合は再検証する。
 生成や編集の操作自体は検証を行わない。
 
+複数の consumer が同じ AST を使う場合は `ValidatedDocument::new(&document)` で既定上限の検証を一度行い、
+`extract_validated` / `render_validated` に渡せる。これは不変借用の間だけ使う値で、AST のコピーや永続キャッシュではない。
+借用中に payload 内部の状態を変えて検証済みの条件を壊すことは、拡張実装側で避ける。
+検証済みであっても、codec 登録、handler の対応、原文編集の範囲の順序は各処理が確認する。
+
 `Node` / `Document` は Clone・PartialEq・Send・Sync に対応する。Eq は要求しない。
 浮動小数点数なども保持できるが、NaN を含む場合は clone との比較も false になり得る。
 JSON 入出力は別の codec が担当し、Document 自体は Serialize / Deserialize を実装しない。

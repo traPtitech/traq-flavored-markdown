@@ -1,18 +1,9 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": false,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "lib": ["ESNext", "DOM"],
-    "types": ["bun"]
-  },
+  "extends": "./tsconfig.base.json",
   "include": [
     "eslint.config.ts",
     "prettier.config.ts",
     "scripts/**/*.ts",
-    "packages/*/scripts/**/*.ts"
+    "packages/**/scripts/**/*.ts"
   ]
 }

@@ -1,5 +1,5 @@
 use crate::{Preset, Result};
-use markdown_ast::{Document, Node, ValidationError, ValidationLimits};
+use markdown_ast::{Document, Node, ValidatedDocument, ValidationError};
 
 pub struct Extractor<R> {
     preset: Preset<R>,
@@ -18,10 +18,16 @@ impl<R> Extractor<R> {
     where
         R: Default,
     {
-        validate_document(document)?;
+        self.extract_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
+    }
 
+    /// Reuse validation when several consumers share one immutable document.
+    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> Result<R>
+    where
+        R: Default,
+    {
         let mut result = R::default();
-        self.visit_nodes(&document.children, &mut result)?;
+        self.visit_nodes(&document.document().children, &mut result)?;
         Ok(result)
     }
 
@@ -36,17 +42,4 @@ impl<R> Extractor<R> {
 
         Ok(())
     }
-}
-
-fn validate_document(document: &Document) -> Result<()> {
-    document
-        .validate(ValidationLimits::default())
-        .map_err(|error| match error {
-            ValidationError::InvalidSpan | ValidationError::InvalidNode => "invalid_node",
-            ValidationError::SourceBytes | ValidationError::Nodes | ValidationError::Depth => {
-                "resource_limit"
-            }
-        })?;
-
-    Ok(())
 }

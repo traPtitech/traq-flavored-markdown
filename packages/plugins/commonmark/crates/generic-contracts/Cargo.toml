@@ -1,0 +1,25 @@
+[package]
+name = "markdown-generic-contracts"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "generic node payloads, independent of parsing and rendering."
+
+[features]
+contracts = ["dep:ts-rs", "dep:schemars"]
+
+[dependencies]
+markdown-ast.workspace = true
+markdown-definitions.workspace = true
+serde = { version = "1", features = ["derive"] }
+ts-rs = { version = "12", optional = true, features = ["serde-json-impl"] }
+schemars = { version = "1.2.2", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[example]]
+name = "export-generic-types"
+path = "examples/export-types.rs"
+required-features = ["contracts"]

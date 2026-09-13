@@ -1,0 +1,28 @@
+[package]
+name = "traq-markdown-processing"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+contracts = ["markdown-trap-extraction/contracts", "dep:ts-rs", "dep:schemars"]
+
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+ts-rs = { version = "12", optional = true, features = ["serde-json-impl"] }
+schemars = { version = "1.2.2", optional = true }
+markdown-trap-contracts.workspace = true
+markdown-ast.workspace = true
+markdown-commonmark-text.workspace = true
+markdown-commonmark-contracts.workspace = true
+markdown-generic-text.workspace = true
+markdown-trap-text.workspace = true
+markdown-trap-extraction.workspace = true
+markdown-renderer.workspace = true
+markdown-extractor.workspace = true
+
+[dev-dependencies]
+traq-markdown-grammar = { path = "../grammar" }
+serde_json = "1"
