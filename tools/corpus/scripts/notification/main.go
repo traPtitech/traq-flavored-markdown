@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go"
+	markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go"
 	"os"
 	"path/filepath"
 	"sort"

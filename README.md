@@ -4,20 +4,20 @@ Markdown parsing, rendering and extraction for traQ, implemented in Rust with
 TypeScript and Go bindings. The repository groups code by responsibility, then
 by language within each package.
 
-| Directory                                                            | Responsibility                                                   | npm package                            |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------- |
-| [packages/core](packages/core/README.md)                             | Grammar-independent AST, parser, renderer, extractor and codec   | `@traq-markdown-parser/core`           |
-| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark and reusable syntax/rendering extensions              | `@traq-markdown-parser/commonmark`     |
-| [packages/plugins/trap](packages/plugins/trap/README.md)             | traP references, stamps, spoilers and their rendering/extraction | `@traq-markdown-parser/trap-extension` |
-| [packages/traq](packages/traq/README.md)                             | traQ presets, presentation, Wasm and SDK distribution            | `@traq-markdown-parser/traq`           |
+| Directory                                                            | Responsibility                                                   | npm package                               |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------- |
+| [packages/core](packages/core/README.md)                             | Grammar-independent AST, parser, renderer, extractor and codec   | `@traq-markdown-engine/core`              |
+| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark and reusable syntax/rendering extensions              | `@traq-markdown-engine/commonmark-plugin` |
+| [packages/plugins/traq](packages/plugins/traq/README.md)             | traP references, stamps, spoilers and their rendering/extraction | `@traq-markdown-engine/traq-plugin`       |
+| [packages/sdk](packages/sdk/README.md)                               | traQ presets, presentation, Wasm and SDK distribution            | `@traq-markdown-engine/sdk`               |
 
 Plugins are composable syntax and AST processing components. Core has no dependency
-on a concrete plugin; traQ selects and combines plugins. Each package keeps its
+on a concrete plugin; the SDK selects and combines plugins for traQ. Each package keeps its
 Rust crates, TypeScript implementation and Go module together. The npm names are
 independent of directory names; Go module paths follow their directories.
 
-Repository tooling lives in [scripts](scripts), with traQ-specific generation and
-packaging in [packages/traq/scripts](packages/traq/scripts). The standalone
+Repository tooling lives in [scripts](scripts), with SDK-specific generation and
+packaging in [packages/sdk/scripts](packages/sdk/scripts). The standalone
 [corpus tool](tools/corpus/README.md) owns message comparison and report viewing.
 Shared specification data lives in [tests/fixtures](tests/fixtures/README.md).
 
@@ -49,9 +49,9 @@ their source and output paths local.
 
 Run `bun run build` before individual Wasm or Go tests. `bun run check` also builds
 the corpus viewer and verifies generated sources and packed consumers. Individual
-package commands are available with `bun run --cwd packages/traq test`, for example.
+package commands are available with `bun run --cwd packages/sdk test`, for example.
 See [CONTRIBUTING](CONTRIBUTING.md) for the build pipeline, ownership, fixtures and
-verification, and [traQ examples](packages/traq/examples/README.md) for API usage.
+verification, and [traQ examples](packages/sdk/examples/README.md) for API usage.
 
 TypeScript, JavaScript, JSON, Markdown, YAML, and styles use the Prettier rules
 from traQ S-UI. Rust and Go use their standard formatters, `cargo fmt` and

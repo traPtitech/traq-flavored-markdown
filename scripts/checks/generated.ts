@@ -13,18 +13,23 @@ export type GeneratedTargets = {
 
 const generatedTargets: GeneratedTargets = {
   directories: [
-    path.join(packageRoot('commonmark'), 'typescript', 'generated'),
-    path.join(packageRoot('trap-extension'), 'typescript', 'generated'),
-    path.join(packageRoot('traq'), 'typescript', 'generated')
+    path.join(packageRoot('commonmark-plugin'), 'typescript', 'generated'),
+    path.join(packageRoot('traq-plugin'), 'typescript', 'generated'),
+    path.join(packageRoot('sdk'), 'typescript', 'generated')
   ],
   files: [
-    path.join(packageRoot('commonmark'), 'go', 'generated_nodes.go'),
-    path.join(packageRoot('commonmark'), 'go', 'generic', 'generated_nodes.go'),
-    path.join(packageRoot('trap-extension'), 'go', 'generated_nodes.go'),
-    path.join(packageRoot('traq'), 'go', 'generated_artifact.go'),
-    path.join(packageRoot('traq'), 'go', 'generated_nodes.go'),
-    path.join(packageRoot('traq'), 'go', 'generated_presets.go'),
-    path.join(packageRoot('traq'), 'go', 'generated_processing.go')
+    path.join(packageRoot('commonmark-plugin'), 'go', 'generated_nodes.go'),
+    path.join(
+      packageRoot('commonmark-plugin'),
+      'go',
+      'generic',
+      'generated_nodes.go'
+    ),
+    path.join(packageRoot('traq-plugin'), 'go', 'generated_nodes.go'),
+    path.join(packageRoot('sdk'), 'go', 'generated_artifact.go'),
+    path.join(packageRoot('sdk'), 'go', 'generated_nodes.go'),
+    path.join(packageRoot('sdk'), 'go', 'generated_presets.go'),
+    path.join(packageRoot('sdk'), 'go', 'generated_processing.go')
   ]
 }
 

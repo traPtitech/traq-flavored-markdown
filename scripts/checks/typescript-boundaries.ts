@@ -4,9 +4,9 @@ import { type PackageName, packageRoot } from '../paths.ts'
 
 const packages: [PackageName, PackageName[]][] = [
   ['core', []],
-  ['commonmark', ['core', 'commonmark']],
-  ['trap-extension', ['core', 'commonmark', 'trap-extension']],
-  ['traq', ['core', 'commonmark', 'trap-extension', 'traq']]
+  ['commonmark-plugin', ['core', 'commonmark-plugin']],
+  ['traq-plugin', ['core', 'commonmark-plugin', 'traq-plugin']],
+  ['sdk', ['core', 'commonmark-plugin', 'traq-plugin', 'sdk']]
 ]
 for (const [repo, allowed] of packages) {
   const directory = path.join(packageRoot(repo), 'typescript')
@@ -22,7 +22,7 @@ for (const [repo, allowed] of packages) {
     if (source.includes('@traptitech/traq-markdown-it'))
       throw new Error(file + ': retired package dependency')
     for (const [, name] of source.matchAll(
-      /from ['"]@traq-markdown-parser\/([^/'"]+)/g
+      /from ['"]@traq-markdown-engine\/([^/'"]+)/g
     ))
       if (!allowed.includes(name as PackageName))
         throw new Error(file + ': upward dependency ' + name)

@@ -10,7 +10,7 @@
   "workspaces": [
     "packages/core",
     "packages/plugins/*",
-    "packages/traq",
+    "packages/sdk",
     "tools/*"
   ],
   "scripts": {
@@ -37,10 +37,10 @@
     "lint:rust": "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
     "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go",
     "test:corpus": "bun run --cwd tools/corpus test",
-    "test:go": "go -C packages/core/go test -count=1 ./... && go -C packages/plugins/commonmark/go test -count=1 ./... && go -C packages/plugins/trap/go test -count=1 ./... && go -C packages/traq/go test -count=1 ./... && go -C packages/traq/examples/go test -count=1 ./...",
+    "test:go": "go -C packages/core/go test -count=1 ./... && go -C packages/plugins/commonmark/go test -count=1 ./... && go -C packages/plugins/traq/go test -count=1 ./... && go -C packages/sdk/go test -count=1 ./... && go -C packages/sdk/examples/go test -count=1 ./...",
     "test:rust": "cargo test --locked --workspace --all-features",
-    "test:typescript": "bun test ./packages/core/typescript/tests ./packages/traq/typescript/tests ./scripts ./packages/traq/scripts",
-    "typecheck": "bun run scripts/tsc.ts -p tsconfig.json && bun run --cwd packages/core typecheck && bun run --cwd packages/plugins/commonmark typecheck && bun run --cwd packages/plugins/trap typecheck && bun run --cwd packages/traq typecheck && bun run --cwd tools/corpus typecheck"
+    "test:typescript": "bun test ./packages/core/typescript/tests ./packages/sdk/typescript/tests ./scripts ./packages/sdk/scripts",
+    "typecheck": "bun run scripts/tsc.ts -p tsconfig.json && bun run --cwd packages/core typecheck && bun run --cwd packages/plugins/commonmark typecheck && bun run --cwd packages/plugins/traq typecheck && bun run --cwd packages/sdk typecheck && bun run --cwd tools/corpus typecheck"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

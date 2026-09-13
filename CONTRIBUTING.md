@@ -10,35 +10,35 @@ Run shared commands from the repository root:
 bun install --frozen-lockfile
 bun run build
 bun run check
-bun run --cwd packages/traq examples
+bun run --cwd packages/sdk examples
 ```
 
 ## Ownership
 
-| Location                                       | Responsibility                                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| `packages/core`                                | Grammar-independent AST, declarations, parsing, rendering, extraction and codec |
-| `packages/plugins/commonmark`                  | CommonMark and generic extension contracts, syntax and rendering                |
-| `packages/plugins/trap`                        | traP extension contracts, syntax, rendering and extraction                      |
-| `packages/traq/crates/grammar`                 | Published grammar presets and their catalog                                     |
-| `packages/traq/crates/processing`              | traQ notification, message and extraction policies                              |
-| `packages/traq/crates/wasm`                    | Wasm ABI and exported contracts                                                 |
-| `packages/traq/typescript`, `packages/traq/go` | traQ SDK, preset and artifact selection                                         |
-| `packages/traq/styles`                         | traQ presentation CSS                                                           |
-| `packages/traq/scripts`                        | traQ artifact build and distribution-specific code generation                   |
-| `scripts/codegen`                              | Shared Go and TypeScript contract generation, with its tests                    |
-| `scripts/checks`                               | Repository dependency boundaries, generated sources and packaged consumers      |
-| `tools/corpus`                                 | Corpus collection/comparison CLI, viewer, dependencies and tests                |
-| `tests/fixtures`                               | Shared CommonMark specification data and attribution                            |
-| `packages/traq/tests/fixtures`                 | Frozen traQ compatibility expectations shared across languages                  |
+| Location                                     | Responsibility                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `packages/core`                              | Grammar-independent AST, declarations, parsing, rendering, extraction and codec |
+| `packages/plugins/commonmark`                | CommonMark and generic extension contracts, syntax and rendering                |
+| `packages/plugins/traq`                      | traP extension contracts, syntax, rendering and extraction                      |
+| `packages/sdk/crates/grammar`                | Published grammar presets and their catalog                                     |
+| `packages/sdk/crates/processing`             | traQ notification, message and extraction policies                              |
+| `packages/sdk/crates/wasm`                   | Wasm ABI and exported contracts                                                 |
+| `packages/sdk/typescript`, `packages/sdk/go` | traQ SDK, preset and artifact selection                                         |
+| `packages/sdk/styles`                        | traQ presentation CSS                                                           |
+| `packages/sdk/scripts`                       | traQ artifact build and distribution-specific code generation                   |
+| `scripts/codegen`                            | Shared Go and TypeScript contract generation, with its tests                    |
+| `scripts/checks`                             | Repository dependency boundaries, generated sources and packaged consumers      |
+| `tools/corpus`                               | Corpus collection/comparison CLI, viewer, dependencies and tests                |
+| `tests/fixtures`                             | Shared CommonMark specification data and attribution                            |
+| `packages/sdk/tests/fixtures`                | Frozen traQ compatibility expectations shared across languages                  |
 
 Keep component code with its owner, grouped into `crates`, `typescript` and `go`.
 Core does not depend on plugins or traQ. Plugins may depend on core; the traP
-syntax also uses CommonMark syntax. traQ composes these parts and owns application
+syntax also uses CommonMark syntax. The SDK composes these parts for traQ and owns application
 policy. Parser, renderer and extractor share a native AST without depending on
 the codec or Wasm distribution.
 
-A script that knows traQ presets or artifact metadata belongs to traQ. Shared
+A script that knows traQ presets or artifact metadata belongs to the SDK. Shared
 code generators belong to `scripts/codegen`; root entry points coordinate them.
 Keep generator tests beside the generator. Package README files describe their
 APIs and responsibilities; this file owns common development instructions.
@@ -51,10 +51,10 @@ build outputs. Do not hand-edit generated TypeScript or Go files.
 
 The root `build` command runs the following pipeline:
 
-1. Export Rust contracts and generate **all** plugin and traQ bindings.
+1. Export Rust contracts and generate **all** plugin and SDK bindings.
 2. Compile TypeScript packages in dependency order.
 3. Build and package the traQ Wasm, JavaScript, declarations and CSS, then write
-   `packages/traq/dist/contract.json` with the artifact digest.
+   `packages/sdk/dist/contract.json` with the artifact digest.
 
 Generated sources remain in each owner's `typescript/generated` and
 `go/generated_*.go`. Intermediate Rust contracts are under `target/`; distributable
@@ -64,6 +64,9 @@ and Wasm together; runtime initialization rejects mismatched IDs.
 
 ```sh
 bun run generate:bindings             # update generated sources explicitly
+bun run scripts/generate-bindings.ts commonmark-plugin
+bun run scripts/generate-bindings.ts traq-plugin
+bun run scripts/generate-bindings.ts sdk
 bun run build                         # generate and build the four packages
 bun run check:generated               # regenerate and reject changed sources
 bun run build:corpus                  # build the standalone report viewer
@@ -76,7 +79,7 @@ added or removed outputs, and does not require a clean Git index. After editing
 Rust contracts, run `build`, review the generated diff, then run `check`.
 
 Individual package `build` and `typecheck` commands are for iteration after the
-root build has prepared dependency outputs. traQ's individual build regenerates
+root build has prepared dependency outputs. The SDK's individual build regenerates
 its own bindings. Use the root build after changing plugin contracts.
 
 ## Verification
@@ -88,14 +91,14 @@ packed consumer verification. CI runs this command on Ubuntu and Windows.
 `check:package` packs all four distributable packages into a fresh temporary
 consumer and checks public declarations, AST parsing, HTML, CSS and the Wasm
 digest. Temporary files and archives are removed afterwards. API examples are
-available through `bun run --cwd packages/traq examples`.
+available through `bun run --cwd packages/sdk examples`.
 
 Go tests execute the built Wasm. Build first when invoking them separately; use
 `-count=1` when the Wasm artifact changes to avoid stale test-cache results.
 Changes to Go concurrency also require
-`go -C packages/traq/go test -race ./...` with a supported C compiler installed.
+`go -C packages/sdk/go test -race ./...` with a supported C compiler installed.
 
-`packages/traq/crates/processing` borrows native ASTs. Its normal dependencies must
+`packages/sdk/crates/processing` borrows native ASTs. Its normal dependencies must
 not include `markdown-codec`. Native Rust and Go/Wasm exercise 787 frozen
 notification expectations. TypeScript/Wasm covers extraction, and TypeScript
 covers HTML rendering. Packed consumers and examples exercise public processing
@@ -114,9 +117,10 @@ works on an individual module rather than this workspace graph, so use workspace
 tests and `go list -m all` to verify local resolution during development.
 Their module paths match the
 repository layout, including `packages/plugins/commonmark/go` and
-`packages/plugins/trap/go`. Update external Go consumers to those paths when
-migrating from the previous flat layout. npm names remain unchanged, including
-`@traq-markdown-parser/trap-extension`.
+`packages/plugins/traq/go`. Update external Go consumers to those paths when
+migrating from the previous flat layout. The npm package identities are
+`@traq-markdown-engine/core`, `@traq-markdown-engine/commonmark-plugin`,
+`@traq-markdown-engine/traq-plugin`, and `@traq-markdown-engine/sdk`.
 
 `tsconfig.build.base.json` holds shared TypeScript emit options. Packages own their
 source/output selections. `tsconfig.base.json` holds tooling type-check options;
@@ -132,7 +136,7 @@ formatting, linting and compiler tools stay at the root.
 
 The unmodified CommonMark specification data has one copy in
 [tests/fixtures](tests/fixtures/README.md). traQ's frozen AST and notification
-expectations are in [its fixture directory](packages/traq/tests/fixtures/README.md).
+expectations are in [its fixture directory](packages/sdk/tests/fixtures/README.md).
 Do not regenerate compatibility expectations from the parser under test. Preserve
 source, provenance, attribution and the accepted meaning of existing grammar IDs.
 

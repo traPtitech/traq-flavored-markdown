@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: node_modules/.cache/prettier
-          key: prettier-cache-${{ runner.os }}-${{ hashFiles('prettier.config.*', '.prettierignore', 'bun.lock', 'package.json', 'packages/*/package.json') }}
+          key: prettier-cache-${{ runner.os }}-${{ hashFiles('prettier.config.*', '.prettierignore', 'bun.lock', 'package.json', 'packages/**/package.json') }}
           restore-keys: |
             prettier-cache-${{ runner.os }}-
       - run: bun ci
@@ -88,21 +88,13 @@ jobs:
       - run: bun run test:typescript
 
   rust:
-    name: Rust (${{ matrix.package }})
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - commonmark
-          - core
-          - trap-extension
-          - traq
+    name: Rust
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --manifest-path packages/${{ matrix.package }}/Cargo.toml --locked --workspace --all-features
-      - run: cargo clippy --manifest-path packages/${{ matrix.package }}/Cargo.toml --locked --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --workspace --all-features
+      - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 
   go:
     name: Go (${{ matrix.module }})
@@ -110,11 +102,11 @@ jobs:
       fail-fast: false
       matrix:
         module:
-          - packages/commonmark/go
+          - packages/plugins/commonmark/go
           - packages/core/go
-          - packages/trap-extension/go
-          - packages/traq/go
-          - packages/traq/examples/go
+          - packages/plugins/traq/go
+          - packages/sdk/go
+          - packages/sdk/examples/go
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -122,6 +114,16 @@ jobs:
         with:
           go-version: 1.26.0
           cache-dependency-path: ${{ matrix.module }}/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.module == 'packages/sdk/go'
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Build SDK Wasm for Go tests
+        if: matrix.module == 'packages/sdk/go'
+        run: |
+          cargo build --locked --release --target wasm32-unknown-unknown -p traq-markdown-wasm
+          mkdir -p packages/sdk/dist
+          cp target/wasm32-unknown-unknown/release/traq_markdown_wasm.wasm packages/sdk/dist/parser.wasm
       - run: go -C ${{ matrix.module }} test ./...
 
   generated:
@@ -137,10 +139,5 @@ jobs:
           go-version: 1.26.0
       - uses: dtolnay/rust-toolchain@stable
       - run: bun ci
-      - run: cargo fetch --locked --manifest-path packages/commonmark/Cargo.toml
-      - run: cargo fetch --locked --manifest-path packages/core/Cargo.toml
-      - run: cargo fetch --locked --manifest-path packages/trap-extension/Cargo.toml
-      - run: cargo fetch --locked --manifest-path packages/traq/Cargo.toml
-      - run: bun run build:traq
-      - run: bun run generate:bindings
-      - run: bun run scripts/check-generated.ts
+      - run: cargo fetch --locked
+      - run: bun run scripts/build.ts --check-generated

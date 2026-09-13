@@ -2,7 +2,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { type PackageName, packageRoot, traqRoot } from '../paths.ts'
+import { type PackageName, packageRoot, sdkRoot } from '../paths.ts'
 
 const tempRoot = (
   Bun.env.TEMP ??
@@ -20,9 +20,9 @@ const archiveName = (archive: string) =>
   )
 const packageNames: PackageName[] = [
   'core',
-  'commonmark',
-  'trap-extension',
-  'traq'
+  'commonmark-plugin',
+  'traq-plugin',
+  'sdk'
 ]
 const capture = async (command: string, args: string[], cwd: string) => {
   return (await $.cwd(cwd)`${command} ${args}`.quiet()).text()
@@ -71,12 +71,12 @@ try {
     for (const name of files)
       if (/^(?:typescript|crates|go|tests|node_modules)\//.test(name))
         throw Error(repo + ': shipped source ' + name)
-    if (repo !== 'traq' && [...files].some(n => n.endsWith('.wasm')))
+    if (repo !== 'sdk' && [...files].some(n => n.endsWith('.wasm')))
       throw Error('Unexpected Wasm in ' + repo)
   }
   const packageDependencies = Object.fromEntries(
     packageNames.map((name, index) => [
-      `@traq-markdown-parser/${name}`,
+      `@traq-markdown-engine/${name}`,
       `file:./${archiveName(archives[index])}`
     ])
   )
@@ -108,7 +108,7 @@ try {
   ]) {
     await Bun.write(
       `${temporaryDirectory}/${name}.ts`,
-      Bun.file(path.join(traqRoot, source, 'types.ts'))
+      Bun.file(path.join(sdkRoot, source, 'types.ts'))
     )
     await capture(
       bun,
@@ -130,14 +130,14 @@ try {
       `${temporaryDirectory}/${name}.ts`,
       Bun.file(
         path.join(
-          traqRoot,
+          sdkRoot,
           source,
           name === 'sdk' ? 'runtime.ts' : 'package-runtime.ts'
         )
       )
     )
     const contract = await Bun.file(
-      path.join(traqRoot, 'dist', 'contract.json')
+      path.join(sdkRoot, 'dist', 'contract.json')
     ).json()
     await Bun.stdout.write(
       await capture(bun, [name + '.ts', contract.sha256], temporaryDirectory)

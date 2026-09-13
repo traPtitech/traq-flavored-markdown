@@ -1,11 +1,14 @@
-import { isKnownNode, names } from '@traq-markdown-parser/commonmark/nodes'
+import {
+  isKnownNode,
+  names
+} from '@traq-markdown-engine/commonmark-plugin/nodes'
 import {
   attributes,
   checked,
   escapeHtml
-} from '@traq-markdown-parser/core/html'
-import type { Node } from '@traq-markdown-parser/core/renderer'
-import type { Plugin } from '@traq-markdown-parser/core/renderer'
+} from '@traq-markdown-engine/core/html'
+import type { Node } from '@traq-markdown-engine/core/renderer'
+import type { Plugin } from '@traq-markdown-engine/core/renderer'
 
 import type { Options } from './options.js'
 

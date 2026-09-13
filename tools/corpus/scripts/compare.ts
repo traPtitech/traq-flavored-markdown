@@ -2,15 +2,11 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import {
-  packageRoot,
-  repositoryRoot,
-  traqRoot
-} from '../../../scripts/paths.ts'
+import { packageRoot, repositoryRoot, sdkRoot } from '../../../scripts/paths.ts'
 import { parseArgs, resolveRepositoryPath } from './args.ts'
 import { GitRepo } from './git.ts'
 
-const root = traqRoot
+const root = sdkRoot
 const privateRoot = path.join(repositoryRoot, '.private')
 
 const { values: v } = parseArgs({
@@ -75,7 +71,7 @@ async function setupBaselinePackage() {
       ).text()
     ).version
 
-  const commonmark = packageRoot('commonmark')
+  const commonmark = packageRoot('commonmark-plugin')
   const katexVersion = await packageVersion('katex', commonmark)
   const highlightVersion = await packageVersion('highlight.js', commonmark)
 
@@ -156,10 +152,10 @@ async function setupBaselineGo() {
     'github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go':
       packageRoot('core'),
     'github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go':
-      packageRoot('commonmark'),
-    'github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/trap/go':
-      packageRoot('trap-extension'),
-    'github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go': traqRoot
+      packageRoot('commonmark-plugin'),
+    'github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go':
+      packageRoot('traq-plugin'),
+    'github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go': sdkRoot
   }
 
   const modContent =
@@ -169,7 +165,7 @@ async function setupBaselineGo() {
       `require (`,
       ` github.com/gofrs/uuid ${getVersion('github.com/gofrs/uuid')}`,
       ` github.com/json-iterator/go ${getVersion('github.com/json-iterator/go')}`,
-      ` github.com/uni-kakurenbo/traq-markdown-engine/packages/traq/go v0.1.0`,
+      ` github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go v0.1.0`,
       `)`
     ].join('\n') +
     '\n' +

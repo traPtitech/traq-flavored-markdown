@@ -1,5 +1,5 @@
 {
-  "name": "@traq-markdown-parser/commonmark",
+  "name": "@traq-markdown-engine/commonmark-plugin",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -50,14 +50,14 @@
   },
   "scripts": {
     "build": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.build.json",
-    "generate:bindings": "bun run ../../../scripts/generate-bindings.ts commonmark",
+    "generate:bindings": "bun run ../../../scripts/generate-bindings.ts commonmark-plugin",
     "typecheck": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "peerDependencies": {
-    "@traq-markdown-parser/core": "0.1.0"
+    "@traq-markdown-engine/core": "0.1.0"
   },
   "devDependencies": {
-    "@traq-markdown-parser/core": "workspace:*",
+    "@traq-markdown-engine/core": "workspace:*",
     "@types/katex": "0.16.8"
   },
   "dependencies": {

@@ -62,7 +62,7 @@ updates:
           - patch
           - minor
   - package-ecosystem: gomod
-    directory: '/packages/plugins/trap/go'
+    directory: '/packages/plugins/traq/go'
     schedule:
       interval: monthly
     cooldown:
@@ -74,7 +74,7 @@ updates:
           - patch
           - minor
   - package-ecosystem: gomod
-    directory: '/packages/traq/go'
+    directory: '/packages/sdk/go'
     schedule:
       interval: monthly
     cooldown:
@@ -86,7 +86,7 @@ updates:
           - patch
           - minor
   - package-ecosystem: gomod
-    directory: '/packages/traq/examples/go'
+    directory: '/packages/sdk/examples/go'
     schedule:
       interval: monthly
     cooldown:

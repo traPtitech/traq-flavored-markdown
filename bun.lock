@@ -24,11 +24,11 @@
       },
     },
     "packages/core": {
-      "name": "@traq-markdown-parser/core",
+      "name": "@traq-markdown-engine/core",
       "version": "0.1.0",
     },
     "packages/plugins/commonmark": {
-      "name": "@traq-markdown-parser/commonmark",
+      "name": "@traq-markdown-engine/commonmark-plugin",
       "version": "0.1.0",
       "dependencies": {
         "entities": "8.0.0",
@@ -36,39 +36,39 @@
         "katex": "0.18.5",
       },
       "devDependencies": {
-        "@traq-markdown-parser/core": "workspace:*",
+        "@traq-markdown-engine/core": "workspace:*",
         "@types/katex": "0.16.8",
       },
       "peerDependencies": {
-        "@traq-markdown-parser/core": "0.1.0",
+        "@traq-markdown-engine/core": "0.1.0",
       },
     },
-    "packages/plugins/trap": {
-      "name": "@traq-markdown-parser/trap-extension",
+    "packages/plugins/traq": {
+      "name": "@traq-markdown-engine/traq-plugin",
       "version": "0.1.0",
       "devDependencies": {
-        "@traq-markdown-parser/commonmark": "workspace:*",
-        "@traq-markdown-parser/core": "workspace:*",
+        "@traq-markdown-engine/commonmark-plugin": "workspace:*",
+        "@traq-markdown-engine/core": "workspace:*",
       },
       "peerDependencies": {
-        "@traq-markdown-parser/commonmark": "0.1.0",
-        "@traq-markdown-parser/core": "0.1.0",
+        "@traq-markdown-engine/commonmark-plugin": "0.1.0",
+        "@traq-markdown-engine/core": "0.1.0",
       },
     },
-    "packages/traq": {
-      "name": "@traq-markdown-parser/traq",
+    "packages/sdk": {
+      "name": "@traq-markdown-engine/sdk",
       "version": "0.1.0",
       "devDependencies": {
-        "@traq-markdown-parser/commonmark": "workspace:*",
-        "@traq-markdown-parser/core": "workspace:*",
-        "@traq-markdown-parser/trap-extension": "workspace:*",
+        "@traq-markdown-engine/commonmark-plugin": "workspace:*",
+        "@traq-markdown-engine/core": "workspace:*",
+        "@traq-markdown-engine/traq-plugin": "workspace:*",
         "markdown-it": "15.0.1",
         "sass": "1.103.1",
       },
       "peerDependencies": {
-        "@traq-markdown-parser/commonmark": "0.1.0",
-        "@traq-markdown-parser/core": "0.1.0",
-        "@traq-markdown-parser/trap-extension": "0.1.0",
+        "@traq-markdown-engine/commonmark-plugin": "0.1.0",
+        "@traq-markdown-engine/core": "0.1.0",
+        "@traq-markdown-engine/traq-plugin": "0.1.0",
       },
     },
     "tools/corpus": {
@@ -303,13 +303,13 @@
 
     "@stylistic/eslint-plugin": ["@stylistic/eslint-plugin@5.10.0", "", { "dependencies": { "@eslint-community/eslint-utils": "^4.9.1", "@typescript-eslint/types": "^8.56.0", "eslint-visitor-keys": "^4.2.1", "espree": "^10.4.0", "estraverse": "^5.3.0", "picomatch": "^4.0.3" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0" } }, "sha512-nPK52ZHvot8Ju/0A4ucSX1dcPV2/1clx0kLcH5wDmrE4naKso7TUC/voUyU1O9OTKTrR6MYip6LP0ogEMQ9jPQ=="],
 
-    "@traq-markdown-parser/commonmark": ["@traq-markdown-parser/commonmark@workspace:packages/plugins/commonmark"],
+    "@traq-markdown-engine/commonmark-plugin": ["@traq-markdown-engine/commonmark-plugin@workspace:packages/plugins/commonmark"],
 
-    "@traq-markdown-parser/core": ["@traq-markdown-parser/core@workspace:packages/core"],
+    "@traq-markdown-engine/core": ["@traq-markdown-engine/core@workspace:packages/core"],
 
-    "@traq-markdown-parser/trap-extension": ["@traq-markdown-parser/trap-extension@workspace:packages/plugins/trap"],
+    "@traq-markdown-engine/traq-plugin": ["@traq-markdown-engine/traq-plugin@workspace:packages/plugins/traq"],
 
-    "@traq-markdown-parser/traq": ["@traq-markdown-parser/traq@workspace:packages/traq"],
+    "@traq-markdown-engine/sdk": ["@traq-markdown-engine/sdk@workspace:packages/sdk"],
 
     "@trivago/prettier-plugin-sort-imports": ["@trivago/prettier-plugin-sort-imports@6.0.2", "", { "dependencies": { "@babel/generator": "^7.28.0", "@babel/parser": "^7.28.0", "@babel/traverse": "^7.28.0", "@babel/types": "^7.28.0", "javascript-natural-sort": "^0.7.1", "lodash-es": "^4.17.21", "minimatch": "^9.0.0", "parse-imports-exports": "^0.2.4" }, "peerDependencies": { "@vue/compiler-sfc": "3.x", "prettier": "2.x - 3.x", "prettier-plugin-ember-template-tag": ">= 2.0.0", "prettier-plugin-svelte": "3.x", "svelte": "4.x || 5.x" }, "optionalPeers": ["@vue/compiler-sfc", "prettier-plugin-ember-template-tag", "prettier-plugin-svelte", "svelte"] }, "sha512-3DgfkukFyC/sE/VuYjaUUWoFfuVjPK55vOFDsxD56XXynFMCZDYFogH2l/hDfOsQAm1myoU/1xByJ3tWqtulXA=="],
 

@@ -2,7 +2,7 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { generateTraq } from '../packages/traq/scripts/generate-bindings.ts'
+import { generateSdk } from '../packages/sdk/scripts/generate-bindings.ts'
 import { goNodes as contractGoNodes } from './codegen/go.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import type { RawSchema } from './codegen/schema.ts'
@@ -54,11 +54,11 @@ const formatTypescript = async (paths: string[]) => {
 }
 
 const contractGroups = {
-  commonmark: [
+  'commonmark-plugin': [
     ['commonmark', 'markdown-commonmark-contracts'],
     ['generic', 'markdown-generic-contracts']
   ],
-  'trap-extension': [['trap', 'markdown-trap-contracts']]
+  'traq-plugin': [['trap', 'markdown-trap-contracts']]
 } as const
 
 async function generateContractGroup(
@@ -115,7 +115,7 @@ export async function generateContracts(
 }
 
 export async function generateBindings(
-  packageName?: keyof typeof contractGroups | 'traq',
+  packageName?: keyof typeof contractGroups | 'sdk',
   input?: string
 ) {
   if (!packageName) {
@@ -123,19 +123,19 @@ export async function generateBindings(
       keyof typeof contractGroups
     >)
       await generateContracts(name)
-    await generateTraq()
+    await generateSdk()
     return
   }
-  if (packageName === 'commonmark' || packageName === 'trap-extension') {
+  if (packageName === 'commonmark-plugin' || packageName === 'traq-plugin') {
     await generateContracts(packageName)
     return
   }
-  if (packageName === 'traq') {
-    await generateTraq(input ? path.resolve(input) : undefined)
+  if (packageName === 'sdk') {
+    await generateSdk(input ? path.resolve(input) : undefined)
     return
   }
   throw new Error(
-    'usage: bun scripts/generate-bindings.ts [commonmark|trap-extension|traq] [contracts-dir]'
+    'usage: bun scripts/generate-bindings.ts [commonmark-plugin|traq-plugin|sdk] [contracts-dir]'
   )
 }
 
@@ -144,13 +144,13 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
   if (
     rest.length ||
     (packageName !== undefined &&
-      packageName !== 'commonmark' &&
-      packageName !== 'trap-extension' &&
-      packageName !== 'traq') ||
-    (input !== undefined && packageName !== 'traq')
+      packageName !== 'commonmark-plugin' &&
+      packageName !== 'traq-plugin' &&
+      packageName !== 'sdk') ||
+    (input !== undefined && packageName !== 'sdk')
   )
     throw new Error(
-      'usage: bun scripts/generate-bindings.ts [commonmark|trap-extension|traq] [contracts-dir]'
+      'usage: bun scripts/generate-bindings.ts [commonmark-plugin|traq-plugin|sdk] [contracts-dir]'
     )
   await generateBindings(packageName, input)
 }

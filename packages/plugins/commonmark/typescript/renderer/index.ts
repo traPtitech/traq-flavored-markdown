@@ -1,7 +1,7 @@
-import { names } from '@traq-markdown-parser/commonmark/nodes'
-import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
-import { Plugin } from '@traq-markdown-parser/core/renderer'
-import { PresetBuilder } from '@traq-markdown-parser/core/renderer'
+import { names } from '@traq-markdown-engine/commonmark-plugin/nodes'
+import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
+import { Plugin } from '@traq-markdown-engine/core/renderer'
+import { PresetBuilder } from '@traq-markdown-engine/core/renderer'
 
 import { registerBlockHandlers } from './block.js'
 import { registerInlineHandlers } from './inline.js'

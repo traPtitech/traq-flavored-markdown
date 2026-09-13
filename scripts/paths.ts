@@ -2,18 +2,18 @@ import path from 'path'
 
 export const repositoryRoot = Bun.fileURLToPath(new URL('../', import.meta.url))
 export const packagesRoot = path.join(repositoryRoot, 'packages')
-export type PackageName = 'core' | 'commonmark' | 'trap-extension' | 'traq'
+export type PackageName = 'core' | 'commonmark-plugin' | 'traq-plugin' | 'sdk'
 
 const packageDirectories: Record<PackageName, string> = {
   core: 'core',
-  commonmark: 'plugins/commonmark',
-  'trap-extension': 'plugins/trap',
-  traq: 'traq'
+  'commonmark-plugin': 'plugins/commonmark',
+  'traq-plugin': 'plugins/traq',
+  sdk: 'sdk'
 }
 
 export const packageRoot = (name: PackageName) =>
   path.join(packagesRoot, packageDirectories[name])
-export const traqRoot = packageRoot('traq')
+export const sdkRoot = packageRoot('sdk')
 export const corpusRoot = path.join(repositoryRoot, 'tools', 'corpus')
 
 export const cargoTargetDirectory = () =>

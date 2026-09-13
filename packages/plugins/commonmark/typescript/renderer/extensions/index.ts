@@ -1,12 +1,12 @@
-import type { RowData } from '@traq-markdown-parser/commonmark/generic/nodes'
+import type { RowData } from '@traq-markdown-engine/commonmark-plugin/generic/nodes'
 import {
   isKnownNode,
   names
-} from '@traq-markdown-parser/commonmark/generic/nodes'
-import { Plugin as Declaration } from '@traq-markdown-parser/core/definitions'
-import { attributes, checked } from '@traq-markdown-parser/core/html'
-import type { Node, RenderContext } from '@traq-markdown-parser/core/renderer'
-import { Plugin } from '@traq-markdown-parser/core/renderer'
+} from '@traq-markdown-engine/commonmark-plugin/generic/nodes'
+import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
+import { attributes, checked } from '@traq-markdown-engine/core/html'
+import type { Node, RenderContext } from '@traq-markdown-engine/core/renderer'
+import { Plugin } from '@traq-markdown-engine/core/renderer'
 
 import { math as defaultMath } from './math.js'
 

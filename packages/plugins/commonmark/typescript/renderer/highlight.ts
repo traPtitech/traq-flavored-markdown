@@ -1,4 +1,4 @@
-import { escapeHtml } from '@traq-markdown-parser/core/html'
+import { escapeHtml } from '@traq-markdown-engine/core/html'
 import hljs from 'highlight.js'
 
 import defaultSubset from './languages.js'

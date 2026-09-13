@@ -2,15 +2,15 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { traqRoot } from '../paths.ts'
+import { sdkRoot } from '../paths.ts'
 
-const pkg = await Bun.file(path.join(traqRoot, 'package.json')).json()
+const pkg = await Bun.file(path.join(sdkRoot, 'package.json')).json()
 if (Object.keys(pkg.dependencies ?? {}).length !== 0)
   throw new Error('Runtime dependencies are not allowed')
 await import('./typescript-boundaries.ts')
 const cargoTree = async (name: string) =>
   (
-    await $.cwd(traqRoot)`cargo tree --locked -p ${name} --edges normal`.quiet()
+    await $.cwd(sdkRoot)`cargo tree --locked -p ${name} --edges normal`.quiet()
   ).text()
 for (const name of [
   'traq-markdown-processing',

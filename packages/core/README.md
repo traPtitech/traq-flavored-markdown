@@ -19,9 +19,9 @@
 
 ## パッケージの境界
 
-- [commonmark](../plugins/commonmark/README.md): 標準文法と汎用拡張
-- [trap-extension](../plugins/trap/README.md): traP 固有の構文・描画・抽出部品
-- [traq](../traq/README.md): traQ の文法・処理の構成、Wasm 配布、TypeScript / Go bindings
+- [commonmark-plugin](../plugins/commonmark/README.md): 標準文法と汎用拡張
+- [traq-plugin](../plugins/traq/README.md): traP 固有の構文・描画・抽出部品
+- [sdk](../sdk/README.md): traQ の文法・処理の構成、Wasm 配布、TypeScript / Go bindings
 
 core はこれらへ依存しません。テストにも独立した契約型を使います。workspace 内の crate はローカルパスで参照します。レジストリへの公開はまだ行っていません。
 
@@ -29,16 +29,16 @@ core はこれらへ依存しません。テストにも独立した契約型を
 
 TypeScript の実装もこのリポジトリの責務に合わせて配置しています。
 
-| TypeScript package                     | 責務                                                                   |
-| -------------------------------------- | ---------------------------------------------------------------------- |
-| `@traq-markdown-parser/core`           | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
-| `@traq-markdown-parser/commonmark`     | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
-| `@traq-markdown-parser/trap-extension` | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
-| `@traq-markdown-parser/traq`           | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
+| TypeScript package                        | 責務                                                                   |
+| ----------------------------------------- | ---------------------------------------------------------------------- |
+| `@traq-markdown-engine/core`              | 共通 AST 型、HTML handler・Plugin・PresetBuilder、契約検証と生成の基盤 |
+| `@traq-markdown-engine/commonmark-plugin` | CommonMark・汎用拡張の生成ノード型と HTML 描画                         |
+| `@traq-markdown-engine/traq-plugin`       | traP の生成ノード型・参照・スタンプ等の HTML 描画                      |
+| `@traq-markdown-engine/sdk`               | Wasm / Go / TypeScript 配布、traQ の描画構成・preview・CSS             |
 
-AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、traq の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark と trap-extension の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
+AST の共通形は core の `typescript/ast.ts` に一度だけ定義し、SDK の生成 bindings はそれを構文の union で特殊化します。構文の payload は Rust を正として生成し、commonmark-plugin と traq-plugin の `bun run generate:bindings` でそれぞれの契約 crate から再生成できます。
 
-HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-parser/traq/renderer` の `messageRenderers`、CSS は `@traq-markdown-parser/traq/index.css` を利用します。
+HTML API は `/renderer` サブパスです。traQ は `@traq-markdown-engine/sdk/renderer` の `messageRenderers`、CSS は `@traq-markdown-engine/sdk/index.css` を利用します。
 
 ## Go
 

@@ -5,7 +5,7 @@ import {
   nullable,
   oneOf,
   string
-} from '@traq-markdown-parser/core/validation'
+} from '@traq-markdown-engine/core/validation'
 
 // Generated from Rust contracts. Do not edit.
 export type MarkData = Record<symbol, never>
