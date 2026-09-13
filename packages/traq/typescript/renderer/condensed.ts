@@ -53,7 +53,25 @@ function configureCommonCondensed(common: Plugin, options: Options) {
 
   common.replace(
     names.List,
-    checked(names.List, isKnownNode, (n, ctx) => blocks(n.children, ctx))
+    checked(names.List, isKnownNode, (n, ctx) => {
+      let index = 0
+      const children = n.data.ordered
+        ? (n.children ?? []).map(child => {
+            if (!isKnownNode(child) || child.kind !== names.ListItem) {
+              return child
+            }
+
+            return {
+              ...child,
+              data: {
+                marker: `${n.data.start + index++}${child.data.marker.slice(-1)}`
+              }
+            }
+          })
+        : n.children
+
+      return blocks(children, ctx)
+    })
   )
 
   common.replace(

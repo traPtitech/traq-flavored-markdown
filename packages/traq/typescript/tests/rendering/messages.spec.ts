@@ -156,6 +156,20 @@ test('traQ condensed flattens full-document block structure and break nodes', ()
   ).not.toMatch(/<br>/)
 })
 
+test('condensed numbers ordered list items from the list start', () => {
+  for (const [source, expected] of [
+    ['1. one\n1. two\n1. three', '1. one 2. two 3. three'],
+    ['4) four\n4) five', '4) four 5) five'],
+    [
+      '1. outer\n   1. inner\n   1. next\n1. last',
+      '1. outer 1. inner 2. next 2. last'
+    ]
+  ])
+    expect(view.condensed.render(parser.parse(source)).renderedText).toBe(
+      expected
+    )
+})
+
 test('condensed renders images as links and restricts math size commands', () => {
   const images = commonParser()
   expect(
