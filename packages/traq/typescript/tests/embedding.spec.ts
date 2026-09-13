@@ -29,7 +29,8 @@ const identities = {
   group: {
     okあok: groupId,
     takashi_trapo: 'dfabf0c9-5de0-46ee-9721-2525e8bb3d46',
-    'a"b': groupId
+    'a"b': groupId,
+    'a"}': groupId
   },
   channel: { a: 'ea452867-553b-4808-a14f-a47ee0009ee6', 64: userId }
 }

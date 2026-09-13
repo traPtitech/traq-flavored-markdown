@@ -45,6 +45,7 @@ func TestEmbeddingFixtures(t *testing.T) {
 		"group": {
 			"okあok":         "dfabf0c9-5de0-46ee-9721-2525e8bb3d45",
 			"takashi_trapo": "dfabf0c9-5de0-46ee-9721-2525e8bb3d46",
+			"a\"}":          "dfabf0c9-5de0-46ee-9721-2525e8bb3d45",
 		},
 		"channel": {
 			"a": "ea452867-553b-4808-a14f-a47ee0009ee6",

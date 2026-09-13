@@ -102,6 +102,31 @@ test('reference highlighting and link/image policies belong to each renderer', (
   ).toBe('x')
 })
 
+test('reference rendering rejects script links and escapes labels', () => {
+  const view = renderer(
+    rendering.html({
+      store: {
+        generateUserHref: id => `javascript:openUserModal(${id})`,
+        generateUserGroupHref: id => `javascript:openGroupModal(${id})`
+      }
+    })
+  )
+  const label = '<img src=x onerror=alert(1)>'
+
+  for (const type of ['user', 'group']) {
+    const source =
+      '!' +
+      JSON.stringify({
+        type,
+        id: "');alert(1);//",
+        raw: label
+      })
+    expect(view.render(parser.parseInline(source))).toBe(
+      '&lt;img src=x onerror=alert(1)&gt;'
+    )
+  }
+})
+
 test('table handlers reject forged row and cell payloads', () => {
   const view = renderer(rendering.html())
   const document = parser.parse('| a |\n| - |\n| b |')
