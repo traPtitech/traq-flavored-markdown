@@ -1,8 +1,7 @@
 # Development guide
 
 This guide covers local setup, builds, generated artifacts, and workspace
-layout. Read [CONTRIBUTING](../CONTRIBUTING.md) first for contribution policy and
-the required checks for a change.
+layout.
 
 ## Prerequisites
 
@@ -67,18 +66,14 @@ bun run build:corpus
 ```
 
 After changing a Rust contract, run `bun run build`, review the generated diff,
-then run `bun run check`. The complete check verifies generated sources before
-and after its build stage, including added and removed files, without requiring a
-clean Git index. The SDK's individual build regenerates only its own bindings;
-use the root build after changing plugin contracts.
+then run `bun run check`. The SDK's individual build regenerates only its own
+bindings; use the root build after changing plugin contracts.
 
 ## Workspace layout and dependencies
 
-The architecture and ownership map are documented in
-[architecture.md](architecture.md). Rust crates share the root Cargo workspace
-and lockfile. Root `workspace.dependencies` declares cross-package paths; crates
-inside one package may use relative paths. No sibling checkout or local Cargo
-patch is needed.
+Rust crates share the root Cargo workspace and lockfile. Root
+`workspace.dependencies` declares cross-package paths; crates inside one package
+may use relative paths. No sibling checkout or local Cargo patch is needed.
 
 The root `go.work` connects local Go modules and owns version-specific
 replacements for unpublished dependencies. It keeps workspace resolution offline

@@ -16,6 +16,3 @@ layers of the engine.
 The AST can be used without a parser, renderer, codec, or serde. Parsers,
 renderers, and extractors share native ASTs without depending on the codec.
 CommonMark and traP packages depend on this layer but are versioned separately.
-
-Develop from the repository root; see the [development guide](../README.md) for
-common commands.

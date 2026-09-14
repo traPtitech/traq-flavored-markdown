@@ -18,15 +18,13 @@ but a consumer that only reads nodes does not need a parser implementation.
 
 ## Boundaries
 
-This package depends on [core](../../core/README.md) and does not know about traP
-syntax, traQ presets, or application policy. Those responsibilities belong to
-[traq-plugin](../traq/README.md) and the [SDK](../../sdk/README.md).
+This package depends on core and does not know about traP syntax, traQ presets,
+or application policy. Those responsibilities belong to the traQ plugin and SDK.
 
 The TypeScript package exports generated node types and HTML renderers. The Go
 module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go`;
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 
-Follow the repository [development guide](../../../docs/development.md). Attribution
-and licensing for the 652 CommonMark examples are in the
+Attribution and licensing for the 652 CommonMark examples are in the
 [shared fixtures](../../../tests/fixtures/README.md).

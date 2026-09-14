@@ -16,5 +16,3 @@ Syntax and rendering share node contracts, not implementation dependencies. A
 consumer's `GrammarBuilder` chooses which plugins form a grammar, so an exact
 CommonMark composition remains possible. This family depends on core, never on
 traP extensions or traQ presets.
-
-Develop from the repository root; see the [development guide](../../../../docs/development.md).

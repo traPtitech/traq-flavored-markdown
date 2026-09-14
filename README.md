@@ -35,46 +35,14 @@ Rust crates, TypeScript implementation and Go module together. The npm names are
 independent of directory names; Go module paths follow their directories.
 They can be installed and composed independently, but release with one shared version.
 
-Repository tooling lives in [scripts](scripts), with SDK-specific generation and
-packaging in [packages/sdk/scripts](packages/sdk/scripts). The standalone
-[corpus tool](tools/corpus/README.md) owns message comparison and report viewing.
-Shared specification data lives in [tests/fixtures](tests/fixtures/README.md).
-
 ## Development
 
-Use Node 24 with npm 11.17.0, Bun 1.3.14+, Go 1.26+, and rustup. The root
-`rust-toolchain.toml` pins Rust and the Wasm target. Windows also requires the
-MSVC C++ build tools. Install the root tooling and workspace dependencies:
+Install workspace dependencies, then run the full local check:
 
 ```sh
-bun install
+bun install --frozen-lockfile
+bun run check
 ```
 
-The root commands operate on all four packages:
-
-```sh
-bun run format        # apply Prettier, rustfmt, and gofmt
-bun run format:check  # verify formatting without modifying files
-bun run lint:check    # run ESLint without modifying files
-bun run build         # generate all bindings, then build TypeScript, Wasm and CSS
-bun run typecheck     # type-check every TypeScript package
-bun run test          # run TypeScript, Rust, and Go tests
-bun run check         # run the complete local CI suite
-```
-
-Rust crates share one root Cargo workspace and lockfile. Go modules are connected
-by the root `go.work`. TypeScript packages share compiler options while keeping
-their source and output paths local.
-
-Run `bun run build` before individual Wasm or Go tests. `bun run check` also builds
-the corpus viewer and verifies generated sources and packed consumers. Individual
-package commands are available with `bun run --cwd packages/sdk test`, for example.
-See [CONTRIBUTING](CONTRIBUTING.md) for contribution policy and required checks,
-the [development guide](docs/development.md) for the build pipeline, and the
-[testing guide](docs/testing.md) for fixtures and compatibility. The maintainer
-[release runbook](docs/maintainers/releasing.md) covers npm publishing. See the
-[traQ examples](packages/sdk/examples/README.md) for API usage.
-
-TypeScript, JavaScript, JSON, Markdown, YAML, and styles use the Prettier rules
-from traQ S-UI. Rust and Go use their standard formatters, `cargo fmt` and
-`gofmt`.
+See [CONTRIBUTING](CONTRIBUTING.md) for the development, verification, and
+release guides. The SDK package contains the public API and runnable examples.

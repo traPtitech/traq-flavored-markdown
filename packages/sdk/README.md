@@ -7,10 +7,8 @@ contracts, and validation; the SDK exposes the supported presets and host APIs.
 - npm: `@traq-markdown-engine/sdk`
 - Go module: `github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go`
 
-The grammar implementations live in [core](../core/README.md),
-[commonmark-plugin](../plugins/commonmark/README.md), and
-[traq-plugin](../plugins/traq/README.md). This package combines those layers
-for traQ.
+This package combines the core, CommonMark plugin, and traQ plugin layers for
+traQ.
 
 ## Contents
 
@@ -21,9 +19,8 @@ for traQ.
 | `crates/wasm`                 | Wasm interface for the shipped grammar and processing APIs    |
 | `typescript`, `go`, `scripts` | Host bindings and generated contract types                    |
 
-Follow the repository [development guide](../../docs/development.md) to build and
-verify the SDK. Build artifacts are written to `dist/`; generated TypeScript and
-Go sources are committed and must be regenerated from their Rust contracts.
+Build artifacts are written to `dist/`; generated TypeScript and Go sources are
+committed and must be regenerated from their Rust contracts.
 
 ## Parse Markdown
 
@@ -90,14 +87,15 @@ const view = messageRenderers({ origin: 'https://q.example.test' })
 const document = parser.parse('**hello** !!secret!!')
 
 const extraction = extractor.extract(document)
-const html = view.standard.render(document)
+const rendered = view.standard.render(document)
+const html = rendered.renderedText
 ```
 
-`messageRenderers` provides `standard` and `condensed` HTML renderers. The
-extractor returns source-preserving message text, references, attachment and
-citation IDs, and an embedding plan. See [processing presets](crates/processing/README.md)
-for their behavior and [examples](examples/README.md) for complete Rust, Go, and
-TypeScript programs.
+`messageRenderers` builds `standard` and `condensed` views. Each `render` call
+returns `rawText`, `renderedText`, and `embeddings`; the extractor returns
+source-preserving message text, references, attachment and citation IDs, and an
+embedding plan. Complete Rust, Go, and TypeScript programs are in
+[examples](examples/README.md).
 
 ## Grammar versions
 
@@ -110,11 +108,3 @@ Custom grammars are composed in Rust and published through that catalog; the
 TypeScript and Go APIs intentionally do not mirror the Rust grammar builder.
 When behavior changes, preserve the existing preset and add a new version rather
 than changing how stored content is interpreted.
-
-## Further reading
-
-- [Implementation notes](docs/implementation.md) describe runtime lifecycles,
-  transport contracts, generated bindings, and resource limits.
-- [Grammar presets](crates/grammar/README.md) describe native Rust composition.
-- [Corpus comparison](../../tools/corpus/README.md) documents compatibility
-  testing against existing traQ behavior.

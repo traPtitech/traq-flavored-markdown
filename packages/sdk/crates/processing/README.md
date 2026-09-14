@@ -28,8 +28,8 @@ builders. After adding or removing plugins, call `build()` and pass the preset t
 the generic renderer or extractor. Existing runtime instances retain their own
 configuration.
 
-Notification output keeps block newlines; callers choose any single-line
-normalization. Spoilers retain newlines and mask other Unicode scalar values with
+Notification output normalizes all whitespace runs to one space. Spoilers retain
+newlines while they are rendered, then mask other Unicode scalar values with
 `█`. `origin` may be empty to disable special attachment and citation display;
 otherwise it is limited to 2,048 UTF-8 bytes. Exact `/files/{uuid}` and
 `/messages/{uuid}` URLs below that origin are recognized after removing a query

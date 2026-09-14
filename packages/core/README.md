@@ -12,18 +12,16 @@ traP syntax, node types, or presets.
 | `markdown-extractor`                                   | Typed AST extraction framework                           |
 | `markdown-codec`                                       | JSON encoding and decoding for registered node contracts |
 
-Each crate documents its own API. Follow the repository
-[development guide](../../docs/development.md) for common setup and verification.
+Each crate documents its own API.
 
 ## Package boundaries
 
 Core does not depend on extensions. It provides the layers used by:
 
-- [commonmark-plugin](../plugins/commonmark/README.md), which implements
-  CommonMark and generic extensions;
-- [traq-plugin](../plugins/traq/README.md), which implements traP extensions;
-- [SDK](../sdk/README.md), which composes traQ presets and ships Wasm, TypeScript,
-  and Go bindings.
+- the CommonMark plugin, which implements CommonMark and generic extensions;
+- the traQ plugin, which implements traP extensions;
+- the SDK, which composes traQ presets and ships Wasm, TypeScript, and Go
+  bindings.
 
 Parsers, renderers, and extractors share native ASTs without depending on the
 codec. The AST crate itself uses only the standard library, so applications that

@@ -1,9 +1,8 @@
 # Architecture and ownership
 
 The repository is organized by responsibility first, then by language within a
-package. Public packages can be installed independently, but the release process
-ships them at one shared version; see the maintainer
-[release runbook](maintainers/releasing.md).
+package. Public packages can be installed independently, but release together at
+one shared version.
 
 | Location                                     | Responsibility                                                                   |
 | -------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -47,6 +46,4 @@ generator. Root entry points coordinate package-level tools rather than replacin
 their ownership.
 
 Package README files describe public APIs and local responsibilities. This
-document describes cross-package ownership; use the
-[development guide](development.md) for build mechanics and
-[testing guide](testing.md) for verification and fixture policy.
+document is the source of truth for cross-package ownership.

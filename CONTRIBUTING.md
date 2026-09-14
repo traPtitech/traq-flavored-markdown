@@ -1,22 +1,12 @@
 # Contributing
 
 Thank you for improving the traQ Markdown engine. This document defines the
-contribution contract and the shortest path to a verified change. Detailed build
-instructions, architecture, testing guidance, and release operations are linked
-below.
+contribution contract; the linked guides own setup, testing, and release details.
 
 ## Get started
 
-Install the required tools and build the workspace from the repository root:
-
-```sh
-bun install --frozen-lockfile
-bun run build
-bun run check
-```
-
-See the [development guide](docs/development.md) for supported tool versions,
-common commands, local package iteration, and the generated-artifact pipeline.
+Follow the [development guide](docs/development.md) to set up the workspace and
+build its generated artifacts.
 
 ## Contribution policy
 
@@ -38,28 +28,13 @@ common commands, local package iteration, and the generated-artifact pipeline.
   credentials. Private corpus inputs and reports belong under ignored `.private`
   directories.
 
-Read [architecture.md](docs/architecture.md) for the complete ownership map and
-dependency direction.
+The [architecture guide](docs/architecture.md) is the source of truth for
+package ownership and dependency direction.
 
 ## Verify your change
 
 Run the narrowest relevant check while iterating, then run `bun run check` for a
-cross-package or release-bound change. Build before individual Wasm or Go tests.
-After changing Rust contracts, run `bun run build`, inspect the generated diff,
-and then run `bun run check`.
-
-The [testing guide](docs/testing.md) maps change types to commands and explains
-generated-source, fixture, corpus, Go concurrency, and packed-consumer checks.
-
-## Documentation map
-
-| Document                                           | Audience and purpose                                           |
-| -------------------------------------------------- | -------------------------------------------------------------- |
-| [Development guide](docs/development.md)           | Local setup, builds, generation, and workspace tooling         |
-| [Architecture and ownership](docs/architecture.md) | Package boundaries and dependency direction                    |
-| [Testing and compatibility](docs/testing.md)       | Checks, fixtures, corpus comparison, and compatibility policy  |
-| [Release runbook](docs/maintainers/releasing.md)   | Maintainers preparing, publishing, and recovering npm releases |
-
-The release runbook is intentionally separate from ordinary contribution
-guidance. It contains maintainer-only operational steps, including npm trusted
-publisher setup and partial-publication recovery.
+cross-package or release-bound change. The [testing guide](docs/testing.md)
+maps changes to checks and covers generated sources, fixtures, corpus comparison,
+Go concurrency, and packaged consumers. Maintainers should use the separate
+[release runbook](docs/maintainers/releasing.md).

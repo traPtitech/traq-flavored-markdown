@@ -1,9 +1,7 @@
 # Testing and compatibility
 
-Run `bun run check` before submitting a broad change. It runs formatting, lint,
-dependency-boundary checks, binding freshness checks, all package and corpus
-builds, TypeScript/Rust/Go tests, Clippy, and packed-consumer verification. CI
-runs the same suite on Ubuntu and Windows.
+Run `bun run check` before submitting a broad change. CI runs the same suite on
+Ubuntu and Windows.
 
 ## Choose the smallest useful check
 
@@ -19,8 +17,7 @@ runs the same suite on Ubuntu and Windows.
 
 `check:package` packs all four public packages into a temporary consumer and
 verifies public declarations, AST parsing, HTML, CSS, and the Wasm digest. It
-removes temporary files and archives after the run. The public examples are also
-available through `bun run --cwd packages/sdk examples`.
+removes temporary files and archives after the run.
 
 Go tests execute the built Wasm. If the artifact changes, use `-count=1` for an
 individual Go test invocation to avoid stale cache results.
@@ -44,5 +41,5 @@ grammar IDs intact.
 Fixtures contain no production messages or credentials. Private corpus data
 belongs in ignored `.private` directories. The [corpus tool](../tools/corpus/README.md)
 documents collection, comparison, synthetic samples, and its self-contained
-report. Native Rust and Go/Wasm run 787 frozen notification expectations;
+report. Native Rust and Go/Wasm run the frozen notification corpus;
 TypeScript/Wasm covers extraction, and TypeScript covers HTML rendering.

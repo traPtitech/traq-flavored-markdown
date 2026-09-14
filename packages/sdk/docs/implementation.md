@@ -1,8 +1,7 @@
 # SDK implementation notes
 
 This guide documents the boundary between the native Rust implementation and
-the TypeScript and Go SDKs. For everyday usage, start with the
-[SDK README](../README.md).
+the TypeScript and Go SDKs. The SDK README owns public usage examples.
 
 ## Ownership and generated contracts
 
@@ -26,72 +25,23 @@ toolchain inputs. It normalizes line endings and paths, so it remains stable
 across build environments. It is not a signature. `dist/contract.json` also
 records the actual Wasm SHA-256 for diagnostics.
 
-## TypeScript runtime
+## Host runtimes
 
-```ts
-import { createRuntime, presets } from '@traq-markdown-engine/sdk'
-import { names } from '@traq-markdown-engine/sdk/nodes'
+`createRuntime` and `NewRuntime` compile the matching Wasm module once. Their
+parsers, extractors, and Go plain-text renderers each own an independent instance;
+use separate instances for parallel work. TypeScript parsing is synchronous after
+runtime creation, while Go operations accept a `context.Context` and serialize
+calls to one instance.
 
-const runtime = await createRuntime(wasmBytes)
-try {
-  const parser = runtime.createParser(presets.traq.v1)
-  for (const node of parser.parseInline('[document](https://example.com)')
-    .children) {
-    if (node.kind === names.Link) console.log(node.data.destination)
-  }
-} finally {
-  runtime.dispose()
-}
-```
+Disposing or closing a runtime releases every instance. Individual disposal and
+close operations are idempotent, and later use is rejected. Parsed `Document`
+values do not reference Wasm memory and remain usable after later parsing or
+disposal; serialize them with `json.Marshal` only when JSON is needed.
 
-`createRuntime` compiles the Wasm module once. `createParser` synchronously
-creates an independent instance after checking its build ID; `parse` and
-`parseInline` are synchronous. Dispose parsers individually or dispose the
-runtime to release every parser and the compiled module. Both operations are
-idempotent, and later use is rejected.
-
-Input must be a string encodable as at most 64 KiB of UTF-8. Unpaired surrogates
-are rejected. Parse errors retain structured details in `Error.cause`. Input and
-native resource-limit errors do not invalidate a parser; after a Wasm trap or a
-corrupted exchange, create a new parser.
-
-## Go runtime
-
-```go
-import (
-    "fmt"
-
-    markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go"
-    commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go"
-)
-
-runtime, err := markdown.NewRuntime(ctx, wasmBytes)
-if err != nil { return err }
-defer runtime.Close(ctx)
-
-parser, err := runtime.NewParser(ctx, markdown.PresetTraQV1)
-if err != nil { return err }
-defer parser.Close(ctx)
-
-document, err := parser.ParseInline(ctx, "[document](https://example.com)")
-if err != nil { return err }
-for _, node := range document.Children {
-    if link, ok := node.Data.(*commonmark.Link); ok {
-        fmt.Println(link.Destination)
-    }
-}
-```
-
-`Document` is the shared core AST, and extension modules own its generated
-payload types. Parsed results do not reference Wasm memory and remain usable
-after later parsing or disposal; use `json.Marshal` when JSON is needed.
-
-A runtime owns a wazero environment and one compiled Wasm module. Each parser,
-extractor, or plain-text renderer owns an independent instance and serializes
-its calls. Use several instances for parallel work. Cancellation before or while
-waiting for a call does not close an instance. Interrupting active Wasm execution
-does close that instance, so create a replacement from the same runtime.
-`Close` can interrupt active calls; closing a runtime also prevents new instances.
+Markdown source is limited to 64 KiB of UTF-8. TypeScript rejects unpaired
+surrogates and preserves structured parse details in `Error.cause`. Input and
+native resource-limit errors do not invalidate a parser; replace an instance
+after a Wasm trap or corrupted exchange.
 
 ## Parsing, rendering, and extraction
 
@@ -102,14 +52,14 @@ is `extraction::Extractor::extract(&Document)` and
 
 Wasm provides equivalent configure and operation pairs for extractors and
 renderers. Each operation accepts document JSON, validates it with the Rust
-codec, then invokes the native consumer. It replies with `{ result: ... }` or
-`{ error: string }`; error text has no stable machine-readable classification.
+codec, then invokes the native consumer. Replies carry either a result or an
+error; errors have no stable machine-readable classification.
 
 The extractor returns message text, references, attachments, citations, and an
 embedding plan. The plain-text renderer returns notification text. TypeScript
 HTML rendering uses the same `Document` directly on the host. `messageRenderers`
-creates standard and condensed renderers from shared options; structure belongs
-to node handlers, and core's fallback returns only escaped source text.
+creates standard and condensed views from shared options; structure belongs to
+node handlers, and core's fallback returns only escaped source text.
 
 ## Limits and persistence
 

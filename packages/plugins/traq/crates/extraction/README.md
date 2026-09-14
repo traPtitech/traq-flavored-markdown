@@ -12,5 +12,4 @@ are accepted and normalized to lowercase standard UUIDs.
 
 The serialized result uses camelCase JSON field names. That serialization belongs
 only to this concrete result type; it does not make JSON a requirement of the
-AST or extraction core. For an executable example, see
-[processing](https://github.com/uni-kakurenbo/traq-markdown-engine/blob/main/packages/sdk/crates/processing/examples/notification.rs).
+AST or extraction core.
