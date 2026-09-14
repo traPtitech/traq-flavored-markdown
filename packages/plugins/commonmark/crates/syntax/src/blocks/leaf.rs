@@ -148,13 +148,18 @@ pub(super) fn atx(
     let source = input.source;
     let line = &input.lines[input.start];
 
-    let mut end = line.start + input.current().trim_end().len().max(prefix);
+    let mut end = line.start
+        + input
+            .current()
+            .trim_end_matches(ascii_space)
+            .len()
+            .max(prefix);
 
     let text = &source.text()[line.start + prefix..end];
     let without = text.trim_end_matches('#');
 
     if without.is_empty() || without.ends_with([' ', '\t']) {
-        end = line.start + prefix + without.trim_end().len();
+        end = line.start + prefix + without.trim_end_matches(ascii_space).len();
     }
 
     let view = source.join(&[line.start + prefix..end])?;

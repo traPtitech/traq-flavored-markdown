@@ -62,7 +62,7 @@ pub(super) fn heading(line: &str) -> Option<(u8, usize)> {
 
     Some((
         level as u8,
-        indent + level + line[level..].len() - line[level..].trim_start().len(),
+        indent + level + line[level..].len() - line[level..].trim_start_matches([' ', '\t']).len(),
     ))
 }
 
