@@ -16,6 +16,20 @@ bun install --frozen-lockfile
 bun run build
 ```
 
+## Commit hooks
+
+This repository uses [Husky](https://typicode.github.io/husky/) and
+[lint-staged](https://github.com/lint-staged/lint-staged) to format and lint
+staged TypeScript, JavaScript, and documentation files before each commit.
+
+After installing dependencies, initialize the hook once:
+
+```sh
+bun run husky:prepare
+```
+
+After that, commit as usual.
+
 ## Common commands
 
 | Command                               | Purpose                                               |
