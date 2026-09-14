@@ -1,6 +1,6 @@
 {
   "name": "@traq-markdown-engine/commonmark-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "commonmark Markdown contracts and HTML rendering.",
   "license": "MIT",
@@ -57,7 +57,7 @@
     "typecheck": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "peerDependencies": {
-    "@traq-markdown-engine/core": "0.1.0"
+    "@traq-markdown-engine/core": "0.1.1"
   },
   "devDependencies": {
     "@traq-markdown-engine/core": "workspace:*",
