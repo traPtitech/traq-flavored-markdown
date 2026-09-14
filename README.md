@@ -69,9 +69,11 @@ their source and output paths local.
 Run `bun run build` before individual Wasm or Go tests. `bun run check` also builds
 the corpus viewer and verifies generated sources and packed consumers. Individual
 package commands are available with `bun run --cwd packages/sdk test`, for example.
-See [CONTRIBUTING](CONTRIBUTING.md) for the build pipeline, ownership, fixtures,
-verification, and npm publishing process, and [traQ examples](packages/sdk/examples/README.md)
-for API usage.
+See [CONTRIBUTING](CONTRIBUTING.md) for contribution policy and required checks,
+the [development guide](docs/development.md) for the build pipeline, and the
+[testing guide](docs/testing.md) for fixtures and compatibility. The maintainer
+[release runbook](docs/maintainers/releasing.md) covers npm publishing. See the
+[traQ examples](packages/sdk/examples/README.md) for API usage.
 
 TypeScript, JavaScript, JSON, Markdown, YAML, and styles use the Prettier rules
 from traQ S-UI. Rust and Go use their standard formatters, `cargo fmt` and

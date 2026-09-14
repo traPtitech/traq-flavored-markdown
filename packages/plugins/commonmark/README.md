@@ -27,6 +27,6 @@ module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/common
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 
-Follow the repository [development guide](../../../CONTRIBUTING.md). Attribution
+Follow the repository [development guide](../../../docs/development.md). Attribution
 and licensing for the 652 CommonMark examples are in the
 [shared fixtures](../../../tests/fixtures/README.md).

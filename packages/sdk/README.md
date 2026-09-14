@@ -21,7 +21,7 @@ for traQ.
 | `crates/wasm`                 | Wasm interface for the shipped grammar and processing APIs    |
 | `typescript`, `go`, `scripts` | Host bindings and generated contract types                    |
 
-Follow the repository [development guide](../../CONTRIBUTING.md) to build and
+Follow the repository [development guide](../../docs/development.md) to build and
 verify the SDK. Build artifacts are written to `dist/`; generated TypeScript and
 Go sources are committed and must be regenerated from their Rust contracts.
 

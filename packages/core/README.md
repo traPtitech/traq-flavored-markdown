@@ -13,7 +13,7 @@ traP syntax, node types, or presets.
 | `markdown-codec`                                       | JSON encoding and decoding for registered node contracts |
 
 Each crate documents its own API. Follow the repository
-[development guide](../../CONTRIBUTING.md) for common setup and verification.
+[development guide](../../docs/development.md) for common setup and verification.
 
 ## Package boundaries
 

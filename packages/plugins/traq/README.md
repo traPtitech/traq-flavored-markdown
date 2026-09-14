@@ -26,6 +26,6 @@ module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/g
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 
-Follow the repository [development guide](../../../CONTRIBUTING.md). See the
+Follow the repository [development guide](../../../docs/development.md). See the
 [processing presets](../../sdk/crates/processing/README.md) for the traQ
 composition and runnable examples.
