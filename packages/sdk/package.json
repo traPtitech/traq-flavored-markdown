@@ -71,7 +71,7 @@
     "@traq-markdown-engine/core": "workspace:*",
     "@traq-markdown-engine/traq-plugin": "workspace:*",
     "markdown-it": "15.0.1",
-    "sass": "1.103.1"
+    "sass": "1.104.0"
   },
   "peerDependencies": {
     "@traq-markdown-engine/commonmark-plugin": "0.1.0",
