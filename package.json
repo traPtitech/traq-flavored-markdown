@@ -32,6 +32,7 @@
     "format:rust": "cargo fmt --all",
     "format:rust:check": "cargo fmt --all --check",
     "generate:bindings": "bun run scripts/generate-bindings.ts",
+    "husky:prepare": "husky",
     "lint": "eslint --fix --cache .",
     "lint:check": "eslint --cache --max-warnings=0 .",
     "lint:rust": "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
@@ -57,7 +58,9 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-unused-imports": "4.4.1",
     "globals": "17.12.0",
+    "husky": "9.1.7",
     "jiti": "2.7.0",
+    "lint-staged": "17.2.0",
     "prettier": "3.9.6",
     "typescript": "6.0.3"
   },
