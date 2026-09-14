@@ -18,20 +18,22 @@ The root workspace and `tools` workspaces remain private. Internal peer
 dependencies use the exact shared version. A release does not update external
 dependencies, tooling, Rust crates, Go modules, or their versions.
 
-Release tags are `v<version>`. The tag version must match the root and all four
-package `package.json` versions, and each sibling peer dependency must use that
-exact version.
+Release versions are `<version>` and tags are `v<version>`. The release workflow
+synchronizes the root and public package `package.json` files, sibling peer
+dependencies, and `bun.lock` in its isolated runner before it builds. After all
+checks succeed, it writes those generated metadata changes to the default branch
+in a `<version>` commit, publishes the packages, then creates the `v<version>`
+tag and its GitHub Release with generated notes.
 
 ## Prepare and validate
 
-`bun run release` performs a dry run by default; `--publish` is the only mode
-that publishes. A dry run also checks the npm registry, so its version must be
-unpublished and match the manifests on the selected branch. Prepare an
-unreleased version before testing a release.
+`bun run release` is the workflow's release primitive. It performs a dry run by
+default; `--publish` is the only mode that publishes. Local use is optional and
+is useful only when investigating a failed workflow.
 
 ```sh
 bun run release -- v0.1.1 --prepare  # synchronize manifests, peer dependencies, and bun.lock
-bun run release -- v0.1.1 --check    # validate manifests and peer graph without packing or network access
+bun run release -- v0.1.1 --check    # validate the synchronized manifests and peer graph
 bun run release -- v0.1.1            # pack all packages and dry-run publishing
 bun run release -- v0.1.1 --publish  # publish all packages
 ```
@@ -43,46 +45,28 @@ tooling, Rust crate, or Go module versions.
 
 ## Normal release
 
-Prepare and validate the release before committing the synchronized manifests
-and lockfile. Push that commit before the release tag.
+From the Actions page, run `Release npm packages` on the default branch. Select
+whether to increment `patch`, `minor`, or `major`, then turn off `dry_run`. Do
+not run a local build, dry run, `--prepare`, or create a tag.
 
-```sh
-bun run release -- v0.1.1 --prepare
-bun run check
-bun run release -- v0.1.1
-git add package.json packages/core/package.json packages/plugins/commonmark/package.json packages/plugins/traq/package.json packages/sdk/package.json bun.lock
-git commit -m "Release v0.1.1"
-git push
-git tag v0.1.1
-git push origin v0.1.1
-```
+The workflow checks out the current default branch, calculates the next stable
+SemVer version from its root `package.json`, synchronizes release metadata,
+builds the workspace, and runs `bun run check`. It then commits only the
+synchronized manifests and `bun.lock` to the default branch with the message
+`<version>`, publishes all four workspaces in dependency order (core,
+commonmark-plugin, traq-plugin, then SDK), and creates an annotated `v<version>`
+tag on that commit followed by a GitHub Release with generated notes. These
+three increment options produce stable releases using the `latest` dist-tag. The
+global `npm-publish` concurrency group serializes queued releases.
 
-The `v*` workflow publishes all four workspaces in dependency order: core,
-commonmark-plugin, traq-plugin, then SDK. Stable versions use the `latest`
-dist-tag; prereleases use `next`. The global `npm-publish` concurrency group
-serializes queued releases.
+The workflow uses GitHub Actions OIDC and only accepts manual dispatch from the
+default branch. A dry run synchronizes metadata on its isolated runner without
+committing, tagging, publishing, or creating a GitHub Release.
 
-The workflow uses GitHub Actions OIDC, builds the workspace, runs `bun run
-check`, and publishes the synchronized set for a `v*` tag. Manual dispatch takes
-a `v<version>` tag and defaults to a dry run. A dry run uses the selected branch
-without requiring the tag; a live dispatch checks out `refs/tags/<tag>`.
+## Trusted publishing
 
-## First publication and trusted publishing
-
-Use Node 24 with npm 11.17.0 and Bun 1.3.14. Sign in with an npm account that
-uses two-factor authentication and owns the `@traq-markdown-engine` organization.
-Verify that ownership before publishing; this repository does not establish it.
-
-```sh
-npm login
-bun install --frozen-lockfile
-bun run build
-bun run check
-bun run release -- v0.1.0 --publish
-```
-
-After the initial release, configure a GitHub Actions trusted publisher in the
-npm settings of each package:
+Configure a GitHub Actions trusted publisher in the npm settings of each
+existing package:
 
 - Organization or user: `uni-kakurenbo`
 - Repository: `traq-markdown-engine`
@@ -91,12 +75,18 @@ npm settings of each package:
 - Allowed action: enable direct `npm publish`; otherwise a new configuration only
   permits staged publishing
 
+No npm token or GitHub Actions secret is required for publishing. The workflow
+uses its short-lived OIDC identity. Its `GITHUB_TOKEN` also needs permission to
+push the generated release commit to the default branch; allow the GitHub
+Actions bot to bypass any branch rule that would reject that push.
+
 ## Recover from a partial publication
 
 Native npm publishing is sequential, not atomic, and stops at the first failure.
 Published versions are immutable. Do not rerun the full release after a partial
-failure. Use `npm view` to identify published packages, then publish only the
-remaining workspaces from the same unchanged tag after a successful
+failure. The generated `<version>` commit is already on the default branch at
+this point. Use `npm view` to identify published packages, then publish only the
+remaining workspaces from that commit after a successful
 `bun run check`.
 
 For example, if core and commonmark-plugin were published:
