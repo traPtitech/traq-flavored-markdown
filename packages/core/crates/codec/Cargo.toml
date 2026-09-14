@@ -9,6 +9,6 @@ description = "Typed Markdown AST JSON boundaries with registered node contracts
 [dependencies]
 markdown-ast = { path = "../ast" }
 markdown-definitions = { path = "../definitions" }
-serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["raw_value"] }
-erased-serde = "0.4.10"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = { version = "=1.0.151", features = ["raw_value"] }
+erased-serde = "=0.4.10"

@@ -10,9 +10,9 @@ contracts = ["markdown-trap-extraction/contracts", "dep:ts-rs", "dep:schemars"]
 
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-ts-rs = { version = "12", optional = true, features = ["serde-json-impl"] }
-schemars = { version = "1.2.2", optional = true }
+serde = { version = "=1.0.229", features = ["derive"] }
+ts-rs = { version = "=12.0.1", optional = true, features = ["serde-json-impl"] }
+schemars = { version = "=1.2.2", optional = true }
 markdown-trap-contracts.workspace = true
 markdown-ast.workspace = true
 markdown-commonmark-text.workspace = true
@@ -25,4 +25,4 @@ markdown-extractor.workspace = true
 
 [dev-dependencies]
 traq-markdown-grammar = { path = "../grammar" }
-serde_json = "1"
+serde_json = "=1.0.151"
