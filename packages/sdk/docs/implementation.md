@@ -27,11 +27,13 @@ records the actual Wasm SHA-256 for diagnostics.
 
 ## Host runtimes
 
-`createRuntime` and `NewRuntime` compile the matching Wasm module once. Their
-parsers, extractors, and Go plain-text renderers each own an independent instance;
-use separate instances for parallel work. TypeScript parsing is synchronous after
-runtime creation, while Go operations accept a `context.Context` and serialize
-calls to one instance.
+`createRuntime` and `NewRuntime` compile the matching Wasm module once. The
+browser-only `loadRuntime` entrypoint fetches the packaged artifact once and
+keeps its runtime for the page; it exposes parser and extractor factories but
+not runtime disposal. Their parsers, extractors, and Go plain-text renderers
+each own an independent instance; use separate instances for parallel work.
+TypeScript parsing is synchronous after runtime creation, while Go operations
+accept a `context.Context` and serialize calls to one instance.
 
 Disposing or closing a runtime releases every instance. Individual disposal and
 close operations are idempotent, and later use is rejected. Parsed `Document`

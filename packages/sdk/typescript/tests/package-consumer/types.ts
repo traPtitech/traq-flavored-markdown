@@ -6,6 +6,7 @@ import {
   isKnownNode,
   presets
 } from '@traq-markdown-engine/sdk'
+import { loadRuntime } from '@traq-markdown-engine/sdk/browser'
 import {
   type ReferenceData,
   names
@@ -30,7 +31,12 @@ runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
 const output: Extraction = extractor.extract(document)
 const mentions: string[] = output.references.mentions
+const browserRuntime = await loadRuntime()
+browserRuntime.createParser(presets.traq.v1)
+browserRuntime.createExtractor({ origin: '' })
 void mentions
+// @ts-expect-error The SDK owns the shared browser Runtime's lifetime.
+browserRuntime.dispose()
 // @ts-expect-error Extractor has no host AST parsing API
 extractor.parse('x')
 // @ts-expect-error Options are generated from Rust

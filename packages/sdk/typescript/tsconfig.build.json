@@ -4,5 +4,5 @@
     "rootDir": ".",
     "outDir": "../dist"
   },
-  "include": ["index.ts", "generated/**/*.ts", "renderer/**/*.ts"]
+  "include": ["index.ts", "browser.ts", "generated/**/*.ts", "renderer/**/*.ts"]
 }

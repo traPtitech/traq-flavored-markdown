@@ -26,6 +26,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
     "./nodes": {
       "types": "./dist/generated/nodes.d.ts",
       "import": "./dist/generated/nodes.js"
@@ -42,6 +46,8 @@
   "files": [
     "dist/index.js",
     "dist/index.d.ts",
+    "dist/browser.js",
+    "dist/browser.d.ts",
     "dist/embedding.js",
     "dist/embedding.d.ts",
     "dist/generated",

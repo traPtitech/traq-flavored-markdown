@@ -51,6 +51,8 @@ try {
     const files = new Set(packed.files.map(file => file.path))
     for (const name of [
       'LICENSE',
+      'dist/browser.js',
+      'dist/browser.d.ts',
       'dist/renderer/index.js',
       'dist/renderer/index.d.ts'
     ])

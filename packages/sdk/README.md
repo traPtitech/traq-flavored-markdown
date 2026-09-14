@@ -24,10 +24,28 @@ committed and must be regenerated from their Rust contracts.
 
 ## Parse Markdown
 
-Create one runtime from the shipped Wasm bytes, then create parsers for the
-presets your application supports. A runtime and its parsers can be reused.
+Create parsers for the presets your application supports. A runtime compiles
+Wasm once, then gives each parser and extractor an independent instance.
 
-### TypeScript
+### Browser TypeScript
+
+```ts
+import { loadRuntime, presets } from '@traq-markdown-engine/sdk/browser'
+
+const runtime = await loadRuntime()
+const parser = runtime.createParser(presets.traq.v1)
+const document = parser.parse('**hello** :stamp:')
+const inline = parser.parseInline('**hello**')
+parser.dispose()
+```
+
+`loadRuntime` fetches the packaged Wasm once and retains its shared runtime for
+the page. It deliberately exposes no runtime `dispose`; dispose individual
+parsers and extractors when they are no longer needed. Node payload types and
+optional guards are exported by the CommonMark and traQ plugin packages.
+`@traq-markdown-engine/sdk/nodes` exports the complete node-name catalog.
+
+### Bun and other TypeScript hosts
 
 ```ts
 import { createRuntime, presets } from '@traq-markdown-engine/sdk'
@@ -43,10 +61,8 @@ try {
 ```
 
 `wasmBytes` is a `Uint8Array`. With Bun, load
-`@traq-markdown-engine/sdk/parser.wasm` with `Bun.file(...).bytes()`; in a
-browser, pass `new Uint8Array(await response.arrayBuffer())`. Node payload types
-and optional guards are exported by the CommonMark and traQ plugin packages.
-`@traq-markdown-engine/sdk/nodes` exports the complete node-name catalog.
+`@traq-markdown-engine/sdk/parser.wasm` with `Bun.file(...).bytes()`. Supply
+the bytes directly in hosts that do not use the browser entrypoint.
 
 ### Go
 
