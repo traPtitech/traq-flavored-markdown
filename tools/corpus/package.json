@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "vite build viewer",
-    "collect": "bun run scripts/fetch.ts",
-    "compare": "bun run scripts/compare.ts",
-    "report": "bun run scripts/report.ts",
+    "collect": "bun run --bun scripts/fetch.ts",
+    "compare": "bun run --bun scripts/compare.ts",
+    "report": "bun run --bun scripts/report.ts",
     "test": "bun test scripts",
-    "typecheck": "bun run ../../scripts/tsc.ts -p tsconfig.json"
+    "typecheck": "bun run --bun ../../scripts/tsc.ts -p tsconfig.json"
   },
   "dependencies": {
     "jest-diff": "30.5.1",
