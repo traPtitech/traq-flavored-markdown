@@ -1,6 +1,6 @@
 // Code generated for this Wasm build. DO NOT EDIT.
 package markdown
 
-const buildID = "b0586cbfb94ac015"
+const buildID = "5757215aa24f21bb"
 const inputBytes = 1048576
 const memoryPages = 512
