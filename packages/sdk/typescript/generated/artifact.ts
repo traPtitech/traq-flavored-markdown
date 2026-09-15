@@ -1,3 +1,3 @@
 // Generated for this Wasm build. Do not edit.
-export const buildId = 'f181dadc4c66094e'
+export const buildId = 'f6561816a08308a7'
 export const inputBytes = 1048576

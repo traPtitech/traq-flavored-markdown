@@ -8,6 +8,10 @@ Links render their labels, code renders its content, and lists include their
 markers. HTML node contents are returned as text, so a consumer that passes the
 result to an HTML sink is responsible for escaping it.
 
+Use `plugin_with_options()` with
+`ExplicitLinkStyle::LabelAndDestination` to render explicit links as
+`[label](destination)`.
+
 ```rust
 use markdown_commonmark_contracts::Link;
 use markdown_commonmark_text as commonmark;

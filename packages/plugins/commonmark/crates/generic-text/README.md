@@ -12,3 +12,5 @@ customize a handler for one plugin instance.
 Math renders its TeX source, tables render cells separated by `|` and rows with
 a trailing newline, and decorations render their children. Linkify produces
 CommonMark `Link` nodes and therefore needs no renderer plugin of its own.
+Use `math::plugin_with_options()` with `math::Style::DelimitedTex` to retain
+`$` and `$$` delimiters.

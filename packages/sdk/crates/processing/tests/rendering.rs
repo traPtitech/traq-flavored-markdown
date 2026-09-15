@@ -41,3 +41,22 @@ fn rendering_depends_on_the_supplied_ast_not_a_grammar_version() {
         assert_eq!(document.source, "!!secret!!");
     }
 }
+
+#[test]
+fn plain_text_renderer_keeps_math_delimiters_and_explicit_link_destinations() {
+    let parser = bindings::parser("traq.v1").unwrap();
+    let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
+
+    for (source, expected) in [
+        ("$x + y$ and $x$", "$x + y$ and $x$"),
+        ("$$\nx^2 + y^2\n$$", "$$ x^2 + y^2 $$"),
+        (
+            "[**label**](https://example.com \"title\")",
+            "[label](https://example.com)",
+        ),
+        ("https://example.com", "https://example.com"),
+    ] {
+        let document = parser.parse(source).unwrap();
+        assert_eq!(renderer.render(&document).unwrap(), expected, "{source}");
+    }
+}

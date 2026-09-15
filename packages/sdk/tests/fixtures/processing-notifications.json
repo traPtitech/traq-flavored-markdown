@@ -102,7 +102,7 @@
   {
     "name": "legacy-spoiler-21",
     "source": "$$\n!!a!!\n$$",
-    "notification": "!!a!!"
+    "notification": "$$ !!a!! $$"
   },
   {
     "name": "legacy-spoiler-22",
@@ -112,7 +112,7 @@
   {
     "name": "legacy-spoiler-23",
     "source": "$!!a!!$",
-    "notification": "!!a!!"
+    "notification": "$!!a!!$"
   },
   {
     "name": "plain",
@@ -162,12 +162,12 @@
   {
     "name": "math-spoiler",
     "source": "$!!secret!!$",
-    "notification": "!!secret!!"
+    "notification": "$!!secret!!$"
   },
   {
     "name": "math-block",
     "source": "$$\n!!secret!!\n$$",
-    "notification": "!!secret!!"
+    "notification": "$$ !!secret!! $$"
   },
   {
     "name": "escaped-spoiler",
@@ -212,7 +212,7 @@
   {
     "name": "math-reference",
     "source": "$!{\"type\":\"user\",\"id\":\"00000000-0000-4000-8000-000000000001\",\"raw\":\"@alice\"}$",
-    "notification": "!{\"type\":\"user\",\"id\":\"00000000-0000-4000-8000-000000000001\",\"raw\":\"@alice\"}"
+    "notification": "$!{\"type\":\"user\",\"id\":\"00000000-0000-4000-8000-000000000001\",\"raw\":\"@alice\"}$"
   },
   {
     "name": "stamp",
@@ -232,7 +232,7 @@
   {
     "name": "empty-link",
     "source": "[label]()",
-    "notification": "label"
+    "notification": "[label]()"
   },
   {
     "name": "empty-code",
@@ -252,7 +252,7 @@
   {
     "name": "explicit-file",
     "source": "[添付](https://q.example.test/files/00000000-0000-4000-8000-000000000001)",
-    "notification": "添付"
+    "notification": "[添付](https://q.example.test/files/00000000-0000-4000-8000-000000000001)"
   },
   {
     "name": "angle-file",
@@ -297,7 +297,7 @@
   {
     "name": "link-boundary",
     "source": "[!!link]()!!",
-    "notification": "!!link!!"
+    "notification": "[!!link]()!!"
   },
   {
     "name": "public-1",
@@ -407,12 +407,12 @@
   {
     "name": "public-22",
     "source": "[foo](/bar\\* \"ti\\*tle\")\n",
-    "notification": "foo"
+    "notification": "[foo](/bar*)"
   },
   {
     "name": "public-23",
     "source": "[foo]\n\n[foo]: /bar\\* \"ti\\*tle\"\n",
-    "notification": "foo"
+    "notification": "[foo](/bar*)"
   },
   {
     "name": "public-24",
@@ -457,12 +457,12 @@
   {
     "name": "public-32",
     "source": "[foo](/f&ouml;&ouml; \"f&ouml;&ouml;\")\n",
-    "notification": "foo"
+    "notification": "[foo](/f%C3%B6%C3%B6)"
   },
   {
     "name": "public-33",
     "source": "[foo]\n\n[foo]: /f&ouml;&ouml; \"f&ouml;&ouml;\"\n",
-    "notification": "foo"
+    "notification": "[foo](/f%C3%B6%C3%B6)"
   },
   {
     "name": "public-34",
@@ -1257,27 +1257,27 @@
   {
     "name": "public-192",
     "source": "[foo]: /url \"title\"\n\n[foo]\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-193",
     "source": "   [foo]: \n      /url  \n           'the title'  \n\n[foo]\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-194",
     "source": "[Foo*bar\\]]:my_(url) 'title (with parens)'\n\n[Foo*bar\\]]\n",
-    "notification": "Foo*bar]"
+    "notification": "[Foo*bar]](my_(url))"
   },
   {
     "name": "public-195",
     "source": "[Foo bar]:\n<my url>\n'title'\n\n[Foo bar]\n",
-    "notification": "Foo bar"
+    "notification": "[Foo bar](my%20url)"
   },
   {
     "name": "public-196",
     "source": "[foo]: /url '\ntitle\nline1\nline2\n'\n\n[foo]\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-197",
@@ -1287,7 +1287,7 @@
   {
     "name": "public-198",
     "source": "[foo]:\n/url\n\n[foo]\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-199",
@@ -1297,7 +1297,7 @@
   {
     "name": "public-200",
     "source": "[foo]: <>\n\n[foo]\n",
-    "notification": "foo"
+    "notification": "[foo]()"
   },
   {
     "name": "public-201",
@@ -1307,27 +1307,27 @@
   {
     "name": "public-202",
     "source": "[foo]: /url\\bar\\*baz \"foo\\\"bar\\baz\"\n\n[foo]\n",
-    "notification": "foo"
+    "notification": "[foo](/url%5Cbar*baz)"
   },
   {
     "name": "public-203",
     "source": "[foo]\n\n[foo]: url\n",
-    "notification": "foo"
+    "notification": "[foo](url)"
   },
   {
     "name": "public-204",
     "source": "[foo]\n\n[foo]: first\n[foo]: second\n",
-    "notification": "foo"
+    "notification": "[foo](first)"
   },
   {
     "name": "public-205",
     "source": "[FOO]: /url\n\n[Foo]\n",
-    "notification": "Foo"
+    "notification": "[Foo](/url)"
   },
   {
     "name": "public-206",
     "source": "[ΑΓΩ]: /φου\n\n[αγω]\n",
-    "notification": "αγω"
+    "notification": "[αγω](/%CF%86%CE%BF%CF%85)"
   },
   {
     "name": "public-207",
@@ -1367,27 +1367,27 @@
   {
     "name": "public-214",
     "source": "# [Foo]\n[foo]: /url\n> bar\n",
-    "notification": "Foo bar"
+    "notification": "[Foo](/url) bar"
   },
   {
     "name": "public-215",
     "source": "[foo]: /url\nbar\n===\n[foo]\n",
-    "notification": "bar foo"
+    "notification": "bar [foo](/url)"
   },
   {
     "name": "public-216",
     "source": "[foo]: /url\n===\n[foo]\n",
-    "notification": "=== foo"
+    "notification": "=== [foo](/url)"
   },
   {
     "name": "public-217",
     "source": "[foo]: /foo-url \"foo\"\n[bar]: /bar-url\n  \"bar\"\n[baz]: /baz-url\n\n[foo],\n[bar],\n[baz]\n",
-    "notification": "foo, bar, baz"
+    "notification": "[foo](/foo-url), [bar](/bar-url), [baz](/baz-url)"
   },
   {
     "name": "public-218",
     "source": "[foo]\n\n> [foo]: /url\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-219",
@@ -2317,7 +2317,7 @@
   {
     "name": "public-404",
     "source": "*foo [bar](/url)*\n",
-    "notification": "foo bar"
+    "notification": "foo [bar](/url)"
   },
   {
     "name": "public-405",
@@ -2392,7 +2392,7 @@
   {
     "name": "public-419",
     "source": "*foo [*bar*](/url)*\n",
-    "notification": "foo bar"
+    "notification": "foo [bar](/url)"
   },
   {
     "name": "public-420",
@@ -2407,7 +2407,7 @@
   {
     "name": "public-422",
     "source": "**foo [bar](/url)**\n",
-    "notification": "foo bar"
+    "notification": "foo [bar](/url)"
   },
   {
     "name": "public-423",
@@ -2462,7 +2462,7 @@
   {
     "name": "public-433",
     "source": "**foo [*bar*](/url)**\n",
-    "notification": "foo bar"
+    "notification": "foo [bar](/url)"
   },
   {
     "name": "public-434",
@@ -2662,12 +2662,12 @@
   {
     "name": "public-473",
     "source": "*[bar*](/url)\n",
-    "notification": "*bar*"
+    "notification": "*[bar*](/url)"
   },
   {
     "name": "public-474",
     "source": "_foo [bar_](/url)\n",
-    "notification": "_foo bar_"
+    "notification": "_foo [bar_](/url)"
   },
   {
     "name": "public-475",
@@ -2707,32 +2707,32 @@
   {
     "name": "public-482",
     "source": "[link](/uri \"title\")\n",
-    "notification": "link"
+    "notification": "[link](/uri)"
   },
   {
     "name": "public-483",
     "source": "[link](/uri)\n",
-    "notification": "link"
+    "notification": "[link](/uri)"
   },
   {
     "name": "public-484",
     "source": "[](./target.md)\n",
-    "notification": ""
+    "notification": "[](./target.md)"
   },
   {
     "name": "public-485",
     "source": "[link]()\n",
-    "notification": "link"
+    "notification": "[link]()"
   },
   {
     "name": "public-486",
     "source": "[link](<>)\n",
-    "notification": "link"
+    "notification": "[link]()"
   },
   {
     "name": "public-487",
     "source": "[]()\n",
-    "notification": ""
+    "notification": "[]()"
   },
   {
     "name": "public-488",
@@ -2742,7 +2742,7 @@
   {
     "name": "public-489",
     "source": "[link](</my uri>)\n",
-    "notification": "link"
+    "notification": "[link](/my%20uri)"
   },
   {
     "name": "public-490",
@@ -2757,7 +2757,7 @@
   {
     "name": "public-492",
     "source": "[a](<b)c>)\n",
-    "notification": "a"
+    "notification": "[a](b)c)"
   },
   {
     "name": "public-493",
@@ -2772,12 +2772,12 @@
   {
     "name": "public-495",
     "source": "[link](\\(foo\\))\n",
-    "notification": "link"
+    "notification": "[link]((foo))"
   },
   {
     "name": "public-496",
     "source": "[link](foo(and(bar)))\n",
-    "notification": "link"
+    "notification": "[link](foo(and(bar)))"
   },
   {
     "name": "public-497",
@@ -2787,52 +2787,52 @@
   {
     "name": "public-498",
     "source": "[link](foo\\(and\\(bar\\))\n",
-    "notification": "link"
+    "notification": "[link](foo(and(bar))"
   },
   {
     "name": "public-499",
     "source": "[link](<foo(and(bar)>)\n",
-    "notification": "link"
+    "notification": "[link](foo(and(bar))"
   },
   {
     "name": "public-500",
     "source": "[link](foo\\)\\:)\n",
-    "notification": "link"
+    "notification": "[link](foo):)"
   },
   {
     "name": "public-501",
     "source": "[link](#fragment)\n\n[link](https://example.com#fragment)\n\n[link](https://example.com?foo=3#frag)\n",
-    "notification": "link link link"
+    "notification": "[link](#fragment) [link](https://example.com#fragment) [link](https://example.com?foo=3#frag)"
   },
   {
     "name": "public-502",
     "source": "[link](foo\\bar)\n",
-    "notification": "link"
+    "notification": "[link](foo%5Cbar)"
   },
   {
     "name": "public-503",
     "source": "[link](foo%20b&auml;)\n",
-    "notification": "link"
+    "notification": "[link](foo%20b%C3%A4)"
   },
   {
     "name": "public-504",
     "source": "[link](\"title\")\n",
-    "notification": "link"
+    "notification": "[link](%22title%22)"
   },
   {
     "name": "public-505",
     "source": "[link](/url \"title\")\n[link](/url 'title')\n[link](/url (title))\n",
-    "notification": "link link link"
+    "notification": "[link](/url) [link](/url) [link](/url)"
   },
   {
     "name": "public-506",
     "source": "[link](/url \"title \\\"&quot;\")\n",
-    "notification": "link"
+    "notification": "[link](/url)"
   },
   {
     "name": "public-507",
     "source": "[link](/url \"title\")\n",
-    "notification": "link"
+    "notification": "[link](/url%C2%A0%22title%22)"
   },
   {
     "name": "public-508",
@@ -2842,12 +2842,12 @@
   {
     "name": "public-509",
     "source": "[link](/url 'title \"and\" title')\n",
-    "notification": "link"
+    "notification": "[link](/url)"
   },
   {
     "name": "public-510",
     "source": "[link](   /uri\n  \"title\"  )\n",
-    "notification": "link"
+    "notification": "[link](/uri)"
   },
   {
     "name": "public-511",
@@ -2857,7 +2857,7 @@
   {
     "name": "public-512",
     "source": "[link [foo [bar]]](/uri)\n",
-    "notification": "link [foo [bar]]"
+    "notification": "[link [foo [bar]]](/uri)"
   },
   {
     "name": "public-513",
@@ -2867,47 +2867,47 @@
   {
     "name": "public-514",
     "source": "[link [bar](/uri)\n",
-    "notification": "[link bar"
+    "notification": "[link [bar](/uri)"
   },
   {
     "name": "public-515",
     "source": "[link \\[bar](/uri)\n",
-    "notification": "link [bar"
+    "notification": "[link [bar](/uri)"
   },
   {
     "name": "public-516",
     "source": "[link *foo **bar** `#`*](/uri)\n",
-    "notification": "link foo bar #"
+    "notification": "[link foo bar #](/uri)"
   },
   {
     "name": "public-517",
     "source": "[![moon](moon.jpg)](/uri)\n",
-    "notification": "[!moon](/uri)"
+    "notification": "[![moon](moon.jpg)](/uri)"
   },
   {
     "name": "public-518",
     "source": "[foo [bar](/uri)](/uri)\n",
-    "notification": "[foo bar](/uri)"
+    "notification": "[foo [bar](/uri)](/uri)"
   },
   {
     "name": "public-519",
     "source": "[foo *[bar [baz](/uri)](/uri)*](/uri)\n",
-    "notification": "[foo [bar baz](/uri)](/uri)"
+    "notification": "[foo [bar [baz](/uri)](/uri)](/uri)"
   },
   {
     "name": "public-520",
     "source": "![[[foo](uri1)](uri2)](uri3)\n",
-    "notification": "![[foo](uri2)](uri3)"
+    "notification": "![[[foo](uri1)](uri2)](uri3)"
   },
   {
     "name": "public-521",
     "source": "*[foo*](/uri)\n",
-    "notification": "*foo*"
+    "notification": "*[foo*](/uri)"
   },
   {
     "name": "public-522",
     "source": "[foo *bar](baz*)\n",
-    "notification": "foo *bar"
+    "notification": "[foo *bar](baz*)"
   },
   {
     "name": "public-523",
@@ -2917,7 +2917,7 @@
   {
     "name": "public-524",
     "source": "[foo <bar attr=\"](baz)\">\n",
-    "notification": "foo <bar attr=\"\">"
+    "notification": "[foo <bar attr=\"](baz)\">"
   },
   {
     "name": "public-525",
@@ -2932,52 +2932,52 @@
   {
     "name": "public-527",
     "source": "[foo][bar]\n\n[bar]: /url \"title\"\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-528",
     "source": "[link [foo [bar]]][ref]\n\n[ref]: /uri\n",
-    "notification": "link [foo [bar]]"
+    "notification": "[link [foo [bar]]](/uri)"
   },
   {
     "name": "public-529",
     "source": "[link \\[bar][ref]\n\n[ref]: /uri\n",
-    "notification": "link [bar"
+    "notification": "[link [bar](/uri)"
   },
   {
     "name": "public-530",
     "source": "[link *foo **bar** `#`*][ref]\n\n[ref]: /uri\n",
-    "notification": "link foo bar #"
+    "notification": "[link foo bar #](/uri)"
   },
   {
     "name": "public-531",
     "source": "[![moon](moon.jpg)][ref]\n\n[ref]: /uri\n",
-    "notification": "[!moon]ref"
+    "notification": "[![moon](moon.jpg)][ref](/uri)"
   },
   {
     "name": "public-532",
     "source": "[foo [bar](/uri)][ref]\n\n[ref]: /uri\n",
-    "notification": "[foo bar]ref"
+    "notification": "[foo [bar](/uri)][ref](/uri)"
   },
   {
     "name": "public-533",
     "source": "[foo *bar [baz][ref]*][ref]\n\n[ref]: /uri\n",
-    "notification": "[foo bar baz]ref"
+    "notification": "[foo bar [baz](/uri)][ref](/uri)"
   },
   {
     "name": "public-534",
     "source": "*[foo*][ref]\n\n[ref]: /uri\n",
-    "notification": "*foo*"
+    "notification": "*[foo*](/uri)"
   },
   {
     "name": "public-535",
     "source": "[foo *bar][ref]*\n\n[ref]: /uri\n",
-    "notification": "foo *bar*"
+    "notification": "[foo *bar](/uri)*"
   },
   {
     "name": "public-536",
     "source": "[foo <bar attr=\"][ref]\">\n\n[ref]: /uri\n",
-    "notification": "foo <bar attr=\"\">"
+    "notification": "[foo <bar attr=\"](/uri)\">"
   },
   {
     "name": "public-537",
@@ -2992,32 +2992,32 @@
   {
     "name": "public-539",
     "source": "[foo][BaR]\n\n[bar]: /url \"title\"\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-540",
     "source": "[ẞ]\n\n[SS]: /url\n",
-    "notification": "ẞ"
+    "notification": "[ẞ](/url)"
   },
   {
     "name": "public-541",
     "source": "[Foo\n  bar]: /url\n\n[Baz][Foo bar]\n",
-    "notification": "Baz"
+    "notification": "[Baz](/url)"
   },
   {
     "name": "public-542",
     "source": "[foo] [bar]\n\n[bar]: /url \"title\"\n",
-    "notification": "[foo] bar"
+    "notification": "[foo] [bar](/url)"
   },
   {
     "name": "public-543",
     "source": "[foo]\n[bar]\n\n[bar]: /url \"title\"\n",
-    "notification": "[foo] bar"
+    "notification": "[foo] [bar](/url)"
   },
   {
     "name": "public-544",
     "source": "[foo]: /url1\n\n[foo]: /url2\n\n[bar][foo]\n",
-    "notification": "bar"
+    "notification": "[bar](/url1)"
   },
   {
     "name": "public-545",
@@ -3042,12 +3042,12 @@
   {
     "name": "public-549",
     "source": "[foo][ref\\[]\n\n[ref\\[]: /uri\n",
-    "notification": "foo"
+    "notification": "[foo](/uri)"
   },
   {
     "name": "public-550",
     "source": "[bar\\\\]: /uri\n\n[bar\\\\]\n",
-    "notification": "bar\\"
+    "notification": "[bar\\](/uri)"
   },
   {
     "name": "public-551",
@@ -3062,52 +3062,52 @@
   {
     "name": "public-553",
     "source": "[foo][]\n\n[foo]: /url \"title\"\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-554",
     "source": "[*foo* bar][]\n\n[*foo* bar]: /url \"title\"\n",
-    "notification": "foo bar"
+    "notification": "[foo bar](/url)"
   },
   {
     "name": "public-555",
     "source": "[Foo][]\n\n[foo]: /url \"title\"\n",
-    "notification": "Foo"
+    "notification": "[Foo](/url)"
   },
   {
     "name": "public-556",
     "source": "[foo] \n[]\n\n[foo]: /url \"title\"\n",
-    "notification": "foo []"
+    "notification": "[foo](/url) []"
   },
   {
     "name": "public-557",
     "source": "[foo]\n\n[foo]: /url \"title\"\n",
-    "notification": "foo"
+    "notification": "[foo](/url)"
   },
   {
     "name": "public-558",
     "source": "[*foo* bar]\n\n[*foo* bar]: /url \"title\"\n",
-    "notification": "foo bar"
+    "notification": "[foo bar](/url)"
   },
   {
     "name": "public-559",
     "source": "[[*foo* bar]]\n\n[*foo* bar]: /url \"title\"\n",
-    "notification": "[foo bar]"
+    "notification": "[[foo bar](/url)]"
   },
   {
     "name": "public-560",
     "source": "[[bar [foo]\n\n[foo]: /url\n",
-    "notification": "[[bar foo"
+    "notification": "[[bar [foo](/url)"
   },
   {
     "name": "public-561",
     "source": "[Foo]\n\n[foo]: /url \"title\"\n",
-    "notification": "Foo"
+    "notification": "[Foo](/url)"
   },
   {
     "name": "public-562",
     "source": "[foo] bar\n\n[foo]: /url\n",
-    "notification": "foo bar"
+    "notification": "[foo](/url) bar"
   },
   {
     "name": "public-563",
@@ -3117,47 +3117,47 @@
   {
     "name": "public-564",
     "source": "[foo*]: /url\n\n*[foo*]\n",
-    "notification": "*foo*"
+    "notification": "*[foo*](/url)"
   },
   {
     "name": "public-565",
     "source": "[foo][bar]\n\n[foo]: /url1\n[bar]: /url2\n",
-    "notification": "foo"
+    "notification": "[foo](/url2)"
   },
   {
     "name": "public-566",
     "source": "[foo][]\n\n[foo]: /url1\n",
-    "notification": "foo"
+    "notification": "[foo](/url1)"
   },
   {
     "name": "public-567",
     "source": "[foo]()\n\n[foo]: /url1\n",
-    "notification": "foo"
+    "notification": "[foo]()"
   },
   {
     "name": "public-568",
     "source": "[foo](not a link)\n\n[foo]: /url1\n",
-    "notification": "foo(not a link)"
+    "notification": "[foo](/url1)(not a link)"
   },
   {
     "name": "public-569",
     "source": "[foo][bar][baz]\n\n[baz]: /url\n",
-    "notification": "[foo]bar"
+    "notification": "[foo][bar](/url)"
   },
   {
     "name": "public-570",
     "source": "[foo][bar][baz]\n\n[baz]: /url1\n[bar]: /url2\n",
-    "notification": "foobaz"
+    "notification": "[foo](/url2)[baz](/url1)"
   },
   {
     "name": "public-571",
     "source": "[foo][bar][baz]\n\n[baz]: /url1\n[foo]: /url2\n",
-    "notification": "[foo]bar"
+    "notification": "[foo][bar](/url1)"
   },
   {
     "name": "public-572",
     "source": "![foo](/url \"title\")\n",
-    "notification": "!foo"
+    "notification": "![foo](/url)"
   },
   {
     "name": "public-573",
@@ -3167,12 +3167,12 @@
   {
     "name": "public-574",
     "source": "![foo ![bar](/url)](/url2)\n",
-    "notification": "![foo !bar](/url2)"
+    "notification": "![foo ![bar](/url)](/url2)"
   },
   {
     "name": "public-575",
     "source": "![foo [bar](/url)](/url2)\n",
-    "notification": "![foo bar](/url2)"
+    "notification": "![foo [bar](/url)](/url2)"
   },
   {
     "name": "public-576",
@@ -3187,22 +3187,22 @@
   {
     "name": "public-578",
     "source": "![foo](train.jpg)\n",
-    "notification": "!foo"
+    "notification": "![foo](train.jpg)"
   },
   {
     "name": "public-579",
     "source": "My ![foo bar](/path/to/train.jpg  \"title\"   )\n",
-    "notification": "My !foo bar"
+    "notification": "My ![foo bar](/path/to/train.jpg)"
   },
   {
     "name": "public-580",
     "source": "![foo](<url>)\n",
-    "notification": "!foo"
+    "notification": "![foo](url)"
   },
   {
     "name": "public-581",
     "source": "![](/url)\n",
-    "notification": "!"
+    "notification": "![](/url)"
   },
   {
     "name": "public-582",
@@ -3262,7 +3262,7 @@
   {
     "name": "public-593",
     "source": "\\![foo]\n\n[foo]: /url \"title\"\n",
-    "notification": "!foo"
+    "notification": "![foo](/url)"
   },
   {
     "name": "public-594",
@@ -3567,17 +3567,17 @@
   {
     "name": "public-654",
     "source": "$x + y$ and $x$",
-    "notification": "x + y and x"
+    "notification": "$x + y$ and $x$"
   },
   {
     "name": "public-655",
     "source": "$$\nx^2 + y^2\n$$",
-    "notification": "x^2 + y^2"
+    "notification": "$$ x^2 + y^2 $$"
   },
   {
     "name": "public-656",
     "source": "| left | right |\n| :--- | ---: |\n| **one** | $two$ |",
-    "notification": "left | right one | two"
+    "notification": "left | right one | $two$"
   },
   {
     "name": "public-657",
@@ -3632,12 +3632,12 @@
   {
     "name": "public-667",
     "source": "[**label**](https://example.com \"title\")",
-    "notification": "label"
+    "notification": "[label](https://example.com)"
   },
   {
     "name": "public-668",
     "source": "![alt](https://example.com/image.png)",
-    "notification": "!alt"
+    "notification": "![alt](https://example.com/image.png)"
   },
   {
     "name": "public-669",
@@ -3832,7 +3832,7 @@
   {
     "name": "public-707",
     "source": "[**あ**](https:traq.example/messages/00000000-0000-0000-0000-000000000000)",
-    "notification": "あ"
+    "notification": "[あ](https:traq.example/messages/00000000-0000-0000-0000-000000000000)"
   },
   {
     "name": "public-708",
@@ -3862,7 +3862,7 @@
   {
     "name": "public-713",
     "source": "[あ](https:traq.example/messages/00000000-0000-0000-0000-000000000000)あああ。\n**ああ。**:",
-    "notification": "ああああ。 ああ。:"
+    "notification": "[あ](https:traq.example/messages/00000000-0000-0000-0000-000000000000)あああ。 ああ。:"
   },
   {
     "name": "public-714",

@@ -18,7 +18,10 @@ fn targets_are_independent_of_display_policy() {
         let raw = parser.parse(&url).unwrap();
         assert_eq!(flatten(&renderer.render(&raw).unwrap()), label);
         let explicit = parser.parse(&format!("[資料]({url})")).unwrap();
-        assert_eq!(flatten(&renderer.render(&explicit).unwrap()), "資料");
+        assert_eq!(
+            flatten(&renderer.render(&explicit).unwrap()),
+            format!("[資料]({url})")
+        );
         let code = parser.parse(&format!("`{url}`")).unwrap();
         assert_eq!(flatten(&renderer.render(&code).unwrap()), url);
     }

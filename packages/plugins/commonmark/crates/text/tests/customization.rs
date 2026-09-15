@@ -18,6 +18,11 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
     builder.remove(&markdown_commonmark_text::plugin()).unwrap();
 
     let default = renderer(&markdown_commonmark_text::plugin());
+    let configured = renderer(&markdown_commonmark_text::plugin_with_options(
+        markdown_commonmark_text::Options {
+            explicit_links: markdown_commonmark_text::ExplicitLinkStyle::LabelAndDestination,
+        },
+    ));
 
     let mut custom = markdown_commonmark_text::plugin();
     custom
@@ -48,6 +53,10 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
     );
 
     assert_eq!(default.render(&document).unwrap(), "label");
+    assert_eq!(
+        configured.render(&document).unwrap(),
+        "[label](https://example.test)"
+    );
 
     assert_eq!(
         renderer(&markdown_commonmark_text::plugin())

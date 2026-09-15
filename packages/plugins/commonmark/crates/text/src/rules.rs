@@ -1,3 +1,4 @@
+use crate::Options;
 use markdown_ast::Node;
 use markdown_commonmark_contracts::*;
 use markdown_renderer::{Context, Plugin, Result};
@@ -12,7 +13,7 @@ fn block<T>(_: &T, nodes: &[Node], ctx: &Context<'_>) -> Result<String> {
     Ok(output)
 }
 
-pub(crate) fn register(renderer: &mut Plugin) -> Result<()> {
+pub(crate) fn register(renderer: &mut Plugin, options: Options) -> Result<()> {
     renderer.on::<Text>(|v, _, _| Ok(v.value.clone()))?;
     renderer.on::<Paragraph>(block)?;
     renderer.on::<Heading>(block)?;
@@ -33,7 +34,9 @@ pub(crate) fn register(renderer: &mut Plugin) -> Result<()> {
         Ok(text)
     })?;
 
-    renderer.on::<Link>(children)?;
+    renderer.on::<Link>(move |link, nodes, context| {
+        options.explicit_links.render(link, nodes, context)
+    })?;
 
     renderer.on::<List>(|list, nodes, ctx| {
         let mut output = String::new();

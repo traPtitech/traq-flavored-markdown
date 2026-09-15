@@ -1,5 +1,7 @@
 use crate::links::{Links, Target};
 use markdown_commonmark_contracts::{Link, LinkForm};
+use markdown_commonmark_text::{ExplicitLinkStyle, Options as CommonmarkOptions};
+use markdown_generic_text::math::{Options as MathOptions, Style as MathStyle};
 use markdown_renderer::{Preset, PresetBuilder, Result};
 use markdown_trap_contracts::{EmbeddingData, EmbeddingKind};
 
@@ -10,10 +12,11 @@ pub fn builder(origin: &str) -> Result<PresetBuilder> {
         return Err("origin_limit");
     }
 
-    let mut commonmark = markdown_commonmark_text::plugin();
+    let explicit_links = ExplicitLinkStyle::LabelAndDestination;
+    let mut commonmark =
+        markdown_commonmark_text::plugin_with_options(CommonmarkOptions { explicit_links });
     let links = Links::new(origin);
     commonmark.replace::<Link>(move |link, nodes, ctx| {
-        // Explicit-label policy belongs to rendering, not URL classification.
         if link.form != LinkForm::Explicit {
             match links.classify(&link.destination) {
                 Some(Target::File { .. }) => return Ok("[添付ファイル]".into()),
@@ -21,7 +24,7 @@ pub fn builder(origin: &str) -> Result<PresetBuilder> {
                 None => (),
             }
         }
-        ctx.children(nodes)
+        explicit_links.render(link, nodes, ctx)
     })?;
 
     let mut references = markdown_trap_text::references::plugin();
@@ -39,7 +42,9 @@ pub fn builder(origin: &str) -> Result<PresetBuilder> {
     builder.add(&commonmark)?;
     builder.add(&markdown_commonmark_text::html::plugin())?;
     for plugin in [
-        markdown_generic_text::math::plugin(),
+        markdown_generic_text::math::plugin_with_options(MathOptions {
+            style: MathStyle::DelimitedTex,
+        }),
         markdown_generic_text::mark::plugin(),
         markdown_generic_text::strikethrough::plugin(),
         markdown_generic_text::table::plugin(),
