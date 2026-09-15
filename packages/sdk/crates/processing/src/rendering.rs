@@ -18,9 +18,7 @@ pub struct PlainTextRenderer {
 impl PlainTextRenderer {
     pub fn new(options: RendererOptions) -> Result<Self, &'static str> {
         Ok(Self {
-            renderer: Renderer::new(&crate::presets::traq::notification::preset(
-                &options.origin,
-            )?),
+            renderer: Renderer::new(&crate::presets::traq::plain_text::preset(&options.origin)?),
         })
     }
 

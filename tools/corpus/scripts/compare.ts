@@ -119,7 +119,7 @@ async function setupBaselinePackage() {
 }
 
 async function setupBaselineGo() {
-  const goRoot = path.join(baseline, 'notification')
+  const goRoot = path.join(baseline, 'plain-text')
   const go = (args: string[]) =>
     run('go', args, goRoot, { ...Bun.env, GOWORK: 'off' } as Record<
       string,
@@ -135,7 +135,7 @@ async function setupBaselineGo() {
 
   await Bun.write(
     path.join(goRoot, 'main.go'),
-    Bun.file(new URL('./notification/main.go', import.meta.url))
+    Bun.file(new URL('./plain-text/main.go', import.meta.url))
   )
 
   const goMod = await traqRepo.show(v['traq-ref']!, 'go.mod')

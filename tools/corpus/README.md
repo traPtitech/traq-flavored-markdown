@@ -22,7 +22,7 @@ Each UTF-8 JSONL row has a `source` string containing the original message. Coll
 
 Comparison defaults to 100,000 messages and the local `origin/master` refs of both application checkouts. Fetch those refs first if needed. Use `--max`, `--traq-ref`, `--sui-ref`, and `--out` to change them. Both renderers use the same deterministic store, KaTeX version, and highlight.js version to avoid store data and presentation dependency versions obscuring parser differences. The baseline pins both libraries to the versions installed in the current renderer. Comparison verifies the resolved versions before processing messages and records them with the selected revisions.
 
-The result directory contains raw JSONL differences for full rendering, inline rendering, notifications, and embeddings, plus summaries and one self-contained report:
+The result directory contains raw JSONL differences for full rendering, inline rendering, plain-text rendering, and embeddings, plus summaries and one self-contained report:
 
 - `differences.html`: searchable, paginated rich rendering, raw HTML diff, whitespace-only difference filter, and timing statistics. The viewer code, CSS, and comparison data are embedded, so it can be opened directly as an offline file.
 

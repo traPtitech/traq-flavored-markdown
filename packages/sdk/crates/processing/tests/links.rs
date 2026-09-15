@@ -1,12 +1,12 @@
 use markdown_renderer::Renderer;
-use traq_markdown_processing::presets::traq::notification;
+use traq_markdown_processing::presets::traq::plain_text;
 
 const ID: &str = "00000000-0000-0000-0000-000000000001";
 
 #[test]
 fn targets_are_independent_of_display_policy() {
     let origin = "https://q.example.test";
-    let renderer = notification::preset(origin)
+    let renderer = plain_text::preset(origin)
         .map(|p| Renderer::new(&p))
         .unwrap();
     let parser = traq_markdown_grammar::presets::traq::v1::parser();

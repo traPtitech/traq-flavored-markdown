@@ -10,7 +10,7 @@ one shared version.
 | `packages/plugins/commonmark`                | CommonMark and generic extension contracts, syntax, and rendering                |
 | `packages/plugins/traq`                      | traP extension contracts, syntax, rendering, and extraction                      |
 | `packages/sdk/crates/grammar`                | Published grammar presets and their catalog                                      |
-| `packages/sdk/crates/processing`             | traQ notification, message, and extraction policies                              |
+| `packages/sdk/crates/processing`             | traQ plain-text, message, and extraction policies                                |
 | `packages/sdk/crates/wasm`                   | Wasm ABI and exported contracts                                                  |
 | `packages/sdk/typescript`, `packages/sdk/go` | traQ SDK, preset, and artifact selection                                         |
 | `packages/sdk/styles`                        | traQ presentation CSS                                                            |

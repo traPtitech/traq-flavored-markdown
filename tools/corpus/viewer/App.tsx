@@ -26,7 +26,7 @@ type Row = {
 const labels = {
   render: 'traQ_S-UI · 通常',
   inline: 'traQ_S-UI · インライン',
-  notification: 'traQ · 通知'
+  plainText: 'traQ · プレーンテキスト'
 }
 
 const getInitialData = <T,>(id: string): T | null => {
@@ -218,7 +218,7 @@ export default function App() {
             </p>
             <p>
               S-UI は同一の固定 Store を使用。traQ は master の Parse と Rust
-              PlainTextRenderer が返す通知テキストを比較。参考値です。
+              PlainTextRenderer が返すプレーンテキストを比較。参考値です。
             </p>
           </div>
         </details>
@@ -312,7 +312,7 @@ export default function App() {
           </div>
         </nav>
         <div className="filters">
-          <label title="HTML・通知の文字列から半角スペース、タブ、改行、フォームフィードを除いて一致する結果を非表示にします。コードや属性値内の空白も対象です。">
+          <label title="HTML・プレーンテキストの文字列から半角スペース、タブ、改行、フォームフィードを除いて一致する結果を非表示にします。コードや属性値内の空白も対象です。">
             <input
               type="checkbox"
               id="ignore-whitespace"
@@ -372,7 +372,7 @@ function SpeedTable({
       </thead>
       <tbody>
         {(Object.keys(labels) as (keyof typeof labels)[]).map(key => {
-          const data = key === 'notification' ? meta.traq : meta.sui.modes[key]
+          const data = key === 'plainText' ? meta.traq : meta.sui.modes[key]
           return (
             <tr key={key}>
               <td>{labels[key]}</td>

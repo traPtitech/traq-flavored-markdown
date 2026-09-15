@@ -161,7 +161,7 @@ input {
   font-size: 11px;
 }
 .comparison .source,
-.comparison .notification {
+.comparison .plain-text {
   margin: 0;
   font:
     12px/1.6 ui-monospace,

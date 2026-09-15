@@ -1,6 +1,6 @@
 # traQ processing presets
 
-Composes notification rendering and reference extraction for traQ. The crate
+Composes plain-text rendering and reference extraction for traQ. The crate
 does not normally depend on a parser or codec: implementations are supplied by
 `commonmark-text`, `generic-text`, `trap-text`, and `trap-extraction` and consume
 the native AST directly.
@@ -10,7 +10,7 @@ use markdown_extractor::Extractor;
 use markdown_renderer::Renderer;
 use traq_markdown_processing::presets::traq;
 
-let renderer = Renderer::new(&traq::notification::preset("https://q.example.test")?);
+let renderer = Renderer::new(&traq::plain_text::preset("https://q.example.test")?);
 let extractor = Extractor::new(&traq::references::preset()?);
 let validated = markdown_ast::ValidatedDocument::new(&document)?;
 let text = renderer.render_validated(validated)?;
@@ -18,17 +18,17 @@ let references = extractor.extract_validated(validated)?;
 ```
 
 Run the full example with `cargo run -p traq-markdown-processing --example
-notification` from the repository root. It passes an AST directly between
+plain_text` from the repository root. It passes an AST directly between
 consumers and serializes only the final result.
 
 ## Configure a preset
 
-`notification::builder(origin)` and `references::builder()` return editable
+`plain_text::builder(origin)` and `references::builder()` return editable
 builders. After adding or removing plugins, call `build()` and pass the preset to
 the generic renderer or extractor. Existing runtime instances retain their own
 configuration.
 
-Notification output normalizes all whitespace runs to one space. Spoilers retain
+Plain-text output normalizes all whitespace runs to one space. Spoilers retain
 newlines while they are rendered, then mask other Unicode scalar values with
 `█`. `origin` may be empty to disable special attachment and citation display;
 otherwise it is limited to 2,048 UTF-8 bytes. Exact `/files/{uuid}` and

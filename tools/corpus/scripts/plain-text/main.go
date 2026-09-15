@@ -91,7 +91,7 @@ func main() {
 	must(err)
 	defer input.Close()
 	must(os.MkdirAll(*out, 0700))
-	output, err := os.Create(filepath.Join(*out, "traq-differences.jsonl"))
+	output, err := os.Create(filepath.Join(*out, "plain-text-differences.jsonl"))
 	must(err)
 	defer output.Close()
 	writer := bufio.NewWriterSize(output, 1<<20)
@@ -150,7 +150,7 @@ func main() {
 		}
 		if a != b || ae != be {
 			different++
-			must(encoder.Encode(difference{count, "notification", r.Source, a, b, ae || be}))
+			must(encoder.Encode(difference{count, "plainText", r.Source, a, b, ae || be}))
 		}
 		count++
 		if count%100000 == 0 {
@@ -160,7 +160,7 @@ func main() {
 	}
 	must(scanner.Err())
 	must(writer.Flush())
-	report := map[string]any{"messages": count, "differences": different, "beforeErrors": oldErrors, "afterErrors": newErrors, "before": summarize(oldTimes), "after": summarize(newTimes), "afterInitializationMs": initMs, "wallSeconds": time.Since(started).Seconds(), "timed": "Parse().NotificationText() / Rust Parser.Parse() + PlainTextRenderer.Render(document); 200 warmups; alternating order; I/O excluded"}
+	report := map[string]any{"messages": count, "differences": different, "beforeErrors": oldErrors, "afterErrors": newErrors, "before": summarize(oldTimes), "after": summarize(newTimes), "afterInitializationMs": initMs, "wallSeconds": time.Since(started).Seconds(), "timed": "legacy Parse().NotificationText() / Rust Parser.Parse() + PlainTextRenderer.Render(document); 200 warmups; alternating order; I/O excluded"}
 	data, err = json.MarshalIndent(report, "", "  ")
 	must(err)
 	must(os.WriteFile(filepath.Join(*out, "traq-summary.json"), data, 0600))

@@ -70,18 +70,18 @@ function RenderCell({ text, mode }: { text: string; mode: string }) {
 
   useEffect(() => {
     if (!ref.current) return
-    if (mode === 'notification' || text.startsWith('解析エラー:')) {
+    if (mode === 'plainText' || text.startsWith('解析エラー:')) {
       ref.current.textContent = text
     } else {
       ref.current.replaceChildren(renderHTML(text))
     }
   }, [text, mode])
 
-  if (mode === 'notification' || text.startsWith('解析エラー:')) {
+  if (mode === 'plainText' || text.startsWith('解析エラー:')) {
     return (
       <td>
         <pre
-          className="cell-content notification"
+          className="cell-content plain-text"
           ref={ref as React.RefObject<HTMLPreElement>}
         />
       </td>

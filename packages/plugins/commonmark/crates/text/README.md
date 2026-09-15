@@ -28,5 +28,5 @@ let renderer = Renderer::new(&builder.build()?);
 
 Factories return shared plugin snapshots by value. Replacing a handler changes
 only that returned plugin; it does not affect future factory calls or existing
-presets. Paragraph boundaries are preserved. Notification-specific whitespace
-normalization and delivery belong to higher-level processing.
+presets. Paragraph boundaries are preserved. Whitespace normalization and
+notification delivery belong to higher-level plain-text processing.

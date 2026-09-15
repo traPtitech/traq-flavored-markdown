@@ -9,7 +9,7 @@
 
 Contracts are independent of parsing and rendering. Text rendering and
 extraction do not depend on a parser. The SDK owns traQ grammar presets and its
-notification and reference-processing presets.
+plain-text and reference-processing presets.
 
 These crates share a version within the workspace and are versioned independently
 of the core, CommonMark, and SDK families.

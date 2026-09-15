@@ -12,7 +12,7 @@ application policies.
 | `markdown-trap-extraction` | Reference extraction                                    |
 
 Add the individual rule plugins to an application's `GrammarBuilder` or
-`PresetBuilder`. The caller selects their order and decides notification URL
+`PresetBuilder`. The caller selects their order and decides attachment and citation URL
 display and how processing results are combined.
 
 ## Boundaries

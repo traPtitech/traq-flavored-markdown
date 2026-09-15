@@ -5,7 +5,7 @@ use markdown_generic_text::math::{Options as MathOptions, Style as MathStyle};
 use markdown_renderer::{Preset, PresetBuilder, Result};
 use markdown_trap_contracts::{EmbeddingData, EmbeddingKind};
 
-/// Build editable notification rules. An empty origin leaves URLs as text.
+/// Build editable plain-text rules. An empty origin leaves URLs as text.
 /// Block separators are retained; single-line formatting belongs to the caller.
 pub fn builder(origin: &str) -> Result<PresetBuilder> {
     if origin.len() > 2048 {

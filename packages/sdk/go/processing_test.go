@@ -55,12 +55,16 @@ func TestASTConsumers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	raw, err := os.ReadFile("../tests/fixtures/processing-notifications.json")
+	raw, err := os.ReadFile("../tests/fixtures/processing-plain-text.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var fixtures []struct{ Name, Source, Notification string }
+	var fixtures []struct {
+		Name      string
+		Source    string
+		PlainText string `json:"plainText"`
+	}
 	if err := json.Unmarshal(raw, &fixtures); err != nil {
 		t.Fatal(err)
 	}
@@ -71,8 +75,8 @@ func TestASTConsumers(t *testing.T) {
 
 	for _, fixture := range fixtures {
 		text, err := renderer.Render(ctx, parse(fixture.Source))
-		if err != nil || text != fixture.Notification {
-			t.Fatalf("%s: got %q, want %q: %v", fixture.Name, text, fixture.Notification, err)
+		if err != nil || text != fixture.PlainText {
+			t.Fatalf("%s: got %q, want %q: %v", fixture.Name, text, fixture.PlainText, err)
 		}
 	}
 

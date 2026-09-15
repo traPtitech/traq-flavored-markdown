@@ -21,19 +21,19 @@ await $`mkdir -p ${values.out}`
 const filterMasks: Record<string, number[]> = {
   render: [],
   inline: [],
-  notification: []
+  plainText: []
 }
 const chunks: Record<string, string[]> = {
   render: [],
   inline: [],
-  notification: []
+  plainText: []
 }
 const pending: Record<string, string[]> = {
   render: [],
   inline: [],
-  notification: []
+  plainText: []
 }
-const counts: Record<string, number> = { render: 0, inline: 0, notification: 0 }
+const counts: Record<string, number> = { render: 0, inline: 0, plainText: 0 }
 
 function flush(mode: string) {
   if (!pending[mode].length) return
@@ -43,7 +43,7 @@ function flush(mode: string) {
   pending[mode] = []
 }
 
-for (const file of ['sui-differences.jsonl', 'traq-differences.jsonl']) {
+for (const file of ['sui-differences.jsonl', 'plain-text-differences.jsonl']) {
   for await (const line of readLines(path.join(values.data, file))) {
     if (!line) continue
     const row = JSON.parse(line)
@@ -72,7 +72,7 @@ if (
   sui.messages !== traq.messages ||
   counts.render !== sui.modes.render.differences ||
   counts.inline !== sui.modes.inline.differences ||
-  counts.notification !== traq.differences
+  counts.plainText !== traq.differences
 ) {
   throw new Error('Report counts mismatch')
 }

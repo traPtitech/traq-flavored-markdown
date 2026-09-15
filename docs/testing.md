@@ -32,7 +32,7 @@ outputs: review their diffs, but do not edit them by hand.
 ## Fixtures and corpus
 
 The unmodified CommonMark specification data has one copy in
-[tests/fixtures](../tests/fixtures/README.md). Frozen traQ AST and notification
+[tests/fixtures](../tests/fixtures/README.md). Frozen traQ AST and plain-text
 expectations live in [packages/sdk/tests/fixtures](../packages/sdk/tests/fixtures/README.md).
 Do not regenerate compatibility expectations from the parser under test. Keep
 their source, provenance, attribution, and the accepted meaning of existing
@@ -41,5 +41,5 @@ grammar IDs intact.
 Fixtures contain no production messages or credentials. Private corpus data
 belongs in ignored `.private` directories. The [corpus tool](../tools/corpus/README.md)
 documents collection, comparison, synthetic samples, and its self-contained
-report. Native Rust and Go/Wasm run the frozen notification corpus;
+report. Native Rust and Go/Wasm run the frozen plain-text corpus;
 TypeScript/Wasm covers extraction, and TypeScript covers HTML rendering.

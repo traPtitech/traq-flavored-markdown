@@ -10,7 +10,7 @@ same declaration instances, while grammar and rendering presets choose their
 actual implementations separately.
 
 The package preserves the existing payload shapes and validation. Stamps remain
-`literal` values; syntax, rendering, notification classification, and URL
+`literal` values; syntax, rendering, plain-text classification, and URL
 semantics belong elsewhere. The optional `contracts` feature supports existing
 TypeScript type and JSON Schema generation.
 

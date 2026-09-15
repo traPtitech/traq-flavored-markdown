@@ -58,7 +58,7 @@ codec, then invokes the native consumer. Replies carry either a result or an
 error; errors have no stable machine-readable classification.
 
 The extractor returns message text, references, attachments, citations, and an
-embedding plan. The plain-text renderer returns notification text. TypeScript
+embedding plan. The plain-text renderer returns plain text. TypeScript
 HTML rendering uses the same `Document` directly on the host. `messageRenderers`
 creates standard and condensed views from shared options; structure belongs to
 node handlers, and core's fallback returns only escaped source text.

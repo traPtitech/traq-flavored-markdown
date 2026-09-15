@@ -10,5 +10,5 @@ pub use plugin::Plugin;
 pub use preset::{Preset, PresetBuilder};
 pub use rendering::{Context, Renderer};
 
-/// Retains the notification renderer's existing error codes.
+/// Retains the plain-text renderer's existing error codes.
 pub type Result<T> = std::result::Result<T, &'static str>;
