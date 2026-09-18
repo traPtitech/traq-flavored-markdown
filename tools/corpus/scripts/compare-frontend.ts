@@ -124,10 +124,17 @@ function summary(a: number[]) {
     p99Us: q(0.99)
   }
 }
-const output = Bun.file(path.join(values.out, 'sui-differences.jsonl')).writer()
-const embeddingOutput = Bun.file(
-  path.join(values.out, 'sui-embedding-differences.jsonl')
-).writer()
+const outputPath = path.join(values.out, 'sui-differences.jsonl')
+const embeddingOutputPath = path.join(
+  values.out,
+  'sui-embedding-differences.jsonl'
+)
+await Promise.all([
+  Bun.write(outputPath, ''),
+  Bun.write(embeddingOutputPath, '')
+])
+const output = Bun.file(outputPath).writer()
+const embeddingOutput = Bun.file(embeddingOutputPath).writer()
 const started = performance.now()
 try {
   let n = 0
