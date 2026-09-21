@@ -26,9 +26,12 @@ export function embeddingFromUrl(
   }
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return
-  const target = classifyTraqLink(value, origin)
+  const base = URL.canParse(origin)
+    ? new URL(origin).origin
+    : origin.replace(/\/+$/, '')
+  const target = classifyTraqLink(value, base)
   if (target) return target
-  if (url.origin !== origin) return { type: 'url', url: value }
+  if (url.origin !== base) return { type: 'url', url: value }
 }
 
 interface EmbeddingState {
@@ -77,6 +80,7 @@ function trimTrailingEmbeddings(children: Node[], links: Map<Node, Embedding>) {
 
   while (end >= 0) {
     const node = paragraph.children[end]
+    const previous = paragraph.children[end - 1]
     const embedding = links.get(node)
 
     if (node.kind === names.Softbreak) {
@@ -87,12 +91,10 @@ function trimTrailingEmbeddings(children: Node[], links: Map<Node, Embedding>) {
     if (
       embedding &&
       embedding.type !== 'url' &&
-      isKnownNode(node) &&
-      node.kind === names.Link &&
-      node.data.form === 'linkify'
+      isStandaloneLink(node, previous)
     ) {
       removed = true
-      end--
+      end -= previous?.kind === names.Softbreak ? 2 : 1
       continue
     }
 
@@ -108,6 +110,15 @@ function trimTrailingEmbeddings(children: Node[], links: Map<Node, Embedding>) {
   }
 
   return result
+}
+
+function isStandaloneLink(node: Node, previous?: Node): boolean {
+  return (
+    isKnownNode(node) &&
+    node.kind === names.Link &&
+    node.data.form === 'linkify' &&
+    (!previous || previous.kind === names.Softbreak)
+  )
 }
 
 function replaceEmbeddingLabels(
@@ -191,14 +202,10 @@ export function endsWithEmbedding(document: Document, origin: string): boolean {
 
   if (
     !last ||
+    !isStandaloneLink(last, previous) ||
     !isKnownNode(last) ||
-    last.kind !== names.Link ||
-    last.data.form !== 'linkify'
+    last.kind !== names.Link
   ) {
-    return false
-  }
-
-  if (previous && previous.kind !== names.Softbreak) {
     return false
   }
 
