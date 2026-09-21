@@ -28,9 +28,11 @@ pub fn inline_rule() -> &'static InlineRule {
                 return Ok(None);
             }
 
-            // An anchored candidate replaces the prototype's unconditional pre-scan.
-            budget.spend(tail.len())?;
-            let Some(found) = recognize::at(input.source.text(), input.position) else {
+            // A URL cannot cross whitespace or a control character. Charge only
+            // the candidate token inspected by the recognizer.
+            let scan_len = recognize::scan_len(tail);
+            budget.spend(scan_len)?;
+            let Some(found) = recognize::at(input.source.text(), input.position, scan_len) else {
                 return Ok(None);
             };
 

@@ -690,6 +690,7 @@ dependencies = [
  "markdown-commonmark",
  "markdown-commonmark-contracts",
  "markdown-definitions",
+ "markdown-generic-contracts",
  "markdown-generic-syntax",
  "markdown-parser",
  "markdown-trap-syntax",

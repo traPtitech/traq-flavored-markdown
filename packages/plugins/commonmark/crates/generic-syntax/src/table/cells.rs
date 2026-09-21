@@ -9,7 +9,7 @@ pub(super) fn cells(raw: &str, origin: usize) -> Vec<Range<usize>> {
     let mut begin = start;
 
     for pos in start..end {
-        if raw.as_bytes()[pos] == b'|' && (pos == start || raw.as_bytes()[pos - 1] != b'\\') {
+        if raw.as_bytes()[pos] == b'|' && !escaped_pipe(raw, pos) {
             cells.push(origin + begin..origin + pos);
             begin = pos + 1;
         }
@@ -23,6 +23,14 @@ pub(super) fn cells(raw: &str, origin: usize) -> Vec<Range<usize>> {
         cells.pop();
     }
     cells
+}
+
+pub(super) fn escaped_pipe(raw: &str, pos: usize) -> bool {
+    let mut backslashes = 0;
+    while pos > backslashes && raw.as_bytes()[pos - backslashes - 1] == b'\\' {
+        backslashes += 1;
+    }
+    backslashes % 2 != 0
 }
 
 pub(super) fn alignment(header: &str, delimiter: &str) -> Option<Vec<Option<Alignment>>> {

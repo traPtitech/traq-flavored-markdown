@@ -89,7 +89,7 @@ fn split_escaped_pipes(text: &str, start: usize, end: usize) -> Vec<std::ops::Ra
     let mut begin = start;
 
     for pos in start..end {
-        if text.as_bytes()[pos] == b'|' && pos > start && text.as_bytes()[pos - 1] == b'\\' {
+        if text.as_bytes()[pos] == b'|' && cells::escaped_pipe(text, pos) {
             pieces.push(begin..pos - 1);
             begin = pos;
         }
