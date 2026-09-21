@@ -1,4 +1,4 @@
-name: Release npm packages
+name: Release npm and Go packages
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: npm-publish
+  group: package-publish
   queue: max
   cancel-in-progress: false
 
@@ -100,8 +100,13 @@ jobs:
       - name: Synchronize package metadata with the release tag
         run: bun run release -- "$RELEASE_TAG" --prepare
 
+      - name: Synchronize Go module dependencies with the release tag
+        run: bun run scripts/release-go.ts "$RELEASE_TAG" --prepare
+
       - name: Validate shared version and internal dependencies
-        run: bun run release -- "$RELEASE_TAG" --check
+        run: |
+          bun run release -- "$RELEASE_TAG" --check
+          bun run scripts/release-go.ts "$RELEASE_TAG" --check
 
       - run: bun run check
 
@@ -117,15 +122,26 @@ jobs:
             echo "$DEFAULT_BRANCH changed while the release was being built."
             exit 1
           fi
-          if git ls-remote --exit-code --tags "$repository_url" "refs/tags/$RELEASE_TAG" >/dev/null; then
-            echo "Release tag $RELEASE_TAG already exists."
-            exit 1
-          fi
-          git add package.json packages/core/package.json packages/plugins/commonmark/package.json packages/plugins/traq/package.json packages/sdk/package.json bun.lock
+          mapfile -t go_tags < <(bun run scripts/release-go.ts "$RELEASE_TAG" --tags)
+          for tag in "$RELEASE_TAG" "${go_tags[@]}"; do
+            if git ls-remote --exit-code --tags "$repository_url" "refs/tags/$tag" >/dev/null; then
+              echo "Release tag $tag already exists."
+              exit 1
+            fi
+          done
+          git add \
+            package.json bun.lock go.work \
+            packages/core/package.json packages/plugins/commonmark/package.json \
+            packages/plugins/traq/package.json packages/sdk/package.json \
+            packages/core/go/go.mod packages/core/go/go.sum \
+            packages/plugins/commonmark/go/go.mod packages/plugins/commonmark/go/go.sum \
+            packages/plugins/traq/go/go.mod packages/plugins/traq/go/go.sum \
+            packages/sdk/go/go.mod packages/sdk/go/go.sum packages/sdk/go/parser.wasm \
+            packages/sdk/examples/go/go.mod packages/sdk/examples/go/go.sum
           if git diff --cached --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "$RELEASE_VERSION"
+          git commit -m "chore(release): $RELEASE_VERSION"
           git push "$repository_url" "HEAD:refs/heads/$DEFAULT_BRANCH"
 
       - name: Release all four packages in dependency order
@@ -136,14 +152,31 @@ jobs:
             bun run release -- "$RELEASE_TAG" --dry-run
           fi
 
-      - name: Tag release commit
+      - name: Tag npm release and all Go modules at the same commit
         if: env.PUBLISH == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           repository_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          mapfile -t go_tags < <(bun run scripts/release-go.ts "$RELEASE_TAG" --tags)
+          tag_refs=("refs/tags/$RELEASE_TAG")
           git tag -a "$RELEASE_TAG" -m "$RELEASE_TAG"
-          git push "$repository_url" "refs/tags/$RELEASE_TAG"
+          for tag in "${go_tags[@]}"; do
+            git tag -a "$tag" -m "$tag"
+            tag_refs+=("refs/tags/$tag")
+          done
+          git push --atomic "$repository_url" "${tag_refs[@]}"
+
+      - name: Verify published Go modules outside the workspace
+        if: env.PUBLISH == 'true'
+        run: |
+          for attempt in 1 2 3; do
+            if bun run scripts/checks/go-consumer.ts "$RELEASE_TAG" --remote; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
+          done
+          exit 1
 
       - name: Create GitHub Release
         if: env.PUBLISH == 'true'
