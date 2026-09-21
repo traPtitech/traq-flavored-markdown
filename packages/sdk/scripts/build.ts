@@ -4,8 +4,8 @@ import { $ } from 'bun'
 
 import { sdkRoot } from '../../../scripts/paths.ts'
 import { generateSdk } from './generate-bindings.ts'
-import { buildWasm } from './node-contracts.ts'
-import { writeWasmContract } from './wasm-contract.ts'
+import { assertNoHostPaths, buildWasm } from './node-contracts.ts'
+import { assertBundledWasmMatches, writeWasmContract } from './wasm-contract.ts'
 
 export async function buildSdk({
   bindingsReady = false,
@@ -18,14 +18,12 @@ export async function buildSdk({
   const bytes = await Bun.file(wasm).bytes()
   if (checkGenerated) {
     const committed = Bun.file(bundledWasm)
-    if (
-      !(await committed.exists()) ||
-      new Bun.CryptoHasher('sha256').update(bytes).digest('hex') !==
-        new Bun.CryptoHasher('sha256')
-          .update(await committed.bytes())
-          .digest('hex')
-    )
-      throw new Error('Bundled Go Wasm is out of date; run bun run build')
+    if (!(await committed.exists())) {
+      throw new Error('Bundled Go Wasm is missing; run bun run build')
+    }
+    const bundled = await committed.bytes()
+    assertNoHostPaths(bundled)
+    await assertBundledWasmMatches(bytes, bundled)
   } else {
     await Bun.write(bundledWasm, bytes)
   }

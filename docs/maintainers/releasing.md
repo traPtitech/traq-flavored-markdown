@@ -58,7 +58,8 @@ The npm `--prepare` uses native npm workspace commands and updates `bun.lock`.
 The Go `--prepare` updates all internal `go.mod` requirements, including the
 example, and the root `go.work` replacements. Neither command commits, tags,
 publishes, or changes external dependencies. `bun run check` builds the SDK and
-verifies that its tracked Go Wasm matches the build. It also runs a temporary
+verifies that its tracked Go Wasm has the same source build ID, contract, and ABI
+as the build. It also runs a temporary
 consumer with `GOWORK=off` and local release-candidate modules.
 
 ## Normal release

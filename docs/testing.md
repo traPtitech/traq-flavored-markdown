@@ -32,8 +32,8 @@ Go tags without local replacements.
 ## Generated sources
 
 `bun run check:generated` regenerates bindings and rejects a changed working
-tree. The full check performs the same check and compares the tracked Go Wasm
-with the newly built SDK artifact. Generated TypeScript and Go files, including
+tree. The full check performs the same check and compares the tracked Go Wasm's
+source build ID, contract, and ABI with the newly built SDK artifact. Generated TypeScript and Go files, including
 `packages/sdk/go/parser.wasm`, are committed outputs: review their diffs, but do
 not edit them by hand.
 
