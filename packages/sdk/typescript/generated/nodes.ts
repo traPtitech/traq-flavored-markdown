@@ -21,13 +21,16 @@ export const names = Object.freeze({
   ...generic.names,
   ...trap.names
 })
-export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map([
+const validators = new Map<string, (data: unknown) => boolean>([
   ...commonmark.nodes,
   ...generic.nodes,
   ...trap.nodes
 ])
+export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
+  validators
+)
 export function isKnownNode(node: Node<true>): node is Node<true> & NodeKind {
-  return nodes.get(node.kind)?.(node.data) ?? false
+  return validators.get(node.kind)?.(node.data) ?? false
 }
 
 export type ParseError =

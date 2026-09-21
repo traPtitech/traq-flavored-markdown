@@ -1,14 +1,12 @@
+import { nodeGroup } from '../../../../scripts/codegen/groups.ts'
+
 export function goNodes(manifest: {
   nodes: Record<string, { group: string }>
 }) {
   const groups = [
     ...new Set(Object.values(manifest.nodes).map(node => node.group))
   ]
-  const packages: Record<string, string> = {
-    commonmark: 'plugins/commonmark/go',
-    generic: 'plugins/commonmark/go/generic',
-    trap: 'plugins/traq/go'
-  }
+  for (const group of groups) nodeGroup(group)
 
   return (
     '// Code generated from Rust contract ownership. DO NOT EDIT.\npackage markdown\nimport (\n "github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"\n' +
@@ -17,7 +15,7 @@ export function goNodes(manifest: {
         group =>
           group +
           ' "github.com/uni-kakurenbo/traq-markdown-engine/packages/' +
-          packages[group] +
+          nodeGroup(group).goPackage +
           '"'
       )
       .join('\n') +

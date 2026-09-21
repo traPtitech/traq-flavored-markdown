@@ -6,7 +6,8 @@ import { expect, test } from 'bun:test'
 import { goPayload } from '../../../../scripts/codegen/go.ts'
 import { javascript } from '../../../../scripts/codegen/javascript.ts'
 import { type Shape, shape } from '../../../../scripts/codegen/schema.ts'
-import { names, nodes } from '../../dist/generated/nodes.js'
+import { isKnownNode, names, nodes } from '../../dist/generated/nodes.js'
+import { presets } from '../../dist/generated/presets.js'
 import { nodeContractsDirectory } from '../../scripts/node-contracts.ts'
 
 const manifest = JSON.parse(
@@ -52,6 +53,24 @@ test('generated optional TypeScript guards enforce every exported payload shape'
     })
   ).toBeTruthy()
   expect(!cell({ alignment: 'other' })).toBeTruthy()
+})
+
+test('public node lookup cannot change the SDK type guard', () => {
+  const candidate = { kind: 'forged', data: {}, span: { start: 0, end: 0 } }
+  const publicNodes = nodes as Map<string, (data: unknown) => boolean>
+  expect(isKnownNode(candidate)).toBe(false)
+  publicNodes.set(candidate.kind, () => true)
+  try {
+    expect(isKnownNode(candidate)).toBe(false)
+  } finally {
+    publicNodes.delete(candidate.kind)
+  }
+})
+
+test('published grammar preset values are immutable at runtime', () => {
+  expect(Object.isFrozen(presets)).toBe(true)
+  expect(Object.isFrozen(presets.traq)).toBe(true)
+  expect(presets.traq.v1).toBe('traq.v1')
 })
 
 test('unsupported schema constraints fail generation instead of weakening validation', () => {

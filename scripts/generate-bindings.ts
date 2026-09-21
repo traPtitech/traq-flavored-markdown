@@ -4,6 +4,11 @@ import { $ } from 'bun'
 
 import { generateSdk } from '../packages/sdk/scripts/generate-bindings.ts'
 import { goNodes as contractGoNodes } from './codegen/go.ts'
+import {
+  type ContractPackage,
+  nodeGroup,
+  nodeGroups
+} from './codegen/groups.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import type { RawSchema } from './codegen/schema.ts'
 import { cargoTargetDirectory, packageRoot, repositoryRoot } from './paths.ts'
@@ -53,20 +58,16 @@ const formatTypescript = async (paths: string[]) => {
   ])
 }
 
-const contractGroups = {
-  'commonmark-plugin': [
-    ['commonmark', 'markdown-commonmark-contracts'],
-    ['generic', 'markdown-generic-contracts']
-  ],
-  'traq-plugin': [['trap', 'markdown-trap-contracts']]
-} as const
-
 async function generateContractGroup(
-  packageName: keyof typeof contractGroups,
-  group: string,
-  crate: string
+  packageName: ContractPackage,
+  group: string
 ) {
   const root = packageRoot(packageName)
+  const metadata = nodeGroup(group)
+  if (metadata.owner !== packageName)
+    throw new Error(
+      `Node contract group ${group} does not belong to ${packageName}`
+    )
   const input = path.join(cargoTargetDirectory(), 'typescript-contracts', group)
   await runCargo(
     [
@@ -74,7 +75,7 @@ async function generateContractGroup(
       'run',
       '--locked',
       '-p',
-      crate,
+      metadata.crate,
       '--features',
       'contracts',
       '--example',
@@ -86,12 +87,12 @@ async function generateContractGroup(
   )
 
   const manifest = await readManifest(input)
-  const goPath = path.join(
-    root,
-    'go',
-    ...(group === 'generic' ? ['generic'] : []),
-    'generated_nodes.go'
-  )
+  for (const [key, node] of Object.entries(manifest.nodes))
+    if (node.group !== group)
+      throw new Error(
+        `${key}: expected ${group} contract group, got ${node.group}`
+      )
+  const goPath = path.join(root, metadata.goGeneratedPath)
   const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
     ([key, node]) => [key, node.schema]
   )
@@ -107,21 +108,18 @@ async function generateContractGroup(
   await formatTypescript(typescriptPaths)
 }
 
-export async function generateContracts(
-  packageName: keyof typeof contractGroups
-) {
-  for (const [group, crate] of contractGroups[packageName])
-    await generateContractGroup(packageName, group, crate)
+export async function generateContracts(packageName: ContractPackage) {
+  for (const [group, metadata] of Object.entries(nodeGroups))
+    if (metadata.owner === packageName)
+      await generateContractGroup(packageName, group)
 }
 
 export async function generateBindings(
-  packageName?: keyof typeof contractGroups | 'sdk',
+  packageName?: ContractPackage | 'sdk',
   input?: string
 ) {
   if (!packageName) {
-    for (const name of Object.keys(contractGroups) as Array<
-      keyof typeof contractGroups
-    >)
+    for (const name of ['commonmark-plugin', 'traq-plugin'] as const)
       await generateContracts(name)
     await generateSdk()
     return

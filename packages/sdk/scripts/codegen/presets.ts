@@ -10,15 +10,16 @@ function leaves(tree: PresetTree, path: string[] = []): string[][] {
   )
 }
 
-function named(tree: PresetTree, path: string[] = []): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(tree).map(([key, value]) => [
-      key,
-      typeof value === 'number'
-        ? [...path, key].join('.')
-        : named(value as PresetTree, [...path, key])
-    ])
+function frozen(tree: PresetTree, path: string[] = []): string {
+  const entries = Object.entries(tree).map(
+    ([key, value]) =>
+      q(key) +
+      ': ' +
+      (typeof value === 'number'
+        ? q([...path, key].join('.'))
+        : frozen(value, [...path, key]))
   )
+  return `Object.freeze({ ${entries.join(', ')} } as const)`
 }
 
 export function presetFiles(tree: PresetTree): Map<string, string> {
@@ -35,8 +36,8 @@ export function presetFiles(tree: PresetTree): Map<string, string> {
         paths.map(p => q(p.join('.'))).join(' | ') +
         ';\n' +
         'export const presets = ' +
-        q(named(tree)) +
-        ' as const;\n'
+        frozen(tree) +
+        ';\n'
     ],
     [
       'go/generated_presets.go',
