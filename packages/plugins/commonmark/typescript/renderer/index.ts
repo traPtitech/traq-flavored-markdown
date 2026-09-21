@@ -35,8 +35,7 @@ export function plugin({
   return result
 }
 
-export const html = Object.freeze({ plugin })
-
-export function preset(options?: Options) {
+/** Build a standalone CommonMark HTML preset. */
+export function html(options?: Options) {
   return new PresetBuilder().add(plugin(options)).build()
 }

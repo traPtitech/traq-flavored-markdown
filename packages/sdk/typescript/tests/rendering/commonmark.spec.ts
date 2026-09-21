@@ -1,4 +1,4 @@
-import { preset } from '@traq-markdown-engine/commonmark-plugin/renderer'
+import { html } from '@traq-markdown-engine/commonmark-plugin/renderer'
 import { renderer } from '@traq-markdown-engine/core/renderer'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
@@ -18,7 +18,7 @@ const fixtures = JSON.parse(
 test('CommonMark fixture inputs match markdown-it with the same escaped-HTML policy', () => {
   const parser = commonParser()
   const view = renderer(
-    preset({ validateLink: () => true, validateImage: () => true })
+    html({ validateLink: () => true, validateImage: () => true })
   )
   const expected = new MarkdownIt('commonmark', { html: true, xhtmlOut: false })
   expected.validateLink = () => true
