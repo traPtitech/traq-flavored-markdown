@@ -5,6 +5,7 @@ import { expect, test } from 'bun:test'
 
 import { repositoryRoot } from './paths.ts'
 import {
+  goReleaseModules,
   goReleaseTags,
   runGoRelease,
   validateGoMod,
@@ -15,6 +16,9 @@ import { withTempDirectory } from './testing/temp-directory.ts'
 const repository = 'github.com/uni-kakurenbo/traq-markdown-engine'
 const core = `${repository}/packages/core/go`
 const sdk = `${repository}/packages/sdk/go`
+const publishedModules = goReleaseModules.map(
+  module => `${repository}/${module.directory}`
+)
 
 test('Go tags use each module directory as their prefix', () => {
   expect(goReleaseTags('v0.1.4')).toEqual([
@@ -114,7 +118,7 @@ test('Go release preparation synchronizes all module and workspace versions', as
     expect(
       await Bun.file(path.join(root, 'packages/sdk/go/go.sum')).text()
     ).not.toContain('v0.0.0-20260909')
-    const list = Bun.spawn(['go', 'list', '-m', 'all'], {
+    const list = Bun.spawn(['go', 'list', '-m', ...publishedModules], {
       cwd: path.join(root, 'packages/sdk/go'),
       env: { ...Bun.env, GOWORK: path.join(root, 'go.work'), GOPROXY: 'off' },
       stdout: 'pipe',
@@ -127,7 +131,6 @@ test('Go release preparation synchronizes all module and workspace versions', as
     ])
     expect(diagnostics).toBe('')
     expect(exitCode).toBe(0)
-    expect(modules).toContain(sdk)
-    expect(modules).not.toContain('v0.0.0-00010101000000')
+    expect(modules.trim().split(/\r?\n/)).toEqual(publishedModules)
   })
 }, 30_000)
