@@ -73,6 +73,14 @@ test('workspace validation rejects version and peer mismatches', () => {
     'peer dependencies'
   )
   expect(() => validateWorkspace(peerMismatch)).not.toThrow()
+
+  const missingPeer = workspace()
+  delete missingPeer.packages.sdk.peerDependencies![names.core]
+  expect(() => validateWorkspace(missingPeer, '0.1.0')).toThrow('package graph')
+
+  const extraPeer = workspace()
+  extraPeer.packages['commonmark-plugin'].peerDependencies![names.sdk] = '0.1.0'
+  expect(() => validateWorkspace(extraPeer, '0.1.0')).toThrow('package graph')
 })
 
 test('repository root keeps the four package versions and peers synchronized', async () => {
