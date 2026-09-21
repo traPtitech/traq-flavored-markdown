@@ -16,8 +16,9 @@
   "scripts": {
     "build": "bun run scripts/build.ts",
     "build:corpus": "bun run --cwd tools/corpus build",
-    "check": "bun run format:check && bun run lint:check && bun run check:architecture && bun run scripts/build.ts --check-generated && bun run build:corpus && bun run typecheck && bun run test && bun run lint:rust && bun run check:package",
+    "check": "bun run format:check && bun run lint:check && bun run check:architecture && bun run scripts/build.ts --check-generated && bun run build:corpus && bun run typecheck && bun run test && bun run lint:rust && bun run check:package && bun run check:go-consumer",
     "check:architecture": "bun run scripts/checks/architecture.ts",
+    "check:go-consumer": "bun run scripts/checks/go-consumer.ts",
     "check:generated": "bun run scripts/checks/generated.ts",
     "check:package": "bun run scripts/checks/package-contents.ts",
     "corpus:collect": "bun run --cwd tools/corpus collect",
