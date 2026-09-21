@@ -37,7 +37,11 @@ export function presetFiles(tree: PresetTree): Map<string, string> {
         ';\n' +
         'export const presets = ' +
         frozen(tree) +
-        ';\n'
+        ';\n' +
+        'const knownPresets: ReadonlySet<string> = new Set([' +
+        paths.map(path => q(path.join('.'))).join(', ') +
+        ']);\n' +
+        'export function isPreset(value: string): value is Preset { return knownPresets.has(value); }\n'
     ],
     [
       'go/generated_presets.go',

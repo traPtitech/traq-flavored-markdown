@@ -1,5 +1,6 @@
 import { buildId, inputBytes } from './generated/artifact.js'
 import type { Document } from './generated/nodes.js'
+import type { Preset } from './generated/presets.js'
 import type { Extraction, ExtractorOptions } from './generated/processing.js'
 
 export type {
@@ -13,7 +14,7 @@ export type {
 } from './generated/processing.js'
 
 export type { Preset } from './generated/presets.js'
-export { presets } from './generated/presets.js'
+export { isPreset, presets } from './generated/presets.js'
 export { isKnownNode } from './generated/nodes.js'
 export type { Document, Node, NodeKind, ParseError } from './generated/nodes.js'
 
@@ -38,7 +39,7 @@ export interface Extractor {
 }
 
 export interface Runtime {
-  createParser(preset: string): Parser
+  createParser(preset: Preset): Parser
   createExtractor(options: ExtractorOptions): Extractor
   dispose(): void
 }
@@ -52,7 +53,7 @@ export async function createRuntime(bytes: Uint8Array): Promise<Runtime> {
   const instances = new Set<{ dispose(): void }>()
 
   return Object.freeze({
-    createParser(preset: string): Parser {
+    createParser(preset: Preset): Parser {
       const instance = instantiate('configure', preset)
       return Object.freeze({
         parse: (source: string) => instance.call<Document>('parse', source),

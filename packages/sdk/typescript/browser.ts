@@ -1,6 +1,7 @@
 import { type Runtime, createRuntime } from './index.js'
 
-export { embedReferences, mentionsUser, presets } from './index.js'
+export { embedReferences, isPreset, mentionsUser, presets } from './index.js'
+export type { Preset } from './index.js'
 
 export type BrowserRuntime = Pick<Runtime, 'createParser' | 'createExtractor'>
 

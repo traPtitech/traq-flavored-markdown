@@ -7,7 +7,7 @@ import { goPayload } from '../../../../scripts/codegen/go.ts'
 import { javascript } from '../../../../scripts/codegen/javascript.ts'
 import { type Shape, shape } from '../../../../scripts/codegen/schema.ts'
 import { isKnownNode, names, nodes } from '../../dist/generated/nodes.js'
-import { presets } from '../../dist/generated/presets.js'
+import { isPreset, presets } from '../../dist/generated/presets.js'
 import { nodeContractsDirectory } from '../../scripts/node-contracts.ts'
 
 const manifest = JSON.parse(
@@ -71,6 +71,9 @@ test('published grammar preset values are immutable at runtime', () => {
   expect(Object.isFrozen(presets)).toBe(true)
   expect(Object.isFrozen(presets.traq)).toBe(true)
   expect(presets.traq.v1).toBe('traq.v1')
+  expect(isPreset(presets.commonmark)).toBe(true)
+  expect(isPreset(presets.traq.v1)).toBe(true)
+  expect(isPreset('traq.unknown')).toBe(false)
 })
 
 test('unsupported schema constraints fail generation instead of weakening validation', () => {

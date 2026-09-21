@@ -47,6 +47,9 @@ test('Rust-exported payloads and presets generate the traQ host API', async () =
     expect(presets.get('typescript/generated/presets.ts')).toMatch(
       /Object\.freeze\(\{ "compact": "custom.compact" \} as const\)/
     )
+    expect(presets.get('typescript/generated/presets.ts')).toContain(
+      'export function isPreset(value: string): value is Preset'
+    )
     expect(presets.get('go/generated_presets.go')).toMatch(
       /PresetCustomCompact Preset = "custom.compact"/
     )

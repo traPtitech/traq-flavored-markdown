@@ -94,6 +94,7 @@ test('artifact pairing, preset selection, disposal and isolated results', async 
       })()
     ).rejects.toThrow()
   const runtime = await createRuntime(bytes)
+  // @ts-expect-error Exercise the runtime boundary for an unknown JavaScript preset.
   expect(() => runtime.createParser('traq.invalid')).toThrow(/Markdown:/)
   const traq = runtime.createParser(presets.traq.v1)
   const common = runtime.createParser(presets.commonmark)
