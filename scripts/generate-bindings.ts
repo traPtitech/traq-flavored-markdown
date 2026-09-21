@@ -1,7 +1,5 @@
 import path from 'path'
 
-import { $ } from 'bun'
-
 import { generateSdk } from '../packages/sdk/scripts/generate-bindings.ts'
 import { goNodes as contractGoNodes } from './codegen/go.ts'
 import {
@@ -9,6 +7,12 @@ import {
   nodeGroup,
   nodeGroups
 } from './codegen/groups.ts'
+import {
+  formatTypescript,
+  readManifest,
+  runCommand,
+  writeFiles
+} from './codegen/io.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import type { RawSchema } from './codegen/schema.ts'
 import { cargoTargetDirectory, packageRoot, repositoryRoot } from './paths.ts'
@@ -19,44 +23,11 @@ type Manifest = {
   nodes: Record<string, { group: string; schema: RawSchema }>
 }
 
-const readManifest = (input: string) =>
-  Bun.file(path.join(input, 'contracts.json')).json() as Promise<Manifest>
-
-const runCommand = (command: string[], cwd = repositoryRoot) =>
-  $`${command[0]} ${command.slice(1)}`.cwd(cwd)
-
 const runCargo = (command: string[], cwd = repositoryRoot) =>
   runCommand(command, cwd).env({
     ...Bun.env,
     CARGO_TARGET_DIR: cargoTargetDirectory()
   })
-
-const writeFiles = async (
-  root: string,
-  files: Map<string, string>,
-  ...prefix: string[]
-) => {
-  const paths = []
-  for (const [name, source] of files) {
-    const output = path.join(root, ...prefix, name)
-    await Bun.write(output, source)
-    paths.push(output)
-  }
-  return paths
-}
-
-const formatTypescript = async (paths: string[]) => {
-  if (!paths.length) return
-  await runCommand([
-    Bun.argv[0],
-    'run',
-    'prettier',
-    '--write',
-    '--ignore-path',
-    '.gitignore',
-    ...paths
-  ])
-}
 
 async function generateContractGroup(
   packageName: ContractPackage,
@@ -86,7 +57,7 @@ async function generateContractGroup(
     root
   )
 
-  const manifest = await readManifest(input)
+  const manifest = await readManifest<Manifest>(input)
   for (const [key, node] of Object.entries(manifest.nodes))
     if (node.group !== group)
       throw new Error(
