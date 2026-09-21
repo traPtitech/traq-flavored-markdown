@@ -5,6 +5,7 @@ import * as html from '@traq-markdown-engine/core/renderer'
 import * as traq from '@traq-markdown-engine/sdk/renderer'
 import * as trapNodes from '@traq-markdown-engine/traq-plugin/nodes'
 import * as trap from '@traq-markdown-engine/traq-plugin/renderer'
+import { createHighlightFunc } from '@traq-markdown-engine/commonmark-plugin/highlight'
 import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
 import type { Plugin } from '@traq-markdown-engine/core/renderer'
 import { expect, test } from 'bun:test'
@@ -200,5 +201,11 @@ test('direct HTML rendering escapes attributes, image text, and fence info', () 
   const extended = html.renderer(traq.html({ validateImage: () => true }))
   expect(extended.render(parser.parseInline('![日本語](/image)'))).toBe(
     '<img src="/image" alt="日本語">'
+  )
+})
+
+test('highlighting escapes a custom pre class attribute', () => {
+  expect(createHighlightFunc('code" data-x="value')('<&', 'text')).toBe(
+    '<pre class="code&quot; data-x=&quot;value"><code class="lang-text">&lt;&amp;</code></pre>'
   )
 })
