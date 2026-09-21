@@ -4,3 +4,5 @@ pub mod references;
 pub mod message;
 
 pub mod embedding;
+
+mod labels;
