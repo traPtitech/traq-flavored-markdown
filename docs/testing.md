@@ -1,7 +1,8 @@
 # Testing and compatibility
 
-Run `bun run check` before submitting a broad change. CI runs the same suite on
-Ubuntu and Windows.
+Run `bun run check` before submitting a broad change. CI splits its checks
+across jobs. TypeScript, corpus, architecture, and package checks run on Ubuntu
+and Windows; the remaining checks run on Ubuntu.
 
 ## Choose the smallest useful check
 
