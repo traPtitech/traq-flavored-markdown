@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	commonmark "github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/commonmark/go"
-	trap "github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/traq/go"
+	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
+	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
 func parserFor(t *testing.T, preset Preset) *Parser {

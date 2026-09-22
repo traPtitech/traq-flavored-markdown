@@ -21,7 +21,7 @@ This package uses core and the CommonMark plugin from the same workspace. It
 does not depend on SDK composition or distribution code.
 
 The TypeScript package exports generated node types and HTML renderers. The Go
-module is `github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/traq/go`;
+module is `github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go`;
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 

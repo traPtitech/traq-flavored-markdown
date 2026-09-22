@@ -2,13 +2,13 @@
   "name": "@traq-flavored-markdown/sdk",
   "version": "0.1.5",
   "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
-  "homepage": "https://github.com/uni-kakurenbo/traq-flavored-markdown#readme",
+  "homepage": "https://github.com/traPtitech/traq-flavored-markdown#readme",
   "bugs": {
-    "url": "https://github.com/uni-kakurenbo/traq-flavored-markdown/issues"
+    "url": "https://github.com/traPtitech/traq-flavored-markdown/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uni-kakurenbo/traq-flavored-markdown.git",
+    "url": "git+https://github.com/traPtitech/traq-flavored-markdown.git",
     "directory": "packages/sdk"
   },
   "license": "MIT",

@@ -4,7 +4,7 @@ import { repositoryRoot } from '../paths.ts'
 import { goReleaseModules } from '../release-go.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
 
-const repository = 'github.com/uni-kakurenbo/traq-flavored-markdown'
+const repository = 'github.com/traPtitech/traq-flavored-markdown'
 const sdk = `${repository}/packages/sdk/go`
 
 async function go(directory: string, args: string[], remote: boolean) {

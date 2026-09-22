@@ -5,7 +5,7 @@ Rust, WebAssembly, TypeScript, and Go. Rust owns grammar definitions, AST
 contracts, and validation; the SDK exposes the supported presets and host APIs.
 
 - npm: `@traq-flavored-markdown/sdk`
-- Go module: `github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go`
+- Go module: `github.com/traPtitech/traq-flavored-markdown/packages/sdk/go`
 
 This package combines the core, CommonMark plugin, and traQ plugin layers for
 traQ.
@@ -67,7 +67,7 @@ the bytes directly in hosts that do not use the browser entrypoint.
 ### Go
 
 ```go
-import markdown "github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go"
+import markdown "github.com/traPtitech/traq-flavored-markdown/packages/sdk/go"
 
 runtime, err := markdown.NewBundledRuntime(ctx)
 if err != nil { return err }
@@ -85,7 +85,7 @@ The Go module embeds the matching Wasm, so `NewBundledRuntime` works without a
 separate artifact or npm package. Use `NewRuntime(ctx, wasmBytes)` when loading a
 matching Wasm artifact yourself. The four Go modules are tagged at the same
 version as the npm packages; install the SDK with
-`go get github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go@v0.1.4`
+`go get github.com/traPtitech/traq-flavored-markdown/packages/sdk/go@v0.1.4`
 for the first Go release, then use the matching version for later releases.
 
 `Parse` and `ParseInline` return `*markdown.Document`; concrete `Node.Data`

@@ -9,12 +9,12 @@ export function goNodes(manifest: {
   for (const group of groups) nodeGroup(group)
 
   return (
-    '// Code generated from Rust contract ownership. DO NOT EDIT.\npackage markdown\nimport (\n "github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go/ast"\n' +
+    '// Code generated from Rust contract ownership. DO NOT EDIT.\npackage markdown\nimport (\n "github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"\n' +
     groups
       .map(
         group =>
           group +
-          ' "github.com/uni-kakurenbo/traq-flavored-markdown/packages/' +
+          ' "github.com/traPtitech/traq-flavored-markdown/packages/' +
           nodeGroup(group).goPackage +
           '"'
       )

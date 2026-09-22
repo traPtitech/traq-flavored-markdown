@@ -56,7 +56,7 @@ export function goNodes(entries: [string, RawSchema][], packageName = 'nodes') {
   return (
     '// Code generated from Rust contracts. DO NOT EDIT.\npackage ' +
     packageName +
-    '\nimport "github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go/ast"\n' +
+    '\nimport "github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"\n' +
     entries.map(([key, schema]) => goPayload(key, schema)).join('\n') +
     'func NewPayload(kind string) ast.Payload {\nswitch kind {\n' +
     entries

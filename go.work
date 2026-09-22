@@ -8,10 +8,10 @@ use (
 	./packages/sdk/go
 )
 
-replace github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go v0.1.5 => ./packages/core/go
+replace github.com/traPtitech/traq-flavored-markdown/packages/core/go v0.1.5 => ./packages/core/go
 
-replace github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/commonmark/go v0.1.5 => ./packages/plugins/commonmark/go
+replace github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go v0.1.5 => ./packages/plugins/commonmark/go
 
-replace github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/traq/go v0.1.5 => ./packages/plugins/traq/go
+replace github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go v0.1.5 => ./packages/plugins/traq/go
 
-replace github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go v0.1.5 => ./packages/sdk/go
+replace github.com/traPtitech/traq-flavored-markdown/packages/sdk/go v0.1.5 => ./packages/sdk/go

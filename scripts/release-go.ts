@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { repositoryRoot } from './paths.ts'
 
-const repository = 'github.com/uni-kakurenbo/traq-flavored-markdown'
+const repository = 'github.com/traPtitech/traq-flavored-markdown'
 const modules = [
   { directory: 'packages/core/go', dependencies: [] },
   {

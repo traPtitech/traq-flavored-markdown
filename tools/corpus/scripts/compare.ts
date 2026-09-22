@@ -149,13 +149,13 @@ async function setupBaselineGo() {
   const localGoModule = (root: string) =>
     JSON.stringify(path.join(root, 'go').replaceAll('\\', '/'))
   const localGoModules = {
-    'github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go':
+    'github.com/traPtitech/traq-flavored-markdown/packages/core/go':
       packageRoot('core'),
-    'github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/commonmark/go':
+    'github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go':
       packageRoot('commonmark-plugin'),
-    'github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/traq/go':
+    'github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go':
       packageRoot('traq-plugin'),
-    'github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go': sdkRoot
+    'github.com/traPtitech/traq-flavored-markdown/packages/sdk/go': sdkRoot
   }
 
   const modContent =
@@ -165,7 +165,7 @@ async function setupBaselineGo() {
       `require (`,
       ` github.com/gofrs/uuid ${getVersion('github.com/gofrs/uuid')}`,
       ` github.com/json-iterator/go ${getVersion('github.com/json-iterator/go')}`,
-      ` github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go v0.1.0`,
+      ` github.com/traPtitech/traq-flavored-markdown/packages/sdk/go v0.1.0`,
       `)`
     ].join('\n') +
     '\n' +

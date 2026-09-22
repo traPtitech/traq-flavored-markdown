@@ -4,7 +4,7 @@ package markdown
 import (
 	"context"
 
-	"github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go/binding"
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding"
 )
 
 type Runtime struct{ runtime *binding.Runtime }

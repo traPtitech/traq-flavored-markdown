@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	markdown "github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go"
+	markdown "github.com/traPtitech/traq-flavored-markdown/packages/sdk/go"
 )
 
 func main() {

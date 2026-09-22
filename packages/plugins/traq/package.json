@@ -4,7 +4,7 @@
   "description": "traQ-specific Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uni-kakurenbo/traq-flavored-markdown.git",
+    "url": "git+https://github.com/traPtitech/traq-flavored-markdown.git",
     "directory": "packages/plugins/traq"
   },
   "license": "MIT",

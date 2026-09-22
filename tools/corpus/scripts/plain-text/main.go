@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	markdown "github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	markdown "github.com/traPtitech/traq-flavored-markdown/packages/sdk/go"
 )
 
 type record struct {
