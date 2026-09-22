@@ -5,5 +5,5 @@ type Preset string
 
 const (
 	PresetCommonMark Preset = "commonmark"
-	PresetTraQV1     Preset = "traq.v1"
+	PresetTraqV1     Preset = "traq.v1"
 )

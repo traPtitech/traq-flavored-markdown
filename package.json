@@ -1,11 +1,11 @@
 {
-  "name": "traq-markdown-engine",
+  "name": "traq-flavored-markdown",
   "version": "0.1.4",
   "private": true,
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git"
+    "url": "git+https://github.com/uni-kakurenbo/traq-flavored-markdown.git"
   },
   "workspaces": [
     "packages/core",

@@ -6,10 +6,10 @@ import { type PackageName, packageRoot, repositoryRoot } from './paths.ts'
 import { type Manifest, parseRelease, validateWorkspace } from './release.ts'
 
 const names = {
-  core: '@traq-markdown-engine/core',
-  commonmark: '@traq-markdown-engine/commonmark-plugin',
-  traq: '@traq-markdown-engine/traq-plugin',
-  sdk: '@traq-markdown-engine/sdk'
+  core: '@traq-flavored-markdown/core',
+  commonmark: '@traq-flavored-markdown/commonmark-plugin',
+  traq: '@traq-flavored-markdown/traq-plugin',
+  sdk: '@traq-flavored-markdown/sdk'
 }
 
 const manifest = (
@@ -23,7 +23,7 @@ const manifest = (
 })
 
 const workspace = () => ({
-  root: { name: 'traq-markdown-engine', version: '0.1.0', private: true },
+  root: { name: 'traq-flavored-markdown', version: '0.1.0', private: true },
   packages: {
     core: manifest(names.core),
     'commonmark-plugin': manifest(names.commonmark, { [names.core]: '0.1.0' }),

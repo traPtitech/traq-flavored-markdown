@@ -57,7 +57,7 @@ func TestEmbeddingFixtures(t *testing.T) {
 		return id, ok
 	}
 
-	parser, err := runtime.NewParser(ctx, PresetTraQV1)
+	parser, err := runtime.NewParser(ctx, PresetTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}

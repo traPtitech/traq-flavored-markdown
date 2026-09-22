@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go"
+	markdown "github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go"
 	"os"
 	"path/filepath"
 	"sort"
@@ -82,7 +82,7 @@ func main() {
 	runtime, err := markdown.NewRuntime(context.Background(), wasm)
 	must(err)
 	defer runtime.Close(context.Background())
-	parser, err := runtime.NewParser(context.Background(), markdown.PresetTraQV1)
+	parser, err := runtime.NewParser(context.Background(), markdown.PresetTraqV1)
 	must(err)
 	renderer, err := runtime.NewPlainTextRenderer(context.Background(), markdown.RendererOptions{Origin: conf.Origin})
 	must(err)

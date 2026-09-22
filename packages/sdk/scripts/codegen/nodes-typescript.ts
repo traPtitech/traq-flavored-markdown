@@ -10,11 +10,11 @@ export async function typescriptFiles(
   files.set(
     'typescript/generated/nodes.ts',
     '// Generated from Rust contracts. Do not edit.\n' +
-      "import type { Node as AstNode, Document as AstDocument } from '@traq-markdown-engine/core';\n" +
+      "import type { Node as AstNode, Document as AstDocument } from '@traq-flavored-markdown/core';\n" +
       owners
         .map(
           g =>
-            `import * as ${g} from '@traq-markdown-engine/${nodeGroup(g).typescriptNodes}';`
+            `import * as ${g} from '@traq-flavored-markdown/${nodeGroup(g).typescriptNodes}';`
         )
         .join('\n') +
       '\n' +

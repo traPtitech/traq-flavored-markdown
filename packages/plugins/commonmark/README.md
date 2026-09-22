@@ -24,7 +24,7 @@ or application policy. Those responsibilities belong to the traQ plugin and SDK.
 The TypeScript package exports generated node types and HTML renderers.
 `html(options)` builds a standalone CommonMark HTML preset; `plugin(options)`
 provides the same handlers for a custom renderer composition. The Go
-module is `github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go`;
+module is `github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/commonmark/go`;
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 

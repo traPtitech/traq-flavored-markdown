@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go"
-	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go"
+	commonmark "github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/commonmark/go"
+	trap "github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
 func parserFor(t *testing.T, preset Preset) *Parser {
@@ -35,7 +35,7 @@ func parserFor(t *testing.T, preset Preset) *Parser {
 }
 
 func TestFixtureAST(t *testing.T) {
-	p := parserFor(t, PresetTraQV1)
+	p := parserFor(t, PresetTraqV1)
 	raw, err := os.ReadFile("../../../tests/fixtures/commonmark-0.31.2.json")
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +107,7 @@ func TestFixtureAST(t *testing.T) {
 
 func TestLifecycleAndBounds(t *testing.T) {
 	ctx := context.Background()
-	p := parserFor(t, PresetTraQV1)
+	p := parserFor(t, PresetTraqV1)
 	common := parserFor(t, PresetCommonMark)
 	first, err := p.ParseInline(ctx, ":stamp:")
 	if err != nil {
@@ -158,7 +158,7 @@ func TestLifecycleAndBounds(t *testing.T) {
 }
 
 func TestConcurrentCalls(t *testing.T) {
-	p := parserFor(t, PresetTraQV1)
+	p := parserFor(t, PresetTraqV1)
 	var wg sync.WaitGroup
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
@@ -211,7 +211,7 @@ func TestBuildMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close(context.Background())
-	if _, err := r.NewParser(context.Background(), PresetTraQV1); err == nil ||
+	if _, err := r.NewParser(context.Background(), PresetTraqV1); err == nil ||
 		!strings.Contains(err.Error(), "does not match") {
 		t.Fatal(err)
 	}

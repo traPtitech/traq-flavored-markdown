@@ -1,9 +1,9 @@
 import { readFile } from 'node:fs/promises'
 
-import * as rendering from '@traq-markdown-engine/sdk/renderer'
-import { plugin } from '@traq-markdown-engine/commonmark-plugin/renderer'
-import { PresetBuilder, renderer } from '@traq-markdown-engine/core/renderer'
-import { createRuntime, presets } from '@traq-markdown-engine/sdk'
+import * as rendering from '@traq-flavored-markdown/sdk/renderer'
+import { plugin } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import { PresetBuilder, renderer } from '@traq-flavored-markdown/core/renderer'
+import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
 
 const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
@@ -21,7 +21,7 @@ check(
 )
 
 const css = await readFile(
-  new URL(import.meta.resolve('@traq-markdown-engine/sdk/index.css')),
+  new URL(import.meta.resolve('@traq-flavored-markdown/sdk/index.css')),
   'utf8'
 )
 check(
@@ -30,7 +30,7 @@ check(
 )
 const runtime = await createRuntime(
   await readFile(
-    new URL(import.meta.resolve('@traq-markdown-engine/sdk/parser.wasm'))
+    new URL(import.meta.resolve('@traq-flavored-markdown/sdk/parser.wasm'))
   )
 )
 try {

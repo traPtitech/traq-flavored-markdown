@@ -1,7 +1,7 @@
 // Code generated from Rust contracts. DO NOT EDIT.
 package generic
 
-import "github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"
+import "github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go/ast"
 
 const MarkName = "markdown_generic_contracts::mark::MarkData"
 

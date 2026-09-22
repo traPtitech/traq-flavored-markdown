@@ -1,22 +1,22 @@
-import * as rendering from '@traq-markdown-engine/sdk/renderer'
+import * as rendering from '@traq-flavored-markdown/sdk/renderer'
 import {
   isKnownNode,
   names
-} from '@traq-markdown-engine/commonmark-plugin/nodes'
-import { plugin } from '@traq-markdown-engine/commonmark-plugin/renderer'
-import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
+} from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import { plugin } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
 import {
   Plugin,
   PresetBuilder,
   type RenderContext,
   renderer
-} from '@traq-markdown-engine/core/renderer'
+} from '@traq-flavored-markdown/core/renderer'
 import {
   type Document,
   createRuntime,
   presets
-} from '@traq-markdown-engine/sdk'
-import type { Store } from '@traq-markdown-engine/traq-plugin/renderer'
+} from '@traq-flavored-markdown/sdk'
+import type { Store } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)

@@ -2,8 +2,8 @@ import { deepStrictEqual } from 'node:assert'
 import { readFile } from 'node:fs/promises'
 import { argv } from 'node:process'
 
-import { createRuntime, presets } from '@traq-markdown-engine/sdk'
-import { names } from '@traq-markdown-engine/traq-plugin/nodes'
+import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
+import { names } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
@@ -12,7 +12,7 @@ const check = (condition: unknown, message: string) => {
 const readBytes = async (url: URL) => new Uint8Array(await readFile(url))
 
 const bytes = await readBytes(
-  new URL(import.meta.resolve('@traq-markdown-engine/sdk/parser.wasm'))
+  new URL(import.meta.resolve('@traq-flavored-markdown/sdk/parser.wasm'))
 )
 const runtime = await createRuntime(bytes)
 const parser = runtime.createParser(presets.traq.v1)

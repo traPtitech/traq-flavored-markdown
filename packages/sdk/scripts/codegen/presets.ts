@@ -25,7 +25,7 @@ function frozen(tree: PresetTree, path: string[] = []): string {
 export function presetFiles(tree: PresetTree): Map<string, string> {
   const paths = leaves(tree)
   const goName = (part: string) =>
-    (({ traq: 'TraQ', commonmark: 'CommonMark' }) as Record<string, string>)[
+    (({ traq: 'Traq', commonmark: 'CommonMark' }) as Record<string, string>)[
       part
     ] ?? part[0].toUpperCase() + part.slice(1)
   return new Map([

@@ -1,10 +1,10 @@
 {
-  "name": "@traq-markdown-engine/traq-plugin",
+  "name": "@traq-flavored-markdown/traq-plugin",
   "version": "0.1.4",
   "description": "traQ-specific Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "url": "git+https://github.com/uni-kakurenbo/traq-flavored-markdown.git",
     "directory": "packages/plugins/traq"
   },
   "license": "MIT",
@@ -38,12 +38,12 @@
     "typecheck": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "devDependencies": {
-    "@traq-markdown-engine/commonmark-plugin": "workspace:*",
-    "@traq-markdown-engine/core": "workspace:*"
+    "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
+    "@traq-flavored-markdown/core": "workspace:*"
   },
   "peerDependencies": {
-    "@traq-markdown-engine/commonmark-plugin": "0.1.4",
-    "@traq-markdown-engine/core": "0.1.4"
+    "@traq-flavored-markdown/commonmark-plugin": "0.1.4",
+    "@traq-flavored-markdown/core": "0.1.4"
   },
   "engines": {
     "node": ">=24"

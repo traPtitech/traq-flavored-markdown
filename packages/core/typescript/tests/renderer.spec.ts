@@ -1,9 +1,9 @@
-import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
+import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
 import {
   Plugin,
   PresetBuilder,
   renderer
-} from '@traq-markdown-engine/core/renderer'
+} from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
 test('core renders custom AST nodes without a grammar or Wasm runtime', () => {

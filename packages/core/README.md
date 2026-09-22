@@ -29,11 +29,11 @@ only inspect ASTs do not need parser, renderer, or serialization dependencies.
 
 ## TypeScript and Go
 
-`@traq-markdown-engine/core` exports shared AST types, renderer primitives,
+`@traq-flavored-markdown/core` exports shared AST types, renderer primitives,
 contract validation, and generation support. HTML renderer handlers draw child
 nodes with `ctx.render(nodes)`. The default fallback returns escaped source text
 without markup; paragraph and other structural markup belongs to node handlers.
 
-The Go module `github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go`
+The Go module `github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go`
 owns the shared `ast` and Wasm `binding` packages. It has no CommonMark or traQ
 preset dependency; extension modules provide node payload types.
