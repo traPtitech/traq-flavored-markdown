@@ -36,9 +36,9 @@ for (const [repo, allowed] of packages) {
         if (relative.startsWith('..' + path.sep) || relative === '..')
           throw new Error(file + ': import escapes package ownership')
       }
-      if (!specifier.startsWith('@traq-markdown-engine/')) return
+      if (!specifier.startsWith('@traq-flavored-markdown/')) return
       const name = specifier
-        .slice('@traq-markdown-engine/'.length)
+        .slice('@traq-flavored-markdown/'.length)
         .split('/')[0]
       if (!allowed.includes(name as PackageName))
         throw new Error(file + ': upward dependency ' + name)

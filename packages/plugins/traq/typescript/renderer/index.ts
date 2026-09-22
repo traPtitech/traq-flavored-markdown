@@ -1,8 +1,8 @@
-import { validateLink as defaultPolicy } from '@traq-markdown-engine/commonmark-plugin/policy'
-import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
-import { checked, escapeHtml } from '@traq-markdown-engine/core/html'
-import { Plugin } from '@traq-markdown-engine/core/renderer'
-import { isKnownNode, names } from '@traq-markdown-engine/traq-plugin/nodes'
+import { validateLink as defaultPolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
+import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
+import { checked, escapeHtml } from '@traq-flavored-markdown/core/html'
+import { Plugin } from '@traq-flavored-markdown/core/renderer'
+import { isKnownNode, names } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import { renderReference } from './reference.js'
 import { stampRenderer } from './stamp.js'

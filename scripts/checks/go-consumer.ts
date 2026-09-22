@@ -4,7 +4,7 @@ import { repositoryRoot } from '../paths.ts'
 import { goReleaseModules } from '../release-go.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
 
-const repository = 'github.com/uni-kakurenbo/traq-markdown-engine'
+const repository = 'github.com/uni-kakurenbo/traq-flavored-markdown'
 const sdk = `${repository}/packages/sdk/go`
 
 async function go(directory: string, args: string[], remote: boolean) {
@@ -65,7 +65,7 @@ func TestBundledRuntime(t *testing.T) {
   runtime, err := markdown.NewBundledRuntime(ctx)
   if err != nil { t.Fatal(err) }
   defer runtime.Close(ctx)
-  parser, err := runtime.NewParser(ctx, markdown.PresetTraQV1)
+  parser, err := runtime.NewParser(ctx, markdown.PresetTraqV1)
   if err != nil { t.Fatal(err) }
   defer parser.Close(ctx)
   document, err := parser.Parse(ctx, "**outside workspace**")

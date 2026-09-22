@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/binding"
+	"github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go/binding"
 )
 
 type Extractor struct{ instance *binding.Instance }

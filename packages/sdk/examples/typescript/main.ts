@@ -1,7 +1,7 @@
-import { createRuntime, presets } from '@traq-markdown-engine/sdk'
+import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
 
 const parserWasmUrl = new URL(
-  import.meta.resolve('@traq-markdown-engine/sdk/parser.wasm')
+  import.meta.resolve('@traq-flavored-markdown/sdk/parser.wasm')
 )
 const wasmBytes = await Bun.file(parserWasmUrl).bytes()
 const runtime = await createRuntime(wasmBytes)

@@ -1,5 +1,5 @@
-import * as rendering from '@traq-markdown-engine/sdk/renderer'
-import { renderer } from '@traq-markdown-engine/core/renderer'
+import * as rendering from '@traq-flavored-markdown/sdk/renderer'
+import { renderer } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
 import { commonParser, parser } from './setup.ts'

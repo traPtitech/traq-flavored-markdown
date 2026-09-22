@@ -1,4 +1,4 @@
-import { type Extraction } from '@traq-markdown-engine/sdk'
+import { type Extraction } from '@traq-flavored-markdown/sdk'
 import {
   type Document,
   type Node,
@@ -6,15 +6,15 @@ import {
   isKnownNode,
   isPreset,
   presets
-} from '@traq-markdown-engine/sdk'
+} from '@traq-flavored-markdown/sdk'
 import {
   isPreset as isBrowserPreset,
   loadRuntime
-} from '@traq-markdown-engine/sdk/browser'
+} from '@traq-flavored-markdown/sdk/browser'
 import {
   type ReferenceData,
   names
-} from '@traq-markdown-engine/traq-plugin/nodes'
+} from '@traq-flavored-markdown/traq-plugin/nodes'
 
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)

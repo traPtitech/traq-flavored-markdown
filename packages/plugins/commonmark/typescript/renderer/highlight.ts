@@ -1,4 +1,4 @@
-import { attributes, escapeHtml } from '@traq-markdown-engine/core/html'
+import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
 import hljs from 'highlight.js'
 
 import defaultSubset from './languages.js'

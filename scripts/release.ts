@@ -15,7 +15,7 @@ const requiredPeers: Record<PackageName, PackageName[]> = {
   'traq-plugin': ['core', 'commonmark-plugin'],
   sdk: ['core', 'commonmark-plugin', 'traq-plugin']
 }
-const packageName = (name: PackageName) => `@traq-markdown-engine/${name}`
+const packageName = (name: PackageName) => `@traq-flavored-markdown/${name}`
 const workspaces = packageNames.map(name => `--workspace=${packageName(name)}`)
 const versionPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
@@ -80,7 +80,7 @@ export const parseRelease = (args: string[]): Release => {
 
 export const validateWorkspace = (workspace: Workspace, version?: string) => {
   if (
-    workspace.root.name !== 'traq-markdown-engine' ||
+    workspace.root.name !== 'traq-flavored-markdown' ||
     workspace.root.private !== true
   )
     throw new Error('root manifest does not match the synchronized release')

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go"
+	markdown "github.com/uni-kakurenbo/traq-flavored-markdown/packages/sdk/go"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func run(path string) error {
 	}
 	defer runtime.Close(ctx)
 
-	parser, err := runtime.NewParser(ctx, markdown.PresetTraQV1)
+	parser, err := runtime.NewParser(ctx, markdown.PresetTraqV1)
 	if err != nil {
 		return err
 	}

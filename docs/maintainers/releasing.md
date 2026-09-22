@@ -8,12 +8,12 @@ it is not required reading for ordinary contributions.
 The four public npm packages and four Go modules are released together at one
 shared version:
 
-| npm package                               | Package directory             |
-| ----------------------------------------- | ----------------------------- |
-| `@traq-markdown-engine/core`              | `packages/core`               |
-| `@traq-markdown-engine/commonmark-plugin` | `packages/plugins/commonmark` |
-| `@traq-markdown-engine/traq-plugin`       | `packages/plugins/traq`       |
-| `@traq-markdown-engine/sdk`               | `packages/sdk`                |
+| npm package                                 | Package directory             |
+| ------------------------------------------- | ----------------------------- |
+| `@traq-flavored-markdown/core`              | `packages/core`               |
+| `@traq-flavored-markdown/commonmark-plugin` | `packages/plugins/commonmark` |
+| `@traq-flavored-markdown/traq-plugin`       | `packages/plugins/traq`       |
+| `@traq-flavored-markdown/sdk`               | `packages/sdk`                |
 
 | Go module directory              | Tag                                         |
 | -------------------------------- | ------------------------------------------- |
@@ -91,7 +91,7 @@ Configure a GitHub Actions trusted publisher in the npm settings of each
 existing package:
 
 - Organization or user: `uni-kakurenbo`
-- Repository: `traq-markdown-engine`
+- Repository: `traq-flavored-markdown`
 - Workflow filename: `release.yml`
 - Environment: leave empty unless the workflow later uses a GitHub environment
 - Allowed action: enable direct `npm publish`; otherwise a new configuration only
@@ -119,7 +119,7 @@ npm publish --workspace=packages/plugins/traq --workspace=packages/sdk --access 
 
 Use `--tag next` for a prerelease. npm does not retry a partial publication. If a
 local `min-release-age` policy hides newly published versions from `npm view`,
-add `--min-release-age-exclude=@traq-markdown-engine/*` to that inspection
+add `--min-release-age-exclude=@traq-flavored-markdown/*` to that inspection
 command.
 
 After the npm packages are complete, push the npm release tag and four Go module

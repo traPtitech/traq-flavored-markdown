@@ -1,10 +1,10 @@
 {
-  "name": "@traq-markdown-engine/core",
+  "name": "@traq-flavored-markdown/core",
   "version": "0.1.4",
   "description": "core Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "url": "git+https://github.com/uni-kakurenbo/traq-flavored-markdown.git",
     "directory": "packages/core"
   },
   "license": "MIT",

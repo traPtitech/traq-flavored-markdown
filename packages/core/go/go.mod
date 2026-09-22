@@ -1,4 +1,4 @@
-module github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go
+module github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go
 
 go 1.26.0
 

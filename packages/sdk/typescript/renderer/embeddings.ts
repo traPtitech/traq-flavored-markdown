@@ -1,9 +1,9 @@
 import {
   isKnownNode,
   names
-} from '@traq-markdown-engine/commonmark-plugin/nodes'
-import type { Document, Node } from '@traq-markdown-engine/core/renderer'
-import { names as trap } from '@traq-markdown-engine/traq-plugin/nodes'
+} from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import type { Document, Node } from '@traq-flavored-markdown/core/renderer'
+import { names as trap } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import { classifyTraqLink } from './links.js'
 

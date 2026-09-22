@@ -1,5 +1,5 @@
 {
-  "name": "@traq-markdown-engine/commonmark-plugin",
+  "name": "@traq-flavored-markdown/commonmark-plugin",
   "version": "0.1.4",
   "type": "module",
   "description": "commonmark Markdown contracts and HTML rendering.",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uni-kakurenbo/traq-markdown-engine.git",
+    "url": "git+https://github.com/uni-kakurenbo/traq-flavored-markdown.git",
     "directory": "packages/plugins/commonmark"
   },
   "exports": {
@@ -57,10 +57,10 @@
     "typecheck": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "peerDependencies": {
-    "@traq-markdown-engine/core": "0.1.4"
+    "@traq-flavored-markdown/core": "0.1.4"
   },
   "devDependencies": {
-    "@traq-markdown-engine/core": "workspace:*",
+    "@traq-flavored-markdown/core": "workspace:*",
     "@types/katex": "0.16.8"
   },
   "dependencies": {

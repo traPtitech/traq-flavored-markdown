@@ -29,7 +29,7 @@ export async function nodeFiles(manifest: Manifest, input: string) {
           .map(([key, s]) => ` | { kind: ${q(key)}; data: ${s.title} }`)
           .join('\n') +
         ';\n' +
-        javascript(entries, '@traq-markdown-engine/core/validation')
+        javascript(entries, '@traq-flavored-markdown/core/validation')
     )
   }
   return files

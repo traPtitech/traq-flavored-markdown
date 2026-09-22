@@ -1,14 +1,14 @@
 import {
   isKnownNode,
   names
-} from '@traq-markdown-engine/commonmark-plugin/nodes'
+} from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import {
   attributes,
   checked,
   escapeHtml
-} from '@traq-markdown-engine/core/html'
-import type { Node } from '@traq-markdown-engine/core/renderer'
-import type { Plugin } from '@traq-markdown-engine/core/renderer'
+} from '@traq-flavored-markdown/core/html'
+import type { Node } from '@traq-flavored-markdown/core/renderer'
+import type { Plugin } from '@traq-flavored-markdown/core/renderer'
 import { decodeHTMLStrict } from 'entities'
 
 import type { Options } from './options.js'

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	commonmark "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go"
-	trap "github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go"
+	commonmark "github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/commonmark/go"
+	trap "github.com/uni-kakurenbo/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
 func TestRuntimeOwnership(t *testing.T) {
@@ -23,7 +23,7 @@ func TestRuntimeOwnership(t *testing.T) {
 	}
 	defer runtime.Close(ctx)
 
-	traq, err := runtime.NewParser(ctx, PresetTraQV1)
+	traq, err := runtime.NewParser(ctx, PresetTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestRuntimeOwnership(t *testing.T) {
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
 
-	if parser, err := runtime.NewParser(canceled, PresetTraQV1); err == nil {
+	if parser, err := runtime.NewParser(canceled, PresetTraqV1); err == nil {
 		parser.Close(ctx)
 		t.Fatal("accepted canceled creation")
 	}
@@ -69,7 +69,7 @@ func TestRuntimeOwnership(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			p, err := runtime.NewParser(ctx, PresetTraQV1)
+			p, err := runtime.NewParser(ctx, PresetTraqV1)
 			if err != nil {
 				t.Error(err)
 				return
@@ -92,7 +92,7 @@ func TestRuntimeOwnership(t *testing.T) {
 	if _, err := common.Parse(ctx, "closed"); err == nil {
 		t.Fatal("Runtime.Close left a parser open")
 	}
-	if _, err := runtime.NewParser(ctx, PresetTraQV1); err == nil {
+	if _, err := runtime.NewParser(ctx, PresetTraqV1); err == nil {
 		t.Fatal("closed Runtime created a parser")
 	}
 	if err := common.Close(ctx); err != nil {

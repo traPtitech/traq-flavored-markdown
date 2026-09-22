@@ -2,7 +2,7 @@ import {
   embeddingFromUrl,
   endsWithEmbedding,
   messageRenderers
-} from '@traq-markdown-engine/sdk/renderer'
+} from '@traq-flavored-markdown/sdk/renderer'
 import { expect, test } from 'bun:test'
 
 import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }

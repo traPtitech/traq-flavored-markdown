@@ -1,4 +1,4 @@
-import { escapeHtml } from '@traq-markdown-engine/core/html'
+import { escapeHtml } from '@traq-flavored-markdown/core/html'
 import katex from 'katex'
 
 export function math(

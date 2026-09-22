@@ -1,13 +1,13 @@
-import * as generic from '@traq-markdown-engine/commonmark-plugin/generic/renderer'
-import * as commonNodes from '@traq-markdown-engine/commonmark-plugin/nodes'
-import * as common from '@traq-markdown-engine/commonmark-plugin/renderer'
-import * as html from '@traq-markdown-engine/core/renderer'
-import * as traq from '@traq-markdown-engine/sdk/renderer'
-import * as trapNodes from '@traq-markdown-engine/traq-plugin/nodes'
-import * as trap from '@traq-markdown-engine/traq-plugin/renderer'
-import { createHighlightFunc } from '@traq-markdown-engine/commonmark-plugin/highlight'
-import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
-import type { Plugin } from '@traq-markdown-engine/core/renderer'
+import * as generic from '@traq-flavored-markdown/commonmark-plugin/generic/renderer'
+import * as commonNodes from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import * as common from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import * as html from '@traq-flavored-markdown/core/renderer'
+import * as traq from '@traq-flavored-markdown/sdk/renderer'
+import * as trapNodes from '@traq-flavored-markdown/traq-plugin/nodes'
+import * as trap from '@traq-flavored-markdown/traq-plugin/renderer'
+import { createHighlightFunc } from '@traq-flavored-markdown/commonmark-plugin/highlight'
+import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
+import type { Plugin } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
 
@@ -25,7 +25,7 @@ test('rendering returns HTML and exposes no parser or token adapter', () => {
   )
   expect(Object.keys(view).sort()).toEqual(['render'])
   expect((html as Record<string, unknown>).installParser).toBeUndefined()
-  expect((html as Record<string, unknown>).traQMarkdownIt).toBeUndefined()
+  expect((html as Record<string, unknown>).traqMarkdownIt).toBeUndefined()
 })
 
 test('replacement preserves defaults and earlier snapshots', () => {

@@ -5,7 +5,7 @@ import {
   nullable,
   oneOf,
   string
-} from '@traq-markdown-engine/core/validation'
+} from '@traq-flavored-markdown/core/validation'
 
 // Generated from Rust contracts. Do not edit.
 export type BlankLineData = Record<symbol, never>

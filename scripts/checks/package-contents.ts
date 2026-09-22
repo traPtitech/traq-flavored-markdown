@@ -64,7 +64,7 @@ try {
   }
   const packageDependencies = Object.fromEntries(
     packageNames.map((name, index) => [
-      `@traq-markdown-engine/${name}`,
+      `@traq-flavored-markdown/${name}`,
       `file:./${archiveName(archives[index])}`
     ])
   )

@@ -1,7 +1,7 @@
 // Code generated from Rust contracts. DO NOT EDIT.
 package trap
 
-import "github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go/ast"
+import "github.com/uni-kakurenbo/traq-flavored-markdown/packages/core/go/ast"
 
 const BlankLineName = "markdown_trap_contracts::compat::BlankLineData"
 

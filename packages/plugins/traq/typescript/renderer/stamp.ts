@@ -1,5 +1,5 @@
-import { validateLink } from '@traq-markdown-engine/commonmark-plugin/policy'
-import { escapeHtml } from '@traq-markdown-engine/core/html'
+import { validateLink } from '@traq-flavored-markdown/commonmark-plugin/policy'
+import { escapeHtml } from '@traq-flavored-markdown/core/html'
 
 import { animeEffects, sizeEffects } from './stamp-effects.js'
 import type { Options } from './types.js'

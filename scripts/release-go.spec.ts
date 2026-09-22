@@ -13,7 +13,7 @@ import {
 } from './release-go.ts'
 import { withTempDirectory } from './testing/temp-directory.ts'
 
-const repository = 'github.com/uni-kakurenbo/traq-markdown-engine'
+const repository = 'github.com/uni-kakurenbo/traq-flavored-markdown'
 const core = `${repository}/packages/core/go`
 const sdk = `${repository}/packages/sdk/go`
 const publishedModules = goReleaseModules.map(

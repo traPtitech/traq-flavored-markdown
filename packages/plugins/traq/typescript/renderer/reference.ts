@@ -1,6 +1,6 @@
-import { attributes, escapeHtml } from '@traq-markdown-engine/core/html'
-import type { Node } from '@traq-markdown-engine/core/renderer'
-import type { ReferenceData } from '@traq-markdown-engine/traq-plugin/nodes'
+import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
+import type { Node } from '@traq-flavored-markdown/core/renderer'
+import type { ReferenceData } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import type { Options } from './types.js'
 

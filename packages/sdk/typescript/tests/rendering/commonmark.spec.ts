@@ -1,5 +1,5 @@
-import { html } from '@traq-markdown-engine/commonmark-plugin/renderer'
-import { renderer } from '@traq-markdown-engine/core/renderer'
+import { html } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import { renderer } from '@traq-flavored-markdown/core/renderer'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
