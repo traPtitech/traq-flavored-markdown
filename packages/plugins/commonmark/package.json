@@ -1,6 +1,6 @@
 {
   "name": "@traq-flavored-markdown/commonmark-plugin",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "commonmark Markdown contracts and HTML rendering.",
   "license": "MIT",
@@ -57,7 +57,7 @@
     "typecheck": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "peerDependencies": {
-    "@traq-flavored-markdown/core": "0.1.5"
+    "@traq-flavored-markdown/core": "0.1.6"
   },
   "devDependencies": {
     "@traq-flavored-markdown/core": "workspace:*",
