@@ -76,8 +76,8 @@
     "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
     "@traq-flavored-markdown/core": "workspace:*",
     "@traq-flavored-markdown/traq-plugin": "workspace:*",
-    "markdown-it": "15.0.1",
-    "sass": "1.104.0"
+    "markdown-it": "15.0.2",
+    "sass": "1.104.1"
   },
   "peerDependencies": {
     "@traq-flavored-markdown/commonmark-plugin": "0.1.5",
