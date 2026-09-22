@@ -1,6 +1,6 @@
 {
   "name": "@traq-markdown-engine/traq-plugin",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "traQ-specific Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
@@ -42,8 +42,8 @@
     "@traq-markdown-engine/core": "workspace:*"
   },
   "peerDependencies": {
-    "@traq-markdown-engine/commonmark-plugin": "0.1.3",
-    "@traq-markdown-engine/core": "0.1.3"
+    "@traq-markdown-engine/commonmark-plugin": "0.1.4",
+    "@traq-markdown-engine/core": "0.1.4"
   },
   "engines": {
     "node": ">=24"

@@ -1,16 +1,17 @@
 go 1.26.0
 
 use (
-	./packages/plugins/commonmark/go
 	./packages/core/go
+	./packages/plugins/commonmark/go
 	./packages/plugins/traq/go
-	./packages/sdk/go
 	./packages/sdk/examples/go
+	./packages/sdk/go
 )
 
-replace (
-	github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go v0.0.0-00010101000000-000000000000 => ./packages/core/go
-	github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go v0.0.0-00010101000000-000000000000 => ./packages/plugins/commonmark/go
-	github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go v0.0.0-00010101000000-000000000000 => ./packages/plugins/traq/go
-	github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go v0.1.0 => ./packages/sdk/go
-)
+replace github.com/uni-kakurenbo/traq-markdown-engine/packages/core/go v0.1.4 => ./packages/core/go
+
+replace github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/commonmark/go v0.1.4 => ./packages/plugins/commonmark/go
+
+replace github.com/uni-kakurenbo/traq-markdown-engine/packages/plugins/traq/go v0.1.4 => ./packages/plugins/traq/go
+
+replace github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go v0.1.4 => ./packages/sdk/go
