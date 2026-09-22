@@ -62,7 +62,7 @@ const goModules: [PackageName, string][] = [
 for (const [source, file] of goModules) {
   const manifest = await Bun.file(file).text()
   for (const [, part] of manifest.matchAll(
-    /github\.com\/uni-kakurenbo\/traq-flavored-markdown\/packages\/(core|sdk|plugins\/commonmark|plugins\/traq)\/go\b/g
+    /github\.com\/traPtitech\/traq-flavored-markdown\/packages\/(core|sdk|plugins\/commonmark|plugins\/traq)\/go\b/g
   )) {
     const destination = owner(path.join(packagesRoot, part))
     if (destination && !allowedOwners[source].includes(destination))

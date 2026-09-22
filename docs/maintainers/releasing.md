@@ -90,7 +90,7 @@ creating a GitHub Release.
 Configure a GitHub Actions trusted publisher in the npm settings of each
 existing package:
 
-- Organization or user: `uni-kakurenbo`
+- Organization or user: `traPtitech`
 - Repository: `traq-flavored-markdown`
 - Workflow filename: `release.yml`
 - Environment: leave empty unless the workflow later uses a GitHub environment
