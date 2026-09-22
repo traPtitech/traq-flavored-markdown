@@ -27,11 +27,11 @@
     },
     "packages/core": {
       "name": "@traq-flavored-markdown/core",
-      "version": "0.1.4",
+      "version": "0.1.5",
     },
     "packages/plugins/commonmark": {
       "name": "@traq-flavored-markdown/commonmark-plugin",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "dependencies": {
         "entities": "8.0.0",
         "highlight.js": "11.12.0",
@@ -42,24 +42,24 @@
         "@types/katex": "0.16.8",
       },
       "peerDependencies": {
-        "@traq-flavored-markdown/core": "0.1.4",
+        "@traq-flavored-markdown/core": "0.1.5",
       },
     },
     "packages/plugins/traq": {
       "name": "@traq-flavored-markdown/traq-plugin",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "devDependencies": {
         "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
         "@traq-flavored-markdown/core": "workspace:*",
       },
       "peerDependencies": {
-        "@traq-flavored-markdown/commonmark-plugin": "0.1.4",
-        "@traq-flavored-markdown/core": "0.1.4",
+        "@traq-flavored-markdown/commonmark-plugin": "0.1.5",
+        "@traq-flavored-markdown/core": "0.1.5",
       },
     },
     "packages/sdk": {
       "name": "@traq-flavored-markdown/sdk",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "devDependencies": {
         "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
         "@traq-flavored-markdown/core": "workspace:*",
@@ -68,9 +68,9 @@
         "sass": "1.104.0",
       },
       "peerDependencies": {
-        "@traq-flavored-markdown/commonmark-plugin": "0.1.4",
-        "@traq-flavored-markdown/core": "0.1.4",
-        "@traq-flavored-markdown/traq-plugin": "0.1.4",
+        "@traq-flavored-markdown/commonmark-plugin": "0.1.5",
+        "@traq-flavored-markdown/core": "0.1.5",
+        "@traq-flavored-markdown/traq-plugin": "0.1.5",
       },
     },
     "tools/corpus": {

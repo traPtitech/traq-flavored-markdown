@@ -1,6 +1,6 @@
 {
   "name": "@traq-flavored-markdown/sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
   "homepage": "https://github.com/uni-kakurenbo/traq-flavored-markdown#readme",
   "bugs": {
@@ -80,9 +80,9 @@
     "sass": "1.104.0"
   },
   "peerDependencies": {
-    "@traq-flavored-markdown/commonmark-plugin": "0.1.4",
-    "@traq-flavored-markdown/core": "0.1.4",
-    "@traq-flavored-markdown/traq-plugin": "0.1.4"
+    "@traq-flavored-markdown/commonmark-plugin": "0.1.5",
+    "@traq-flavored-markdown/core": "0.1.5",
+    "@traq-flavored-markdown/traq-plugin": "0.1.5"
   },
   "engines": {
     "node": ">=24"
