@@ -1,14 +1,12 @@
+import { nodeGroup } from '../../../../scripts/codegen/groups.ts'
+
 export async function typescriptFiles(
   manifest: { nodes: Record<string, { group: string }> },
   input: string
 ) {
   const files = new Map<string, string>()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
-  const packages: Record<string, string> = {
-    commonmark: 'commonmark-plugin/nodes',
-    generic: 'commonmark-plugin/generic/nodes',
-    trap: 'traq-plugin/nodes'
-  }
+  for (const group of owners) nodeGroup(group)
   files.set(
     'typescript/generated/nodes.ts',
     '// Generated from Rust contracts. Do not edit.\n' +
@@ -16,7 +14,7 @@ export async function typescriptFiles(
       owners
         .map(
           g =>
-            `import * as ${g} from '@traq-markdown-engine/${packages[g] ?? g + '/nodes'}';`
+            `import * as ${g} from '@traq-markdown-engine/${nodeGroup(g).typescriptNodes}';`
         )
         .join('\n') +
       '\n' +
@@ -25,8 +23,9 @@ export async function typescriptFiles(
       ' AstNode<NodeKind | (AllowUnknown extends true ? {kind:string;data:unknown} : never)>;\n' +
       'export type Document<AllowUnknown extends boolean = false> = AstDocument<NodeKind | (AllowUnknown extends true ? {kind:string;data:unknown} : never)>;\n' +
       `export const names = Object.freeze({${owners.map(g => `...${g}.names`).join(',')}});\n` +
-      `export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map([${owners.map(g => `...${g}.nodes`).join(',')}]);\n` +
-      'export function isKnownNode(node:Node<true>):node is Node<true> & NodeKind {return nodes.get(node.kind)?.(node.data) ?? false;}\n' +
+      `const validators = new Map<string,(data:unknown)=>boolean>([${owners.map(g => `...${g}.nodes`).join(',')}]);\n` +
+      'export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map(validators);\n' +
+      'export function isKnownNode(node:Node<true>):node is Node<true> & NodeKind {return validators.get(node.kind)?.(node.data) ?? false;}\n' +
       (await Bun.file(`${input}/ParseError.ts`).text()).replace(
         /^\/\/[^\n]*\n/gm,
         ''

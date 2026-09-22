@@ -9,6 +9,12 @@ const packageNames: PackageName[] = [
   'traq-plugin',
   'sdk'
 ]
+const requiredPeers: Record<PackageName, PackageName[]> = {
+  core: [],
+  'commonmark-plugin': ['core'],
+  'traq-plugin': ['core', 'commonmark-plugin'],
+  sdk: ['core', 'commonmark-plugin', 'traq-plugin']
+}
 const packageName = (name: PackageName) => `@traq-markdown-engine/${name}`
 const workspaces = packageNames.map(name => `--workspace=${packageName(name)}`)
 const versionPattern =
@@ -99,9 +105,18 @@ export const validateWorkspace = (workspace: Workspace, version?: string) => {
       throw new Error(
         `${name} manifest does not match the synchronized release`
       )
+    const peers = internalPeers(manifest)
+    const expected = requiredPeers[name].map(packageName)
+    if (
+      peers.length !== expected.length ||
+      expected.some(peer => !peers.some(([declared]) => declared === peer))
+    )
+      throw new Error(
+        `${name} peer dependencies do not match the package graph`
+      )
     if (
       version !== undefined &&
-      internalPeers(manifest).some(([, peerVersion]) => peerVersion !== version)
+      peers.some(([, peerVersion]) => peerVersion !== version)
     )
       throw new Error(`${name} peer dependencies do not match the release`)
   }

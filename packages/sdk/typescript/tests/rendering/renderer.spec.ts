@@ -5,6 +5,7 @@ import * as html from '@traq-markdown-engine/core/renderer'
 import * as traq from '@traq-markdown-engine/sdk/renderer'
 import * as trapNodes from '@traq-markdown-engine/traq-plugin/nodes'
 import * as trap from '@traq-markdown-engine/traq-plugin/renderer'
+import { createHighlightFunc } from '@traq-markdown-engine/commonmark-plugin/highlight'
 import { Plugin as Declaration } from '@traq-markdown-engine/core/definitions'
 import type { Plugin } from '@traq-markdown-engine/core/renderer'
 import { expect, test } from 'bun:test'
@@ -15,7 +16,7 @@ import { commonParser, parser } from './setup.ts'
 const build = (plugin: Plugin) => new html.PresetBuilder().add(plugin).build()
 
 test('rendering returns HTML and exposes no parser or token adapter', () => {
-  const view = html.renderer(common.preset())
+  const view = html.renderer(common.html())
   expect(view.render(parser.parse('**bold**'))).toBe(
     '<p><strong>bold</strong></p>\n'
   )
@@ -29,7 +30,7 @@ test('rendering returns HTML and exposes no parser or token adapter', () => {
 
 test('replacement preserves defaults and earlier snapshots', () => {
   const document = parser.parse('**bold** [link](https://example.com)')
-  const plugin = common.html.plugin()
+  const plugin = common.plugin()
   const builder = new html.PresetBuilder().add(plugin)
   const before = html.renderer(builder.build())
   plugin.replace(common.nodes.Link, (node, ctx) => ctx.render(node.children))
@@ -143,7 +144,7 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
   const md = new MarkdownIt()
   const local = commonParser()
   try {
-    const view = html.renderer(common.preset())
+    const view = html.renderer(common.html())
     for (const source of [
       '- one\n- two',
       '- one\n\n- two',
@@ -160,7 +161,7 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
 })
 
 test('CommonMark owns link policy and rejects malformed known payloads', () => {
-  const view = html.renderer(common.preset({ validateLink: () => false }))
+  const view = html.renderer(common.html({ validateLink: () => false }))
   expect(view.render(parser.parse('[link](https://example.com)'))).not.toMatch(
     /href=/
   )
@@ -170,21 +171,19 @@ test('CommonMark owns link policy and rejects malformed known payloads', () => {
   const document = parser.parseInline('[label](https://example.com)')
   ;(document.children[0].data as { destination: string }).destination =
     'javascript:alert(1)'
-  expect(html.renderer(common.preset()).render(document)).toBe('label')
+  expect(html.renderer(common.html()).render(document)).toBe('label')
   const heading = parser.parse('# title')
   expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
   ;(heading.children[0].data as { level: string }).level =
     '1 onclick="alert(1)"'
-  expect(() => html.renderer(common.preset()).render(heading)).toThrow(
+  expect(() => html.renderer(common.html()).render(heading)).toThrow(
     /Invalid render payload/
   )
 })
 
 test('direct HTML rendering escapes attributes, image text, and fence info', () => {
   const parser = commonParser()
-  const view = html.renderer(
-    common.preset({ linkAttributes: { title: '"<&' } })
-  )
+  const view = html.renderer(common.html({ linkAttributes: { title: '"<&' } }))
   expect(view.render(parser.parseInline('[x](/url)'))).toBe(
     '<a href="/url" title="&quot;&lt;&amp;">x</a>'
   )
@@ -200,5 +199,11 @@ test('direct HTML rendering escapes attributes, image text, and fence info', () 
   const extended = html.renderer(traq.html({ validateImage: () => true }))
   expect(extended.render(parser.parseInline('![日本語](/image)'))).toBe(
     '<img src="/image" alt="日本語">'
+  )
+})
+
+test('highlighting escapes a custom pre class attribute', () => {
+  expect(createHighlightFunc('code" data-x="value')('<&', 'text')).toBe(
+    '<pre class="code&quot; data-x=&quot;value"><code class="lang-text">&lt;&amp;</code></pre>'
   )
 })

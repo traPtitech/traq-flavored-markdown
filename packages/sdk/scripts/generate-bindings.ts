@@ -1,9 +1,13 @@
 import path from 'path'
 
-import { $ } from 'bun'
-
+import {
+  formatTypescript,
+  readManifest,
+  runCommand,
+  writeFiles
+} from '../../../scripts/codegen/io.ts'
 import type { RawSchema } from '../../../scripts/codegen/schema.ts'
-import { repositoryRoot, sdkRoot } from '../../../scripts/paths.ts'
+import { sdkRoot } from '../../../scripts/paths.ts'
 import { goNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
 import { presetFiles } from './codegen/presets.ts'
@@ -19,38 +23,9 @@ type Manifest = {
   processing: Record<string, RawSchema>
 }
 
-const readManifest = (input: string) =>
-  Bun.file(path.join(input, 'contracts.json')).json() as Promise<Manifest>
-
-const runCommand = (command: string[]) =>
-  $`${command[0]} ${command.slice(1)}`.cwd(repositoryRoot)
-
-const writeFiles = async (files: Map<string, string>) => {
-  const paths = []
-  for (const [name, source] of files) {
-    const output = path.join(sdkRoot, name)
-    await Bun.write(output, source)
-    paths.push(output)
-  }
-  return paths
-}
-
-const formatTypescript = async (paths: string[]) => {
-  if (!paths.length) return
-  await runCommand([
-    Bun.argv[0],
-    'run',
-    'prettier',
-    '--write',
-    '--ignore-path',
-    '.gitignore',
-    ...paths
-  ])
-}
-
 export async function generateSdk(input?: string) {
   const contracts = input ?? (await exportNodeContracts())
-  const manifest = await readManifest(contracts)
+  const manifest = await readManifest<Manifest>(contracts)
   const files = await typescriptFiles(manifest, contracts)
   files.set('go/generated_nodes.go', goNodes(manifest))
   for (const [name, source] of presetFiles(manifest.presets))
@@ -80,7 +55,7 @@ export async function generateSdk(input?: string) {
       ''
     ].join('\n')
   )
-  const paths = await writeFiles(files)
+  const paths = await writeFiles(sdkRoot, files)
   await runCommand([
     'gofmt',
     '-w',

@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test'
 
 import type { RawSchema } from '../../../scripts/codegen/schema.ts'
 import { withTempDirectory } from '../../../scripts/testing/temp-directory.ts'
+import { goNodes as sdkGoNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
 import { presetFiles } from './codegen/presets.ts'
 import { processingFiles } from './codegen/processing.ts'
@@ -22,14 +23,32 @@ test('Rust-exported payloads and presets generate the traQ host API', async () =
     }
     const key = 'custom::BadgeData'
 
-    const manifest = { nodes: { [key]: { schema, group: 'custom' } } }
+    const manifest = { nodes: { [key]: { schema, group: 'trap' } } }
     const generated = await typescriptFiles(manifest, directory)
     expect(generated.get('typescript/generated/nodes.ts')).toMatch(
-      /custom.NodeKind/
+      /trap.NodeKind/
+    )
+    expect(generated.get('typescript/generated/nodes.ts')).toMatch(
+      /return validators\.get\(node\.kind\)/
+    )
+    expect(sdkGoNodes({ nodes: { [key]: { group: 'trap' } } })).toContain(
+      'packages/plugins/traq/go'
+    )
+    await expect(
+      typescriptFiles({ nodes: { [key]: { group: 'custom' } } }, directory)
+    ).rejects.toThrow('Unknown node contract group: custom')
+    expect(() => sdkGoNodes({ nodes: { [key]: { group: 'custom' } } })).toThrow(
+      'Unknown node contract group: custom'
     )
     const presets = presetFiles({ commonmark: 0, custom: { compact: 1 } })
     expect(presets.get('typescript/generated/presets.ts')).toMatch(
       /"custom.compact"/
+    )
+    expect(presets.get('typescript/generated/presets.ts')).toMatch(
+      /Object\.freeze\(\{ "compact": "custom.compact" \} as const\)/
+    )
+    expect(presets.get('typescript/generated/presets.ts')).toContain(
+      'export function isPreset(value: string): value is Preset'
     )
     expect(presets.get('go/generated_presets.go')).toMatch(
       /PresetCustomCompact Preset = "custom.compact"/

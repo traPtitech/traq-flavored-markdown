@@ -1,4 +1,5 @@
 //! Source-preserving message text and attachment/citation extraction from one AST.
+use super::labels;
 use crate::links::{Links, Target};
 use markdown_ast::{Document, Span, ValidatedDocument};
 use markdown_commonmark_contracts::{Link, LinkForm};
@@ -52,31 +53,29 @@ impl Extractor {
                 }
             } else if let Some(embedding) = node.get::<EmbeddingData>() {
                 if let Some(id) = normalize_reference_id(&embedding.id) {
-                    let label = match embedding.target {
+                    let label = labels::for_embedding(embedding.target);
+                    match embedding.target {
                         EmbeddingKind::File => {
                             message.attachments.push(id);
-                            "[添付ファイル]"
                         }
                         EmbeddingKind::Message => {
                             message.citations.push(id);
-                            "[引用メッセージ]"
                         }
-                    };
+                    }
                     edits.push((node.span, label));
                 }
             } else if let Some(link) = node.get::<Link>()
                 && let Some(target) = self.links.classify(&link.destination)
             {
-                let label = match target {
+                let label = labels::for_target(&target);
+                match target {
                     Target::File { id } => {
                         message.attachments.push(id);
-                        "[添付ファイル]"
                     }
                     Target::Message { id } => {
                         message.citations.push(id);
-                        "[引用メッセージ]"
                     }
-                };
+                }
                 // Explicit labels and reference definitions retain their Markdown source.
                 // Bare and angle-bracket links are the source notation for embedded URLs.
                 if link.form != LinkForm::Explicit {

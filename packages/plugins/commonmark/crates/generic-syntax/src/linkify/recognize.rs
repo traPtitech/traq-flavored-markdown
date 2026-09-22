@@ -20,61 +20,57 @@ pub(crate) struct Match {
 }
 
 pub(super) fn find(text: &str) -> Vec<Match> {
-    find_impl(text, None)
-}
-
-pub(super) fn at(text: &str, position: usize) -> Option<Match> {
-    find_impl(text, Some(position)).into_iter().next()
-}
-
-fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
-    static CANDIDATE: LazyLock<Regex> = LazyLock::new(|| {
-        let letter = r"[^\p{P}\p{Z}\p{C}<>｜]";
-
-        // Check the 63-character domain limit below; bounded Unicode repetitions
-        // unnecessarily inflate the regex automaton in Wasm.
-        let domain = format!(r"{letter}(?:(?:{letter}|-)*{letter})?");
-        let host = format!(r"{domain}(?:\.{domain})*");
-
-        // Reject invalid TLDs during matching, so a failed fuzzy host cannot
-        // consume an explicit scheme later in the same run of text.
-        let tld = TLD
-            .as_str()
-            .strip_prefix("(?i)^")
-            .unwrap()
-            .strip_suffix('$')
-            .unwrap();
-
-        let authority =
-            format!(r"//(?:[^\s@/\[\]()<>]{{1,50}}@)?(?P<host>{host})(?P<port>:[0-9]{{1,5}})?");
-        Regex::new(&format!(r#"(?i)(?:(?P<scheme>https?:|ftp:)?{authority}|(?P<mail>mailto:)?(?P<email>[-;:&=+$,.a-z0-9_][-;:&=+$,".a-z0-9_]{{0,63}}@{host})|(?P<fuzzy>{domain}(?:\.{domain})*\.{tld})(?P<fport>:[0-9]{{1,5}})?)"#)).unwrap()
-    });
-
     let mut occupied = 0;
-    let candidates: Box<dyn Iterator<Item = regex::Captures<'_>> + '_> =
-        if let Some(position) = position {
-            Box::new(
-                CANDIDATE
-                    .captures_at(text, position)
-                    .into_iter()
-                    .filter(move |capture| capture.get(0).is_some_and(|m| m.start() == position)),
-            )
-        } else {
-            Box::new(CANDIDATE.captures_iter(text))
-        };
-
-    candidates
-        .filter_map(|candidate| match_candidate(text, candidate, &mut occupied))
+    CANDIDATE
+        .captures_iter(text)
+        .filter_map(|candidate| match_candidate(text, candidate, &mut occupied, 0))
         .collect()
 }
+
+pub(super) fn scan_len(tail: &str) -> usize {
+    tail.find(|ch: char| ch.is_whitespace() || ch.is_control())
+        .unwrap_or(tail.len())
+}
+
+pub(super) fn at(text: &str, position: usize, scan_len: usize) -> Option<Match> {
+    let candidate = CANDIDATE.captures(&text[position..position + scan_len])?;
+    if candidate.get(0)?.start() != 0 {
+        return None;
+    }
+    let mut occupied = position;
+    match_candidate(text, candidate, &mut occupied, position)
+}
+
+static CANDIDATE: LazyLock<Regex> = LazyLock::new(|| {
+    let letter = r"[^\p{P}\p{Z}\p{C}<>｜]";
+
+    // Check the 63-character domain limit below; bounded Unicode repetitions
+    // unnecessarily inflate the regex automaton in Wasm.
+    let domain = format!(r"{letter}(?:(?:{letter}|-)*{letter})?");
+    let host = format!(r"{domain}(?:\.{domain})*");
+
+    // Reject invalid TLDs during matching, so a failed fuzzy host cannot
+    // consume an explicit scheme later in the same run of text.
+    let tld = TLD
+        .as_str()
+        .strip_prefix("(?i)^")
+        .unwrap()
+        .strip_suffix('$')
+        .unwrap();
+
+    let authority =
+        format!(r"//(?:[^\s@/\[\]()<>]{{1,50}}@)?(?P<host>{host})(?P<port>:[0-9]{{1,5}})?");
+    Regex::new(&format!(r#"(?i)(?:(?P<scheme>https?:|ftp:)?{authority}|(?P<mail>mailto:)?(?P<email>[-;:&=+$,.a-z0-9_][-;:&=+$,".a-z0-9_]{{0,63}}@{host})|(?P<fuzzy>{domain}(?:\.{domain})*\.{tld})(?P<fport>:[0-9]{{1,5}})?)"#)).unwrap()
+});
 
 fn match_candidate(
     text: &str,
     candidate: regex::Captures<'_>,
     occupied: &mut usize,
+    offset: usize,
 ) -> Option<Match> {
     let matched = candidate.get(0)?;
-    let start = matched.start();
+    let start = offset + matched.start();
 
     if start < *occupied {
         return None;
@@ -131,7 +127,7 @@ fn match_candidate(
         return None;
     }
 
-    let mut end = matched.end();
+    let mut end = offset + matched.end();
 
     // A numeric port can end before adjacent Japanese prose. Keep rejecting
     // truncated ASCII ports (3000abc, 123456) and invalid hosts.

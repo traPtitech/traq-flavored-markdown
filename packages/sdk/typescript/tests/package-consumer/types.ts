@@ -4,9 +4,13 @@ import {
   type Node,
   createRuntime,
   isKnownNode,
+  isPreset,
   presets
 } from '@traq-markdown-engine/sdk'
-import { loadRuntime } from '@traq-markdown-engine/sdk/browser'
+import {
+  isPreset as isBrowserPreset,
+  loadRuntime
+} from '@traq-markdown-engine/sdk/browser'
 import {
   type ReferenceData,
   names
@@ -27,12 +31,16 @@ if (isKnownNode(unknownNode) && unknownNode.kind === names.Reference) {
   void id
 }
 declare const storedGrammarVersion: string
+if (isPreset(storedGrammarVersion)) runtime.createParser(storedGrammarVersion)
+// @ts-expect-error Stored strings must be checked against the generated catalog.
 runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
 const output: Extraction = extractor.extract(document)
 const mentions: string[] = output.references.mentions
 const browserRuntime = await loadRuntime()
 browserRuntime.createParser(presets.traq.v1)
+if (isBrowserPreset(storedGrammarVersion))
+  browserRuntime.createParser(storedGrammarVersion)
 browserRuntime.createExtractor({ origin: '' })
 void mentions
 // @ts-expect-error The SDK owns the shared browser Runtime's lifetime.

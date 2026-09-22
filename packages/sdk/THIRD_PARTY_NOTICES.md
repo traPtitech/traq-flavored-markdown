@@ -36,8 +36,9 @@ SOFTWARE.
 
 ## Entity values
 
-`src/syntax/commonmark/inlines/entities_table.rs` freezes the 2,125 semicolon-terminated names with values decoded
-by the frontend's `entities` 7.0.1. This also preserves multi-codepoint entities.
+The commonmark-plugin package's `crates/syntax/src/inlines/entities_table.rs`
+freezes the 2,125 semicolon-terminated names with values decoded by the
+frontend's `entities` 7.0.1. This also preserves multi-codepoint entities.
 
 Copyright (c) Felix Böhm
 All rights reserved.

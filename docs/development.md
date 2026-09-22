@@ -89,9 +89,9 @@ Rust crates share the root Cargo workspace and lockfile. Root
 `workspace.dependencies` declares cross-package paths; crates inside one package
 may use relative paths. No sibling checkout or local Cargo patch is needed.
 
-The root `go.work` connects local Go modules and owns version-specific
-replacements for unpublished dependencies. It keeps workspace resolution offline
-without copying replacements into each module. `go mod tidy` operates on one
+The root `go.work` connects local Go modules and owns version-specific local
+replacements for internal dependencies. Published `go.mod` files retain matching
+version requirements without local replacements. `go mod tidy` operates on one
 module rather than the workspace graph, so use workspace tests and `go list -m
 all` to verify local resolution. Go module paths follow the repository layout,
 including `packages/plugins/commonmark/go` and `packages/plugins/traq/go`.

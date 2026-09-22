@@ -12,31 +12,38 @@ import type { Plugin } from '@traq-markdown-engine/core/renderer'
 
 import type { Options } from './options.js'
 
-function imageText(nodes: Node[] = [], source: string): string {
-  return nodes
-    .map(node => {
-      if (!isKnownNode(node))
-        return new TextDecoder().decode(
-          new TextEncoder()
-            .encode(source)
-            .subarray(node.span.start, node.span.end)
-        )
+function imageAltText(nodes: Node[] = [], source: string): string {
+  let sourceBytes: Uint8Array | undefined
+  const decoder = new TextDecoder()
 
-      switch (node.kind) {
-        case names.Text:
-          return node.data.value
-        case names.HtmlInline:
-          return node.data.literal
-        case names.Softbreak:
-        case names.Hardbreak:
-          return '\n'
-        case names.InlineCode:
-          return node.data.literal
-        default:
-          return imageText(node.children, source)
-      }
-    })
-    .join('')
+  const collect = (children: Node[] = []): string =>
+    children
+      .map(node => {
+        if (!isKnownNode(node))
+          return decoder.decode(
+            (sourceBytes ??= new TextEncoder().encode(source)).subarray(
+              node.span.start,
+              node.span.end
+            )
+          )
+
+        switch (node.kind) {
+          case names.Text:
+            return node.data.value
+          case names.HtmlInline:
+            return node.data.literal
+          case names.Softbreak:
+          case names.Hardbreak:
+            return '\n'
+          case names.InlineCode:
+            return node.data.literal
+          default:
+            return collect(node.children)
+        }
+      })
+      .join('')
+
+  return collect(nodes)
 }
 
 function titleAttribute(title: string | null) {
@@ -123,7 +130,7 @@ export function registerInlineHandlers(
         '<img' +
         attributes([
           ['src', n.data.destination],
-          ['alt', imageText(n.children, ctx.source)]
+          ['alt', imageAltText(n.children, ctx.source)]
         ]) +
         titleAttribute(n.data.title) +
         '>'

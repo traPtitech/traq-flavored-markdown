@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	wasmPath := flag.String("wasm", "../../dist/parser.wasm", "path to the matching Wasm artifact")
+	wasmPath := flag.String("wasm", "", "optional path to a matching Wasm artifact")
 	flag.Parse()
 	if err := run(*wasmPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -21,12 +21,18 @@ func main() {
 
 func run(path string) error {
 	ctx := context.Background()
-	wasm, err := os.ReadFile(path)
-	if err != nil {
-		return err
+	var runtime *markdown.Runtime
+	var err error
+	if path == "" {
+		runtime, err = markdown.NewBundledRuntime(ctx)
+	} else {
+		var wasm []byte
+		wasm, err = os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		runtime, err = markdown.NewRuntime(ctx, wasm)
 	}
-
-	runtime, err := markdown.NewRuntime(ctx, wasm)
 	if err != nil {
 		return err
 	}

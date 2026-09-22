@@ -9,7 +9,8 @@ const buildPackage = (name: 'core' | 'commonmark-plugin' | 'traq-plugin') =>
   $.cwd(packageRoot(name))`${Bun.argv[0]} run build`
 
 const args = Bun.argv.slice(2)
-if (args.length === 1 && args[0] === '--check-generated') {
+const check = args.length === 1 && args[0] === '--check-generated'
+if (check) {
   await checkGenerated(generateBindings)
 } else if (!args.length) {
   await generateBindings()
@@ -20,4 +21,4 @@ if (args.length === 1 && args[0] === '--check-generated') {
 await buildPackage('core')
 await buildPackage('commonmark-plugin')
 await buildPackage('traq-plugin')
-await buildSdk({ bindingsReady: true })
+await buildSdk({ bindingsReady: true, checkGenerated: check })

@@ -1,9 +1,10 @@
-use crate::links::{Links, Target};
+use super::labels;
+use crate::links::Links;
 use markdown_commonmark_contracts::{Link, LinkForm};
 use markdown_commonmark_text::{ExplicitLinkStyle, Options as CommonmarkOptions};
 use markdown_generic_text::math::{Options as MathOptions, Style as MathStyle};
 use markdown_renderer::{Preset, PresetBuilder, Result};
-use markdown_trap_contracts::{EmbeddingData, EmbeddingKind};
+use markdown_trap_contracts::EmbeddingData;
 
 /// Build editable plain-text rules. An empty origin leaves URLs as text.
 /// Block separators are retained; single-line formatting belongs to the caller.
@@ -17,12 +18,10 @@ pub fn builder(origin: &str) -> Result<PresetBuilder> {
         markdown_commonmark_text::plugin_with_options(CommonmarkOptions { explicit_links });
     let links = Links::new(origin);
     commonmark.replace::<Link>(move |link, nodes, ctx| {
-        if link.form != LinkForm::Explicit {
-            match links.classify(&link.destination) {
-                Some(Target::File { .. }) => return Ok("[添付ファイル]".into()),
-                Some(Target::Message { .. }) => return Ok("[引用メッセージ]".into()),
-                None => (),
-            }
+        if link.form != LinkForm::Explicit
+            && let Some(target) = links.classify(&link.destination)
+        {
+            return Ok(labels::for_target(&target).into());
         }
         explicit_links.render(link, nodes, ctx)
     })?;
@@ -32,11 +31,7 @@ pub fn builder(origin: &str) -> Result<PresetBuilder> {
         if markdown_trap_extraction::normalize_reference_id(&embedding.id).is_none() {
             return Ok(embedding.literal.clone());
         }
-        Ok(match embedding.target {
-            EmbeddingKind::File => "[添付ファイル]",
-            EmbeddingKind::Message => "[引用メッセージ]",
-        }
-        .into())
+        Ok(labels::for_embedding(embedding.target).into())
     })?;
     let mut builder = PresetBuilder::new();
     builder.add(&commonmark)?;

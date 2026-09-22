@@ -86,6 +86,9 @@ test('card extraction respects Markdown context and preserves external URL candi
   ])
     expect(view.standard.render(parser.parse(source)).embeddings).toEqual([])
   expect(embeddingFromUrl(origin + '/channels/test', origin)).toBeUndefined()
+  expect(
+    embeddingFromUrl(origin + '/channels/test', origin + '/')
+  ).toBeUndefined()
   expect(embeddingFromUrl(origin + '/files/invalid', origin)).toBeUndefined()
   expect(embeddingFromUrl('javascript:alert(1)', origin)).toBeUndefined()
   expect(embeddingFromUrl('/files/' + fileId, origin)).toBeUndefined()
@@ -197,4 +200,13 @@ test('attachment spacing checks the complete AST instead of its final source lin
   expect(
     endsWithEmbedding(parser.parse('[' + file + '](' + file + ')'), origin)
   ).toBe(false)
+})
+
+test('a card link attached to text remains in the rendered message', () => {
+  const document = parser.parse('本文 ' + file)
+  expect(endsWithEmbedding(document, origin)).toBe(false)
+  expect(view.standard.render(document).renderedText).toContain(file)
+  expect(view.condensed.render(document).renderedText).toContain(
+    '[[添付ファイル]]'
+  )
 })

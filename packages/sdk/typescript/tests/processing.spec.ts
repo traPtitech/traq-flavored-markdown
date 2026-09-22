@@ -74,7 +74,7 @@ test('processing consumes the supplied AST and returns metadata without renderin
 test('one extractor accepts ASTs from different grammar versions', async () => {
   const runtime = await createRuntime(bytes)
   const parsers = new Map(
-    ['commonmark', 'traq.v1'].map(version => [
+    [presets.commonmark, presets.traq.v1].map(version => [
       version,
       runtime.createParser(version)
     ])
@@ -82,7 +82,11 @@ test('one extractor accepts ASTs from different grammar versions', async () => {
   const extractor = runtime.createExtractor({ origin: '' })
   const source =
     '!{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@alice"}'
-  for (const version of ['commonmark', 'traq.v1', 'commonmark']) {
+  for (const version of [
+    presets.commonmark,
+    presets.traq.v1,
+    presets.commonmark
+  ]) {
     const parser = parsers.get(version)
     if (!parser) throw new Error(`Missing parser: ${version}`)
     const output = extractor.extract(parser.parse(source))
@@ -90,6 +94,7 @@ test('one extractor accepts ASTs from different grammar versions', async () => {
       version === 'commonmark' ? 0 : 1
     )
   }
+  // @ts-expect-error Exercise the runtime boundary for an unknown JavaScript preset.
   expect(() => runtime.createParser('traq.unknown')).toThrow(
     /unknown grammar version/
   )

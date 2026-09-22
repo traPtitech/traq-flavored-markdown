@@ -69,7 +69,7 @@ the bytes directly in hosts that do not use the browser entrypoint.
 ```go
 import markdown "github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go"
 
-runtime, err := markdown.NewRuntime(ctx, wasmBytes)
+runtime, err := markdown.NewBundledRuntime(ctx)
 if err != nil { return err }
 defer runtime.Close(ctx)
 
@@ -80,6 +80,13 @@ defer parser.Close(ctx)
 document, err := parser.Parse(ctx, "**hello** :stamp:")
 if err != nil { return err }
 ```
+
+The Go module embeds the matching Wasm, so `NewBundledRuntime` works without a
+separate artifact or npm package. Use `NewRuntime(ctx, wasmBytes)` when loading a
+matching Wasm artifact yourself. The four Go modules are tagged at the same
+version as the npm packages; install the SDK with
+`go get github.com/uni-kakurenbo/traq-markdown-engine/packages/sdk/go@v0.1.4`
+for the first Go release, then use the matching version for later releases.
 
 `Parse` and `ParseInline` return `*markdown.Document`; concrete `Node.Data`
 types are generated from Rust contracts. Calls to one parser are serialized. For
@@ -118,6 +125,8 @@ embedding plan. Complete Rust, Go, and TypeScript programs are in
 Grammar versions identify the rules used to write a message. Store that value
 with the source and create a parser for the stored version when reading it back.
 Unknown versions fail rather than silently selecting a newer grammar.
+In TypeScript, check a stored string with `isPreset(version)` before passing it
+to `createParser`; the guard narrows it to the generated `Preset` type.
 
 `presets.traq.v1` and `PresetTraQV1` are generated from the Rust preset catalog.
 Custom grammars are composed in Rust and published through that catalog; the
