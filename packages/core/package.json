@@ -1,6 +1,6 @@
 {
   "name": "@traq-flavored-markdown/core",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "core Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
