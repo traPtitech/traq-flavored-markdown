@@ -10,6 +10,12 @@ contracts, and validation; the SDK exposes the supported presets and host APIs.
 This package combines the core, CommonMark plugin, and traQ plugin layers for
 traQ.
 
+The TypeScript `renderer` preset applies traQ display policy to CommonMark
+nodes: raw HTML is escaped, links use a restricted scheme list (including
+`tel`, `sms`, and `geo`), and rejected links display their escaped Markdown
+source. The CommonMark plugin's `specHtml()` preset is for specification output
+and can emit unsafe HTML; it is not used for message display.
+
 ## Contents
 
 | Location                      | Purpose                                                       |

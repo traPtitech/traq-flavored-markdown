@@ -19,7 +19,8 @@ function tightList(node?: Node) {
   )
 }
 
-type BlockOptions = Pick<Options, 'highlight'>
+type BlockOptions = Required<Pick<Options, 'rawHtml' | 'xhtmlOut'>> &
+  Pick<Options, 'highlight'>
 
 function codeLanguage(info: string) {
   return info
@@ -33,7 +34,7 @@ function codeLanguage(info: string) {
 
 export function registerBlockHandlers(
   result: Plugin,
-  { highlight }: BlockOptions
+  { highlight, rawHtml, xhtmlOut }: BlockOptions
 ) {
   result.on(
     names.Paragraph,
@@ -69,10 +70,7 @@ export function registerBlockHandlers(
       names.Blockquote,
       isKnownNode,
       (n, ctx) =>
-        '<blockquote>' +
-        (n.children?.length ? '\n' : '') +
-        ctx.render(n.children) +
-        '</blockquote>\n'
+        '<blockquote>' + '\n' + ctx.render(n.children) + '</blockquote>\n'
     )
   )
 
@@ -106,7 +104,7 @@ export function registerBlockHandlers(
             i > 0 &&
             children[i - 1].kind === names.Paragraph &&
             child.kind !== names.CodeBlock &&
-            !rendered.startsWith('<br>')
+            !rendered.startsWith(xhtmlOut ? '<br />' : '<br>')
               ? '\n'
               : ''
 
@@ -144,15 +142,17 @@ export function registerBlockHandlers(
 
   result.on(
     names.ThematicBreak,
-    checked(names.ThematicBreak, isKnownNode, () => '<hr>\n')
+    checked(names.ThematicBreak, isKnownNode, () =>
+      xhtmlOut ? '<hr />\n' : '<hr>\n'
+    )
   )
 
   result.on(
     names.HtmlBlock,
-    checked(
-      names.HtmlBlock,
-      isKnownNode,
-      n => '<p>' + escapeHtml(n.data.literal) + '</p>\n'
+    checked(names.HtmlBlock, isKnownNode, n =>
+      rawHtml === 'escape'
+        ? '<p>' + escapeHtml(n.data.literal) + '</p>\n'
+        : n.data.literal
     )
   )
 }

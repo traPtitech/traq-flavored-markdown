@@ -1,4 +1,7 @@
-import { html } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import {
+  html,
+  specHtml
+} from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { renderer } from '@traq-flavored-markdown/core/renderer'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
@@ -15,6 +18,20 @@ const fixtures = JSON.parse(
   ).text()
 )
 
+test('CommonMark specification examples render with the specification HTML preset', () => {
+  const parser = commonParser()
+  const view = renderer(specHtml())
+  try {
+    for (const entry of fixtures)
+      expect(
+        view.render(parser.parse(entry.markdown)),
+        `example ${entry.example}`
+      ).toBe(entry.html)
+  } finally {
+    parser.dispose()
+  }
+})
+
 test('CommonMark fixture inputs match markdown-it with the same escaped-HTML policy', () => {
   const parser = commonParser()
   const view = renderer(
@@ -27,10 +44,16 @@ test('CommonMark fixture inputs match markdown-it with the same escaped-HTML pol
   expected.renderer.rules.html_block = (tokens, index) =>
     '<p>' + expected.utils.escapeHtml(tokens[index].content) + '</p>\n'
   try {
-    for (const entry of fixtures)
-      expect(view.render(parser.parse(entry.markdown))).toBe(
-        expected.render(entry.markdown)
-      )
+    for (const entry of fixtures) {
+      // markdown-it omits the newline inside empty blockquotes, unlike the spec.
+      const expectedHtml = expected
+        .render(entry.markdown)
+        .replaceAll(
+          '<blockquote></blockquote>\n',
+          '<blockquote>\n</blockquote>\n'
+        )
+      expect(view.render(parser.parse(entry.markdown))).toBe(expectedHtml)
+    }
   } finally {
     parser.dispose()
   }

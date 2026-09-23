@@ -18,6 +18,7 @@ const allowAll = () => true
 
 export { names as nodes }
 
+/** CommonMark specification handlers; raw HTML and links pass through by default. */
 export function plugin({
   validateLink = allowAll,
   validateImage = allowAll,
@@ -43,7 +44,7 @@ export function plugin({
   return result
 }
 
-/** Build a standalone HTML preset safe for displaying untrusted Markdown. */
+/** Build a standalone HTML preset with safe display defaults. */
 export function html(options?: Options) {
   return new PresetBuilder()
     .add(

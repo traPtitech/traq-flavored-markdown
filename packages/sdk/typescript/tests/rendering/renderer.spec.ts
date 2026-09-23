@@ -84,7 +84,7 @@ test('composition validates selected names without changing earlier presets', ()
 })
 
 test('custom HTML handlers receive escaped text helpers and rendered children', () => {
-  const plugin = common.plugin()
+  const plugin = common.plugin({ rawHtml: 'escape' })
   plugin.replace(
     common.nodes.Strong,
     (node, context) =>

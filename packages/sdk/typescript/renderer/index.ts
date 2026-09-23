@@ -2,6 +2,7 @@ import { math } from '@traq-flavored-markdown/commonmark-plugin/generic/math'
 import type { Options as GenericOptions } from '@traq-flavored-markdown/commonmark-plugin/generic/renderer'
 import { plugin as generic } from '@traq-flavored-markdown/commonmark-plugin/generic/renderer'
 import { createHighlightFunc } from '@traq-flavored-markdown/commonmark-plugin/highlight'
+import { validateLink as defaultLinkPolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import type { Options as CommonOptions } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { plugin as common } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
@@ -52,9 +53,13 @@ function condensedOptions(options: Options) {
 }
 
 function build(options: Options = {}, condensed = false) {
+  const validateLink = options.validateLink ?? defaultLinkPolicy
   const commonPlugin = common({
     breaks: true,
+    rawHtml: 'escape',
+    xhtmlOut: false,
     highlight,
+    validateLink,
     validateImage,
     linkAttributes: {
       target: '_blank',
@@ -65,7 +70,7 @@ function build(options: Options = {}, condensed = false) {
 
   const genericPlugin = generic(condensed ? condensedOptions(options) : options)
 
-  const trapPlugin = trap(options)
+  const trapPlugin = trap({ ...options, validateLink })
 
   if (condensed) {
     configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)

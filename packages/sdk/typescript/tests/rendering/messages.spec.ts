@@ -26,6 +26,9 @@ test('message renderers keep telephone links and show rejected autolinks with br
     expect(renderer.render(parser.parse('<hoge:hoge>')).renderedText).toContain(
       '&lt;hoge:hoge&gt;'
     )
+    expect(
+      renderer.render(parser.parse('a <em>b</em>')).renderedText
+    ).toContain('a &lt;em&gt;b&lt;/em&gt;')
   }
 })
 
