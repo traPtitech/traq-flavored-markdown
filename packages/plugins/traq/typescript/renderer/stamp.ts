@@ -1,4 +1,4 @@
-import { validateLink } from '@traq-flavored-markdown/commonmark-plugin/policy'
+import { validateImage } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
 
 import { animeEffects, sizeEffects } from './stamp-effects.js'
@@ -76,7 +76,7 @@ const renderStampDom = (
   imgUrl: string,
   effects: string[]
 ) => {
-  if (!validateLink(imgUrl) || /^(?:mailto|ftp):/i.test(imgUrl)) {
+  if (!validateImage(imgUrl)) {
     return escapeHtml(rawMatch)
   }
 

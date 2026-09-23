@@ -6,18 +6,24 @@ import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
 import { registerBlockHandlers } from './block.js'
 import { registerInlineHandlers } from './inline.js'
 import type { Options } from './options.js'
-import { validateLink as defaultPolicy } from './policy.js'
+import {
+  validateImage as defaultImagePolicy,
+  validateLink as defaultPolicy
+} from './policy.js'
 
 export type { Options } from './options.js'
 
 const declaration = Declaration.group('commonmark').new('core')
+const allowAll = () => true
 
 export { names as nodes }
 
 export function plugin({
-  validateLink = defaultPolicy,
-  validateImage = validateLink,
+  validateLink = allowAll,
+  validateImage = allowAll,
   breaks = false,
+  rawHtml = 'passthrough',
+  xhtmlOut = true,
   highlight,
   linkAttributes = {}
 }: Options = {}) {
@@ -27,15 +33,32 @@ export function plugin({
     validateLink,
     validateImage,
     breaks,
+    rawHtml,
+    xhtmlOut,
     linkAttributes
   })
 
-  registerBlockHandlers(result, { highlight })
+  registerBlockHandlers(result, { highlight, rawHtml, xhtmlOut })
 
   return result
 }
 
-/** Build a standalone CommonMark HTML preset. */
+/** Build a standalone HTML preset safe for displaying untrusted Markdown. */
 export function html(options?: Options) {
+  return new PresetBuilder()
+    .add(
+      plugin({
+        validateLink: defaultPolicy,
+        validateImage: defaultImagePolicy,
+        rawHtml: 'escape',
+        xhtmlOut: false,
+        ...options
+      })
+    )
+    .build()
+}
+
+/** Render CommonMark structure without display restrictions. Unsafe for untrusted HTML. */
+export function specHtml(options?: Options) {
   return new PresetBuilder().add(plugin(options)).build()
 }

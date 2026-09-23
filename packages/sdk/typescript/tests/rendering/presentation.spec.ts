@@ -63,6 +63,15 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
     })
   )
   expect(unsafe.render(parser.parseInline(':wave:'))).toBe(':wave:')
+  const nonImage = renderer(
+    rendering.html({
+      store: {
+        getStampByName: () => ({ name: 'wave', fileId: 'id' }),
+        generateStampHref: () => 'tel:+819012345678'
+      }
+    })
+  )
+  expect(nonImage.render(parser.parseInline(':wave:'))).toBe(':wave:')
 })
 
 test('reference highlighting and link/image policies belong to each renderer', () => {
@@ -98,8 +107,8 @@ test('reference highlighting and link/image policies belong to each renderer', (
   ).toMatch(/<img/)
   expect(
     custom.render(parser.parseInline('[x](https://example.com)')),
-    'x'
-  ).toBe('x')
+    '[x](https://example.com)'
+  ).toBe('[x](https://example.com)')
 })
 
 test('reference rendering rejects script links and escapes labels', () => {

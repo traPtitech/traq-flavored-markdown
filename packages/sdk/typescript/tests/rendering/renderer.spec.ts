@@ -162,16 +162,18 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
 
 test('CommonMark owns link policy and rejects malformed known payloads', () => {
   const view = html.renderer(common.html({ validateLink: () => false }))
-  expect(view.render(parser.parse('[link](https://example.com)'))).not.toMatch(
-    /href=/
+  expect(view.render(parser.parse('[link](https://example.com)'))).toBe(
+    '<p>[link](https://example.com)</p>\n'
   )
-  expect(
-    view.render(parser.parseInline('[link](https://example.com)'))
-  ).not.toMatch(/href=/)
+  expect(view.render(parser.parseInline('[link](https://example.com)'))).toBe(
+    '[link](https://example.com)'
+  )
   const document = parser.parseInline('[label](https://example.com)')
   ;(document.children[0].data as { destination: string }).destination =
     'javascript:alert(1)'
-  expect(html.renderer(common.html()).render(document)).toBe('label')
+  expect(html.renderer(common.html()).render(document)).toBe(
+    '[label](https://example.com)'
+  )
   const heading = parser.parse('# title')
   expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
   ;(heading.children[0].data as { level: string }).level =
@@ -179,6 +181,38 @@ test('CommonMark owns link policy and rejects malformed known payloads', () => {
   expect(() => html.renderer(common.html()).render(heading)).toThrow(
     /Invalid render payload/
   )
+})
+
+test('default link policy allows communication and location schemes while preserving rejected source', () => {
+  const view = html.renderer(common.html())
+  const commonmark = commonParser()
+  try {
+    for (const source of [
+      '[電話](tel:+819012345678)',
+      '[SMS](sms:+819012345678)',
+      '[位置](geo:35.6812,139.7671)'
+    ]) {
+      expect(view.render(commonmark.parseInline(source))).toMatch(/^<a href=/)
+    }
+
+    expect(view.render(commonmark.parseInline('<hoge:hoge>'))).toBe(
+      '&lt;hoge:hoge&gt;'
+    )
+    expect(view.render(commonmark.parseInline('日本語 <hoge:a&b>'))).toBe(
+      '日本語 &lt;hoge:a&amp;b&gt;'
+    )
+    expect(view.render(commonmark.parseInline('[説明](hoge:target)'))).toBe(
+      '[説明](hoge:target)'
+    )
+    expect(view.render(commonmark.parseInline('[x](javascript:alert)'))).toBe(
+      '[x](javascript:alert)'
+    )
+    expect(view.render(commonmark.parseInline('![x](tel:+819012345678)'))).toBe(
+      '![x](tel:+819012345678)'
+    )
+  } finally {
+    commonmark.dispose()
+  }
 })
 
 test('direct HTML rendering escapes attributes, image text, and fence info', () => {

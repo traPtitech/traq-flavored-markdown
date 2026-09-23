@@ -51,12 +51,27 @@ function titleAttribute(title: string | null) {
 }
 
 type InlineOptions = Required<
-  Pick<Options, 'validateLink' | 'validateImage' | 'breaks' | 'linkAttributes'>
+  Pick<
+    Options,
+    | 'validateLink'
+    | 'validateImage'
+    | 'breaks'
+    | 'rawHtml'
+    | 'xhtmlOut'
+    | 'linkAttributes'
+  >
 >
 
 export function registerInlineHandlers(
   result: Plugin,
-  { validateLink, validateImage, breaks, linkAttributes }: InlineOptions
+  {
+    validateLink,
+    validateImage,
+    breaks,
+    rawHtml,
+    xhtmlOut,
+    linkAttributes
+  }: InlineOptions
 ) {
   const linkAttrs = attributes(Object.entries(linkAttributes))
 
@@ -76,12 +91,16 @@ export function registerInlineHandlers(
 
   result.on(
     names.Softbreak,
-    checked(names.Softbreak, isKnownNode, () => (breaks ? '<br>\n' : '\n'))
+    checked(names.Softbreak, isKnownNode, () =>
+      breaks ? (xhtmlOut ? '<br />\n' : '<br>\n') : '\n'
+    )
   )
 
   result.on(
     names.Hardbreak,
-    checked(names.Hardbreak, isKnownNode, () => '<br>\n')
+    checked(names.Hardbreak, isKnownNode, () =>
+      xhtmlOut ? '<br />\n' : '<br>\n'
+    )
   )
 
   result.on(
@@ -105,9 +124,9 @@ export function registerInlineHandlers(
   result.on(
     names.Link,
     checked(names.Link, isKnownNode, (n, ctx) => {
-      const content = ctx.render(n.children)
+      if (!validateLink(n.data.destination)) return ctx.fallback(n)
 
-      if (!validateLink(n.data.destination)) return content
+      const content = ctx.render(n.children)
 
       return (
         '<a' +
@@ -133,13 +152,15 @@ export function registerInlineHandlers(
           ['alt', imageAltText(n.children, ctx.source)]
         ]) +
         titleAttribute(n.data.title) +
-        '>'
+        (xhtmlOut ? ' />' : '>')
       )
     })
   )
 
   result.on(
     names.HtmlInline,
-    checked(names.HtmlInline, isKnownNode, n => escapeHtml(n.data.literal))
+    checked(names.HtmlInline, isKnownNode, n =>
+      rawHtml === 'escape' ? escapeHtml(n.data.literal) : n.data.literal
+    )
   )
 }

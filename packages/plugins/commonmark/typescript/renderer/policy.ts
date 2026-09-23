@@ -1,11 +1,28 @@
-// Conservative default for standalone rendering. Application adapters supply
-// their existing policy so integrating the shared parser does not change it.
-export function validateLink(destination: string) {
+// Conservative defaults for standalone rendering. Applications can supply
+// their own policies without changing how the shared parser recognizes links.
+const linkProtocols = new Set([
+  'http:',
+  'https:',
+  'mailto:',
+  'ftp:',
+  'tel:',
+  'sms:',
+  'geo:'
+])
+const imageProtocols = new Set(['http:', 'https:'])
+
+function protocol(destination: string) {
   try {
-    return ['http:', 'https:', 'mailto:', 'ftp:'].includes(
-      new URL(destination, 'https://markdown.invalid').protocol
-    )
+    return new URL(destination, 'https://markdown.invalid').protocol
   } catch {
-    return false
+    return undefined
   }
+}
+
+export function validateLink(destination: string) {
+  return linkProtocols.has(protocol(destination) ?? '')
+}
+
+export function validateImage(destination: string) {
+  return imageProtocols.has(protocol(destination) ?? '')
 }

@@ -17,6 +17,18 @@ const file = origin + '/files/' + fileId,
   quote = origin + '/messages/' + messageId
 const view = messageRenderers({ origin })
 
+test('message renderers keep telephone links and show rejected autolinks with brackets', () => {
+  for (const renderer of Object.values(view)) {
+    expect(
+      renderer.render(parser.parse('[090-1234-5678](tel:+819012345678)'))
+        .renderedText
+    ).toContain('href="tel:+819012345678"')
+    expect(renderer.render(parser.parse('<hoge:hoge>')).renderedText).toContain(
+      '&lt;hoge:hoge&gt;'
+    )
+  }
+})
+
 test('URL meaning follows the shared Rust contract', () => {
   for (const fixture of linkFixtures) {
     expect(fixture.target, fixture.name).toEqual(
