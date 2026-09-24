@@ -32,8 +32,14 @@ export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
 export function isKnownNode(node: Node<true>): node is Node<true> & NodeKind {
   return validators.get(node.kind)?.(node.data) ?? false
 }
-
 export type ParseError =
-  | { code: 'invalid_utf8' }
-  | { code: 'resource_limit'; resource: string }
-  | { code: 'internal_error' }
+  | {
+      code: 'invalid_utf8'
+    }
+  | {
+      code: 'resource_limit'
+      resource: string
+    }
+  | {
+      code: 'internal_error'
+    }

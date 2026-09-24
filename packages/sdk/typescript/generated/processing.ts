@@ -1,10 +1,25 @@
 // Generated from Rust processing contracts. Do not edit.
 export type Extraction = {
-  messageText: string
   attachments: Array<string>
   citations: Array<string>
-  references: References
   embedding: EmbeddingPlan
+  messageText: string
+  references: References
+}
+export type EmbeddedInfo = {
+  id: string
+  raw: string
+  type: string
+}
+export type EmbeddingCandidate = {
+  end: number
+  kind: LookupKind
+  name: string
+  raw: string
+  /**
+   * UTF-8 byte offsets into the original source, not rendered text.
+   */
+  start: number
 }
 export type EmbeddingPlan = {
   /**
@@ -16,28 +31,19 @@ export type EmbeddingPlan = {
    */
   unembeddedText: string
 }
-export type EmbeddingCandidate = {
-  /**
-   * UTF-8 byte offsets into the original source, not rendered text.
-   */
-  start: number
-  end: number
-  raw: string
-  name: string
-  kind: LookupKind
-}
 export type LookupKind = 'user' | 'group' | 'channel'
 export type References = {
-  mentions: Array<string>
-  groupMentions: Array<string>
   channelLinks: Array<string>
   embeddings: Array<EmbeddedInfo>
+  groupMentions: Array<string>
+  mentions: Array<string>
 }
-export type EmbeddedInfo = { raw: string; type: string; id: string }
 export type ExtractorOptions = {
   /**
    * Origin used to recognize traQ file/message URLs; empty leaves URLs as text.
    */
   origin: string
 }
-export type RendererOptions = { origin: string }
+export type RendererOptions = {
+  origin: string
+}
