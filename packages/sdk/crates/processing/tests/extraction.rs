@@ -147,3 +147,51 @@ fn aggregate_extraction_validates_each_node_once() {
     document.children[0].span.end = 1;
     assert!(extractor.extract(&document).is_err());
 }
+
+#[test]
+fn aggregate_analysis_matches_the_standalone_policies() {
+    use markdown_extractor::Extractor as ReferenceExtractor;
+    use traq_markdown_processing::presets::traq::{embedding, message, references};
+
+    let origin = "https://q.example.test";
+    let id = "00000000-0000-0000-0000-000000000001";
+    let user = format!(r#"!{{"type":"user","id":"{id}","raw":"@alice"}}"#);
+    let file = format!(r#"!{{"type":"file","id":"{id}"}}"#);
+    let parser = bindings::parser("traq.v1").unwrap();
+    let aggregate = Extractor::new(ExtractorOptions {
+        origin: origin.into(),
+    })
+    .unwrap();
+    let reference = ReferenceExtractor::new(&references::preset().unwrap());
+    let message = message::Extractor::new(origin);
+
+    for source in [
+        format!("{user} {file} https://q.example.test/files/{id}"),
+        format!("@alice [@bob]({origin}/messages/{id}) ![@carol](/image) #general"),
+        format!("!!{user}!! `{file}`\n\n> @someone"),
+    ] {
+        let document = parser.parse(&source).unwrap();
+        let result = aggregate.extract(&document).unwrap();
+        let standalone_message = message.extract(&document).unwrap();
+
+        assert_eq!(
+            result.references,
+            reference.extract(&document).unwrap(),
+            "{source}"
+        );
+        assert_eq!(
+            result.message_text, standalone_message.plain_text,
+            "{source}"
+        );
+        assert_eq!(
+            result.attachments, standalone_message.attachments,
+            "{source}"
+        );
+        assert_eq!(result.citations, standalone_message.citations, "{source}");
+        assert_eq!(
+            result.embedding,
+            embedding::plan(&document).unwrap(),
+            "{source}"
+        );
+    }
+}
