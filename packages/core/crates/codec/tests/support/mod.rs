@@ -6,11 +6,13 @@ use serde::{Deserialize, Serialize};
 
 // Synthetic contracts exercise the codec without depending on a grammar.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.paragraph")]
 #[serde(deny_unknown_fields)]
 pub struct Paragraph {}
 impl NodeData for Paragraph {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.text")]
 #[serde(deny_unknown_fields)]
 pub struct Text {
     pub value: String,
@@ -22,6 +24,7 @@ impl NodeData for Text {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.heading")]
 #[serde(deny_unknown_fields)]
 pub struct Heading {
     pub level: u8,

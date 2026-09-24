@@ -8,6 +8,7 @@ use support::{Heading, Text};
 
 static CHECKS: AtomicUsize = AtomicUsize::new(0);
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.group")]
 struct Group {}
 
 impl NodeData for Group {

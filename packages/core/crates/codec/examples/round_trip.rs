@@ -4,6 +4,7 @@ use markdown_definitions::NodeType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "example.heading")]
 struct Heading {
     level: u8,
 }
@@ -14,6 +15,7 @@ impl NodeData for Heading {
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "example.text")]
 struct Text {
     value: String,
 }

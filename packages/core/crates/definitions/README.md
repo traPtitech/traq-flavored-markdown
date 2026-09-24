@@ -13,6 +13,7 @@ traversal.
 use markdown_definitions::{NodeType, Plugin};
 
 #[derive(NodeType)]
+#[node_type(key = "example.issue")]
 struct Issue { number: u32 }
 
 let generic = Plugin::group("Generic");
@@ -37,12 +38,12 @@ rule, handler-type, and implementation-instance collisions.
 
 ## `NodeType`
 
-`#[derive(NodeType)]` produces transport metadata from a type's defining module
-and name, including type and const arguments. It supports primitive types,
-`String`, `Vec`, `Option`, `Box`, and arrays; generic arguments must also be
-`NodeType`. Renaming the crate, type, or defining module changes the key.
+`#[derive(NodeType)]` requires an explicit `#[node_type(key = "vendor.node")]`.
+For a plugin with several payloads, its contract catalog assigns the keys and
+implements `NodeType` from one list. Generic type and const arguments are
+included in a derived key; generic arguments must also be `NodeType`.
 
-The key is not a stable persistence or grammar-version ID. Codec registration
-rejects key collisions, and matching keys alone do not guarantee compatible
-payload semantics. Implement `NodeData` to use a type in a native AST; also
-implement `NodeType` and serde traits to register it with a codec.
+Wire keys stay stable across Rust module and type renames. Codec registration
+rejects key collisions, while matching keys alone do not guarantee compatible
+payload semantics. Implement `NodeData`, `NodeType`, and serde traits to use a
+type in a native AST and register it with a codec.

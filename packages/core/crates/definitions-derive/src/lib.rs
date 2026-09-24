@@ -3,9 +3,9 @@
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
 use quote::quote;
-use syn::{DeriveInput, GenericParam, ext::IdentExt, parse_macro_input, parse_quote};
+use syn::{DeriveInput, GenericParam, LitStr, parse_macro_input, parse_quote};
 
-#[proc_macro_derive(NodeType)]
+#[proc_macro_derive(NodeType, attributes(node_type))]
 pub fn node_type(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -25,7 +25,32 @@ fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     };
 
     let name = &input.ident;
-    let label = name.unraw().to_string();
+    let mut key: Option<LitStr> = None;
+    for attribute in &input.attrs {
+        if !attribute.path().is_ident("node_type") {
+            continue;
+        }
+        attribute.parse_nested_meta(|meta| {
+            if !meta.path.is_ident("key") {
+                return Err(meta.error("expected node_type(key = \"stable.kind\")"));
+            }
+            let value: LitStr = meta.value()?.parse()?;
+            if value.value().is_empty() {
+                return Err(meta.error("node type key cannot be empty"));
+            }
+            if key.replace(value).is_some() {
+                return Err(meta.error("duplicate node type key"));
+            }
+            Ok(())
+        })?;
+    }
+    let key = key.ok_or_else(|| {
+        syn::Error::new_spanned(
+            name,
+            "NodeType requires #[node_type(key = \"stable.kind\")]",
+        )
+    })?;
+    let base = quote!(#key);
 
     let arguments: Vec<_> = input
         .generics
@@ -35,14 +60,13 @@ fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         .collect();
 
     let body = if arguments.is_empty() {
-        quote!(::std::string::String::from(
-            ::core::concat!(::core::module_path!(), "::", #label)
-        ))
+        quote!(::std::string::String::from(#base))
     } else {
         // Length framing keeps const characters and nested arguments unambiguous.
         quote! {
             let arguments = [#(#arguments),*];
-            let mut key = ::std::string::String::from(::core::concat!(::core::module_path!(), "::", #label, "<"));
+            let mut key = ::std::string::String::from(#base);
+            key.push('<');
 
             for (index, argument) in arguments.iter().enumerate() {
                 if index != 0 { key.push(','); }

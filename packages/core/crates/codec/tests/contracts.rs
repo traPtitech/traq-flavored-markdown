@@ -4,6 +4,7 @@ use markdown_definitions::NodeType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.score")]
 #[serde(deny_unknown_fields)]
 struct Score {
     value: f64,
@@ -15,6 +16,7 @@ impl NodeData for Score {
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.renamed_score")]
 struct RenamedScore {
     value: f64,
 }
@@ -49,6 +51,7 @@ fn shared_types_work_across_independent_registration_orders() {
 
 fn first(codec: &mut Codec) -> Document {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+    #[node_type(key = "test.collision")]
     struct Collision {
         value: u8,
     }
@@ -68,6 +71,7 @@ fn first(codec: &mut Codec) -> Document {
 
 fn second(codec: &mut Codec) -> Result<(), &'static str> {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+    #[node_type(key = "test.collision")]
     struct Collision {
         value: u16,
     }
