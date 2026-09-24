@@ -22,7 +22,7 @@ const baselinePackage = Bun.resolveSync(
   '@traptitech/traq-markdown-it',
   path.resolve(values.baseline!)
 )
-const { traqMarkdownIt } = await import(Bun.pathToFileURL(baselinePackage).href)
+const { traQMarkdownIt } = await import(Bun.pathToFileURL(baselinePackage).href)
 const sdkPath = sdkRoot
 const frontendPath = sdkPath
 const { createRuntime, presets } = await import(
@@ -45,7 +45,7 @@ const store: Record<string, unknown> = {
   generateStampHref: (id: string) => '/api/v3/files/' + encodeURIComponent(id)
 }
 let start = performance.now()
-const baseline = new traqMarkdownIt(store, [], origin)
+const baseline = new traQMarkdownIt(store, [], origin)
 const beforeInitializationMs = performance.now() - start
 const bytes = await Bun.file(sdkPath + '/dist/parser.wasm').arrayBuffer()
 start = performance.now()
