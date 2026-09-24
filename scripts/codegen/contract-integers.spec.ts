@@ -72,3 +72,39 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
     })
   }
 })
+
+test('generated payload validators check array items', async () => {
+  const schema = {
+    title: 'EffectsData',
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      animations: {
+        type: 'array',
+        items: { type: 'string', enum: ['rotate', 'rotate-inv'] }
+      }
+    },
+    required: ['animations']
+  }
+  const source = javascript(
+    [['example::EffectsData', schema]],
+    validationModule
+  )
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext
+    }
+  }).outputText
+  await withTempDirectory('traq-array-', async directory => {
+    const module = `${directory}/array.mjs`
+    await write(module, compiled)
+    const { nodes } = await import(pathToFileURL(module).href)
+    const validate = nodes.get('example::EffectsData')
+    expect(validate({ animations: [] })).toBe(true)
+    expect(validate({ animations: ['rotate', 'rotate-inv'] })).toBe(true)
+    expect(validate({ animations: ['unexpected'] })).toBe(false)
+    expect(validate({ animations: [null] })).toBe(false)
+    expect(validate({ animations: null })).toBe(false)
+  })
+})

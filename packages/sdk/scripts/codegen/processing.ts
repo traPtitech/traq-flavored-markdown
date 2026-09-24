@@ -1,5 +1,8 @@
 import { declarations } from '../../../../scripts/codegen/declarations.ts'
-import { goContract } from '../../../../scripts/codegen/go.ts'
+import {
+  goContract,
+  goValidationRuntime
+} from '../../../../scripts/codegen/go.ts'
 import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
 
 export async function processingFiles(
@@ -13,7 +16,8 @@ export async function processingFiles(
     ],
     [
       'go/generated_processing.go',
-      '// Code generated from Rust processing contracts. DO NOT EDIT.\npackage markdown\n'
+      '// Code generated from Rust processing contracts. DO NOT EDIT.\npackage markdown\nimport (\n"bytes"\n"encoding/json"\n"fmt"\n)\n' +
+        goValidationRuntime
     ]
   ])
   const types = await declarations(input, Object.keys(schemas))

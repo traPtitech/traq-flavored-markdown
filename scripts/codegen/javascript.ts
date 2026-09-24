@@ -7,7 +7,18 @@ function validator(s: Shape): string {
     return `(value) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
   if (s.kind === 'enum')
     return 'oneOf(' + s.values.map(v => q(v)).join(',') + ')'
+  if (s.kind === 'literal') return 'oneOf(' + q(s.value) + ')'
+  if (s.kind === 'union')
+    return (
+      'value => [' +
+      s.variants.map(validator).join(',') +
+      '].filter(check => check(value)).length === 1'
+    )
   if (s.kind === 'nullable') return 'nullable(' + validator(s.inner) + ')'
+  if (s.kind === 'array')
+    return (
+      'value => Array.isArray(value) && value.every(' + validator(s.items) + ')'
+    )
   if (s.kind === 'object') {
     const fields = (required: boolean) =>
       '{' +

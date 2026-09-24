@@ -103,6 +103,7 @@ test('Rust processing options and nested results generate without host changes',
     expect(go).toMatch(/Compact bool/)
     expect(go).toMatch(/Batches \[\]Details/)
     expect(go).toMatch(/Labels \[\]string/)
+    expect(go).toContain('func (value *Extraction) UnmarshalJSON')
     expect(go!.match(/type Details struct/g)).toHaveLength(1)
     const ts = files.get('typescript/generated/processing.ts')
     expect(ts).toMatch(/compact:boolean/)
