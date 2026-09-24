@@ -1,5 +1,6 @@
 //! traQ URL meaning, independent of Markdown nodes and output formats.
 //! Exact lexical matching shared with TypeScript through traq-links.json.
+use markdown_trap_extraction::is_canonical_reference_id;
 
 #[derive(Debug, PartialEq)]
 pub enum Target {
@@ -25,7 +26,7 @@ impl Links {
         let path = url.strip_prefix(&self.origin)?.split(['?', '#']).next()?;
         if let Some(id) = path
             .strip_prefix("/files/")
-            .filter(|id| is_hyphenated_uuid(id))
+            .filter(|id| is_canonical_reference_id(id))
         {
             Some(Target::File {
                 id: id.to_ascii_lowercase(),
@@ -33,23 +34,12 @@ impl Links {
         } else {
             let id = path
                 .strip_prefix("/messages/")
-                .filter(|id| is_hyphenated_uuid(id))?;
+                .filter(|id| is_canonical_reference_id(id))?;
             Some(Target::Message {
                 id: id.to_ascii_lowercase(),
             })
         }
     }
-}
-
-fn is_hyphenated_uuid(value: &str) -> bool {
-    value.len() == 36
-        && value.bytes().enumerate().all(|(i, b)| {
-            if [8, 13, 18, 23].contains(&i) {
-                b == b'-'
-            } else {
-                b.is_ascii_hexdigit()
-            }
-        })
 }
 
 #[cfg(test)]
