@@ -1,6 +1,43 @@
 use markdown_commonmark_contracts::{HtmlInline, Text};
+use markdown_definitions::Plugin as Declaration;
 use markdown_generic_syntax::math::InlineMathData;
-use traq_markdown_grammar::{Parser, presets, syntax::extensions};
+use markdown_parser::NodeData;
+use traq_markdown_grammar::{
+    Parser,
+    engine::{
+        Plugin,
+        inline::{InlineMatch, InlineRule},
+    },
+    presets,
+    syntax::extensions,
+};
+
+#[derive(Debug, Clone, PartialEq)]
+struct ExternalNode;
+impl NodeData for ExternalNode {}
+
+#[test]
+fn third_party_syntax_can_extend_a_published_preset() {
+    let mut external = Plugin::new(&Declaration::new("external"));
+    external.add(InlineRule::new(b"^", |input, _| {
+        Ok(Some(InlineMatch::leaf(
+            input.position + 1,
+            ExternalNode.into(),
+        )))
+    }));
+
+    let mut builder = presets::traq::v1::builder();
+    builder.add(&external).unwrap();
+    let parser = Parser::new(&builder.build().unwrap());
+
+    let document = parser.parse_inline("before ^ after").unwrap();
+    assert!(
+        document
+            .children
+            .iter()
+            .any(|node| node.get::<ExternalNode>().is_some())
+    );
+}
 
 #[test]
 fn removing_an_extension_does_not_change_an_existing_parser() {
