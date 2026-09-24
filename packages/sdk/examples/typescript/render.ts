@@ -1,5 +1,4 @@
 import * as rendering from '@traq-flavored-markdown/sdk/renderer'
-import { renderer } from '@traq-flavored-markdown/core/renderer'
 import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
 
 const parserWasmUrl = new URL(
@@ -8,7 +7,7 @@ const parserWasmUrl = new URL(
 const runtime = await createRuntime(await Bun.file(parserWasmUrl).bytes())
 try {
   const parser = runtime.createParser(presets.traq.v1)
-  const view = renderer(rendering.html())
+  const view = rendering.html()
 
   console.log(
     view.render(

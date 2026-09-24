@@ -11,7 +11,7 @@ const fixtures = JSON.parse(
   ).text()
 )
 
-const view = renderer(rendering.html())
+const view = renderer(rendering.htmlPreset())
 
 for (const { name, markdown, html } of fixtures)
   test('corpus regression: ' + name, () => {

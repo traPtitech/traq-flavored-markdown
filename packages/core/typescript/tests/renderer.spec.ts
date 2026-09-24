@@ -20,6 +20,12 @@ test('core renders custom AST nodes without a grammar or Wasm runtime', () => {
   expect(view.render(document)).toBe('&lt;猫&gt;')
   plugin.replace('text', () => '<b>changed</b>')
   expect(view.render(document)).toBe('&lt;猫&gt;')
+  expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  expect(() => builder.add(plugin)).toThrow(/Duplicate plugin/)
+  builder.remove(plugin)
+  expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  builder.add(plugin)
+  expect(renderer(builder.build()).render(document)).toBe('<b>changed</b>')
   expect(renderer(new PresetBuilder().build()).render(document)).toBe(
     '&lt;猫&gt;'
   )

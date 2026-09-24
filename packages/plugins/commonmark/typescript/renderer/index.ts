@@ -2,6 +2,7 @@ import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
 import { Plugin } from '@traq-flavored-markdown/core/renderer'
 import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
+import { renderer } from '@traq-flavored-markdown/core/renderer'
 
 import { registerBlockHandlers } from './block.js'
 import { registerInlineHandlers } from './inline.js'
@@ -11,7 +12,7 @@ import {
   validateLink as defaultPolicy
 } from './policy.js'
 
-export type { Options } from './options.js'
+export type { HighlightResult, Options } from './options.js'
 
 const declaration = Declaration.group('commonmark').new('core')
 const allowAll = () => true
@@ -44,8 +45,8 @@ export function plugin({
   return result
 }
 
-/** Build a standalone HTML preset with safe display defaults. */
-export function html(options?: Options) {
+/** Compose a standalone HTML preset with safe display defaults. */
+export function htmlPreset(options?: Options) {
   return new PresetBuilder()
     .add(
       plugin({
@@ -59,7 +60,17 @@ export function html(options?: Options) {
     .build()
 }
 
-/** Render CommonMark structure without display restrictions. Unsafe for untrusted HTML. */
-export function specHtml(options?: Options) {
+/** Render CommonMark with safe display defaults. */
+export function html(options?: Options) {
+  return renderer(htmlPreset(options))
+}
+
+/** Compose CommonMark specification handlers without display restrictions. */
+export function specHtmlPreset(options?: Options) {
   return new PresetBuilder().add(plugin(options)).build()
+}
+
+/** Render CommonMark specification HTML. Unsafe for untrusted input. */
+export function specHtml(options?: Options) {
+  return renderer(specHtmlPreset(options))
 }

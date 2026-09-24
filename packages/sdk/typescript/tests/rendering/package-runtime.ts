@@ -36,7 +36,7 @@ const runtime = await createRuntime(
 try {
   const parser = runtime.createParser(presets.traq.v1)
   const document = parser.parse('**package** $x$ !!hidden!! :0xff0000:')
-  const output = renderer(rendering.html()).render(document)
+  const output = renderer(rendering.htmlPreset()).render(document)
   for (const text of [
     '<strong>package</strong>',
     'katex',

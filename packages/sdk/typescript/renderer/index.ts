@@ -6,7 +6,7 @@ import { validateLink as defaultLinkPolicy } from '@traq-flavored-markdown/commo
 import type { Options as CommonOptions } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { plugin as common } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
-import type { Document } from '@traq-flavored-markdown/core/renderer'
+import type { Document, Plugin } from '@traq-flavored-markdown/core/renderer'
 import { renderer } from '@traq-flavored-markdown/core/renderer'
 import type { Options as TrapOptions } from '@traq-flavored-markdown/traq-plugin/renderer'
 import { plugin as trap } from '@traq-flavored-markdown/traq-plugin/renderer'
@@ -14,11 +14,26 @@ import { plugin as trap } from '@traq-flavored-markdown/traq-plugin/renderer'
 import { configureCondensed } from './condensed.js'
 import { prepareMessage } from './embeddings.js'
 import imageDomains from './image-domains.js'
+import { normalizeTraqOrigin } from './links.js'
 
-export { embeddingFromUrl, endsWithEmbedding } from './embeddings.js'
-export type { Embedding } from './embeddings.js'
+export { endsWithEmbedding } from './embeddings.js'
+export { embeddingFromUrl } from './links.js'
+export type { Embedding } from './links.js'
 
-export type Options = CommonOptions & GenericOptions & TrapOptions
+export interface HtmlPlugins {
+  common: Plugin
+  generic: Plugin
+  traq: Plugin
+}
+
+export type Options = CommonOptions &
+  GenericOptions &
+  TrapOptions & {
+    /** Additional handlers for nodes outside the built-in plugins. */
+    plugins?: readonly Plugin[]
+    /** Customize built-in handlers before the preset captures them. */
+    configurePlugins?: (plugins: HtmlPlugins) => void
+  }
 
 const highlight = createHighlightFunc('traq-code traq-lang')
 
@@ -52,7 +67,10 @@ function condensedOptions(options: Options) {
   }
 }
 
-function build(options: Options = {}, condensed = false) {
+function buildPreset(
+  { plugins = [], configurePlugins, ...options }: Options = {},
+  condensed = false
+) {
   const validateLink = options.validateLink ?? defaultLinkPolicy
   const commonPlugin = common({
     breaks: true,
@@ -76,15 +94,28 @@ function build(options: Options = {}, condensed = false) {
     configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)
   }
 
-  return new PresetBuilder()
+  configurePlugins?.({
+    common: commonPlugin,
+    generic: genericPlugin,
+    traq: trapPlugin
+  })
+
+  const builder = new PresetBuilder()
     .add(commonPlugin)
     .add(genericPlugin)
     .add(trapPlugin)
-    .build()
+  for (const plugin of plugins) builder.add(plugin)
+  return builder.build()
 }
 
+/** Compose the standard HTML handlers with optional third-party plugins. */
+export function htmlPreset(options?: Options) {
+  return buildPreset(options)
+}
+
+/** Create a renderer with the standard HTML handlers. */
 export function html(options?: Options) {
-  return build(options)
+  return renderer(htmlPreset(options))
 }
 
 /** Build standard and condensed message renderers from the same options. */
@@ -92,10 +123,13 @@ export function messageRenderers({
   origin,
   ...options
 }: Options & { origin: string }) {
-  const embeddingOrigin = new URL(origin).origin
+  const parsedOrigin = new URL(origin)
+  if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:')
+    throw new TypeError('Expected an HTTP(S) origin')
+  const embeddingOrigin = normalizeTraqOrigin(origin)
 
   function create(condensed: boolean) {
-    const view = renderer(build(options, condensed))
+    const view = renderer(buildPreset(options, condensed))
 
     return Object.freeze({
       render(document: Document) {

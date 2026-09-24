@@ -114,6 +114,20 @@ test('card extraction respects Markdown context and preserves external URL candi
   expect(
     embeddingFromUrl('https://other.test/files/' + fileId, origin)
   ).toEqual({ type: 'url', url: 'https://other.test/files/' + fileId })
+  for (const value of [
+    'https://Q.EXAMPLE.TEST/files/' + fileId,
+    'https://q.example.test:443/files/' + fileId
+  ]) {
+    expect(embeddingFromUrl(value, origin)).toEqual({
+      type: 'url',
+      url: value
+    })
+  }
+  expect(
+    messageRenderers({ origin: origin + '///' }).standard.render(
+      parser.parse(file)
+    ).embeddings
+  ).toEqual([{ type: 'file', id: fileId }])
 })
 
 test('condensed labels retained card links without removing explicit labels from message content', () => {

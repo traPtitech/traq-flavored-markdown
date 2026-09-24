@@ -5,34 +5,8 @@ import {
 import type { Document, Node } from '@traq-flavored-markdown/core/renderer'
 import { names as trap } from '@traq-flavored-markdown/traq-plugin/nodes'
 
-import { classifyTraqLink } from './links.js'
-
-export type Embedding =
-  | { type: 'file'; id: string }
-  | { type: 'message'; id: string }
-  | { type: 'url'; url: string }
-
-/** traQ links describe cards; external links describe OGP candidates. */
-export function embeddingFromUrl(
-  value: string,
-  origin: string
-): Embedding | undefined {
-  let url: URL
-
-  try {
-    url = new URL(value)
-  } catch {
-    return
-  }
-
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return
-  const base = URL.canParse(origin)
-    ? new URL(origin).origin
-    : origin.replace(/\/+$/, '')
-  const target = classifyTraqLink(value, base)
-  if (target) return target
-  if (url.origin !== base) return { type: 'url', url: value }
-}
+import { embeddingFromUrl } from './links.js'
+import type { Embedding } from './links.js'
 
 interface EmbeddingState {
   links: Map<Node, Embedding>

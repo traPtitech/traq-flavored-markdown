@@ -5,7 +5,7 @@ import { expect, test } from 'bun:test'
 import { commonParser, parser } from './setup.ts'
 
 test('traQ presentation combines tables, marks, spoilers, math, and highlighted code', () => {
-  const view = renderer(rendering.html())
+  const view = renderer(rendering.htmlPreset())
   const source =
     '| left | right |\n| :--- | ---: |\n| **a** | b |\n\n==mark== ~~strike~~ !!secret!! $x$\n\n```js:caption\nconst x = 1\n```'
   const html = view.render(parser.parse(source))
@@ -32,7 +32,7 @@ test('traQ presentation combines tables, marks, spoilers, math, and highlighted 
 test('stamp stores are isolated and unrecognized effects preserve escaped source', () => {
   const make = (origin: string) =>
     renderer(
-      rendering.html({
+      rendering.htmlPreset({
         store: {
           getStampByName: name =>
             name === 'wave' ? { name, fileId: 'stamp' } : undefined,
@@ -55,7 +55,7 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   ).toBe(':wave.unknown:')
   expect(first.render(parser.parseInline(':missing:'))).toBe(':missing:')
   const unsafe = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getStampByName: () => ({ name: 'wave', fileId: 'id' }),
         generateStampHref: () => 'javascript:alert(1)'
@@ -64,7 +64,7 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   )
   expect(unsafe.render(parser.parseInline(':wave:'))).toBe(':wave:')
   const nonImage = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getStampByName: () => ({ name: 'wave', fileId: 'id' }),
         generateStampHref: () => 'tel:+819012345678'
@@ -76,7 +76,7 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
 
 test('stamp presentation uses parsed kinds and effects without matching color substrings', () => {
   const view = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getStampByName: name =>
           ['foo0x123456', '0x1234567', 'wave'].includes(name)
@@ -112,7 +112,7 @@ test('stamp presentation uses parsed kinds and effects without matching color su
 test('reference highlighting and link/image policies belong to each renderer', () => {
   const common = commonParser()
   const view = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getMe: () => ({ id: 'me' }),
         getUserGroup: () => ({ members: [{ id: 'me' }] }),
@@ -135,7 +135,10 @@ test('reference highlighting and link/image policies belong to each renderer', (
     view.render(common.parseInline('![x](https://trap.jp/x.png)'))
   ).toMatch(/<img/)
   const custom = renderer(
-    rendering.html({ validateImage: () => true, validateLink: () => false })
+    rendering.htmlPreset({
+      validateImage: () => true,
+      validateLink: () => false
+    })
   )
   expect(
     custom.render(common.parseInline('![x](https://unlisted.example/x.png)'))
@@ -148,7 +151,7 @@ test('reference highlighting and link/image policies belong to each renderer', (
 
 test('reference rendering rejects script links and escapes labels', () => {
   const view = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         generateUserHref: id => `javascript:openUserModal(${id})`,
         generateUserGroupHref: id => `javascript:openGroupModal(${id})`
@@ -172,7 +175,7 @@ test('reference rendering rejects script links and escapes labels', () => {
 })
 
 test('table handlers reject forged row and cell payloads', () => {
-  const view = renderer(rendering.html())
+  const view = renderer(rendering.htmlPreset())
   const document = parser.parse('| a |\n| - |\n| b |')
   const cell = document.children![0]!.children![0]!.children![0]! as {
     data: { alignment: string }

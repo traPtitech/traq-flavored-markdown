@@ -127,15 +127,24 @@ export function registerBlockHandlers(
     names.CodeBlock,
     checked(names.CodeBlock, isKnownNode, n => {
       const language = n.data.fenced ? codeLanguage(n.data.info ?? '') : ''
-      const content =
-        (n.data.fenced && highlight?.(n.data.literal, language)) ||
-        escapeHtml(n.data.literal)
+      const highlighted = n.data.fenced
+        ? highlight?.(n.data.literal, language)
+        : undefined
+      if (
+        highlighted !== undefined &&
+        (!highlighted ||
+          typeof highlighted.html !== 'string' ||
+          (highlighted.kind !== 'content' && highlighted.kind !== 'block'))
+      )
+        throw new TypeError('Invalid highlight result')
 
-      if (content.startsWith('<pre')) return content + '\n'
+      if (highlighted?.html && highlighted.kind === 'block')
+        return highlighted.html + '\n'
 
       const attrs = language
         ? attributes([['class', 'language-' + language]])
         : ''
+      const content = highlighted?.html || escapeHtml(n.data.literal)
       return '<pre><code' + attrs + '>' + content + '</code></pre>\n'
     })
   )

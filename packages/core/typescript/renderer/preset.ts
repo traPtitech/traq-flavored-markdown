@@ -49,25 +49,26 @@ function validateNames(plugins: Implementation[]) {
 }
 
 export class PresetBuilder {
-  #plugins: Implementation[] = []
+  #plugins: { plugin: Plugin; snapshot: Implementation }[] = []
 
   add(plugin: Plugin) {
     const state = implementation(plugin)
 
     for (const existing of this.#plugins) {
-      if (existing === state) throw new Error('Duplicate plugin')
+      if (existing.plugin === plugin) throw new Error('Duplicate plugin')
 
       for (const kind of state.handlers.keys())
-        if (existing.handlers.has(kind))
+        if (existing.snapshot.handlers.has(kind))
           throw new Error('Duplicate handler: ' + kind)
     }
 
-    this.#plugins.push(state)
+    this.#plugins.push({ plugin, snapshot: state })
     return this
   }
 
   remove(plugin: Plugin) {
-    const index = this.#plugins.indexOf(implementation(plugin))
+    implementation(plugin)
+    const index = this.#plugins.findIndex(entry => entry.plugin === plugin)
 
     if (index < 0) throw new Error('Missing plugin')
 
@@ -79,12 +80,13 @@ export class PresetBuilder {
     if (typeof fallback !== 'function')
       throw new TypeError('Expected render fallback')
 
-    validateNames(this.#plugins)
+    const snapshots = this.#plugins.map(entry => entry.snapshot)
+    validateNames(snapshots)
 
     const preset = Object.freeze({}) as Preset
 
     presets.set(preset, {
-      handlers: new Map(this.#plugins.flatMap(p => [...p.handlers])),
+      handlers: new Map(snapshots.flatMap(p => [...p.handlers])),
       fallback
     })
 

@@ -23,17 +23,19 @@ export const createHighlightFunc =
       langName = lang
     }
 
+    let codeHtml: string
     if (hljs.getLanguage(langName)) {
       const result = hljs.highlight(code, { language: langName })
-      return `${pre}${citeTag}<code class="lang-${result.language}">${result.value}</code></pre>`
+      codeHtml = `<code class="lang-${result.language}">${result.value}</code>`
     } else if (noHighlightRe.test(langName)) {
-      return `${pre}${citeTag}<code>${escapeHtml(code)}</code></pre>`
+      codeHtml = `<code>${escapeHtml(code)}</code>`
     } else {
       const result = hljs.highlightAuto(
         code,
         useSubsetForAuto ? defaultSubset : undefined
       )
-
-      return `${pre}${citeTag}<code class="lang-${result.language}">${result.value}</code></pre>`
+      codeHtml = `<code class="lang-${result.language}">${result.value}</code>`
     }
+
+    return { kind: 'block' as const, html: `${pre}${citeTag}${codeHtml}</pre>` }
   }
