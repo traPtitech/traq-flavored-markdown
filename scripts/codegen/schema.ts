@@ -8,6 +8,8 @@ export type RawSchema = {
   default?: unknown
   $ref?: string
   anyOf?: RawSchema[]
+  oneOf?: RawSchema[]
+  const?: unknown
   type?: string | string[]
   enum?: unknown[]
   format?: string | number
@@ -22,6 +24,8 @@ export type RawSchema = {
 
 export type NullableShape = { kind: 'nullable'; inner: Shape; name?: string }
 export type EnumShape = { kind: 'enum'; values: string[]; name?: string }
+export type LiteralShape = { kind: 'literal'; value: string; name?: string }
+export type UnionShape = { kind: 'union'; variants: Shape[]; name?: string }
 export type StringShape = { kind: 'string'; name?: string }
 export type BooleanShape = { kind: 'boolean'; name?: string }
 export type IntegerShape = {
@@ -32,7 +36,12 @@ export type IntegerShape = {
   name?: string
 }
 export type ArrayShape = { kind: 'array'; items: Shape; name?: string }
-export type FieldShape = { name: string; required: boolean; shape: Shape }
+export type FieldShape = {
+  name: string
+  required: boolean
+  shape: Shape
+  description?: string
+}
 export type ObjectShape = {
   kind: 'object'
   fields: FieldShape[]
@@ -42,6 +51,8 @@ export type ObjectShape = {
 export type Shape =
   | NullableShape
   | EnumShape
+  | LiteralShape
+  | UnionShape
   | StringShape
   | BooleanShape
   | IntegerShape
@@ -75,6 +86,16 @@ export function shape(
     }
   }
 
+  if (schema.oneOf) {
+    keys(schema, ['oneOf'])
+    if (schema.oneOf.length < 2)
+      throw new Error('Unions must have at least two variants')
+    return {
+      kind: 'union',
+      variants: schema.oneOf.map(variant => shape(variant, root, references))
+    }
+  }
+
   if (schema.anyOf || Array.isArray(schema.type)) {
     keys(schema, schema.anyOf ? ['anyOf'] : ['type'])
     const variants: RawSchema[] =
@@ -88,6 +109,16 @@ export function shape(
     const nullVariant = variants.find(s => s.type === 'null')
     if (nullVariant) keys(nullVariant, ['type'])
     return { kind: 'nullable', inner: shape(real[0], root, references) }
+  }
+
+  if (schema.const !== undefined) {
+    keys(schema, ['type', 'const'])
+    if (
+      typeof schema.const !== 'string' ||
+      (schema.type && schema.type !== 'string')
+    )
+      throw new Error('Only string constants are supported')
+    return { kind: 'literal', value: schema.const }
   }
 
   if (schema.enum) {
@@ -148,6 +179,7 @@ export function shape(
       fields: Object.entries(properties).map(([name, s]) => ({
         name,
         required: required.includes(name),
+        description: s.description,
         shape: shape(s as RawSchema, root, references)
       }))
     }

@@ -1,11 +1,21 @@
-/// Codec metadata derived from the type definition, independent of NodeData.
+/// Wire identity used by codecs and generated host contracts.
 ///
-/// Prefer `#[derive(NodeType)]`. Keys are generated implementation details, not
-/// persistent IDs. A key does not itself establish payload compatibility.
+/// Plugin catalogs assign explicit stable keys to public payloads. Standalone
+/// extensions must declare `#[node_type(key = "vendor.node")]` on their derive.
 pub trait NodeType {
     /// Used by codec and binding registration, never for native type identity.
     #[doc(hidden)]
     fn type_key() -> String;
+}
+
+/// Implement stable wire kinds from a plugin-owned node catalog.
+#[macro_export]
+macro_rules! implement_wire_kinds {
+    ($group:literal; $($payload:ty => $kind:literal),+ $(,)?) => {
+        $(impl $crate::NodeType for $payload {
+            fn type_key() -> String { $kind.into() }
+        })+
+    };
 }
 
 macro_rules! primitives {

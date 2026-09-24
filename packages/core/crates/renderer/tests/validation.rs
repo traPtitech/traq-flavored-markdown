@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 use std::sync::{
@@ -8,15 +8,35 @@ use std::sync::{
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct Hidden;
-impl NodeData for Hidden {}
+impl NodeData for Hidden {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct Invalid;
 impl NodeData for Invalid {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _: &[Node]) -> bool {
         false
     }
@@ -24,7 +44,14 @@ impl NodeData for Invalid {
 
 #[derive(Debug, Clone, PartialEq)]
 struct Unknown;
-impl NodeData for Unknown {}
+impl NodeData for Unknown {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 fn leaf<T: NodeData>(value: T) -> Node {
     Node::leaf(Span { start: 0, end: 0 }, value)
@@ -110,4 +137,23 @@ fn resource_boundaries_and_per_render_budgets_are_preserved() {
 
     doc.source.push('x');
     assert_eq!(renderer.render(&doc), Err("resource_limit"));
+}
+
+#[test]
+fn oversized_native_payload_is_rejected_before_a_handler_clones_it() {
+    let mut plugin = Plugin::new(&Declaration::new("payload boundary"));
+    plugin
+        .on::<Text>(|_, _, _| panic!("handler must not run"))
+        .unwrap();
+    let mut builder = PresetBuilder::new();
+    builder.add(&plugin).unwrap();
+    let renderer = Renderer::new(&builder.build().unwrap());
+    let document = Document {
+        source: String::new(),
+        children: vec![leaf(Text(
+            "x".repeat(markdown_ast::ValidationLimits::default().payload_bytes + 1),
+        ))],
+    };
+
+    assert_eq!(renderer.render(&document), Err("resource_limit"));
 }

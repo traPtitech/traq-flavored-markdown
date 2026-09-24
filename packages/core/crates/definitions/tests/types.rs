@@ -1,27 +1,36 @@
 use markdown_definitions::{NodeType, Plugin};
 
 #[derive(NodeType)]
+#[node_type(key = "example.list")]
 struct List;
 type Alias = List;
 
 mod other {
     #[derive(markdown_definitions::NodeType)]
+    #[node_type(key = "example.other_list")]
     pub struct List;
 }
 
 #[derive(NodeType)]
+#[node_type(key = "example.wrapper")]
 struct Wrapper<T, const N: usize>([T; N]);
 
 #[derive(NodeType)]
+#[node_type(key = "example.characters")]
 struct Characters<const A: char, const B: char>;
+
+#[derive(NodeType)]
+#[node_type(key = "example.stable")]
+struct Stable<T>(T);
 
 #[test]
 fn keys_follow_types_and_distinguish_arguments() {
-    assert_eq!(List::type_key(), "types::List");
+    assert_eq!(List::type_key(), "example.list");
     assert_eq!(List::type_key(), Alias::type_key());
     assert_ne!(List::type_key(), other::List::type_key());
     assert_ne!(Wrapper::<u8, 1>::type_key(), Wrapper::<u16, 1>::type_key());
     assert_ne!(Wrapper::<u8, 1>::type_key(), Wrapper::<u8, 2>::type_key());
+    assert_eq!(Stable::<u8>::type_key(), "example.stable<2:u8>");
 
     assert_ne!(
         Characters::<',', '>'>::type_key(),
@@ -60,5 +69,5 @@ fn names_are_required_labels_and_identity_is_shared_only_by_cloning() {
     );
 
     assert!(format!("{plugin:?}").contains("CommonMark / Markdown"));
-    assert_eq!(List::type_key(), "types::List");
+    assert_eq!(List::type_key(), "example.list");
 }

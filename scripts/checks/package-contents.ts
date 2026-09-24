@@ -2,7 +2,8 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { type PackageName, packageRoot, sdkRoot } from '../paths.ts'
+import { readNpmPackageGraph } from '../package-graph.ts'
+import { packageRoot, sdkRoot } from '../paths.ts'
 
 const tempRoot = (
   Bun.env.TEMP ??
@@ -19,12 +20,8 @@ const archiveName = (archive: string) =>
   archive.slice(
     Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
   )
-const packageNames: PackageName[] = [
-  'core',
-  'commonmark-plugin',
-  'traq-plugin',
-  'sdk'
-]
+const { graph, manifests } = await readNpmPackageGraph()
+const packageNames = graph.order
 const capture = async (command: string, args: string[], cwd: string) => {
   return (await $.cwd(cwd)`${command} ${args}`.quiet()).text()
 }
@@ -64,7 +61,7 @@ try {
   }
   const packageDependencies = Object.fromEntries(
     packageNames.map((name, index) => [
-      `@traq-flavored-markdown/${name}`,
+      manifests[name].name,
       `file:./${archiveName(archives[index])}`
     ])
   )

@@ -4,8 +4,25 @@ use std::{
     fmt::Debug,
 };
 
+/// A node's placement in Markdown containers. Structural nodes belong to
+/// dedicated containers, such as list items and table rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NodeRole {
+    Block,
+    Inline,
+    Structural,
+    Opaque,
+}
+
 /// A concrete payload, defined and validated by its owning contract package.
 pub trait NodeData: Any + Clone + PartialEq + Debug + Send + Sync {
+    /// Declare the role used by other plugins' parent-node validation.
+    fn role(&self) -> NodeRole;
+
+    /// Count bytes owned by this payload, including all dynamic string fields.
+    /// Every payload implementation must account for its own heap content.
+    fn payload_bytes(&self) -> usize;
+
     /// Checks this payload and its immediate children, not their descendants.
     /// Tree traversal, source positions, and resource limits belong to the caller.
     fn validate(&self, _children: &[Node]) -> bool {
@@ -19,6 +36,8 @@ trait Payload: Debug + Send + Sync {
     fn copy(&self) -> Box<dyn Payload>;
     fn equals(&self, other: &dyn Payload) -> bool;
     fn validate(&self, children: &[Node]) -> bool;
+    fn role(&self) -> NodeRole;
+    fn payload_bytes(&self) -> usize;
 }
 
 impl<T: NodeData> Payload for T {
@@ -40,6 +59,14 @@ impl<T: NodeData> Payload for T {
 
     fn validate(&self, children: &[Node]) -> bool {
         NodeData::validate(self, children)
+    }
+
+    fn role(&self) -> NodeRole {
+        NodeData::role(self)
+    }
+
+    fn payload_bytes(&self) -> usize {
+        NodeData::payload_bytes(self)
     }
 }
 
@@ -67,6 +94,14 @@ impl NodeKind {
 
     pub fn validate(&self, children: &[Node]) -> bool {
         self.0.validate(children)
+    }
+
+    pub fn role(&self) -> NodeRole {
+        self.0.role()
+    }
+
+    pub fn payload_bytes(&self) -> usize {
+        self.0.payload_bytes()
     }
 }
 

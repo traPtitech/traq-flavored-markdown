@@ -6,7 +6,7 @@ mod data;
 mod node;
 mod validation;
 
-pub use data::{NodeData, NodeKind};
+pub use data::{NodeData, NodeKind, NodeRole};
 pub use node::Node;
 pub use validation::{ValidatedDocument, ValidationError, ValidationLimits};
 
@@ -15,6 +15,18 @@ pub use validation::{ValidatedDocument, ValidationError, ValidationLimits};
 pub struct Span {
     pub start: usize,
     pub end: usize,
+}
+
+impl Span {
+    /// Check containment, source order, and UTF-8 boundaries for one child.
+    pub fn valid_child_of(self, parent: Span, previous_end: usize, source: &str) -> bool {
+        self.start <= self.end
+            && self.start >= parent.start
+            && self.start >= previous_end
+            && self.end <= parent.end
+            && source.is_char_boundary(self.start)
+            && source.is_char_boundary(self.end)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

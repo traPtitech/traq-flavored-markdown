@@ -6,11 +6,14 @@ no CommonMark or traQ grammar, node contracts, or codec dependency.
 
 ```rust
 use markdown_definitions::Plugin as Declaration;
-use markdown_parser::{GrammarBuilder, NodeData, Parser, Plugin};
+use markdown_parser::{GrammarBuilder, NodeData, NodeRole, Parser, Plugin};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole { NodeRole::Inline }
+    fn payload_bytes(&self) -> usize { self.0.len() }
+}
 
 let declaration = Declaration::new("text");
 let mut plugin = Plugin::new(&declaration);
@@ -25,9 +28,16 @@ assert_eq!(document.children[0].get::<Text>(), Some(&Text("hello".into())));
 
 Implementations are created from shared declarations. Editing a plugin after it
 is registered creates a new snapshot; existing grammars and parsers do not
-change. A grammar needs one plain-text provider. Nodes need `NodeData`, but do
+change. A grammar needs one plain-text provider. Every external plugin node
+implements `NodeData::role` and `NodeData::payload_bytes` so existing block and
+inline containers can validate it and its owned payload is budgeted. Nodes do
 not need serde or codec registration. Completed ASTs are validated against data,
-span, depth, and node-count constraints.
+span, sibling order, depth, node count, and payload size. `Limits::document`
+uses the same `ValidationLimits` as codecs and AST consumers. Its defaults are
+65,536 source bytes, 8 MiB of payload, 16,384 nodes, and depth 64;
+`Limits::work` is specific to parsing. A parser configured with
+`Parser::with_limits` can pass its document to consumers through
+`ValidatedDocument::with_limits` using the same `Limits::document` value.
 
 `bindings::Catalog` is a distribution-layer API. It registers implementations
 with `plugin(&plugin)` and validated preset compositions with `preset(&builder)`.

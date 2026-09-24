@@ -1,4 +1,4 @@
-use super::{Budget, Grammar, Limits, ParseError, block, inline, source::SourceView};
+use super::{Budget, Grammar, Limits, ParseError, ParseState, block, inline, source::SourceView};
 use markdown_ast::{Document, ValidationError, ValidationLimits};
 
 pub struct Parser {
@@ -29,17 +29,18 @@ impl Parser {
 
     fn run(&self, source: &str, inline_only: bool) -> Result<Document, ParseError> {
         let grammar = &self.grammar;
-        if source.len() > self.limits.input_bytes {
+        if source.len() > self.limits.document.source_bytes {
             return Err(ParseError::limit("input_bytes"));
         }
 
         let view = SourceView::new(source);
         let mut budget = Budget::new(self.limits);
+        let mut state = ParseState::default();
 
         let children = if inline_only {
-            inline::parse(&view, grammar, &mut budget, &block::References::new())?
+            inline::parse(&view, grammar, &mut budget, &state)?
         } else {
-            block::parse(&view, grammar, &mut budget)?
+            block::parse(&view, grammar, &mut budget, &mut state)?
         };
 
         let document = Document {
@@ -51,13 +52,13 @@ impl Parser {
 
         let node_count = document
             .validate(ValidationLimits {
-                source_bytes: self.limits.input_bytes,
-                nodes: self.limits.nodes.min(remaining_work),
-                depth: self.limits.depth,
+                nodes: self.limits.document.nodes.min(remaining_work),
+                ..self.limits.document
             })
             .map_err(|error| match error {
                 ValidationError::SourceBytes => ParseError::limit("input_bytes"),
-                ValidationError::Nodes if remaining_work <= self.limits.nodes => {
+                ValidationError::PayloadBytes => ParseError::limit("payload_bytes"),
+                ValidationError::Nodes if remaining_work <= self.limits.document.nodes => {
                     ParseError::limit("work")
                 }
                 ValidationError::Nodes => ParseError::limit("tokens"),

@@ -9,6 +9,7 @@ mod plugin;
 mod registry;
 mod rule;
 pub mod source;
+mod state;
 
 #[cfg(test)]
 mod tests;
@@ -21,3 +22,4 @@ pub use parser::Parser;
 pub use plugin::Plugin;
 pub use registry::{BuildError, Grammar};
 pub use rule::Rule;
+pub use state::ParseState;

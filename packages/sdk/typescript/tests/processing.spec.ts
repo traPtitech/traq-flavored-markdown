@@ -7,7 +7,7 @@ const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
 ).bytes()
 
-test('source edits handle reordered and duplicate AST nodes without trapping', async () => {
+test('processing rejects malformed sibling spans without poisoning the extractor', async () => {
   const runtime = await createRuntime(bytes)
   try {
     const parser = runtime.createParser(presets.traq.v1)
@@ -26,15 +26,11 @@ test('source edits handle reordered and duplicate AST nodes without trapping', a
     reordered.children.reverse()
     const duplicated = structuredClone(document)
     duplicated.children.push(...document.children)
-    for (const candidate of [reordered, duplicated]) {
-      const result = extractor.extract(candidate)
-      expect(result.messageText).toBe('@alice @bob')
-      expect(result.embedding.unembeddedText).toBe('@alice @bob')
-    }
     const crossing = structuredClone(document)
     const last = crossing.children.at(-1)!
     last.span.start = crossing.children[0].span.end - 1
-    expect(() => extractor.extract(crossing)).toThrow('overlapping_edits')
+    for (const candidate of [reordered, duplicated, crossing])
+      expect(() => extractor.extract(candidate)).toThrow('invalid span')
     expect(extractor.extract(document).messageText).toBe('@alice @bob')
   } finally {
     runtime.dispose()

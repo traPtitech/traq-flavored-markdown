@@ -1,22 +1,17 @@
-pub(crate) fn export(
-    config: &ts_rs::Config,
-) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    use markdown_definitions::NodeType;
-
+pub(crate) fn export() -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let mut nodes = serde_json::Map::new();
     macro_rules! register {
-        ($group:literal, $module:ident, $($ty:ident),* $(,)?) => {
+        ($group:literal; $($ty:ty => $kind:literal),+ $(,)?) => {
             $(
-                <$module::$ty as ts_rs::TS>::export_all(config)?;
-                let key = <$module::$ty>::type_key();
+                let key = $kind;
                 let schema = schemars::generate::SchemaSettings::default()
                     .with(|settings| {
                         settings.contract = schemars::generate::Contract::Serialize
                     })
                     .into_generator()
-                    .into_root_schema_for::<$module::$ty>();
+                    .into_root_schema_for::<$ty>();
                 if nodes
-                    .insert(key, serde_json::json!({"group": $group, "schema": schema}))
+                    .insert(key.into(), serde_json::json!({"group": $group, "schema": schema}))
                     .is_some()
                 {
                     return Err("duplicate node type key".into());
@@ -25,7 +20,7 @@ pub(crate) fn export(
         };
     }
 
-    node_types!(register);
+    selected_node_catalogs!(register);
 
     Ok(nodes.into())
 }

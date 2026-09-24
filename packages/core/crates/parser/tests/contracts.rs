@@ -1,19 +1,36 @@
 use markdown_definitions::Plugin as Declaration;
 use markdown_parser::{
-    GrammarBuilder, Limits, Node, NodeData, ParseError, Parser, Plugin, Span,
+    GrammarBuilder, Limits, Node, NodeData, NodeRole, ParseError, Parser, Plugin, Span,
+    ValidationLimits,
     engine::{
-        block::BlockRule,
+        block::{BlockMatch, BlockRule, DraftContent},
         inline::{InlineAction, InlineMatch, InlineRule},
     },
 };
 
+#[derive(Default)]
+struct CustomState(Option<String>);
+
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct Invalid;
 impl NodeData for Invalid {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _: &[Node]) -> bool {
         false
     }
@@ -83,6 +100,22 @@ fn unsuccessful_rules_still_consume_the_work_budget() {
 }
 
 #[test]
+fn parser_charges_plugin_owned_payload_bytes() {
+    let plugin = plugin();
+    let parser = parser(&plugin).with_limits(Limits {
+        document: ValidationLimits {
+            payload_bytes: 2,
+            ..ValidationLimits::default()
+        },
+        ..Limits::default()
+    });
+    assert!(matches!(
+        parser.parse_inline("abc"),
+        Err(ParseError::ResourceLimit { resource }) if resource == "payload_bytes"
+    ));
+}
+
+#[test]
 fn source_helpers_reject_invalid_ranges() {
     for mode in 0..3 {
         let mut plugin = plugin();
@@ -104,6 +137,98 @@ fn source_helpers_reject_invalid_ranges() {
 }
 
 #[test]
+fn accepted_block_matches_share_parse_scoped_state_with_inline_rules() {
+    let mut plugin = plugin();
+
+    plugin.add(BlockRule::new(|input, _| {
+        if let Some(value) = input.current().strip_prefix("def:") {
+            let value = value.to_owned();
+            return Ok(Some(BlockMatch::ignore(input.start + 1).on_accept(
+                move |state, _| {
+                    state.get_or_default::<CustomState>().0.get_or_insert(value);
+                    Ok(())
+                },
+            )));
+        }
+
+        Ok(Some(input.matched(
+            input.start + 1,
+            Text("container".into()).into(),
+            DraftContent::Inline(input.body(input.start..input.start + 1)?),
+        )?))
+    }));
+
+    plugin.add(InlineRule::new(b"x", |input, _| {
+        let value = input
+            .state::<CustomState>()
+            .and_then(|state| state.0.clone())
+            .unwrap_or_else(|| "missing".into());
+        Ok(Some(InlineMatch::leaf(
+            input.position + 1,
+            Text(value).into(),
+        )))
+    }));
+
+    let parser = parser(&plugin);
+    let with_definition = parser.parse("x\ndef:found").unwrap();
+    assert_eq!(
+        with_definition.children[0].children[0].get::<Text>(),
+        Some(&Text("found".into()))
+    );
+
+    let without_definition = parser.parse("x").unwrap();
+    assert_eq!(
+        without_definition.children[0].children[0].get::<Text>(),
+        Some(&Text("missing".into()))
+    );
+}
+
+#[test]
+fn rejected_block_matches_do_not_commit_state() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    let commits = Arc::new(AtomicUsize::new(0));
+    let mut plugin = plugin();
+    plugin.add(BlockRule::new({
+        let commits = Arc::clone(&commits);
+        move |input, _| {
+            let commits = Arc::clone(&commits);
+            Ok(Some(BlockMatch::ignore(input.start).on_accept(
+                move |_, _| {
+                    commits.fetch_add(1, Ordering::Relaxed);
+                    Ok(())
+                },
+            )))
+        }
+    }));
+
+    assert_eq!(parser(&plugin).parse("x"), Err(ParseError::InternalError));
+    assert_eq!(commits.load(Ordering::Relaxed), 0);
+}
+
+#[test]
+fn accepted_block_commits_obey_the_work_budget() {
+    let mut plugin = plugin();
+    plugin.add(BlockRule::new(|input, _| {
+        Ok(Some(
+            BlockMatch::ignore(input.start + 1).on_accept(|_, budget| budget.spend(10)),
+        ))
+    }));
+
+    let result = parser(&plugin)
+        .with_limits(Limits {
+            work: 5,
+            ..Limits::default()
+        })
+        .parse("x");
+
+    assert!(matches!(result, Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+}
+
+#[test]
 fn final_validation_stops_at_the_remaining_work_budget() {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -112,6 +237,12 @@ fn final_validation_stops_at_the_remaining_work_budget() {
     struct Counted;
 
     impl NodeData for Counted {
+        fn role(&self) -> NodeRole {
+            NodeRole::Opaque
+        }
+        fn payload_bytes(&self) -> usize {
+            0
+        }
         fn validate(&self, _: &[Node]) -> bool {
             CHECKS.fetch_add(1, Ordering::Relaxed);
             true
@@ -127,7 +258,7 @@ fn final_validation_stops_at_the_remaining_work_budget() {
                 kind: Text("parent".into()).into(),
                 inhibit_brackets: false,
                 children: (0..30)
-                    .map(|_| Node::leaf(Span { start: 0, end: 1 }, Counted))
+                    .map(|_| Node::leaf(Span { start: 0, end: 0 }, Counted))
                     .collect(),
             },
         }))

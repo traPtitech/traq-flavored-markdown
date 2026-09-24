@@ -6,19 +6,34 @@ import { validateLink as defaultLinkPolicy } from '@traq-flavored-markdown/commo
 import type { Options as CommonOptions } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { plugin as common } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
-import type { Document } from '@traq-flavored-markdown/core/renderer'
+import type { Document, Plugin } from '@traq-flavored-markdown/core/renderer'
 import { renderer } from '@traq-flavored-markdown/core/renderer'
 import type { Options as TrapOptions } from '@traq-flavored-markdown/traq-plugin/renderer'
 import { plugin as trap } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 import { configureCondensed } from './condensed.js'
-import { prepareMessage } from './embeddings.js'
+import { analyzeMessage } from './embeddings.js'
 import imageDomains from './image-domains.js'
+import { normalizeTraqOrigin } from './links.js'
 
-export { embeddingFromUrl, endsWithEmbedding } from './embeddings.js'
-export type { Embedding } from './embeddings.js'
+export { endsWithEmbedding } from './embeddings.js'
+export { embeddingFromUrl } from './links.js'
+export type { Embedding } from './links.js'
 
-export type Options = CommonOptions & GenericOptions & TrapOptions
+export interface HtmlPlugins {
+  common: Plugin
+  generic: Plugin
+  traq: Plugin
+}
+
+export type Options = CommonOptions &
+  GenericOptions &
+  TrapOptions & {
+    /** Additional handlers for nodes outside the built-in plugins. */
+    plugins?: readonly Plugin[]
+    /** Return customized built-in handlers for the preset. */
+    configurePlugins?: (plugins: HtmlPlugins) => HtmlPlugins
+  }
 
 const highlight = createHighlightFunc('traq-code traq-lang')
 
@@ -52,7 +67,10 @@ function condensedOptions(options: Options) {
   }
 }
 
-function build(options: Options = {}, condensed = false) {
+function buildPreset(
+  { plugins = [], configurePlugins, ...options }: Options = {},
+  condensed = false
+) {
   const validateLink = options.validateLink ?? defaultLinkPolicy
   const commonPlugin = common({
     breaks: true,
@@ -69,22 +87,32 @@ function build(options: Options = {}, condensed = false) {
   })
 
   const genericPlugin = generic(condensed ? condensedOptions(options) : options)
-
   const trapPlugin = trap({ ...options, validateLink })
+  const defaults = condensed
+    ? configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)
+    : {
+        common: commonPlugin,
+        generic: genericPlugin,
+        traq: trapPlugin
+      }
+  const selected = configurePlugins?.(defaults) ?? defaults
 
-  if (condensed) {
-    configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)
-  }
-
-  return new PresetBuilder()
-    .add(commonPlugin)
-    .add(genericPlugin)
-    .add(trapPlugin)
-    .build()
+  const builder = new PresetBuilder()
+    .add(selected.common)
+    .add(selected.generic)
+    .add(selected.traq)
+  for (const plugin of plugins) builder.add(plugin)
+  return builder.build()
 }
 
+/** Compose the standard HTML handlers with optional third-party plugins. */
+export function htmlPreset(options?: Options) {
+  return buildPreset(options)
+}
+
+/** Create a renderer with the standard HTML handlers. */
 export function html(options?: Options) {
-  return build(options)
+  return renderer(htmlPreset(options))
 }
 
 /** Build standard and condensed message renderers from the same options. */
@@ -92,29 +120,32 @@ export function messageRenderers({
   origin,
   ...options
 }: Options & { origin: string }) {
-  const embeddingOrigin = new URL(origin).origin
+  const parsedOrigin = new URL(origin)
+  if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:')
+    throw new TypeError('Expected an HTTP(S) origin')
+  const embeddingOrigin = normalizeTraqOrigin(origin)
+  const validateLink = options.validateLink ?? defaultLinkPolicy
 
   function create(condensed: boolean) {
-    const view = renderer(build(options, condensed))
+    const view = renderer(buildPreset(options, condensed))
 
     return Object.freeze({
       render(document: Document) {
-        const prepared = prepareMessage(document, embeddingOrigin, condensed)
+        const analysis = analyzeMessage(document, embeddingOrigin, validateLink)
+        const overlay = {
+          omittedNodes: analysis.omittedNodes,
+          childText: condensed ? analysis.childText : undefined
+        }
         const renderedText = condensed
-          ? prepared.document.children
-              .map(node =>
-                view.render({
-                  ...prepared.document,
-                  children: [node]
-                })
-              )
+          ? analysis.roots
+              .map(node => view.render(document, { ...overlay, roots: [node] }))
               .join(' ')
-          : view.render(prepared.document)
+          : view.render(document, { ...overlay, roots: analysis.roots })
 
         return {
           rawText: document.source,
           renderedText,
-          embeddings: prepared.embeddings
+          embeddings: analysis.embeddings
         }
       }
     })

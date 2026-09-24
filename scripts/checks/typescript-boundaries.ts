@@ -2,15 +2,14 @@ import path from 'path'
 
 import * as ts from 'typescript'
 
-import { type PackageName, packageRoot } from '../paths.ts'
+import { readNpmPackageGraph } from '../package-graph.ts'
+import { packageRoot } from '../paths.ts'
 
-const packages: [PackageName, PackageName[]][] = [
-  ['core', []],
-  ['commonmark-plugin', ['core', 'commonmark-plugin']],
-  ['traq-plugin', ['core', 'commonmark-plugin', 'traq-plugin']],
-  ['sdk', ['core', 'commonmark-plugin', 'traq-plugin', 'sdk']]
-]
-for (const [repo, allowed] of packages) {
+const { manifests, graph } = await readNpmPackageGraph()
+const byName = new Map(
+  graph.order.map(name => [manifests[name].name, name] as const)
+)
+for (const repo of graph.order) {
   const directory = path.join(packageRoot(repo), 'typescript')
   let count = 0
   for await (const relative of new Bun.Glob('**/*.ts').scan({
@@ -37,10 +36,9 @@ for (const [repo, allowed] of packages) {
           throw new Error(file + ': import escapes package ownership')
       }
       if (!specifier.startsWith('@traq-flavored-markdown/')) return
-      const name = specifier
-        .slice('@traq-flavored-markdown/'.length)
-        .split('/')[0]
-      if (!allowed.includes(name as PackageName))
+      const name = specifier.split('/').slice(0, 2).join('/')
+      const dependency = byName.get(name)
+      if (!dependency || !graph.allows(repo, dependency))
         throw new Error(file + ': upward dependency ' + name)
     }
     const visit = (node: ts.Node): void => {

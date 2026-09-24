@@ -1,8 +1,9 @@
+use markdown_ast::ValidationLimits;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS))]
-#[serde(tag = "code", rename_all = "snake_case")]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(tag = "code", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ParseError {
     InvalidUtf8,
     ResourceLimit { resource: String },
@@ -27,18 +28,16 @@ impl std::error::Error for ParseError {}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
-    pub input_bytes: usize,
-    pub nodes: usize,
-    pub depth: usize,
+    /// Source and tree limits shared with codecs and AST consumers.
+    pub document: ValidationLimits,
+    /// Parser-specific work budget, including failed rule attempts.
     pub work: usize,
 }
 
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            input_bytes: 65_536,
-            nodes: 16_384,
-            depth: 64,
+            document: ValidationLimits::default(),
             work: 2_000_000,
         }
     }
@@ -83,7 +82,7 @@ impl Budget {
             .checked_add(1)
             .ok_or_else(|| ParseError::limit("tokens"))?;
 
-        if self.tokens > self.limits.nodes {
+        if self.tokens > self.limits.document.nodes {
             return Err(ParseError::limit("tokens"));
         }
 
@@ -91,7 +90,7 @@ impl Budget {
     }
 
     pub fn depth(&self, depth: usize) -> Result<(), ParseError> {
-        if depth > self.limits.depth {
+        if depth > self.limits.document.depth {
             return Err(ParseError::limit("depth"));
         }
 

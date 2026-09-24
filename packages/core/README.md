@@ -33,6 +33,10 @@ only inspect ASTs do not need parser, renderer, or serialization dependencies.
 contract validation, and generation support. HTML renderer handlers draw child
 nodes with `ctx.render(nodes)`. The default fallback returns escaped source text
 without markup; paragraph and other structural markup belongs to node handlers.
+`renderer.render(document, overlay)` can select root nodes, omit specific nodes,
+or replace a node's rendered children with plain text without changing the AST.
+The renderer escapes replacement text and applies it only when a handler renders
+that node's original `children` array.
 
 The Go module `github.com/traPtitech/traq-flavored-markdown/packages/core/go`
 owns the shared `ast` and Wasm `binding` packages. It has no CommonMark or traQ

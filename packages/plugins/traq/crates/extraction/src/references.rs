@@ -3,7 +3,7 @@ use markdown_trap_contracts::{EmbeddingData, EmbeddingKind, ReferenceData, Refer
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct EmbeddedInfo {
     pub raw: String,
@@ -13,7 +13,7 @@ pub struct EmbeddedInfo {
 }
 
 #[derive(Debug, Default, PartialEq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct References {
     pub mentions: Vec<String>,
@@ -33,54 +33,57 @@ fn build() -> Result<Plugin<References>> {
     let mut plugin = Plugin::<References>::new(&markdown_trap_contracts::preset().references);
 
     plugin.on::<ReferenceData>(|reference, result| {
-        add_reference(reference, result);
+        result.record_reference(reference);
         Ok(())
     })?;
 
     plugin.on::<EmbeddingData>(|embedding, result| {
-        add_embedding(embedding, result);
+        result.record_embedding(embedding);
         Ok(())
     })?;
 
     Ok(plugin)
 }
 
-fn add_reference(reference: &ReferenceData, result: &mut References) {
-    if !reference.id.is_empty() {
-        result.embeddings.push(EmbeddedInfo {
-            raw: reference.label.clone(),
-            kind: match reference.target {
-                ReferenceKind::User => "user",
-                ReferenceKind::Group => "group",
-                ReferenceKind::Channel => "channel",
-            }
-            .into(),
-            id: reference.id.clone(),
-        });
+impl References {
+    /// Record one reference in document order, preserving duplicates.
+    pub fn record_reference(&mut self, reference: &ReferenceData) {
+        if !reference.id.is_empty() {
+            self.embeddings.push(EmbeddedInfo {
+                raw: reference.label.clone(),
+                kind: match reference.target {
+                    ReferenceKind::User => "user",
+                    ReferenceKind::Group => "group",
+                    ReferenceKind::Channel => "channel",
+                }
+                .into(),
+                id: reference.id.clone(),
+            });
+        }
+
+        if let Some(id) = crate::uuid::normalize(&reference.id) {
+            let ids = match reference.target {
+                ReferenceKind::User => &mut self.mentions,
+                ReferenceKind::Group => &mut self.group_mentions,
+                ReferenceKind::Channel => &mut self.channel_links,
+            };
+
+            ids.push(id);
+        }
     }
 
-    if let Some(id) = crate::uuid::normalize(&reference.id) {
-        let ids = match reference.target {
-            ReferenceKind::User => &mut result.mentions,
-            ReferenceKind::Group => &mut result.group_mentions,
-            ReferenceKind::Channel => &mut result.channel_links,
-        };
-
-        // Preserve document order and duplicates, including inside spoilers.
-        ids.push(id);
-    }
-}
-
-fn add_embedding(embedding: &EmbeddingData, result: &mut References) {
-    if !embedding.id.is_empty() {
-        result.embeddings.push(EmbeddedInfo {
-            raw: embedding.label.clone(),
-            kind: match embedding.target {
-                EmbeddingKind::File => "file",
-                EmbeddingKind::Message => "message",
-            }
-            .into(),
-            id: embedding.id.clone(),
-        });
+    /// Record one embedding in document order.
+    pub fn record_embedding(&mut self, embedding: &EmbeddingData) {
+        if !embedding.id.is_empty() {
+            self.embeddings.push(EmbeddedInfo {
+                raw: embedding.label.clone(),
+                kind: match embedding.target {
+                    EmbeddingKind::File => "file",
+                    EmbeddingKind::Message => "message",
+                }
+                .into(),
+                id: embedding.id.clone(),
+            });
+        }
     }
 }

@@ -40,8 +40,10 @@ normalization are ordinary links.
 
 Reference extraction returns normalized user, group, and channel IDs while
 preserving order, duplicates, and references inside spoilers. Code text does not
-produce reference nodes. `message::Extractor` also produces source-preserving
-message text, attachment IDs, citation IDs, and an embedding plan. It preserves
+produce reference nodes. `extraction::Extractor` collects references, message
+text, attachment and citation IDs, and an embedding plan in one AST traversal
+after validation. The standalone reference, message, and embedding APIs remain
+available. Message extraction preserves
 explicit Markdown links, and excludes code and math strings from attachment and
 citation discovery. Identity lookup and notification delivery remain application
 responsibilities.
@@ -57,5 +59,13 @@ the parsed references for mention checks.
 The public Rust APIs are `extraction::Extractor::extract(&Document)` and
 `rendering::PlainTextRenderer::render(&Document)`. They do not select grammars
 or reparse source. `extract_validated` and `render_validated` can share one
-immutable AST validation. Source replacement is applied by span order: an outer
-replacement wins for equal or nested spans, while crossing spans are rejected.
+immutable AST validation. By default, validation allows 65,536 source bytes,
+8 MiB of plugin-owned payload, 16,384 nodes, and depth 64. External plugin
+nodes must declare `NodeData::role` and `NodeData::payload_bytes`; validation
+checks these contracts before any handler clones or renders the payload. Use
+`ValidatedDocument::with_limits(&document, parser_limits.document)` or the
+equivalent codec limits to pass a document produced with custom limits to these
+methods. The standalone message and embedding APIs also accept a validated
+document. Source replacement is applied by span order: an outer
+replacement wins for equal or nested spans. Public AST consumers require
+source-ordered, non-overlapping siblings.

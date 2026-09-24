@@ -31,8 +31,10 @@ export async function formatTypescript(paths: string[]) {
     'run',
     'prettier',
     '--write',
+    '--config',
+    path.join(repositoryRoot, 'prettier.config.ts'),
     '--ignore-path',
-    '.gitignore',
+    path.join(repositoryRoot, '.gitignore'),
     ...paths
   ])
 }

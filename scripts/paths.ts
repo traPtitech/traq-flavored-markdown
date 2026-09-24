@@ -11,8 +11,12 @@ const packageDirectories: Record<PackageName, string> = {
   sdk: 'sdk'
 }
 
+export const packageNames = Object.keys(packageDirectories) as PackageName[]
+
 export const packageRoot = (name: PackageName) =>
   path.join(packagesRoot, packageDirectories[name])
+export const packageOutputRoot = (name: PackageName, outputRoot: string) =>
+  path.join(outputRoot, path.relative(repositoryRoot, packageRoot(name)))
 export const sdkRoot = packageRoot('sdk')
 export const corpusRoot = path.join(repositoryRoot, 'tools', 'corpus')
 

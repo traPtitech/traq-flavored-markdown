@@ -9,9 +9,7 @@ use markdown_trap_contracts::EmbeddingData;
 /// Build editable plain-text rules. An empty origin leaves URLs as text.
 /// Block separators are retained; single-line formatting belongs to the caller.
 pub fn builder(origin: &str) -> Result<PresetBuilder> {
-    if origin.len() > 2048 {
-        return Err("origin_limit");
-    }
+    crate::links::validate_origin(origin)?;
 
     let explicit_links = ExplicitLinkStyle::LabelAndDestination;
     let mut commonmark =

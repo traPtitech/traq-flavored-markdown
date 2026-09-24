@@ -1,4 +1,4 @@
-use crate::{NodeData, NodeKind, Span};
+use crate::{NodeData, NodeKind, NodeRole, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
@@ -30,6 +30,14 @@ impl Node {
 
     pub fn data_type_id(&self) -> std::any::TypeId {
         self.kind.data_type_id()
+    }
+
+    pub fn role(&self) -> NodeRole {
+        self.kind.role()
+    }
+
+    pub fn payload_bytes(&self) -> usize {
+        self.kind.payload_bytes()
     }
 
     /// Calls only this node's type-owned check. Does not validate descendants or spans.

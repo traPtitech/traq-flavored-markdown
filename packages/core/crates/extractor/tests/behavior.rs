@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_extractor::{Extractor, Plugin, PresetBuilder};
 use std::{
@@ -13,15 +13,35 @@ use std::{
 #[derive(Clone, Debug, PartialEq)]
 struct Reference(u32);
 
-impl NodeData for Reference {}
+impl NodeData for Reference {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 #[derive(Clone, Debug, PartialEq)]
 struct Container;
 
-impl NodeData for Container {}
+impl NodeData for Container {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 #[derive(Clone, Debug, PartialEq)]
 struct Invalid;
 
 impl NodeData for Invalid {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _: &[Node]) -> bool {
         false
     }

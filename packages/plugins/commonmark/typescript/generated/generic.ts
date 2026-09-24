@@ -8,61 +8,48 @@ import {
 } from '@traq-flavored-markdown/core/validation'
 
 // Generated from Rust contracts. Do not edit.
-export type MarkData = Record<symbol, never>
-export type BlockMathData = { tex: string }
-export type InlineMathData = { tex: string }
-export type StrikethroughData = Record<symbol, never>
-export type CellData = { alignment: Alignment | null }
+export type BlockMathData = {
+  tex: string
+}
+export type CellData = {
+  alignment: Alignment | null
+}
 export type Alignment = 'left' | 'center' | 'right'
-export type RowData = { header: boolean }
-export type TableData = Record<symbol, never>
+export type InlineMathData = {
+  tex: string
+}
+export type MarkData = Record<string, never>
+export type RowData = {
+  header: boolean
+}
+export type StrikethroughData = Record<string, never>
+export type TableData = Record<string, never>
 export type NodeKind =
-  | { kind: 'markdown_generic_contracts::mark::MarkData'; data: MarkData }
-  | {
-      kind: 'markdown_generic_contracts::math::BlockMathData'
-      data: BlockMathData
-    }
-  | {
-      kind: 'markdown_generic_contracts::math::InlineMathData'
-      data: InlineMathData
-    }
-  | {
-      kind: 'markdown_generic_contracts::strikethrough::StrikethroughData'
-      data: StrikethroughData
-    }
-  | { kind: 'markdown_generic_contracts::table::CellData'; data: CellData }
-  | { kind: 'markdown_generic_contracts::table::RowData'; data: RowData }
-  | { kind: 'markdown_generic_contracts::table::TableData'; data: TableData }
+  | { kind: 'generic.block_math'; data: BlockMathData }
+  | { kind: 'generic.cell'; data: CellData }
+  | { kind: 'generic.inline_math'; data: InlineMathData }
+  | { kind: 'generic.mark'; data: MarkData }
+  | { kind: 'generic.row'; data: RowData }
+  | { kind: 'generic.strikethrough'; data: StrikethroughData }
+  | { kind: 'generic.table'; data: TableData }
 
 export const names = Object.freeze({
-  Mark: 'markdown_generic_contracts::mark::MarkData',
-  BlockMath: 'markdown_generic_contracts::math::BlockMathData',
-  InlineMath: 'markdown_generic_contracts::math::InlineMathData',
-  Strikethrough: 'markdown_generic_contracts::strikethrough::StrikethroughData',
-  Cell: 'markdown_generic_contracts::table::CellData',
-  Row: 'markdown_generic_contracts::table::RowData',
-  Table: 'markdown_generic_contracts::table::TableData'
+  BlockMath: 'generic.block_math',
+  Cell: 'generic.cell',
+  InlineMath: 'generic.inline_math',
+  Mark: 'generic.mark',
+  Row: 'generic.row',
+  Strikethrough: 'generic.strikethrough',
+  Table: 'generic.table'
 } as const)
 const validators = new Map<string, (data: unknown) => boolean>([
   [
-    'markdown_generic_contracts::mark::MarkData',
-    value => fields(value, {}, {})
+    'generic.block_math',
+    (value: unknown) => fields(value, { tex: string }, {})
   ],
   [
-    'markdown_generic_contracts::math::BlockMathData',
-    value => fields(value, { tex: string }, {})
-  ],
-  [
-    'markdown_generic_contracts::math::InlineMathData',
-    value => fields(value, { tex: string }, {})
-  ],
-  [
-    'markdown_generic_contracts::strikethrough::StrikethroughData',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_generic_contracts::table::CellData',
-    value =>
+    'generic.cell',
+    (value: unknown) =>
       fields(
         value,
         { alignment: nullable(oneOf('left', 'center', 'right')) },
@@ -70,13 +57,13 @@ const validators = new Map<string, (data: unknown) => boolean>([
       )
   ],
   [
-    'markdown_generic_contracts::table::RowData',
-    value => fields(value, { header: boolean }, {})
+    'generic.inline_math',
+    (value: unknown) => fields(value, { tex: string }, {})
   ],
-  [
-    'markdown_generic_contracts::table::TableData',
-    value => fields(value, {}, {})
-  ]
+  ['generic.mark', (value: unknown) => fields(value, {}, {})],
+  ['generic.row', (value: unknown) => fields(value, { header: boolean }, {})],
+  ['generic.strikethrough', (value: unknown) => fields(value, {}, {})],
+  ['generic.table', (value: unknown) => fields(value, {}, {})]
 ])
 export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
   validators

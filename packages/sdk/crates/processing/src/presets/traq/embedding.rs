@@ -1,11 +1,11 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
-use markdown_ast::{Document, ValidatedDocument};
+use markdown_ast::{Document, Node, Span, ValidatedDocument, ValidationError};
 use markdown_commonmark_contracts::{Image, Link, Text};
 use markdown_trap_contracts::{EmbeddingData, ReferenceData};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum LookupKind {
     User,
@@ -14,7 +14,7 @@ pub enum LookupKind {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct EmbeddingCandidate {
     /// UTF-8 byte offsets into the original source, not rendered text.
@@ -26,7 +26,7 @@ pub struct EmbeddingCandidate {
 }
 
 #[derive(Debug, Default, PartialEq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EmbeddingPlan {
     /// Ordered lookup attempts. A successful attempt consumes its source range.
@@ -37,12 +37,11 @@ pub struct EmbeddingPlan {
 }
 
 pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
-    plan_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
+    plan_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
 }
 
-pub(crate) fn plan_validated(
-    document: ValidatedDocument<'_>,
-) -> Result<EmbeddingPlan, &'static str> {
+/// Reuse an immutable validation, including explicitly configured tree limits.
+pub fn plan_validated(document: ValidatedDocument<'_>) -> Result<EmbeddingPlan, &'static str> {
     let document = document.document();
     let mut result = EmbeddingPlan::default();
     let mut edits = Vec::new();
@@ -54,22 +53,13 @@ pub(crate) fn plan_validated(
         .collect();
 
     while let Some((node, allow_embedding)) = pending.pop() {
-        if let Some(reference) = node.get::<ReferenceData>() {
-            edits.push((node.span, reference.label.as_str()));
-        } else if let Some(embedding) = node.get::<EmbeddingData>() {
-            edits.push((node.span, embedding.label.as_str()));
-        } else if allow_embedding && node.get::<Text>().is_some() {
-            collect(
-                &document.source,
-                node.span.start,
-                node.span.end,
-                &mut result.candidates,
-            );
-        }
-
-        // Existing references can be restored in labels; new references must not alter links or images.
-        let allow_children =
-            allow_embedding && node.get::<Link>().is_none() && node.get::<Image>().is_none();
+        let allow_children = observe(
+            node,
+            &document.source,
+            allow_embedding,
+            &mut result,
+            &mut edits,
+        );
 
         pending.extend(
             node.children
@@ -79,10 +69,40 @@ pub(crate) fn plan_validated(
         );
     }
 
-    result.unembedded_text = crate::edits::apply(&document.source, edits)?;
-    // Keep user/group fallback attempts stable while accepting reordered ASTs.
-    result.candidates.sort_by_key(|candidate| candidate.start);
+    finish(&document.source, result, edits)
+}
 
+pub(crate) fn observe<'a>(
+    node: &'a Node,
+    source: &str,
+    allow_embedding: bool,
+    result: &mut EmbeddingPlan,
+    edits: &mut Vec<(Span, &'a str)>,
+) -> bool {
+    if let Some(reference) = node.get::<ReferenceData>() {
+        edits.push((node.span, reference.label.as_str()));
+    } else if let Some(embedding) = node.get::<EmbeddingData>() {
+        edits.push((node.span, embedding.label.as_str()));
+    } else if allow_embedding && node.get::<Text>().is_some() {
+        collect(
+            source,
+            node.span.start,
+            node.span.end,
+            &mut result.candidates,
+        );
+    }
+
+    // Restore existing references in labels, but never look up new names inside links or images.
+    allow_embedding && node.get::<Link>().is_none() && node.get::<Image>().is_none()
+}
+
+pub(crate) fn finish(
+    source: &str,
+    mut result: EmbeddingPlan,
+    edits: Vec<(Span, &str)>,
+) -> Result<EmbeddingPlan, &'static str> {
+    result.unembedded_text = crate::edits::apply(source, edits)?;
+    result.candidates.sort_by_key(|candidate| candidate.start);
     Ok(result)
 }
 

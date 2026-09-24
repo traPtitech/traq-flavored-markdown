@@ -20,7 +20,8 @@ import type { Store } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)
-const view = renderer(rendering.html())
+const view = renderer(rendering.htmlPreset())
+const directView = rendering.html()
 const result: string = view.render(parser.parse('text'))
 const messageView = rendering.messageRenderers({
   origin: 'https://q.example.test'
@@ -52,7 +53,13 @@ const store: Store = {
   getMe: () => ({ id: 'me' }),
   generateUserHref: id => '#' + id
 }
-renderer(rendering.html({ store, math: tex => tex, highlight: code => code }))
+renderer(
+  rendering.htmlPreset({
+    store,
+    math: tex => tex,
+    highlight: code => ({ kind: 'content', html: code })
+  })
+)
 
 // @ts-expect-error handlers return HTML strings
 new Plugin(declaration).on('invalid', () => [])
@@ -62,7 +69,17 @@ renderer({})
 new Plugin('name')
 declare const context: RenderContext
 const renderedChildren: string = context.render([])
-void [result, messageHtml, condensedHtml, openResult, renderedChildren]
+void [
+  result,
+  messageHtml,
+  condensedHtml,
+  openResult,
+  renderedChildren,
+  directView
+]
+
+// @ts-expect-error html returns a renderer; use htmlPreset for composition.
+renderer(rendering.html())
 
 // @ts-expect-error Choose a message presentation before rendering.
 messageView.render(parser.parse('text'))

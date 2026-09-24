@@ -1,5 +1,5 @@
 use markdown_definitions::Plugin as Declaration;
-use markdown_parser::{GrammarBuilder, NodeData, Parser, Plugin, bindings::Catalog};
+use markdown_parser::{GrammarBuilder, NodeData, NodeRole, Parser, Plugin, bindings::Catalog};
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -8,7 +8,14 @@ use std::sync::{
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
 
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
 
 #[test]
 fn registration_is_atomic_and_does_not_invoke_the_text_provider() {

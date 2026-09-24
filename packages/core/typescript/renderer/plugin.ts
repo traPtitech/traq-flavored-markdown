@@ -3,7 +3,7 @@ import type { Handler } from './types.js'
 
 export interface Implementation {
   declaration: Declaration
-  handlers: Map<string, Handler>
+  handlers: ReadonlyMap<string, Handler>
 }
 
 const implementations = new WeakMap<Plugin, Implementation>()
@@ -20,6 +20,7 @@ export class Plugin {
       throw new TypeError('Expected Plugin declaration')
 
     implementations.set(this, { declaration, handlers: new Map() })
+    Object.freeze(this)
   }
 
   on(kind: string, handler: Handler) {
@@ -45,8 +46,8 @@ export class Plugin {
     const handlers = new Map(state.handlers)
     handlers.set(kind, handler)
 
-    implementations.set(this, { declaration: state.declaration, handlers })
-
-    return this
+    const next = new Plugin(state.declaration)
+    implementations.set(next, { declaration: state.declaration, handlers })
+    return next
   }
 }

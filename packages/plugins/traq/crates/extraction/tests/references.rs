@@ -25,7 +25,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
     ];
 
     let mut document = Document {
-        source: "x".into(),
+        source: "x".repeat(forms.len() * 3),
         children: vec![],
     };
 
@@ -35,8 +35,12 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
         ReferenceKind::Channel,
     ] {
         for id in &forms {
+            let position = document.children.len();
             document.children.push(Node::leaf(
-                Span { start: 0, end: 1 },
+                Span {
+                    start: position,
+                    end: position + 1,
+                },
                 ReferenceData {
                     target,
                     id: id.clone(),

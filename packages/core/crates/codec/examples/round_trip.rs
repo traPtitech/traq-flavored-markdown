@@ -1,24 +1,38 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 use markdown_definitions::NodeType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "example.heading")]
 struct Heading {
     level: u8,
 }
 
 impl NodeData for Heading {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         (1..=6).contains(&self.level)
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "example.text")]
 struct Text {
     value: String,
 }
 
 impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.value.len()
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }

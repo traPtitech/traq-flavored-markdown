@@ -1,40 +1,14 @@
 import path from 'node:path'
 
+import {
+  type GoModule,
+  type GoPackageGraph,
+  readGoPackageGraph,
+  readNpmPackageGraph,
+  validateGoOwnership
+} from './package-graph.ts'
 import { repositoryRoot } from './paths.ts'
 
-const repository = 'github.com/traPtitech/traq-flavored-markdown'
-const modules = [
-  { directory: 'packages/core/go', dependencies: [] },
-  {
-    directory: 'packages/plugins/commonmark/go',
-    dependencies: ['packages/core/go']
-  },
-  {
-    directory: 'packages/plugins/traq/go',
-    dependencies: ['packages/core/go']
-  },
-  {
-    directory: 'packages/sdk/go',
-    dependencies: [
-      'packages/core/go',
-      'packages/plugins/commonmark/go',
-      'packages/plugins/traq/go'
-    ]
-  }
-] as const
-export const goReleaseModules = modules
-const example = {
-  directory: 'packages/sdk/examples/go',
-  dependencies: modules.map(module => module.directory)
-}
-const modulePath = (directory: string) => `${repository}/${directory}`
-const goModules = [...modules, example]
-
-type GoMod = {
-  Module: { Path: string }
-  Require: { Path: string; Version: string }[] | null
-  Replace: unknown[] | null
-}
 type GoWork = {
   Use: { DiskPath: string }[] | null
   Replace:
@@ -45,62 +19,62 @@ type GoWork = {
     | null
 }
 
-const internal = (name: string) =>
-  modules.some(module => modulePath(module.directory) === name)
-
-export const goReleaseTags = (version: string) =>
-  modules.map(module => `${module.directory}/${version}`)
-
-export function validateGoMod(
-  manifest: GoMod,
-  directory: string,
-  dependencies: readonly string[],
-  version: string
-) {
-  const expectedModule =
-    directory === example.directory
-      ? 'traq-markdown-example'
-      : modulePath(directory)
-  if (manifest.Module.Path !== expectedModule)
-    throw new Error(`${directory}: unexpected Go module path`)
-  if (manifest.Replace?.length)
-    throw new Error(
-      `${directory}: module-local replacements prevent distribution`
-    )
-  const actual = (manifest.Require ?? []).filter(requirement =>
-    internal(requirement.Path)
-  )
-  if (
-    actual.length !== dependencies.length ||
-    dependencies.some(
-      dependency =>
-        !actual.some(
-          requirement =>
-            requirement.Path === modulePath(dependency) &&
-            requirement.Version === version
-        )
-    )
-  )
-    throw new Error(`${directory}: Go dependencies do not match ${version}`)
+async function releaseGraph(root: string) {
+  const go = await readGoPackageGraph(root)
+  validateGoOwnership(go, (await readNpmPackageGraph()).graph)
+  return go
 }
 
-export function validateGoWork(workspace: GoWork, version: string) {
+export const goReleaseTags = async (version: string, root = repositoryRoot) =>
+  (await releaseGraph(root)).published.map(
+    module => `${module.directory}/${version}`
+  )
+
+export function validateGoMod(
+  module: GoModule,
+  graph: GoPackageGraph,
+  version: string
+) {
+  if (module.manifest.Replace?.length)
+    throw new Error(
+      `${module.directory}: module-local replacements prevent distribution`
+    )
+  const internal = new Set([...graph.modules.values()].map(item => item.path))
+  if (
+    (module.manifest.Require ?? []).some(
+      requirement =>
+        internal.has(requirement.Path) && requirement.Version !== version
+    )
+  )
+    throw new Error(
+      `${module.directory}: Go dependencies do not match ${version}`
+    )
+}
+
+export function validateGoWork(
+  workspace: GoWork,
+  graph: GoPackageGraph,
+  version: string
+) {
   const used = (workspace.Use ?? []).map(item => item.DiskPath)
   if (
-    used.length !== goModules.length ||
-    goModules.some(module => !used.includes(`./${module.directory}`))
+    used.length !== graph.modules.size ||
+    [...graph.modules.values()].some(
+      module => !used.includes(`./${module.directory}`)
+    )
   )
     throw new Error('go.work must use all local modules')
+  const internal = new Set(graph.published.map(module => module.path))
   const replacements = (workspace.Replace ?? []).filter(item =>
-    internal(item.Old.Path)
+    internal.has(item.Old.Path)
   )
   if (
-    replacements.length !== modules.length ||
-    modules.some(
+    replacements.length !== graph.published.length ||
+    graph.published.some(
       module =>
         !replacements.some(
           replacement =>
-            replacement.Old.Path === modulePath(module.directory) &&
+            replacement.Old.Path === module.path &&
             replacement.Old.Version === version &&
             replacement.New.Path === `./${module.directory}` &&
             !replacement.New.Version
@@ -126,17 +100,10 @@ async function go(cwd: string, args: string[], workspaceOff = false) {
   return stdout
 }
 
-const readModule = async (root: string, directory: string) =>
-  JSON.parse(
-    await go(path.join(root, directory), ['mod', 'edit', '-json'], true)
-  ) as GoMod
 const readWork = async (root: string) =>
   JSON.parse(await go(root, ['work', 'edit', '-json'])) as GoWork
 
-export async function runGoRelease(
-  args: string[],
-  root: string = repositoryRoot
-) {
+export async function runGoRelease(args: string[], root = repositoryRoot) {
   const [version, mode, ...rest] = args
   if (
     !version ||
@@ -149,15 +116,22 @@ export async function runGoRelease(
     throw new Error(
       'usage: bun scripts/release-go.ts v<0-or-1>.<minor>.<patch> [--prepare|--check|--tags]'
     )
+
+  let graph = await releaseGraph(root)
   if (mode === '--tags') {
-    console.log(goReleaseTags(version).join('\n'))
+    console.log(
+      graph.published.map(module => `${module.directory}/${version}`).join('\n')
+    )
     return
   }
   if (mode === '--prepare') {
-    for (const module of goModules) {
-      const requirements = module.dependencies.map(
-        dependency => `-require=${modulePath(dependency)}@${version}`
-      )
+    const internal = new Set(
+      [...graph.modules.values()].map(module => module.path)
+    )
+    for (const module of graph.modules.values()) {
+      const requirements = (module.manifest.Require ?? [])
+        .filter(requirement => internal.has(requirement.Path))
+        .map(requirement => `-require=${requirement.Path}@${version}`)
       if (requirements.length)
         await go(
           path.join(root, module.directory),
@@ -172,7 +146,7 @@ export async function runGoRelease(
           .filter(line => {
             const [name, sumVersion] = line.split(' ')
             return (
-              !internal(name) ||
+              !internal.has(name) ||
               sumVersion === version ||
               sumVersion === `${version}/go.mod`
             )
@@ -183,27 +157,22 @@ export async function runGoRelease(
     }
     const workspace = await readWork(root)
     const edits = (workspace.Replace ?? [])
-      .filter(item => internal(item.Old.Path))
+      .filter(item => internal.has(item.Old.Path))
       .map(
         item =>
           `-dropreplace=${item.Old.Path}${item.Old.Version ? `@${item.Old.Version}` : ''}`
       )
     edits.push(
-      ...modules.map(
-        module =>
-          `-replace=${modulePath(module.directory)}@${version}=./${module.directory}`
+      ...graph.published.map(
+        module => `-replace=${module.path}@${version}=./${module.directory}`
       )
     )
     await go(root, ['work', 'edit', ...edits])
+    graph = await releaseGraph(root)
   }
-  for (const module of goModules)
-    validateGoMod(
-      await readModule(root, module.directory),
-      module.directory,
-      module.dependencies,
-      version
-    )
-  validateGoWork(await readWork(root), version)
+  for (const module of graph.modules.values())
+    validateGoMod(module, graph, version)
+  validateGoWork(await readWork(root), graph, version)
   console.log(`Go module dependencies and workspace match ${version}`)
 }
 

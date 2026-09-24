@@ -17,16 +17,16 @@ export function plugin({
   baseUrl,
   validateLink = defaultPolicy
 }: Options = {}) {
-  const result = new Plugin(declaration)
+  let result = new Plugin(declaration)
 
-  result.on(
+  result = result.on(
     names.Reference,
     checked(names.Reference, isKnownNode, node =>
       renderReference(node, store, validateLink)
     )
   )
 
-  result.on(
+  result = result.on(
     names.Spoiler,
     checked(
       names.Spoiler,
@@ -35,21 +35,21 @@ export function plugin({
     )
   )
 
-  result.on(
+  result = result.on(
     names.BlankLine,
     checked(names.BlankLine, isKnownNode, () => '<br>\n')
   )
 
-  result.on(
+  result = result.on(
     names.Embedding,
     checked(names.Embedding, isKnownNode, node => escapeHtml(node.data.literal))
   )
 
   const stamp = stampRenderer({ store, baseUrl })
 
-  result.on(
+  result = result.on(
     names.Stamp,
-    checked(names.Stamp, isKnownNode, node => stamp(node.data.literal))
+    checked(names.Stamp, isKnownNode, node => stamp(node.data))
   )
 
   return result

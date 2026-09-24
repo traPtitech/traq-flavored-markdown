@@ -10,10 +10,10 @@ contracts, and validation; the SDK exposes the supported presets and host APIs.
 This package combines the core, CommonMark plugin, and traQ plugin layers for
 traQ.
 
-The TypeScript `renderer` preset applies traQ display policy to CommonMark
+The TypeScript `html()` renderer applies traQ display policy to CommonMark
 nodes: raw HTML is escaped, links use a restricted scheme list (including
 `tel`, `sms`, and `geo`), and rejected links display their escaped Markdown
-source. The CommonMark plugin's `specHtml()` preset is for specification output
+source. The CommonMark plugin's `specHtml()` renderer is for specification output
 and can emit unsafe HTML; it is not used for message display.
 
 ## Contents
@@ -123,8 +123,41 @@ const html = rendered.renderedText
 `messageRenderers` builds `standard` and `condensed` views. Each `render` call
 returns `rawText`, `renderedText`, and `embeddings`; the extractor returns
 source-preserving message text, references, attachment and citation IDs, and an
-embedding plan. Complete Rust, Go, and TypeScript programs are in
+embedding plan. The two views apply presentation choices without rewriting the
+parsed AST. Complete Rust, Go, and TypeScript programs are in
 [examples](examples/README.md).
+
+For direct HTML, `html(options)` returns a renderer. `htmlPreset(options)`
+returns a preset for the core `renderer()` composition API. Both accept
+third-party renderer plugins through `plugins`; `configurePlugins` can replace
+built-in handlers by returning updated plugin values:
+
+```ts
+import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
+import { Plugin } from '@traq-flavored-markdown/core/renderer'
+import { html } from '@traq-flavored-markdown/sdk/renderer'
+
+const annotation = new Plugin(new Declaration('app')).on(
+  'app::Annotation',
+  (node, context) => context.render(node.children)
+)
+const view = html({
+  plugins: [annotation],
+  configurePlugins(plugins) {
+    return {
+      ...plugins,
+      common: plugins.common.replace(
+        'commonmark.strong',
+        (node, context) => '<b>' + context.render(node.children) + '</b>'
+      )
+    }
+  }
+})
+const rendered = view.render(document)
+```
+
+`Plugin.on()` and `Plugin.replace()` return new values. Keep the returned
+plugin when composing a preset; existing plugins and presets are unchanged.
 
 ## Grammar versions
 

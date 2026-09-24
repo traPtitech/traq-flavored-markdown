@@ -7,13 +7,12 @@ publish.workspace = true
 description = "trap node payloads, independent of parsing and rendering."
 
 [features]
-contracts = ["dep:ts-rs", "dep:schemars"]
+contracts = ["dep:schemars"]
 
 [dependencies]
 markdown-ast.workspace = true
 markdown-definitions.workspace = true
 serde = { version = "=1.0.229", features = ["derive"] }
-ts-rs = { version = "=12.0.1", optional = true, features = ["serde-json-impl"] }
 schemars = { version = "=1.2.2", optional = true }
 
 [dev-dependencies]

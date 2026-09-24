@@ -8,103 +8,108 @@ import {
 } from '@traq-flavored-markdown/core/validation'
 
 // Generated from Rust contracts. Do not edit.
-export type Blockquote = Record<symbol, never>
-export type CodeBlock = { fenced: boolean; info: string; literal: string }
-export type Emphasis = Record<symbol, never>
-export type Hardbreak = Record<symbol, never>
-export type Heading = { level: number }
-export type HtmlBlock = { literal: string }
-export type HtmlInline = { literal: string }
+export type Blockquote = Record<string, never>
+export type CodeBlock = {
+  fenced: boolean
+  info: string
+  literal: string
+}
+export type Emphasis = Record<string, never>
+export type Hardbreak = Record<string, never>
+export type Heading = {
+  level: number
+}
+export type HtmlBlock = {
+  literal: string
+}
+export type HtmlInline = {
+  literal: string
+}
 export type Image = {
   destination: string
-  title: string | null
   label_source: string
+  title: string | null
 }
-export type InlineCode = { literal: string }
-export type Link = { destination: string; title: string | null; form: LinkForm }
+export type InlineCode = {
+  literal: string
+}
+export type Link = {
+  destination: string
+  form: LinkForm
+  title: string | null
+}
 export type LinkForm = 'explicit' | 'autolink' | 'linkify'
-export type List = { ordered: boolean; start: number; tight: boolean }
-export type ListItem = { marker: string }
-export type Paragraph = Record<symbol, never>
-export type Softbreak = Record<symbol, never>
-export type Strong = Record<symbol, never>
-export type Text = { value: string }
-export type ThematicBreak = { marker: string }
+export type List = {
+  ordered: boolean
+  start: number
+  tight: boolean
+}
+export type ListItem = {
+  marker: string
+}
+export type Paragraph = Record<string, never>
+export type Softbreak = Record<string, never>
+export type Strong = Record<string, never>
+export type Text = {
+  value: string
+}
+export type ThematicBreak = {
+  marker: string
+}
 export type NodeKind =
-  | {
-      kind: 'markdown_commonmark_contracts::nodes::Blockquote'
-      data: Blockquote
-    }
-  | { kind: 'markdown_commonmark_contracts::nodes::CodeBlock'; data: CodeBlock }
-  | { kind: 'markdown_commonmark_contracts::nodes::Emphasis'; data: Emphasis }
-  | { kind: 'markdown_commonmark_contracts::nodes::Hardbreak'; data: Hardbreak }
-  | { kind: 'markdown_commonmark_contracts::nodes::Heading'; data: Heading }
-  | { kind: 'markdown_commonmark_contracts::nodes::HtmlBlock'; data: HtmlBlock }
-  | {
-      kind: 'markdown_commonmark_contracts::nodes::HtmlInline'
-      data: HtmlInline
-    }
-  | { kind: 'markdown_commonmark_contracts::nodes::Image'; data: Image }
-  | {
-      kind: 'markdown_commonmark_contracts::nodes::InlineCode'
-      data: InlineCode
-    }
-  | { kind: 'markdown_commonmark_contracts::nodes::Link'; data: Link }
-  | { kind: 'markdown_commonmark_contracts::nodes::List'; data: List }
-  | { kind: 'markdown_commonmark_contracts::nodes::ListItem'; data: ListItem }
-  | { kind: 'markdown_commonmark_contracts::nodes::Paragraph'; data: Paragraph }
-  | { kind: 'markdown_commonmark_contracts::nodes::Softbreak'; data: Softbreak }
-  | { kind: 'markdown_commonmark_contracts::nodes::Strong'; data: Strong }
-  | { kind: 'markdown_commonmark_contracts::nodes::Text'; data: Text }
-  | {
-      kind: 'markdown_commonmark_contracts::nodes::ThematicBreak'
-      data: ThematicBreak
-    }
+  | { kind: 'commonmark.blockquote'; data: Blockquote }
+  | { kind: 'commonmark.code_block'; data: CodeBlock }
+  | { kind: 'commonmark.emphasis'; data: Emphasis }
+  | { kind: 'commonmark.hardbreak'; data: Hardbreak }
+  | { kind: 'commonmark.heading'; data: Heading }
+  | { kind: 'commonmark.html_block'; data: HtmlBlock }
+  | { kind: 'commonmark.html_inline'; data: HtmlInline }
+  | { kind: 'commonmark.image'; data: Image }
+  | { kind: 'commonmark.inline_code'; data: InlineCode }
+  | { kind: 'commonmark.link'; data: Link }
+  | { kind: 'commonmark.list'; data: List }
+  | { kind: 'commonmark.list_item'; data: ListItem }
+  | { kind: 'commonmark.paragraph'; data: Paragraph }
+  | { kind: 'commonmark.softbreak'; data: Softbreak }
+  | { kind: 'commonmark.strong'; data: Strong }
+  | { kind: 'commonmark.text'; data: Text }
+  | { kind: 'commonmark.thematic_break'; data: ThematicBreak }
 
 export const names = Object.freeze({
-  Blockquote: 'markdown_commonmark_contracts::nodes::Blockquote',
-  CodeBlock: 'markdown_commonmark_contracts::nodes::CodeBlock',
-  Emphasis: 'markdown_commonmark_contracts::nodes::Emphasis',
-  Hardbreak: 'markdown_commonmark_contracts::nodes::Hardbreak',
-  Heading: 'markdown_commonmark_contracts::nodes::Heading',
-  HtmlBlock: 'markdown_commonmark_contracts::nodes::HtmlBlock',
-  HtmlInline: 'markdown_commonmark_contracts::nodes::HtmlInline',
-  Image: 'markdown_commonmark_contracts::nodes::Image',
-  InlineCode: 'markdown_commonmark_contracts::nodes::InlineCode',
-  Link: 'markdown_commonmark_contracts::nodes::Link',
-  List: 'markdown_commonmark_contracts::nodes::List',
-  ListItem: 'markdown_commonmark_contracts::nodes::ListItem',
-  Paragraph: 'markdown_commonmark_contracts::nodes::Paragraph',
-  Softbreak: 'markdown_commonmark_contracts::nodes::Softbreak',
-  Strong: 'markdown_commonmark_contracts::nodes::Strong',
-  Text: 'markdown_commonmark_contracts::nodes::Text',
-  ThematicBreak: 'markdown_commonmark_contracts::nodes::ThematicBreak'
+  Blockquote: 'commonmark.blockquote',
+  CodeBlock: 'commonmark.code_block',
+  Emphasis: 'commonmark.emphasis',
+  Hardbreak: 'commonmark.hardbreak',
+  Heading: 'commonmark.heading',
+  HtmlBlock: 'commonmark.html_block',
+  HtmlInline: 'commonmark.html_inline',
+  Image: 'commonmark.image',
+  InlineCode: 'commonmark.inline_code',
+  Link: 'commonmark.link',
+  List: 'commonmark.list',
+  ListItem: 'commonmark.list_item',
+  Paragraph: 'commonmark.paragraph',
+  Softbreak: 'commonmark.softbreak',
+  Strong: 'commonmark.strong',
+  Text: 'commonmark.text',
+  ThematicBreak: 'commonmark.thematic_break'
 } as const)
 const validators = new Map<string, (data: unknown) => boolean>([
+  ['commonmark.blockquote', (value: unknown) => fields(value, {}, {})],
   [
-    'markdown_commonmark_contracts::nodes::Blockquote',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::CodeBlock',
-    value =>
+    'commonmark.code_block',
+    (value: unknown) =>
       fields(value, { fenced: boolean, info: string, literal: string }, {})
   ],
+  ['commonmark.emphasis', (value: unknown) => fields(value, {}, {})],
+  ['commonmark.hardbreak', (value: unknown) => fields(value, {}, {})],
   [
-    'markdown_commonmark_contracts::nodes::Emphasis',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::Hardbreak',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::Heading',
-    value =>
+    'commonmark.heading',
+    (value: unknown) =>
       fields(
         value,
         {
-          level: value =>
+          level: (value: unknown) =>
             typeof value === 'number' &&
             Number.isInteger(value) &&
             value >= 0 &&
@@ -114,16 +119,16 @@ const validators = new Map<string, (data: unknown) => boolean>([
       )
   ],
   [
-    'markdown_commonmark_contracts::nodes::HtmlBlock',
-    value => fields(value, { literal: string }, {})
+    'commonmark.html_block',
+    (value: unknown) => fields(value, { literal: string }, {})
   ],
   [
-    'markdown_commonmark_contracts::nodes::HtmlInline',
-    value => fields(value, { literal: string }, {})
+    'commonmark.html_inline',
+    (value: unknown) => fields(value, { literal: string }, {})
   ],
   [
-    'markdown_commonmark_contracts::nodes::Image',
-    value =>
+    'commonmark.image',
+    (value: unknown) =>
       fields(
         value,
         { destination: string, label_source: string, title: nullable(string) },
@@ -131,12 +136,12 @@ const validators = new Map<string, (data: unknown) => boolean>([
       )
   ],
   [
-    'markdown_commonmark_contracts::nodes::InlineCode',
-    value => fields(value, { literal: string }, {})
+    'commonmark.inline_code',
+    (value: unknown) => fields(value, { literal: string }, {})
   ],
   [
-    'markdown_commonmark_contracts::nodes::Link',
-    value =>
+    'commonmark.link',
+    (value: unknown) =>
       fields(
         value,
         {
@@ -148,13 +153,13 @@ const validators = new Map<string, (data: unknown) => boolean>([
       )
   ],
   [
-    'markdown_commonmark_contracts::nodes::List',
-    value =>
+    'commonmark.list',
+    (value: unknown) =>
       fields(
         value,
         {
           ordered: boolean,
-          start: value =>
+          start: (value: unknown) =>
             typeof value === 'number' &&
             Number.isInteger(value) &&
             value >= 0 &&
@@ -165,28 +170,16 @@ const validators = new Map<string, (data: unknown) => boolean>([
       )
   ],
   [
-    'markdown_commonmark_contracts::nodes::ListItem',
-    value => fields(value, { marker: string }, {})
+    'commonmark.list_item',
+    (value: unknown) => fields(value, { marker: string }, {})
   ],
+  ['commonmark.paragraph', (value: unknown) => fields(value, {}, {})],
+  ['commonmark.softbreak', (value: unknown) => fields(value, {}, {})],
+  ['commonmark.strong', (value: unknown) => fields(value, {}, {})],
+  ['commonmark.text', (value: unknown) => fields(value, { value: string }, {})],
   [
-    'markdown_commonmark_contracts::nodes::Paragraph',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::Softbreak',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::Strong',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::Text',
-    value => fields(value, { value: string }, {})
-  ],
-  [
-    'markdown_commonmark_contracts::nodes::ThematicBreak',
-    value => fields(value, { marker: string }, {})
+    'commonmark.thematic_break',
+    (value: unknown) => fields(value, { marker: string }, {})
   ]
 ])
 export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(

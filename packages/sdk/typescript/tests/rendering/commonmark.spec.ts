@@ -2,7 +2,6 @@ import {
   html,
   specHtml
 } from '@traq-flavored-markdown/commonmark-plugin/renderer'
-import { renderer } from '@traq-flavored-markdown/core/renderer'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
@@ -18,9 +17,9 @@ const fixtures = JSON.parse(
   ).text()
 )
 
-test('CommonMark specification examples render with the specification HTML preset', () => {
+test('CommonMark specification examples render with the specification HTML renderer', () => {
   const parser = commonParser()
-  const view = renderer(specHtml())
+  const view = specHtml()
   try {
     for (const entry of fixtures)
       expect(
@@ -34,9 +33,7 @@ test('CommonMark specification examples render with the specification HTML prese
 
 test('CommonMark fixture inputs match markdown-it with the same escaped-HTML policy', () => {
   const parser = commonParser()
-  const view = renderer(
-    html({ validateLink: () => true, validateImage: () => true })
-  )
+  const view = html({ validateLink: () => true, validateImage: () => true })
   const expected = new MarkdownIt('commonmark', { html: true, xhtmlOut: false })
   expected.validateLink = () => true
   expected.renderer.rules.html_inline = (tokens, index) =>

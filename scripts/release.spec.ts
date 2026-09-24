@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
-import { type PackageName, packageRoot, repositoryRoot } from './paths.ts'
+import { packageNames, packageRoot, repositoryRoot } from './paths.ts'
 import { type Manifest, parseRelease, validateWorkspace } from './release.ts'
 
 const names = {
@@ -80,7 +80,9 @@ test('workspace validation rejects version and peer mismatches', () => {
 
   const extraPeer = workspace()
   extraPeer.packages['commonmark-plugin'].peerDependencies![names.sdk] = '0.1.0'
-  expect(() => validateWorkspace(extraPeer, '0.1.0')).toThrow('package graph')
+  expect(() => validateWorkspace(extraPeer, '0.1.0')).toThrow(
+    'Circular package dependency'
+  )
 })
 
 test('repository root keeps the four package versions and peers synchronized', async () => {
@@ -89,9 +91,7 @@ test('repository root keeps the four package versions and peers synchronized', a
   ).json()) as Manifest
   const packages = Object.fromEntries(
     await Promise.all(
-      (
-        ['core', 'commonmark-plugin', 'traq-plugin', 'sdk'] as PackageName[]
-      ).map(
+      packageNames.map(
         async name =>
           [
             name,

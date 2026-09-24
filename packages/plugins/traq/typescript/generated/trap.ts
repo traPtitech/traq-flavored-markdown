@@ -8,52 +8,100 @@ import {
 } from '@traq-flavored-markdown/core/validation'
 
 // Generated from Rust contracts. Do not edit.
-export type BlankLineData = Record<symbol, never>
+export type BlankLineData = Record<string, never>
 export type EmbeddingData = {
-  type: EmbeddingKind
   id: string
   label: string
   /**
    * Original JSON notation, available to renderers that display it as text.
    */
   literal: string
+  type: EmbeddingKind
 }
 export type EmbeddingKind = 'file' | 'message'
-export type ReferenceData = { type: ReferenceKind; id: string; label: string }
+export type ReferenceData = {
+  id: string
+  label: string
+  type: ReferenceKind
+}
 export type ReferenceKind = 'user' | 'group' | 'channel'
-export type SpoilerData = Record<symbol, never>
-export type StampData = { literal: string }
+export type SpoilerData = Record<string, never>
+export type StampData = {
+  effects: StampEffects
+  kind: StampKind
+  literal: string
+}
+export type StampAnimation =
+  | 'rotate'
+  | 'rotate-inv'
+  | 'wiggle'
+  | 'parrot'
+  | 'zoom'
+  | 'inversion'
+  | 'turn'
+  | 'turn-v'
+  | 'happa'
+  | 'pyon'
+  | 'flashy'
+  | 'pull'
+  | 'atsumori'
+  | 'stretch'
+  | 'stretch-v'
+  | 'conga'
+  | 'conga-inv'
+  | 'rainbow'
+  | 'ascension'
+  | 'shake'
+  | 'party'
+  | 'attract'
+export type StampEffects = {
+  animations: Array<StampAnimation>
+  size: StampSize
+}
+/**
+ * Syntax and display data are parsed once, before any host renders the stamp.
+ */
+export type StampKind =
+  | {
+      name: string
+      type: 'normal'
+    }
+  | {
+      name: string
+      type: 'user'
+    }
+  | {
+      name: string
+      rgb: number
+      type: 'hex_color'
+    }
+  | {
+      hue: string
+      lightness: string
+      name: string
+      saturation: string
+      type: 'hsl_color'
+    }
+export type StampSize = 'none' | 'ex-large' | 'large' | 'small'
 export type NodeKind =
-  | {
-      kind: 'markdown_trap_contracts::compat::BlankLineData'
-      data: BlankLineData
-    }
-  | {
-      kind: 'markdown_trap_contracts::embedding::EmbeddingData'
-      data: EmbeddingData
-    }
-  | {
-      kind: 'markdown_trap_contracts::reference::ReferenceData'
-      data: ReferenceData
-    }
-  | { kind: 'markdown_trap_contracts::spoiler::SpoilerData'; data: SpoilerData }
-  | { kind: 'markdown_trap_contracts::stamp::StampData'; data: StampData }
+  | { kind: 'traq.blank_line'; data: BlankLineData }
+  | { kind: 'traq.embedding'; data: EmbeddingData }
+  | { kind: 'traq.reference'; data: ReferenceData }
+  | { kind: 'traq.spoiler'; data: SpoilerData }
+  | { kind: 'traq.stamp'; data: StampData }
 
 export const names = Object.freeze({
-  BlankLine: 'markdown_trap_contracts::compat::BlankLineData',
-  Embedding: 'markdown_trap_contracts::embedding::EmbeddingData',
-  Reference: 'markdown_trap_contracts::reference::ReferenceData',
-  Spoiler: 'markdown_trap_contracts::spoiler::SpoilerData',
-  Stamp: 'markdown_trap_contracts::stamp::StampData'
+  BlankLine: 'traq.blank_line',
+  Embedding: 'traq.embedding',
+  Reference: 'traq.reference',
+  Spoiler: 'traq.spoiler',
+  Stamp: 'traq.stamp'
 } as const)
 const validators = new Map<string, (data: unknown) => boolean>([
+  ['traq.blank_line', (value: unknown) => fields(value, {}, {})],
   [
-    'markdown_trap_contracts::compat::BlankLineData',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_trap_contracts::embedding::EmbeddingData',
-    value =>
+    'traq.embedding',
+    (value: unknown) =>
       fields(
         value,
         {
@@ -66,21 +114,94 @@ const validators = new Map<string, (data: unknown) => boolean>([
       )
   ],
   [
-    'markdown_trap_contracts::reference::ReferenceData',
-    value =>
+    'traq.reference',
+    (value: unknown) =>
       fields(
         value,
         { id: string, label: string, type: oneOf('user', 'group', 'channel') },
         {}
       )
   ],
+  ['traq.spoiler', (value: unknown) => fields(value, {}, {})],
   [
-    'markdown_trap_contracts::spoiler::SpoilerData',
-    value => fields(value, {}, {})
-  ],
-  [
-    'markdown_trap_contracts::stamp::StampData',
-    value => fields(value, { literal: string }, {})
+    'traq.stamp',
+    (value: unknown) =>
+      fields(
+        value,
+        {
+          effects: (value: unknown) =>
+            fields(
+              value,
+              {
+                animations: (value: unknown) =>
+                  Array.isArray(value) &&
+                  value.every(
+                    oneOf(
+                      'rotate',
+                      'rotate-inv',
+                      'wiggle',
+                      'parrot',
+                      'zoom',
+                      'inversion',
+                      'turn',
+                      'turn-v',
+                      'happa',
+                      'pyon',
+                      'flashy',
+                      'pull',
+                      'atsumori',
+                      'stretch',
+                      'stretch-v',
+                      'conga',
+                      'conga-inv',
+                      'rainbow',
+                      'ascension',
+                      'shake',
+                      'party',
+                      'attract'
+                    )
+                  ),
+                size: oneOf('none', 'ex-large', 'large', 'small')
+              },
+              {}
+            ),
+          kind: (value: unknown) =>
+            [
+              (value: unknown) =>
+                fields(value, { name: string, type: oneOf('normal') }, {}),
+              (value: unknown) =>
+                fields(value, { name: string, type: oneOf('user') }, {}),
+              (value: unknown) =>
+                fields(
+                  value,
+                  {
+                    name: string,
+                    rgb: (value: unknown) =>
+                      typeof value === 'number' &&
+                      Number.isInteger(value) &&
+                      value >= 0 &&
+                      value <= 4294967295,
+                    type: oneOf('hex_color')
+                  },
+                  {}
+                ),
+              (value: unknown) =>
+                fields(
+                  value,
+                  {
+                    hue: string,
+                    lightness: string,
+                    name: string,
+                    saturation: string,
+                    type: oneOf('hsl_color')
+                  },
+                  {}
+                )
+            ].filter(check => check(value)).length === 1,
+          literal: string
+        },
+        {}
+      )
   ]
 ])
 export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(

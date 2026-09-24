@@ -1,8 +1,8 @@
-use super::{BlockBatch, BlockInput, DraftContent, DraftNode, References};
+use super::{BlockBatch, BlockInput, DraftContent, DraftNode};
 
 use crate::{
     Node, ParseError,
-    engine::{Budget, Grammar, inline, source::SourceView},
+    engine::{Budget, Grammar, ParseState, inline, source::SourceView},
 };
 
 use std::ops::Range;
@@ -28,6 +28,7 @@ pub(crate) fn parse(
     source: &SourceView,
     grammar: &Grammar,
     budget: &mut Budget,
+    state: &mut ParseState,
 ) -> Result<Vec<Node>, ParseError> {
     let expanded;
 
@@ -39,17 +40,16 @@ pub(crate) fn parse(
         source
     };
 
-    let mut references = References::new();
-    let batch = tokenize(source, grammar, budget, &mut references, 0)?;
+    let batch = tokenize(source, grammar, budget, state, 0)?;
 
-    resolve_inlines(batch.nodes, grammar, budget, &references, 0)
+    resolve_inlines(batch.nodes, grammar, budget, state, 0)
 }
 
 fn tokenize(
     source: &SourceView,
     grammar: &Grammar,
     budget: &mut Budget,
-    references: &mut References,
+    state: &mut ParseState,
     depth: usize,
 ) -> Result<BlockBatch, ParseError> {
     budget.depth(depth)?;
@@ -75,14 +75,12 @@ fn tokenize(
         let found = match_block(&input, budget)?;
         validate_match(&found, position, lines.len())?;
 
-        for definition in found.definitions {
-            references
-                .entry(definition.key)
-                .or_insert((definition.destination, definition.title));
+        for commit in found.commits {
+            commit(state, budget)?;
         }
 
         for mut node in found.nodes {
-            resolve_blocks(&mut node, grammar, budget, references, depth)?;
+            resolve_blocks(&mut node, grammar, budget, state, depth)?;
             nodes.push(node);
         }
 
@@ -142,20 +140,20 @@ fn resolve_blocks(
     node: &mut DraftNode,
     grammar: &Grammar,
     budget: &mut Budget,
-    references: &mut References,
+    state: &mut ParseState,
     depth: usize,
 ) -> Result<(), ParseError> {
     budget.depth(depth)?;
 
     match &mut node.content {
         DraftContent::Blocks(source) => {
-            let batch = tokenize(source, grammar, budget, references, depth + 1)?;
+            let batch = tokenize(source, grammar, budget, state, depth + 1)?;
             node.resolve_blocks(batch);
         }
 
         DraftContent::Nodes(children) => {
             for child in children {
-                resolve_blocks(child, grammar, budget, references, depth + 1)?;
+                resolve_blocks(child, grammar, budget, state, depth + 1)?;
             }
         }
 
@@ -173,7 +171,7 @@ fn resolve_inlines(
     drafts: Vec<DraftNode>,
     grammar: &Grammar,
     budget: &mut Budget,
-    references: &References,
+    state: &ParseState,
     depth: usize,
 ) -> Result<Vec<Node>, ParseError> {
     budget.depth(depth)?;
@@ -185,11 +183,11 @@ fn resolve_inlines(
             DraftContent::Leaf => vec![],
 
             DraftContent::Inline(source) => {
-                inline::parse(&source.restore_tabs(), grammar, budget, references)?
+                inline::parse(&source.restore_tabs(), grammar, budget, state)?
             }
 
             DraftContent::Nodes(children) => {
-                resolve_inlines(children, grammar, budget, references, depth + 1)?
+                resolve_inlines(children, grammar, budget, state, depth + 1)?
             }
 
             DraftContent::Blocks(_) => return Err(ParseError::InternalError),

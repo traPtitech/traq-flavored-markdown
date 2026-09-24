@@ -5,7 +5,7 @@ import { expect, test } from 'bun:test'
 import { commonParser, parser } from './setup.ts'
 
 test('traQ presentation combines tables, marks, spoilers, math, and highlighted code', () => {
-  const view = renderer(rendering.html())
+  const view = renderer(rendering.htmlPreset())
   const source =
     '| left | right |\n| :--- | ---: |\n| **a** | b |\n\n==mark== ~~strike~~ !!secret!! $x$\n\n```js:caption\nconst x = 1\n```'
   const html = view.render(parser.parse(source))
@@ -32,7 +32,7 @@ test('traQ presentation combines tables, marks, spoilers, math, and highlighted 
 test('stamp stores are isolated and unrecognized effects preserve escaped source', () => {
   const make = (origin: string) =>
     renderer(
-      rendering.html({
+      rendering.htmlPreset({
         store: {
           getStampByName: name =>
             name === 'wave' ? { name, fileId: 'stamp' } : undefined,
@@ -55,7 +55,7 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   ).toBe(':wave.unknown:')
   expect(first.render(parser.parseInline(':missing:'))).toBe(':missing:')
   const unsafe = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getStampByName: () => ({ name: 'wave', fileId: 'id' }),
         generateStampHref: () => 'javascript:alert(1)'
@@ -64,7 +64,7 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   )
   expect(unsafe.render(parser.parseInline(':wave:'))).toBe(':wave:')
   const nonImage = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getStampByName: () => ({ name: 'wave', fileId: 'id' }),
         generateStampHref: () => 'tel:+819012345678'
@@ -74,10 +74,45 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   expect(nonImage.render(parser.parseInline(':wave:'))).toBe(':wave:')
 })
 
+test('stamp presentation uses parsed kinds and effects without matching color substrings', () => {
+  const view = renderer(
+    rendering.htmlPreset({
+      store: {
+        getStampByName: name =>
+          ['foo0x123456', '0x1234567', 'wave'].includes(name)
+            ? { name, fileId: name }
+            : undefined,
+        generateStampHref: id => `https://stamps.example/${id}`
+      }
+    })
+  )
+  const source = ':foo0x123456: :0x1234567: :0x123456: :hsl(0, 20.5%, 30%):'
+  const output = view.render(parser.parseInline(source))
+  expect(output).toContain('https://stamps.example/foo0x123456')
+  expect(output).toContain('https://stamps.example/0x1234567')
+  expect(output).toContain('background-color: #123456;')
+  expect(output).toContain('background-color: hsl(0, 20.5%, 30%);')
+  expect(view.render(parser.parseInline(':foohsl(0, 20%, 30%):'))).toBe(
+    ':foohsl(0, 20%, 30%):'
+  )
+
+  const effects = view.render(
+    parser.parseInline(':wave.marquee.large.rotate.small:')
+  )
+  expect(effects).toContain('emoji-effect conga small')
+  expect(effects).toContain('emoji-effect rotate')
+  expect(effects).not.toContain('marquee')
+  expect(
+    view.render(
+      parser.parseInline(':wave.rotate.rotate.rotate.rotate.rotate.rotate:')
+    )
+  ).toBe(':wave.rotate.rotate.rotate.rotate.rotate.rotate:')
+})
+
 test('reference highlighting and link/image policies belong to each renderer', () => {
   const common = commonParser()
   const view = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         getMe: () => ({ id: 'me' }),
         getUserGroup: () => ({ members: [{ id: 'me' }] }),
@@ -100,7 +135,10 @@ test('reference highlighting and link/image policies belong to each renderer', (
     view.render(common.parseInline('![x](https://trap.jp/x.png)'))
   ).toMatch(/<img/)
   const custom = renderer(
-    rendering.html({ validateImage: () => true, validateLink: () => false })
+    rendering.htmlPreset({
+      validateImage: () => true,
+      validateLink: () => false
+    })
   )
   expect(
     custom.render(common.parseInline('![x](https://unlisted.example/x.png)'))
@@ -113,7 +151,7 @@ test('reference highlighting and link/image policies belong to each renderer', (
 
 test('reference rendering rejects script links and escapes labels', () => {
   const view = renderer(
-    rendering.html({
+    rendering.htmlPreset({
       store: {
         generateUserHref: id => `javascript:openUserModal(${id})`,
         generateUserGroupHref: id => `javascript:openGroupModal(${id})`
@@ -137,7 +175,7 @@ test('reference rendering rejects script links and escapes labels', () => {
 })
 
 test('table handlers reject forged row and cell payloads', () => {
-  const view = renderer(rendering.html())
+  const view = renderer(rendering.htmlPreset())
   const document = parser.parse('| a |\n| - |\n| b |')
   const cell = document.children![0]!.children![0]!.children![0]! as {
     data: { alignment: string }

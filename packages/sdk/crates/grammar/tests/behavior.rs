@@ -1,11 +1,52 @@
 use markdown_commonmark_contracts::{Link, Text};
-use markdown_parser::{Limits, Node, ParseError};
+use markdown_parser::{Limits, Node, ParseError, ValidationLimits};
+use markdown_trap_contracts::{StampData, StampKind};
 use traq_markdown_grammar::presets;
 
 fn has_link(nodes: &[Node]) -> bool {
     nodes
         .iter()
         .any(|node| node.get::<Link>().is_some() || has_link(&node.children))
+}
+
+#[test]
+fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
+    let parser = presets::traq::v1::parser();
+    for (source, expected) in [
+        (
+            ":foo0x123456:",
+            StampKind::Normal {
+                name: "foo0x123456".into(),
+            },
+        ),
+        (
+            ":0x1234567:",
+            StampKind::Normal {
+                name: "0x1234567".into(),
+            },
+        ),
+        (
+            ":0x123456:",
+            StampKind::HexColor {
+                name: "0x123456".into(),
+                rgb: 0x123456,
+            },
+        ),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        assert_eq!(document.children.len(), 1, "{source}");
+        assert_eq!(
+            document.children[0].get::<StampData>().unwrap().kind,
+            expected
+        );
+    }
+    let document = parser.parse_inline(":foohsl(0, 20%, 30%):").unwrap();
+    assert!(
+        document
+            .children
+            .iter()
+            .all(|node| node.get::<StampData>().is_none())
+    );
 }
 
 #[test]
@@ -31,7 +72,10 @@ fn limits_cover_multibyte_input_and_nested_results() {
         (
             "日本",
             Limits {
-                input_bytes: 5,
+                document: ValidationLimits {
+                    source_bytes: 5,
+                    ..ValidationLimits::default()
+                },
                 ..Limits::default()
             },
             "input_bytes",
@@ -39,7 +83,10 @@ fn limits_cover_multibyte_input_and_nested_results() {
         (
             "**a *b***",
             Limits {
-                depth: 2,
+                document: ValidationLimits {
+                    depth: 2,
+                    ..ValidationLimits::default()
+                },
                 ..Limits::default()
             },
             "depth",
@@ -47,7 +94,10 @@ fn limits_cover_multibyte_input_and_nested_results() {
         (
             "*a* *b*",
             Limits {
-                nodes: 2,
+                document: ValidationLimits {
+                    nodes: 2,
+                    ..ValidationLimits::default()
+                },
                 ..Limits::default()
             },
             "tokens",

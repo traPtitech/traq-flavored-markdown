@@ -16,30 +16,43 @@ import { commonParser, parser } from './setup.ts'
 const build = (plugin: Plugin) => new html.PresetBuilder().add(plugin).build()
 
 test('rendering returns HTML and exposes no parser or token adapter', () => {
-  const view = html.renderer(common.html())
+  const view = common.html()
   expect(view.render(parser.parse('**bold**'))).toBe(
     '<p><strong>bold</strong></p>\n'
   )
   expect(view.render(parser.parseInline('**bold**'))).toBe(
     '<strong>bold</strong>'
   )
+  expect(
+    html.renderer(common.htmlPreset()).render(parser.parseInline('**bold**'))
+  ).toBe('<strong>bold</strong>')
+  expect(
+    html
+      .renderer(common.specHtmlPreset())
+      .render(parser.parseInline('**bold**'))
+  ).toBe('<strong>bold</strong>')
   expect(Object.keys(view).sort()).toEqual(['render'])
   expect((html as Record<string, unknown>).installParser).toBeUndefined()
   expect((html as Record<string, unknown>).traqMarkdownIt).toBeUndefined()
 })
 
-test('replacement preserves defaults and earlier snapshots', () => {
+test('replacement preserves defaults and earlier presets', () => {
   const document = parser.parse('**bold** [link](https://example.com)')
   const plugin = common.plugin()
   const builder = new html.PresetBuilder().add(plugin)
   const before = html.renderer(builder.build())
-  plugin.replace(common.nodes.Link, (node, ctx) => ctx.render(node.children))
-  expect(() => builder.remove(plugin)).toThrow(/Missing plugin/)
-  const custom = html.renderer(build(plugin))
+  const updated = plugin.replace(common.nodes.Link, (node, ctx) =>
+    ctx.render(node.children)
+  )
+  builder.remove(plugin)
+  const custom = html.renderer(build(updated))
   expect(custom.render(document)).toMatch(/<strong>bold<\/strong>/)
   expect(custom.render(document)).not.toMatch(/<a /)
   expect(before.render(document)).toMatch(/<a /)
-  expect(html.renderer(builder.build()).render(document)).toMatch(/<a /)
+  expect(html.renderer(build(plugin)).render(document)).toMatch(/<a /)
+  expect(html.renderer(builder.build()).render(document)).toBe(
+    '**bold** [link](https://example.com)'
+  )
   expect(() => plugin.replace('typo', () => '')).toThrow(/Missing handler/)
   expect(() => plugin.on(common.nodes.Link, () => '')).toThrow(
     /Duplicate handler/
@@ -49,13 +62,60 @@ test('replacement preserves defaults and earlier snapshots', () => {
 test('renderer declarations customize Rust-produced nodes', () => {
   const declaration = Declaration.group('custom').new('math')
   const presentation = new html.Plugin(declaration).on(
-    'markdown_generic_contracts::math::InlineMathData',
+    'generic.inline_math',
     (node, ctx) => ctx.fallback(node)
   )
   const view = html.renderer(
     new html.PresetBuilder().add(common.plugin()).add(presentation).build()
   )
   expect(view.render(parser.parse('$x$'))).toBe('<p>$x$</p>\n')
+})
+
+test('SDK html creates a renderer and accepts third-party plugins', () => {
+  const annotation = new html.Plugin(
+    Declaration.group('external').new('annotations')
+  ).on(
+    'external::annotation',
+    (_node, context) => '<mark>' + context.escape('<annotation>') + '</mark>'
+  )
+  const options = {
+    plugins: [annotation],
+    configurePlugins(plugins: traq.HtmlPlugins) {
+      return {
+        ...plugins,
+        common: plugins.common.replace(
+          commonNodes.names.Strong,
+          (node, context) => '<b>' + context.render(node.children) + '</b>'
+        )
+      }
+    }
+  }
+  const view = traq.html(options)
+  expect(Object.keys(view)).toEqual(['render'])
+  expect(view.render(parser.parseInline('**bold**'))).toBe('<b>bold</b>')
+
+  const document = {
+    source: '<annotation>',
+    children: [
+      {
+        kind: 'external::annotation',
+        data: {},
+        span: { start: 0, end: 12 }
+      }
+    ]
+  }
+  expect(view.render(document)).toBe('<mark>&lt;annotation&gt;</mark>')
+  expect(html.renderer(traq.htmlPreset(options)).render(document)).toBe(
+    '<mark>&lt;annotation&gt;</mark>'
+  )
+  expect(
+    traq
+      .messageRenderers({
+        origin: 'https://q.example.test',
+        plugins: [annotation]
+      })
+      .standard.render(document).renderedText
+  ).toBe('<mark>&lt;annotation&gt;</mark>')
 })
 
 test('composition validates selected names without changing earlier presets', () => {
@@ -85,7 +145,7 @@ test('composition validates selected names without changing earlier presets', ()
 
 test('custom HTML handlers receive escaped text helpers and rendered children', () => {
   const plugin = common.plugin({ rawHtml: 'escape' })
-  plugin.replace(
+  const customized = plugin.replace(
     common.nodes.Strong,
     (node, context) =>
       '<b title="' +
@@ -94,19 +154,24 @@ test('custom HTML handlers receive escaped text helpers and rendered children', 
       context.render(node.children) +
       '</b>'
   )
-  const view = html.renderer(build(plugin))
+  const view = html.renderer(build(customized))
   expect(view.render(parser.parseInline('**<x>**'))).toBe(
     '<b title="&quot;&lt;&amp;">&lt;x&gt;</b>'
   )
-  plugin.replace(common.nodes.Strong, () => [] as unknown as string)
+  const invalid = customized.replace(
+    common.nodes.Strong,
+    () => [] as unknown as string
+  )
   expect(() =>
-    html.renderer(build(plugin)).render(parser.parse('**x**'))
+    html.renderer(build(invalid)).render(parser.parse('**x**'))
   ).toThrow(/HTML strings/)
+  expect(view.render(parser.parseInline('**x**'))).toContain('<b')
 })
 
 test('fallback replacement keeps other extensions and does not require a store', () => {
-  const extension = trap.plugin()
-  extension.replace(trapNodes.names.Stamp, (node, ctx) => ctx.fallback(node))
+  const extension = trap
+    .plugin()
+    .replace(trapNodes.names.Stamp, (node, ctx) => ctx.fallback(node))
   const view = html.renderer(
     new html.PresetBuilder()
       .add(common.plugin())
@@ -118,7 +183,7 @@ test('fallback replacement keeps other extensions and does not require a store',
     '<p>:stamp: <mark>marked</mark></p>\n'
   )
   const source = '!{"type":"user","id":"u","raw":"@user"}'
-  expect(html.renderer(traq.html()).render(parser.parse(source))).toBe(
+  expect(html.renderer(traq.htmlPreset()).render(parser.parse(source))).toBe(
     '<p>@user</p>\n'
   )
 })
@@ -144,7 +209,7 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
   const md = new MarkdownIt()
   const local = commonParser()
   try {
-    const view = html.renderer(common.html())
+    const view = common.html()
     for (const source of [
       '- one\n- two',
       '- one\n\n- two',
@@ -161,7 +226,7 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
 })
 
 test('CommonMark owns link policy and rejects malformed known payloads', () => {
-  const view = html.renderer(common.html({ validateLink: () => false }))
+  const view = common.html({ validateLink: () => false })
   expect(view.render(parser.parse('[link](https://example.com)'))).toBe(
     '<p>[link](https://example.com)</p>\n'
   )
@@ -171,20 +236,15 @@ test('CommonMark owns link policy and rejects malformed known payloads', () => {
   const document = parser.parseInline('[label](https://example.com)')
   ;(document.children[0].data as { destination: string }).destination =
     'javascript:alert(1)'
-  expect(html.renderer(common.html()).render(document)).toBe(
-    '[label](https://example.com)'
-  )
+  expect(common.html().render(document)).toBe('[label](https://example.com)')
   const heading = parser.parse('# title')
   expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
-  ;(heading.children[0].data as { level: string }).level =
-    '1 onclick="alert(1)"'
-  expect(() => html.renderer(common.html()).render(heading)).toThrow(
-    /Invalid render payload/
-  )
+  Object.assign(heading.children[0].data, { level: '1 onclick="alert(1)"' })
+  expect(() => common.html().render(heading)).toThrow(/Invalid render payload/)
 })
 
 test('default link policy allows communication and location schemes while preserving rejected source', () => {
-  const view = html.renderer(common.html())
+  const view = common.html()
   const commonmark = commonParser()
   try {
     for (const source of [
@@ -217,7 +277,7 @@ test('default link policy allows communication and location schemes while preser
 
 test('direct HTML rendering escapes attributes, image text, and fence info', () => {
   const parser = commonParser()
-  const view = html.renderer(common.html({ linkAttributes: { title: '"<&' } }))
+  const view = common.html({ linkAttributes: { title: '"<&' } })
   expect(view.render(parser.parseInline('[x](/url)'))).toBe(
     '<a href="/url" title="&quot;&lt;&amp;">x</a>'
   )
@@ -230,14 +290,30 @@ test('direct HTML rendering escapes attributes, image text, and fence info', () 
   expect(view.render(parser.parse('```a\\+b&quot;\n<&\n```'))).toBe(
     '<pre><code class="language-a+b&quot;">&lt;&amp;\n</code></pre>\n'
   )
-  const extended = html.renderer(traq.html({ validateImage: () => true }))
+  const extended = html.renderer(traq.htmlPreset({ validateImage: () => true }))
   expect(extended.render(parser.parseInline('![日本語](/image)'))).toBe(
     '<img src="/image" alt="日本語">'
   )
 })
 
 test('highlighting escapes a custom pre class attribute', () => {
-  expect(createHighlightFunc('code" data-x="value')('<&', 'text')).toBe(
-    '<pre class="code&quot; data-x=&quot;value"><code class="lang-text">&lt;&amp;</code></pre>'
+  expect(createHighlightFunc('code" data-x="value')('<&', 'text')).toEqual({
+    kind: 'block',
+    html: '<pre class="code&quot; data-x=&quot;value"><code class="lang-text">&lt;&amp;</code></pre>'
+  })
+})
+
+test('highlight results explicitly choose code content or a complete block', () => {
+  const document = parser.parse('```text\nsource\n```')
+  const content = common.html({
+    highlight: () => ({ kind: 'content', html: '<prelude>highlight</prelude>' })
+  })
+  expect(content.render(document)).toBe(
+    '<pre><code class="language-text"><prelude>highlight</prelude></code></pre>\n'
   )
+
+  const block = common.html({
+    highlight: () => ({ kind: 'block', html: '<pre>custom</pre>' })
+  })
+  expect(block.render(document)).toBe('<pre>custom</pre>\n')
 })

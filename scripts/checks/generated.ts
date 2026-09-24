@@ -5,6 +5,7 @@ import path from 'path'
 
 import { generateBindings } from '../generate-bindings.ts'
 import { packageRoot, repositoryRoot } from '../paths.ts'
+import { withTempDirectory } from '../testing/temp-directory.ts'
 
 export type GeneratedTargets = {
   directories: string[]
@@ -16,7 +17,7 @@ const generatedTargets: GeneratedTargets = {
     path.join(packageRoot('commonmark-plugin'), 'typescript', 'generated'),
     path.join(packageRoot('traq-plugin'), 'typescript', 'generated'),
     path.join(packageRoot('sdk'), 'typescript', 'generated')
-  ],
+  ].map(file => path.relative(repositoryRoot, file)),
   files: [
     path.join(packageRoot('commonmark-plugin'), 'go', 'generated_nodes.go'),
     path.join(
@@ -30,7 +31,7 @@ const generatedTargets: GeneratedTargets = {
     path.join(packageRoot('sdk'), 'go', 'generated_nodes.go'),
     path.join(packageRoot('sdk'), 'go', 'generated_presets.go'),
     path.join(packageRoot('sdk'), 'go', 'generated_processing.go')
-  ]
+  ].map(file => path.relative(repositoryRoot, file))
 }
 
 const hasDirectory = async (directory: string) => {
@@ -42,31 +43,32 @@ const hasDirectory = async (directory: string) => {
   }
 }
 
-const snapshot = async ({
-  directories,
-  files: targetFiles
-}: GeneratedTargets) => {
+const snapshot = async (
+  root: string,
+  { directories, files: targetFiles }: GeneratedTargets
+) => {
   const snapshotFiles = new Map<string, string>()
-  // Retain content hashes, not file-backed strings, across generator rewrites.
-  const capture = async (file: string) => {
+  const capture = async (relative: string) => {
     try {
       const hash = createHash('sha256')
-      for await (const chunk of createReadStream(file)) hash.update(chunk)
-      snapshotFiles.set(path.relative(repositoryRoot, file), hash.digest('hex'))
+      for await (const chunk of createReadStream(path.join(root, relative)))
+        hash.update(chunk)
+      snapshotFiles.set(relative, hash.digest('hex'))
     } catch (error) {
       if ((error as { code?: string }).code !== 'ENOENT') throw error
     }
   }
   for (const file of targetFiles) await capture(file)
-  for (const directory of directories)
-    if (await hasDirectory(directory))
+  for (const directory of directories) {
+    const absolute = path.join(root, directory)
+    if (await hasDirectory(absolute))
       for await (const relative of new Bun.Glob('**/*').scan({
-        cwd: directory,
+        cwd: absolute,
         onlyFiles: true
       })) {
-        const file = path.join(directory, relative)
-        await capture(file)
+        await capture(path.join(directory, relative))
       }
+  }
   return snapshotFiles
 }
 
@@ -85,15 +87,19 @@ export const generatedChanges = (
     )
 
 export async function checkGenerated(
-  generate: () => Promise<void> = generateBindings,
-  targets: GeneratedTargets = generatedTargets
+  generate: (outputRoot: string) => Promise<void> = outputRoot =>
+    generateBindings(undefined, undefined, outputRoot),
+  targets: GeneratedTargets = generatedTargets,
+  sourceRoot = repositoryRoot
 ) {
-  const before = await snapshot(targets)
-  await generate()
-  const after = await snapshot(targets)
-  const changes = generatedChanges(before, after)
-  if (changes.length)
-    throw new Error(`Generated files are out of date:\n${changes.join('\n')}`)
+  const source = await snapshot(sourceRoot, targets)
+  await withTempDirectory('generated-check-', async outputRoot => {
+    await generate(outputRoot)
+    const expected = await snapshot(outputRoot, targets)
+    const changes = generatedChanges(source, expected)
+    if (changes.length)
+      throw new Error(`Generated files are out of date:\n${changes.join('\n')}`)
+  })
 }
 
 if (Bun.main === Bun.fileURLToPath(import.meta.url)) await checkGenerated()

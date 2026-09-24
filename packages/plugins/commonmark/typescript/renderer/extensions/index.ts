@@ -59,9 +59,9 @@ function row(node: Node & { data: RowData }, ctx: RenderContext) {
 const declaration = Declaration.group('generic').new('presentation')
 
 export function plugin({ math = defaultMath }: Options = {}) {
-  const result = new Plugin(declaration)
+  let result = new Plugin(declaration)
 
-  result.on(
+  result = result.on(
     names.Mark,
     checked(
       names.Mark,
@@ -70,7 +70,7 @@ export function plugin({ math = defaultMath }: Options = {}) {
     )
   )
 
-  result.on(
+  result = result.on(
     names.Strikethrough,
     checked(
       names.Strikethrough,
@@ -79,14 +79,14 @@ export function plugin({ math = defaultMath }: Options = {}) {
     )
   )
 
-  result.on(names.Table, checked(names.Table, isKnownNode, table))
+  result = result.on(names.Table, checked(names.Table, isKnownNode, table))
 
-  result.on(
+  result = result.on(
     names.InlineMath,
     checked(names.InlineMath, isKnownNode, node => math(node.data.tex, false))
   )
 
-  result.on(
+  result = result.on(
     names.BlockMath,
     checked(names.BlockMath, isKnownNode, node => math(node.data.tex, true))
   )

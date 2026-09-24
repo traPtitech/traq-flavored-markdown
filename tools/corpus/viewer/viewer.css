@@ -160,8 +160,7 @@ input {
   padding: 2px 8px;
   font-size: 11px;
 }
-.comparison .source,
-.comparison .plain-text {
+.comparison :is(.source, .plain-text, .raw-html) {
   margin: 0;
   font:
     12px/1.6 ui-monospace,
@@ -241,6 +240,8 @@ input {
 }
 .speed {
   max-width: 820px;
+  min-width: 0;
+  overflow-x: auto;
   background: white;
   border: 1px solid #d4dee6;
   border-radius: 8px;
@@ -321,11 +322,6 @@ footer {
     padding-top: 0;
   }
 }
-.speed {
-  min-width: 0;
-  overflow-x: auto;
-}
-
 #output-view {
   font: inherit;
   padding: 7px 8px;
@@ -333,16 +329,6 @@ footer {
   border-radius: 5px;
   background: white;
   color: #354c61;
-}
-.raw-html {
-  margin: 0;
-  font:
-    12px/1.6 ui-monospace,
-    Consolas,
-    monospace;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  tab-size: 4;
 }
 .diff-removed {
   background: #ffdce0;
@@ -369,7 +355,4 @@ footer {
 }
 .filters input {
   accent-color: #204f72;
-}
-.filters small {
-  color: #69798a;
 }

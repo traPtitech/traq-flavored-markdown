@@ -5,7 +5,7 @@ use markdown_parser::{
     ParseError,
     engine::{
         Budget,
-        block::{BlockInput, BlockMatch, Definition, Interrupt},
+        block::{BlockInput, BlockMatch, Interrupt},
     },
 };
 
@@ -34,14 +34,14 @@ pub(super) fn parse(
         end += 1;
     }
 
-    let mut result = BlockMatch::ignore(end);
-    result.definitions.push(Definition {
-        key,
-        destination,
-        title,
-    });
-
-    Ok(Some(result))
+    Ok(Some(BlockMatch::ignore(end).on_accept(move |state, _| {
+        state
+            .get_or_default::<references::ReferenceMap>()
+            .0
+            .entry(key)
+            .or_insert((destination, title));
+        Ok(())
+    })))
 }
 
 fn find_definition(

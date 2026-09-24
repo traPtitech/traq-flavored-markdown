@@ -3,27 +3,14 @@ import path from 'path'
 import { $ } from 'bun'
 
 import {
-  type PackageName,
-  packageRoot,
-  packagesRoot,
-  sdkRoot
-} from '../paths.ts'
+  packageOwner,
+  readGoPackageGraph,
+  readNpmPackageGraph,
+  validateGoOwnership
+} from '../package-graph.ts'
+import { sdkRoot } from '../paths.ts'
 
-const allowedOwners: Record<PackageName, PackageName[]> = {
-  core: ['core'],
-  'commonmark-plugin': ['core', 'commonmark-plugin'],
-  'traq-plugin': ['core', 'commonmark-plugin', 'traq-plugin'],
-  sdk: ['core', 'commonmark-plugin', 'traq-plugin', 'sdk']
-}
-
-const owner = (directory: string): PackageName | undefined => {
-  const relative = path.relative(packagesRoot, directory)
-  if (relative === '..' || relative.startsWith('..' + path.sep)) return
-  const [first, second] = relative.split(path.sep)
-  if (first === 'core' || first === 'sdk') return first
-  if (first === 'plugins' && second === 'commonmark') return 'commonmark-plugin'
-  if (first === 'plugins' && second === 'traq') return 'traq-plugin'
-}
+const { graph: npmGraph } = await readNpmPackageGraph()
 
 type CargoMetadata = {
   packages: {
@@ -37,38 +24,20 @@ const metadata = (
   await $`cargo metadata --locked --no-deps --format-version 1`.quiet()
 ).json() as CargoMetadata
 for (const crate of metadata.packages) {
-  const source = owner(path.dirname(crate.manifest_path))
+  const source = packageOwner(path.dirname(crate.manifest_path))
   if (!source) continue
   for (const dependency of crate.dependencies) {
     if (dependency.kind && dependency.kind !== 'normal') continue
-    const destination = dependency.path && owner(dependency.path)
-    if (destination && !allowedOwners[source].includes(destination))
+    const destination = dependency.path && packageOwner(dependency.path)
+    if (destination && !npmGraph.allows(source, destination))
       throw new Error(
         `${crate.name}: upward Rust dependency ${dependency.name}`
       )
   }
 }
 
-const goModules: [PackageName, string][] = [
-  ['core', path.join(packageRoot('core'), 'go', 'go.mod')],
-  [
-    'commonmark-plugin',
-    path.join(packageRoot('commonmark-plugin'), 'go', 'go.mod')
-  ],
-  ['traq-plugin', path.join(packageRoot('traq-plugin'), 'go', 'go.mod')],
-  ['sdk', path.join(packageRoot('sdk'), 'go', 'go.mod')],
-  ['sdk', path.join(packageRoot('sdk'), 'examples', 'go', 'go.mod')]
-]
-for (const [source, file] of goModules) {
-  const manifest = await Bun.file(file).text()
-  for (const [, part] of manifest.matchAll(
-    /github\.com\/traPtitech\/traq-flavored-markdown\/packages\/(core|sdk|plugins\/commonmark|plugins\/traq)\/go\b/g
-  )) {
-    const destination = owner(path.join(packagesRoot, part))
-    if (destination && !allowedOwners[source].includes(destination))
-      throw new Error(`${file}: upward Go dependency ${part}`)
-  }
-}
+const go = await readGoPackageGraph()
+validateGoOwnership(go, npmGraph)
 
 const pkg = await Bun.file(path.join(sdkRoot, 'package.json')).json()
 if (Object.keys(pkg.dependencies ?? {}).length !== 0)

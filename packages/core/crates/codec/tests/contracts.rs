@@ -1,25 +1,40 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 use markdown_definitions::NodeType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.score")]
 #[serde(deny_unknown_fields)]
 struct Score {
     value: f64,
 }
 
 impl NodeData for Score {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+#[node_type(key = "test.renamed_score")]
 struct RenamedScore {
     value: f64,
 }
 
-impl NodeData for RenamedScore {}
+impl NodeData for RenamedScore {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 #[test]
 fn shared_types_work_across_independent_registration_orders() {
@@ -49,11 +64,19 @@ fn shared_types_work_across_independent_registration_orders() {
 
 fn first(codec: &mut Codec) -> Document {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+    #[node_type(key = "test.collision")]
     struct Collision {
         value: u8,
     }
 
-    impl NodeData for Collision {}
+    impl NodeData for Collision {
+        fn role(&self) -> NodeRole {
+            NodeRole::Opaque
+        }
+        fn payload_bytes(&self) -> usize {
+            0
+        }
+    }
 
     codec.register::<Collision>().unwrap();
 
@@ -68,11 +91,19 @@ fn first(codec: &mut Codec) -> Document {
 
 fn second(codec: &mut Codec) -> Result<(), &'static str> {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
+    #[node_type(key = "test.collision")]
     struct Collision {
         value: u16,
     }
 
-    impl NodeData for Collision {}
+    impl NodeData for Collision {
+        fn role(&self) -> NodeRole {
+            NodeRole::Opaque
+        }
+        fn payload_bytes(&self) -> usize {
+            0
+        }
+    }
 
     codec.register::<Collision>()
 }

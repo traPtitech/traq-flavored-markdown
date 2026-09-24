@@ -36,7 +36,7 @@ export function registerBlockHandlers(
   result: Plugin,
   { highlight, rawHtml, xhtmlOut }: BlockOptions
 ) {
-  result.on(
+  result = result.on(
     names.Paragraph,
     checked(names.Paragraph, isKnownNode, (n, ctx) => {
       const content = ctx.render(n.children)
@@ -48,7 +48,7 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.Heading,
     checked(
       names.Heading,
@@ -64,7 +64,7 @@ export function registerBlockHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.Blockquote,
     checked(
       names.Blockquote,
@@ -74,7 +74,7 @@ export function registerBlockHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.List,
     checked(names.List, isKnownNode, (n, ctx) => {
       const tag = n.data.ordered ? 'ol' : 'ul'
@@ -89,7 +89,7 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.ListItem,
     checked(names.ListItem, isKnownNode, (n, ctx) => {
       const children = n.children ?? []
@@ -123,31 +123,40 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.CodeBlock,
     checked(names.CodeBlock, isKnownNode, n => {
       const language = n.data.fenced ? codeLanguage(n.data.info ?? '') : ''
-      const content =
-        (n.data.fenced && highlight?.(n.data.literal, language)) ||
-        escapeHtml(n.data.literal)
+      const highlighted = n.data.fenced
+        ? highlight?.(n.data.literal, language)
+        : undefined
+      if (
+        highlighted !== undefined &&
+        (!highlighted ||
+          typeof highlighted.html !== 'string' ||
+          (highlighted.kind !== 'content' && highlighted.kind !== 'block'))
+      )
+        throw new TypeError('Invalid highlight result')
 
-      if (content.startsWith('<pre')) return content + '\n'
+      if (highlighted?.html && highlighted.kind === 'block')
+        return highlighted.html + '\n'
 
       const attrs = language
         ? attributes([['class', 'language-' + language]])
         : ''
+      const content = highlighted?.html || escapeHtml(n.data.literal)
       return '<pre><code' + attrs + '>' + content + '</code></pre>\n'
     })
   )
 
-  result.on(
+  result = result.on(
     names.ThematicBreak,
     checked(names.ThematicBreak, isKnownNode, () =>
       xhtmlOut ? '<hr />\n' : '<hr>\n'
     )
   )
 
-  result.on(
+  result = result.on(
     names.HtmlBlock,
     checked(names.HtmlBlock, isKnownNode, n =>
       rawHtml === 'escape'
@@ -155,4 +164,6 @@ export function registerBlockHandlers(
         : n.data.literal
     )
   )
+
+  return result
 }

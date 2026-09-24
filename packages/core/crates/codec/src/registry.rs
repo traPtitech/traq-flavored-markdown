@@ -1,5 +1,5 @@
 use crate::{
-    DecodeLimits,
+    CodecLimits,
     fields::{Fields, error},
 };
 
@@ -58,17 +58,26 @@ impl Codec {
     }
 
     pub fn encode(&self, document: &Document) -> serde_json::Result<Vec<u8>> {
-        crate::output::encode(document, self)
+        self.encode_with_limits(document, CodecLimits::default())
+    }
+
+    /// Encode a document with explicit JSON and tree limits.
+    pub fn encode_with_limits(
+        &self,
+        document: &Document,
+        limits: CodecLimits,
+    ) -> serde_json::Result<Vec<u8>> {
+        crate::output::encode(document, self, limits)
     }
 
     pub fn decode(&self, json: &[u8]) -> serde_json::Result<Document> {
-        self.decode_with_limits(json, DecodeLimits::default())
+        self.decode_with_limits(json, CodecLimits::default())
     }
 
     pub fn decode_with_limits(
         &self,
         json: &[u8],
-        limits: DecodeLimits,
+        limits: CodecLimits,
     ) -> serde_json::Result<Document> {
         crate::receive::decode(json, limits, &|name, mut fields| {
             let id = self

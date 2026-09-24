@@ -1,6 +1,7 @@
 //! Node payloads and shared declarations. No parser, renderer, or codec dependency.
 #![forbid(unsafe_code)]
 
+mod catalog;
 mod declarations;
 pub use declarations::{Contracts, preset};
 

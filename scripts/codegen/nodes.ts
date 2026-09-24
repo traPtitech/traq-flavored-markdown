@@ -1,13 +1,13 @@
-import { declarations } from './declarations.ts'
 import { javascript } from './javascript.ts'
 import type { RawSchema } from './schema.ts'
 import { quoted as q } from './schema.ts'
+import { typescriptDeclarations } from './typescript.ts'
 
 type Manifest = {
   nodes: Record<string, { group: string; schema: RawSchema }>
 }
 
-export async function nodeFiles(manifest: Manifest, input: string) {
+export function nodeFiles(manifest: Manifest) {
   const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
     ([key, node]) => [key, node.schema]
   )
@@ -15,10 +15,7 @@ export async function nodeFiles(manifest: Manifest, input: string) {
   const files = new Map<string, string>()
   for (const [group, entries] of groups) {
     if (!group || !entries) continue
-    const types = await declarations(
-      input,
-      entries.map(([, schema]) => schema.title ?? '')
-    )
+    const types = typescriptDeclarations(entries.map(([, schema]) => schema))
 
     files.set(
       `${group}.ts`,
