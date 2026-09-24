@@ -1,5 +1,5 @@
-import { escapeHtml } from './html.js'
 import { documentBytes } from './document.js'
+import { escapeHtml } from './html.js'
 import { configuration } from './preset.js'
 import type {
   Document,
