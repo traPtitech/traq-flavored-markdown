@@ -24,6 +24,14 @@ export interface Preset {
   readonly [identity]: 'renderer-preset'
 }
 
+/** Presentation changes keyed by nodes in the original document. */
+export interface RenderOverlay {
+  roots?: readonly Node[]
+  omittedNodes?: ReadonlySet<Node>
+  /** Plain text to show in place of a node's rendered children. */
+  childText?: ReadonlyMap<Node, string>
+}
+
 export interface Renderer {
-  render(document: Document): string
+  render(document: Document, overlay?: RenderOverlay): string
 }

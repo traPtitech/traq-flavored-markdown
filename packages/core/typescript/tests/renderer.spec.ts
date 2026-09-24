@@ -71,3 +71,45 @@ test('fallback and child rendering have no block or inline mode', () => {
     )
   ).toThrow(/HTML string/)
 })
+
+test('render overlays select roots, omit nodes, and escape replacement child text', () => {
+  const plugin = new Plugin(new Declaration('overlay'))
+    .on(
+      'container',
+      (node, context) => '<p>' + context.render(node.children) + '</p>'
+    )
+    .on('copied', (node, context) => context.render([...(node.children ?? [])]))
+    .on('text', node => String(node.data))
+  const view = renderer(new PresetBuilder().add(plugin).build())
+  const first = { kind: 'text', data: 'first', span: { start: 0, end: 0 } }
+  const second = { kind: 'text', data: 'second', span: { start: 0, end: 0 } }
+  const container = {
+    kind: 'container',
+    data: {},
+    span: { start: 0, end: 0 },
+    children: [first, second]
+  }
+  const document = { source: '', children: [container, second] }
+
+  expect(view.render(document)).toBe('<p>firstsecond</p>second')
+  expect(
+    view.render(document, {
+      roots: [container],
+      omittedNodes: new Set([second])
+    })
+  ).toBe('<p>first</p>')
+  expect(
+    view.render(document, {
+      roots: [container],
+      childText: new Map([[container, '<b>&']])
+    })
+  ).toBe('<p>&lt;b&gt;&amp;</p>')
+  const copied = { ...container, kind: 'copied' }
+  expect(
+    view.render(
+      { source: '', children: [copied] },
+      { childText: new Map([[copied, 'replacement']]) }
+    )
+  ).toBe('firstsecond')
+  expect(view.render(document)).toBe('<p>firstsecond</p>second')
+})

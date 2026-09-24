@@ -12,7 +12,7 @@ import type { Options as TrapOptions } from '@traq-flavored-markdown/traq-plugin
 import { plugin as trap } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 import { configureCondensed } from './condensed.js'
-import { prepareMessage } from './embeddings.js'
+import { analyzeMessage } from './embeddings.js'
 import imageDomains from './image-domains.js'
 import { normalizeTraqOrigin } from './links.js'
 
@@ -133,22 +133,21 @@ export function messageRenderers({
 
     return Object.freeze({
       render(document: Document) {
-        const prepared = prepareMessage(document, embeddingOrigin, condensed)
+        const analysis = analyzeMessage(document, embeddingOrigin)
+        const overlay = {
+          omittedNodes: analysis.omittedNodes,
+          childText: condensed ? analysis.childText : undefined
+        }
         const renderedText = condensed
-          ? prepared.document.children
-              .map(node =>
-                view.render({
-                  ...prepared.document,
-                  children: [node]
-                })
-              )
+          ? analysis.roots
+              .map(node => view.render(document, { ...overlay, roots: [node] }))
               .join(' ')
-          : view.render(prepared.document)
+          : view.render(document, { ...overlay, roots: analysis.roots })
 
         return {
           rawText: document.source,
           renderedText,
-          embeddings: prepared.embeddings
+          embeddings: analysis.embeddings
         }
       }
     })

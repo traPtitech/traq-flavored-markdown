@@ -8,46 +8,17 @@ import { names as trap } from '@traq-flavored-markdown/traq-plugin/nodes'
 import { embeddingFromUrl } from './links.js'
 import type { Embedding } from './links.js'
 
-interface EmbeddingState {
-  links: Map<Node, Embedding>
-  embeddings: Embedding[]
-}
-
-function collectEmbeddings(
-  nodes: Node[],
-  origin: string,
-  state: EmbeddingState,
-  ids: Set<string>
+function trailingNodesToOmit(
+  children: readonly Node[],
+  links: ReadonlyMap<Node, Embedding>
 ) {
-  for (const node of nodes) {
-    if (node.kind === trap.Spoiler) continue
+  const omitted = new Set<Node>()
+  let last = children.length - 1
 
-    if (isKnownNode(node) && node.kind === names.Link) {
-      const embedding = embeddingFromUrl(node.data.destination, origin)
+  while (children[last]?.kind === trap.BlankLine) last--
 
-      if (embedding) {
-        state.links.set(node, embedding)
-
-        if (embedding.type === 'url' || !ids.has(embedding.id)) {
-          state.embeddings.push(embedding)
-
-          if (embedding.type !== 'url') ids.add(embedding.id)
-        }
-      }
-    }
-
-    if (node.children) collectEmbeddings(node.children, origin, state, ids)
-  }
-}
-
-function trimTrailingEmbeddings(children: Node[], links: Map<Node, Embedding>) {
-  const result = children.slice()
-  let last = result.length - 1
-
-  while (result[last]?.kind === trap.BlankLine) last--
-
-  const paragraph = result[last]
-  if (paragraph?.kind !== names.Paragraph || !paragraph.children) return result
+  const paragraph = children[last]
+  if (paragraph?.kind !== names.Paragraph || !paragraph.children) return omitted
 
   let end = paragraph.children.length - 1
   let removed = false
@@ -76,14 +47,13 @@ function trimTrailingEmbeddings(children: Node[], links: Map<Node, Embedding>) {
   }
 
   if (removed) {
-    result[last] = {
-      ...paragraph,
-      children: paragraph.children.slice(0, end + 1)
-    }
-    result.length = last + 1
+    for (let index = end + 1; index < paragraph.children.length; index++)
+      omitted.add(paragraph.children[index])
+    for (let index = last + 1; index < children.length; index++)
+      omitted.add(children[index])
   }
 
-  return result
+  return omitted
 }
 
 function isStandaloneLink(node: Node, previous?: Node): boolean {
@@ -95,68 +65,48 @@ function isStandaloneLink(node: Node, previous?: Node): boolean {
   )
 }
 
-function replaceEmbeddingLabels(
-  nodes: Node[],
-  links: Map<Node, Embedding>
-): Node[] {
-  return nodes.map(node => {
-    const embedding = links.get(node)
+/** Analyze a document once and keep presentation choices outside the AST. */
+export function analyzeMessage(document: Document, origin: string) {
+  const links = new Map<Node, Embedding>()
+  const embeddings: Embedding[] = []
+  const childText = new Map<Node, string>()
+  const ids = new Set<string>()
 
-    if (
-      embedding &&
-      (embedding.type === 'file' ||
-        (embedding.type === 'message' &&
-          isKnownNode(node) &&
-          node.kind === names.Link &&
-          node.data.form === 'linkify'))
-    ) {
-      return {
-        ...node,
-        children: [
-          {
-            kind: names.Text,
-            span: node.span,
-            data: {
-              value:
-                embedding.type === 'file'
-                  ? '[[添付ファイル]]'
-                  : '[[引用メッセージ]]'
-            }
+  function visit(nodes: readonly Node[]) {
+    for (const node of nodes) {
+      if (node.kind === trap.Spoiler) continue
+
+      if (isKnownNode(node) && node.kind === names.Link) {
+        const embedding = embeddingFromUrl(node.data.destination, origin)
+        if (embedding) {
+          links.set(node, embedding)
+          if (embedding.type === 'url' || !ids.has(embedding.id)) {
+            embeddings.push(embedding)
+            if (embedding.type !== 'url') ids.add(embedding.id)
           }
-        ]
-      }
-    }
 
-    return node.children
-      ? {
-          ...node,
-          children: replaceEmbeddingLabels(node.children, links)
+          if (embedding.type === 'file') {
+            childText.set(node, '[[添付ファイル]]')
+          } else if (
+            embedding.type === 'message' &&
+            node.data.form === 'linkify'
+          ) {
+            childText.set(node, '[[引用メッセージ]]')
+          }
         }
-      : node
-  })
-}
+      }
 
-/** Does not mutate the parser's document; both presentations can reuse it. */
-export function prepareMessage(
-  document: Document,
-  origin: string,
-  condensed: boolean
-) {
-  const state: EmbeddingState = {
-    links: new Map(),
-    embeddings: []
+      if (node.children) visit(node.children)
+    }
   }
 
-  collectEmbeddings(document.children, origin, state, new Set())
-
-  const children = trimTrailingEmbeddings(document.children, state.links)
-  const renderedChildren = condensed
-    ? replaceEmbeddingLabels(children, state.links)
-    : children
-
+  visit(document.children)
+  const omittedNodes = trailingNodesToOmit(document.children, links)
   return {
-    document: { ...document, children: renderedChildren },
-    embeddings: state.embeddings
+    roots: document.children.filter(node => !omittedNodes.has(node)),
+    omittedNodes,
+    childText,
+    embeddings
   }
 }
 

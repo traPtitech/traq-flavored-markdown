@@ -123,7 +123,8 @@ const html = rendered.renderedText
 `messageRenderers` builds `standard` and `condensed` views. Each `render` call
 returns `rawText`, `renderedText`, and `embeddings`; the extractor returns
 source-preserving message text, references, attachment and citation IDs, and an
-embedding plan. Complete Rust, Go, and TypeScript programs are in
+embedding plan. The two views apply presentation choices without rewriting the
+parsed AST. Complete Rust, Go, and TypeScript programs are in
 [examples](examples/README.md).
 
 For direct HTML, `html(options)` returns a renderer. `htmlPreset(options)`
