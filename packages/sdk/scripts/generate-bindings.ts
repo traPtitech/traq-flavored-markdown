@@ -7,7 +7,7 @@ import {
   writeFiles
 } from '../../../scripts/codegen/io.ts'
 import type { RawSchema } from '../../../scripts/codegen/schema.ts'
-import { sdkRoot } from '../../../scripts/paths.ts'
+import { packageOutputRoot, repositoryRoot } from '../../../scripts/paths.ts'
 import { goNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
 import { presetFiles } from './codegen/presets.ts'
@@ -23,7 +23,7 @@ type Manifest = {
   processing: Record<string, RawSchema>
 }
 
-export async function generateSdk(input?: string) {
+export async function generateSdk(input?: string, outputRoot = repositoryRoot) {
   const contracts = input ?? (await exportNodeContracts())
   const manifest = await readManifest<Manifest>(contracts)
   const files = await typescriptFiles(manifest, contracts)
@@ -55,7 +55,7 @@ export async function generateSdk(input?: string) {
       ''
     ].join('\n')
   )
-  const paths = await writeFiles(sdkRoot, files)
+  const paths = await writeFiles(packageOutputRoot('sdk', outputRoot), files)
   await runCommand([
     'gofmt',
     '-w',

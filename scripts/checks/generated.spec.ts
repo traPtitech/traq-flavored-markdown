@@ -1,18 +1,14 @@
-import { rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 
 import { $ } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { repositoryRoot } from '../paths.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
 import {
   type GeneratedTargets,
   checkGenerated,
   generatedChanges
 } from './generated.ts'
-
-const generatedPath = (file: string) => path.relative(repositoryRoot, file)
 
 test('generated checks detect changed, added and removed files', () => {
   expect(
@@ -29,77 +25,78 @@ test('generated checks detect changed, added and removed files', () => {
   ).toEqual(['~ changed.ts', '- removed.ts', '+ added.ts'])
 })
 
-test('generated checks compare isolated generated files', async () => {
-  await withTempDirectory('generated-check-', async root => {
-    const directory = path.join(root, 'typescript', 'generated')
+test('generated checks compare isolated files without modifying the source', async () => {
+  await withTempDirectory('generated-source-', async root => {
+    const directory = path.join('typescript', 'generated')
     const artifact = path.join(directory, 'artifact.ts')
-    const goArtifact = path.join(root, 'go', 'generated_artifact.go')
+    const goArtifact = path.join('go', 'generated_artifact.go')
     const targets: GeneratedTargets = {
       directories: [directory],
       files: [goArtifact]
     }
-    await Bun.write(artifact, 'artifact\n')
-    await Bun.write(goArtifact, 'go artifact\n')
+    await Bun.write(path.join(root, artifact), 'artifact\n')
+    await Bun.write(path.join(root, goArtifact), 'go artifact\n')
 
-    await checkGenerated(async () => {}, targets)
+    const writeExpected = async (
+      outputRoot: string,
+      artifactContent = 'artifact\n'
+    ) => {
+      await Bun.write(path.join(outputRoot, artifact), artifactContent)
+      await Bun.write(path.join(outputRoot, goArtifact), 'go artifact\n')
+    }
+
+    await checkGenerated(writeExpected, targets, root)
 
     await expect(
-      checkGenerated(async () => {
-        await Bun.write(artifact, 'changed artifact\n')
-      }, targets)
-    ).rejects.toThrow('~ ' + generatedPath(artifact))
-    await Bun.write(artifact, 'artifact\n')
-
-    await rm(goArtifact)
-    await expect(
-      checkGenerated(async () => {
-        await Bun.write(goArtifact, 'go artifact\n')
-      }, targets)
-    ).rejects.toThrow('+ ' + generatedPath(goArtifact))
+      checkGenerated(
+        outputRoot => writeExpected(outputRoot, 'changed artifact\n'),
+        targets,
+        root
+      )
+    ).rejects.toThrow('~ ' + artifact)
+    expect(await Bun.file(path.join(root, artifact)).text()).toBe('artifact\n')
 
     const added = path.join(directory, 'added.ts')
     await expect(
-      checkGenerated(async () => {
-        await Bun.write(added, 'added\n')
-      }, targets)
-    ).rejects.toThrow('+ ' + generatedPath(added))
-    await rm(added)
+      checkGenerated(
+        async outputRoot => {
+          await writeExpected(outputRoot)
+          await Bun.write(path.join(outputRoot, added), 'added\n')
+        },
+        targets,
+        root
+      )
+    ).rejects.toThrow('+ ' + added)
+    expect(await Bun.file(path.join(root, added)).exists()).toBe(false)
 
-    const removed = path.join(directory, 'removed.ts')
-    await Bun.write(removed, 'removed\n')
     await expect(
-      checkGenerated(async () => {
-        await rm(removed)
-      }, targets)
-    ).rejects.toThrow('- ' + generatedPath(removed))
-
-    const backup = path.join(path.dirname(directory), Bun.randomUUIDv7())
-    let restored = false
-    await rename(directory, backup)
-    try {
-      await expect(
-        checkGenerated(async () => {
-          await rename(backup, directory)
-          restored = true
-        }, targets)
-      ).rejects.toThrow('+ ' + generatedPath(artifact))
-    } finally {
-      if (!restored) await rename(backup, directory)
-    }
+      checkGenerated(
+        async outputRoot => {
+          await Bun.write(path.join(outputRoot, goArtifact), 'go artifact\n')
+        },
+        targets,
+        root
+      )
+    ).rejects.toThrow('- ' + artifact)
+    expect(await Bun.file(path.join(root, artifact)).text()).toBe('artifact\n')
   })
 })
 
-test('snapshots allow an external formatter to replace file contents', async () => {
+test('snapshots compare output formatted by another process', async () => {
   await withTempDirectory('generated-format-', async root => {
-    const artifact = path.join(root, 'artifact.ts')
-    await Bun.write(artifact, '// original\n'.repeat(4096))
+    const artifact = 'artifact.ts'
+    await Bun.write(path.join(root, artifact), '// original\n'.repeat(4096))
     await expect(
       checkGenerated(
-        async () => {
-          await $`${Bun.argv[0]} -e ${'require("node:fs").writeFileSync(process.argv.at(-1), "// formatted\\n")'} ${artifact}`.quiet()
+        async outputRoot => {
+          await $`${Bun.argv[0]} -e ${'require("node:fs").writeFileSync(process.argv.at(-1), "// formatted\\n")'} ${path.join(outputRoot, artifact)}`.quiet()
         },
-        { directories: [], files: [artifact] }
+        { directories: [], files: [artifact] },
+        root
       )
-    ).rejects.toThrow('~ ' + generatedPath(artifact))
+    ).rejects.toThrow('~ ' + artifact)
+    expect(await Bun.file(path.join(root, artifact)).text()).toBe(
+      '// original\n'.repeat(4096)
+    )
   })
 })

@@ -15,7 +15,12 @@ import {
 } from './codegen/io.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import type { RawSchema } from './codegen/schema.ts'
-import { cargoTargetDirectory, packageRoot, repositoryRoot } from './paths.ts'
+import {
+  cargoTargetDirectory,
+  packageOutputRoot,
+  packageRoot,
+  repositoryRoot
+} from './paths.ts'
 
 type Manifest = {
   buildId: string
@@ -31,9 +36,11 @@ const runCargo = (command: string[], cwd = repositoryRoot) =>
 
 async function generateContractGroup(
   packageName: ContractPackage,
-  group: string
+  group: string,
+  outputRoot: string
 ) {
   const root = packageRoot(packageName)
+  const destination = packageOutputRoot(packageName, outputRoot)
   const metadata = nodeGroup(group)
   if (metadata.owner !== packageName)
     throw new Error(
@@ -63,7 +70,7 @@ async function generateContractGroup(
       throw new Error(
         `${key}: expected ${group} contract group, got ${node.group}`
       )
-  const goPath = path.join(root, metadata.goGeneratedPath)
+  const goPath = path.join(destination, metadata.goGeneratedPath)
   const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
     ([key, node]) => [key, node.schema]
   )
@@ -71,7 +78,7 @@ async function generateContractGroup(
   await runCommand(['gofmt', '-w', goPath])
 
   const typescriptPaths = await writeFiles(
-    root,
+    destination,
     await nodeFiles(manifest, input),
     'typescript',
     'generated'
@@ -79,28 +86,32 @@ async function generateContractGroup(
   await formatTypescript(typescriptPaths)
 }
 
-export async function generateContracts(packageName: ContractPackage) {
+export async function generateContracts(
+  packageName: ContractPackage,
+  outputRoot = repositoryRoot
+) {
   for (const [group, metadata] of Object.entries(nodeGroups))
     if (metadata.owner === packageName)
-      await generateContractGroup(packageName, group)
+      await generateContractGroup(packageName, group, outputRoot)
 }
 
 export async function generateBindings(
   packageName?: ContractPackage | 'sdk',
-  input?: string
+  input?: string,
+  outputRoot = repositoryRoot
 ) {
   if (!packageName) {
     for (const name of ['commonmark-plugin', 'traq-plugin'] as const)
-      await generateContracts(name)
-    await generateSdk()
+      await generateContracts(name, outputRoot)
+    await generateSdk(undefined, outputRoot)
     return
   }
   if (packageName === 'commonmark-plugin' || packageName === 'traq-plugin') {
-    await generateContracts(packageName)
+    await generateContracts(packageName, outputRoot)
     return
   }
   if (packageName === 'sdk') {
-    await generateSdk(input ? path.resolve(input) : undefined)
+    await generateSdk(input ? path.resolve(input) : undefined, outputRoot)
     return
   }
   throw new Error(

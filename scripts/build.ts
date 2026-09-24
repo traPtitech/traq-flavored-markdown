@@ -11,7 +11,7 @@ const buildPackage = (name: 'core' | 'commonmark-plugin' | 'traq-plugin') =>
 const args = Bun.argv.slice(2)
 const check = args.length === 1 && args[0] === '--check-generated'
 if (check) {
-  await checkGenerated(generateBindings)
+  await checkGenerated()
 } else if (!args.length) {
   await generateBindings()
 } else {
