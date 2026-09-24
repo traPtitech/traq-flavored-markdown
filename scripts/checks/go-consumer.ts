@@ -1,11 +1,8 @@
 import path from 'node:path'
 
+import { readGoPackageGraph } from '../package-graph.ts'
 import { repositoryRoot } from '../paths.ts'
-import { goReleaseModules } from '../release-go.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
-
-const repository = 'github.com/traPtitech/traq-flavored-markdown'
-const sdk = `${repository}/packages/sdk/go`
 
 async function go(directory: string, args: string[], remote: boolean) {
   const process = Bun.spawn(['go', ...args], {
@@ -36,13 +33,15 @@ export async function checkGoConsumer(version: string, remote = false) {
     throw new Error(
       'usage: bun scripts/checks/go-consumer.ts v<version> [--remote]'
     )
+  const { published } = await readGoPackageGraph()
+  const sdk = published.find(module => module.owner === 'sdk')!.path
   await withTempDirectory('markdown-go-consumer-', async directory => {
     const replacements = remote
       ? ''
-      : `\nreplace (\n${goReleaseModules
+      : `\nreplace (\n${published
           .map(
             module =>
-              `  ${repository}/${module.directory} => ${path.join(repositoryRoot, module.directory).replaceAll('\\', '/')}`
+              `  ${module.path} => ${path.join(repositoryRoot, module.directory).replaceAll('\\', '/')}`
           )
           .join('\n')}\n)\n`
     await Bun.write(
@@ -81,8 +80,8 @@ func TestBundledRuntime(t *testing.T) {
         ['list', '-m', '-f', '{{.Path}}@{{.Version}}', 'all'],
         true
       )
-      for (const module of goReleaseModules)
-        if (!resolved.includes(`${repository}/${module.directory}@${version}`))
+      for (const module of published)
+        if (!resolved.includes(`${module.path}@${version}`))
           throw new Error(
             `${module.directory}: Go consumer resolved wrong version`
           )

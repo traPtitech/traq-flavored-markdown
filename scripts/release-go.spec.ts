@@ -3,9 +3,9 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
+import { readGoPackageGraph } from './package-graph.ts'
 import { repositoryRoot } from './paths.ts'
 import {
-  goReleaseModules,
   goReleaseTags,
   runGoRelease,
   validateGoMod,
@@ -16,12 +16,9 @@ import { withTempDirectory } from './testing/temp-directory.ts'
 const repository = 'github.com/traPtitech/traq-flavored-markdown'
 const core = `${repository}/packages/core/go`
 const sdk = `${repository}/packages/sdk/go`
-const publishedModules = goReleaseModules.map(
-  module => `${repository}/${module.directory}`
-)
 
-test('Go tags use each module directory as their prefix', () => {
-  expect(goReleaseTags('v0.1.4')).toEqual([
+test('Go tags use each module directory as their prefix', async () => {
+  expect(await goReleaseTags('v0.1.4')).toEqual([
     'packages/core/go/v0.1.4',
     'packages/plugins/commonmark/go/v0.1.4',
     'packages/plugins/traq/go/v0.1.4',
@@ -29,31 +26,33 @@ test('Go tags use each module directory as their prefix', () => {
   ])
 })
 
-test('Go module validation rejects unpublished versions and replacements', () => {
+test('Go module validation rejects unpublished versions and replacements', async () => {
+  const graph = await readGoPackageGraph()
+  const original = graph.modules.get('packages/sdk/go')!
   const manifest = {
     Module: { Path: sdk },
     Require: [{ Path: core, Version: 'v0.1.4' }],
     Replace: null
   }
   expect(() =>
-    validateGoMod(manifest, 'packages/sdk/go', ['packages/core/go'], 'v0.1.4')
+    validateGoMod({ ...original, manifest }, graph, 'v0.1.4')
   ).not.toThrow()
   manifest.Require[0].Version = 'v0.0.0-00010101000000-000000000000'
   expect(() =>
-    validateGoMod(manifest, 'packages/sdk/go', ['packages/core/go'], 'v0.1.4')
+    validateGoMod({ ...original, manifest }, graph, 'v0.1.4')
   ).toThrow('Go dependencies')
   manifest.Require[0].Version = 'v0.1.4'
   expect(() =>
     validateGoMod(
-      { ...manifest, Replace: [{}] },
-      'packages/sdk/go',
-      ['packages/core/go'],
+      { ...original, manifest: { ...manifest, Replace: [{}] } },
+      graph,
       'v0.1.4'
     )
   ).toThrow('module-local replacements')
 })
 
-test('workspace replacements must point at the tagged local modules', () => {
+test('workspace replacements must point at the tagged local modules', async () => {
+  const graph = await readGoPackageGraph()
   const workspace = {
     Use: [
       'packages/core/go',
@@ -72,9 +71,9 @@ test('workspace replacements must point at the tagged local modules', () => {
       New: { Path: `./${directory}` }
     }))
   }
-  expect(() => validateGoWork(workspace, 'v0.1.4')).not.toThrow()
+  expect(() => validateGoWork(workspace, graph, 'v0.1.4')).not.toThrow()
   workspace.Replace[0].Old.Version = 'v0.1.3'
-  expect(() => validateGoWork(workspace, 'v0.1.4')).toThrow(
+  expect(() => validateGoWork(workspace, graph, 'v0.1.4')).toThrow(
     'go.work replacements'
   )
 })
@@ -84,6 +83,9 @@ test('Go release refuses v2 until module paths have a major suffix', async () =>
 })
 
 test('Go release preparation synchronizes all module and workspace versions', async () => {
+  const publishedModules = (await readGoPackageGraph()).published.map(
+    module => module.path
+  )
   await withTempDirectory('markdown-go-release-', async root => {
     const directories = [
       'packages/core/go',

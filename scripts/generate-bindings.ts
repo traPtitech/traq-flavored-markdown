@@ -15,6 +15,7 @@ import {
 } from './codegen/io.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import type { RawSchema } from './codegen/schema.ts'
+import { readNpmPackageGraph } from './package-graph.ts'
 import {
   cargoTargetDirectory,
   packageOutputRoot,
@@ -101,9 +102,11 @@ export async function generateBindings(
   outputRoot = repositoryRoot
 ) {
   if (!packageName) {
-    for (const name of ['commonmark-plugin', 'traq-plugin'] as const)
-      await generateContracts(name, outputRoot)
-    await generateSdk(undefined, outputRoot)
+    const { graph } = await readNpmPackageGraph()
+    for (const name of graph.order)
+      if (name === 'commonmark-plugin' || name === 'traq-plugin')
+        await generateContracts(name, outputRoot)
+      else if (name === 'sdk') await generateSdk(undefined, outputRoot)
     return
   }
   if (packageName === 'commonmark-plugin' || packageName === 'traq-plugin') {

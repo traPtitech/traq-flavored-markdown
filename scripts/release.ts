@@ -1,22 +1,15 @@
 import path from 'node:path'
 
-import { type PackageName, packageRoot, repositoryRoot } from './paths.ts'
+import { npmPackageGraph } from './package-graph.ts'
+import {
+  type PackageName,
+  packageNames,
+  packageRoot,
+  repositoryRoot
+} from './paths.ts'
 
 const registry = 'https://registry.npmjs.org'
-const packageNames: PackageName[] = [
-  'core',
-  'commonmark-plugin',
-  'traq-plugin',
-  'sdk'
-]
-const requiredPeers: Record<PackageName, PackageName[]> = {
-  core: [],
-  'commonmark-plugin': ['core'],
-  'traq-plugin': ['core', 'commonmark-plugin'],
-  sdk: ['core', 'commonmark-plugin', 'traq-plugin']
-}
 const packageName = (name: PackageName) => `@traq-flavored-markdown/${name}`
-const workspaces = packageNames.map(name => `--workspace=${packageName(name)}`)
 const versionPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
 
@@ -54,9 +47,9 @@ const validVersion = (version: string) => {
   )
 }
 
-const internalPeers = (manifest: Manifest) =>
+const internalPeers = (manifest: Manifest, workspace: Workspace) =>
   Object.entries(manifest.peerDependencies ?? {}).filter(([dependency]) =>
-    packageNames.some(name => packageName(name) === dependency)
+    packageNames.some(name => workspace.packages[name].name === dependency)
   )
 
 export const parseRelease = (args: string[]): Release => {
@@ -90,7 +83,8 @@ export const validateWorkspace = (workspace: Workspace, version?: string) => {
   )
     throw new Error('root manifest does not match the synchronized release')
 
-  for (const name of packageNames) {
+  const graph = npmPackageGraph(workspace.packages)
+  for (const name of graph.order) {
     const manifest = workspace.packages[name]
     if (
       manifest.name !== packageName(name) ||
@@ -105,21 +99,14 @@ export const validateWorkspace = (workspace: Workspace, version?: string) => {
       throw new Error(
         `${name} manifest does not match the synchronized release`
       )
-    const peers = internalPeers(manifest)
-    const expected = requiredPeers[name].map(packageName)
-    if (
-      peers.length !== expected.length ||
-      expected.some(peer => !peers.some(([declared]) => declared === peer))
-    )
-      throw new Error(
-        `${name} peer dependencies do not match the package graph`
-      )
+    const peers = internalPeers(manifest, workspace)
     if (
       version !== undefined &&
       peers.some(([, peerVersion]) => peerVersion !== version)
     )
       throw new Error(`${name} peer dependencies do not match the release`)
   }
+  return graph
 }
 
 const readWorkspace = async (): Promise<Workspace> => ({
@@ -156,8 +143,14 @@ const run = async (args: string[]) => {
 export const runRelease = async (args: string[]) => {
   const release = parseRelease(args)
   const workspace = await readWorkspace()
+  const graph = validateWorkspace(
+    workspace,
+    release.mode === 'prepare' ? undefined : release.version
+  )
+  const workspaces = graph.order.map(
+    name => `--workspace=${workspace.packages[name].name}`
+  )
   if (release.mode === 'prepare') {
-    validateWorkspace(workspace)
     await run([
       npm,
       'version',
@@ -169,8 +162,8 @@ export const runRelease = async (args: string[]) => {
       '--ignore-scripts',
       '--allow-same-version'
     ])
-    for (const name of packageNames) {
-      const fields = internalPeers(workspace.packages[name]).map(
+    for (const name of graph.order) {
+      const fields = internalPeers(workspace.packages[name], workspace).map(
         ([peer]) => `peerDependencies.${peer}=${release.version}`
       )
       if (fields.length)
@@ -179,7 +172,7 @@ export const runRelease = async (args: string[]) => {
           'pkg',
           'set',
           ...fields,
-          `--workspace=${packageName(name)}`
+          `--workspace=${workspace.packages[name].name}`
         ])
     }
     validateWorkspace(await readWorkspace(), release.version)
@@ -187,7 +180,6 @@ export const runRelease = async (args: string[]) => {
     return
   }
 
-  validateWorkspace(workspace, release.version)
   if (release.mode === 'check') return
   await run([
     npm,
