@@ -1,14 +1,11 @@
-import { declarations } from '../../../../scripts/codegen/declarations.ts'
 import {
   goContract,
   goValidationRuntime
 } from '../../../../scripts/codegen/go.ts'
 import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
+import { typescriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
 
-export async function processingFiles(
-  schemas: Record<string, RawSchema>,
-  input: string
-) {
+export function processingFiles(schemas: Record<string, RawSchema>) {
   const files = new Map<string, string>([
     [
       'typescript/generated/processing.ts',
@@ -20,7 +17,7 @@ export async function processingFiles(
         goValidationRuntime
     ]
   ])
-  const types = await declarations(input, Object.keys(schemas))
+  const types = typescriptDeclarations(Object.values(schemas))
 
   let go = ''
   const goDeclarations = new Map<string, string>()

@@ -19,8 +19,11 @@ function example(s: Shape): unknown {
   if (s.kind === 'integer') return s.min
   if (s.kind === 'boolean') return false
   if (s.kind === 'enum') return s.values[0]
+  if (s.kind === 'literal') return s.value
   if (s.kind === 'nullable') return null
   if (s.kind === 'array') return [example(s.items)]
+  if (s.kind === 'union') return example(s.variants[0])
+  if (s.kind !== 'object') throw new Error('Unsupported example shape')
 
   return Object.fromEntries(s.fields.map(f => [f.name, example(f.shape)]))
 }

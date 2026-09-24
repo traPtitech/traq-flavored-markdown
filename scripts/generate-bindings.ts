@@ -79,7 +79,7 @@ async function generateContractGroup(
 
   const typescriptPaths = await writeFiles(
     destination,
-    await nodeFiles(manifest, input),
+    nodeFiles(manifest),
     'typescript',
     'generated'
   )

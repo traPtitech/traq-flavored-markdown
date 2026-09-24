@@ -36,7 +36,12 @@ export type IntegerShape = {
   name?: string
 }
 export type ArrayShape = { kind: 'array'; items: Shape; name?: string }
-export type FieldShape = { name: string; required: boolean; shape: Shape }
+export type FieldShape = {
+  name: string
+  required: boolean
+  shape: Shape
+  description?: string
+}
 export type ObjectShape = {
   kind: 'object'
   fields: FieldShape[]
@@ -174,6 +179,7 @@ export function shape(
       fields: Object.entries(properties).map(([name, s]) => ({
         name,
         required: required.includes(name),
+        description: s.description,
         shape: shape(s as RawSchema, root, references)
       }))
     }

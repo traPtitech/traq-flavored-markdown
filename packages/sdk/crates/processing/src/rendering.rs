@@ -4,7 +4,7 @@ use markdown_renderer::Renderer;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct RendererOptions {
     #[serde(default)]

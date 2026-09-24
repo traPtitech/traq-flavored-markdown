@@ -19,6 +19,7 @@ type Manifest = {
   buildId: string
   limits: { inputBytes: number; memoryBytes: number }
   nodes: Record<string, { group: string; schema: RawSchema }>
+  parseError: RawSchema
   presets: PresetTree
   processing: Record<string, RawSchema>
 }
@@ -26,14 +27,11 @@ type Manifest = {
 export async function generateSdk(input?: string, outputRoot = repositoryRoot) {
   const contracts = input ?? (await exportNodeContracts())
   const manifest = await readManifest<Manifest>(contracts)
-  const files = await typescriptFiles(manifest, contracts)
+  const files = typescriptFiles(manifest)
   files.set('go/generated_nodes.go', goNodes(manifest))
   for (const [name, source] of presetFiles(manifest.presets))
     files.set(name, source)
-  for (const [name, source] of await processingFiles(
-    manifest.processing,
-    contracts
-  ))
+  for (const [name, source] of processingFiles(manifest.processing))
     files.set(name, source)
   files.set(
     'typescript/generated/artifact.ts',

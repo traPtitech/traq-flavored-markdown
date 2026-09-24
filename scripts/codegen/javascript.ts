@@ -4,20 +4,22 @@ import { quoted as q, shape, typeName } from './schema.ts'
 function validator(s: Shape): string {
   if (s.kind === 'string' || s.kind === 'boolean') return s.kind
   if (s.kind === 'integer')
-    return `(value) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
+    return `(value: unknown) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
   if (s.kind === 'enum')
     return 'oneOf(' + s.values.map(v => q(v)).join(',') + ')'
   if (s.kind === 'literal') return 'oneOf(' + q(s.value) + ')'
   if (s.kind === 'union')
     return (
-      'value => [' +
+      '(value: unknown) => [' +
       s.variants.map(validator).join(',') +
       '].filter(check => check(value)).length === 1'
     )
   if (s.kind === 'nullable') return 'nullable(' + validator(s.inner) + ')'
   if (s.kind === 'array')
     return (
-      'value => Array.isArray(value) && value.every(' + validator(s.items) + ')'
+      '(value: unknown) => Array.isArray(value) && value.every(' +
+      validator(s.items) +
+      ')'
     )
   if (s.kind === 'object') {
     const fields = (required: boolean) =>
@@ -27,7 +29,13 @@ function validator(s: Shape): string {
         .map(f => q(f.name) + ':' + validator(f.shape))
         .join(',') +
       '}'
-    return 'value => fields(value,' + fields(true) + ',' + fields(false) + ')'
+    return (
+      '(value: unknown) => fields(value,' +
+      fields(true) +
+      ',' +
+      fields(false) +
+      ')'
+    )
   }
   throw new Error('Unsupported validator')
 }

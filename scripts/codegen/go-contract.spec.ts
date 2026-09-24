@@ -93,7 +93,15 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
           `if err := json.Unmarshal([]byte(${JSON.stringify(raw)}), new(Envelope)); (err == nil) != ${valid} { t.Errorf("decode %q: %v", ${JSON.stringify(raw)}, err) }`
       )
       .join('\n') +
-    '\n}\n'
+    '\n}\n' +
+    `func TestEnumMarshal(t *testing.T) {
+      for _, value := range []LookupKind{LookupKindUser, LookupKindGroup} {
+        if _, err := json.Marshal(value); err != nil { t.Fatalf("valid enum %q: %v", value, err) }
+      }
+      if _, err := json.Marshal(LookupKind("other")); err == nil { t.Fatal("accepted invalid enum") }
+      if _, err := json.Marshal(LookupKind("")); err == nil { t.Fatal("accepted empty enum") }
+    }
+    `
   await withTempDirectory('go-contract-', async directory => {
     await write(`${directory}/go.mod`, 'module example.com/contract\ngo 1.23\n')
     await write(`${directory}/contract.go`, source)

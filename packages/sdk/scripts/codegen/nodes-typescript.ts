@@ -1,9 +1,11 @@
 import { nodeGroup } from '../../../../scripts/codegen/groups.ts'
+import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
+import { typescriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
 
-export async function typescriptFiles(
-  manifest: { nodes: Record<string, { group: string }> },
-  input: string
-) {
+export function typescriptFiles(manifest: {
+  nodes: Record<string, { group: string }>
+  parseError: RawSchema
+}) {
   const files = new Map<string, string>()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
   for (const group of owners) nodeGroup(group)
@@ -26,10 +28,7 @@ export async function typescriptFiles(
       `const validators = new Map<string,(data:unknown)=>boolean>([${owners.map(g => `...${g}.nodes`).join(',')}]);\n` +
       'export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map(validators);\n' +
       'export function isKnownNode(node:Node<true>):node is Node<true> & NodeKind {return validators.get(node.kind)?.(node.data) ?? false;}\n' +
-      (await Bun.file(`${input}/ParseError.ts`).text()).replace(
-        /^\/\/[^\n]*\n/gm,
-        ''
-      )
+      [...typescriptDeclarations([manifest.parseError]).values()].join('\n')
   )
   return files
 }

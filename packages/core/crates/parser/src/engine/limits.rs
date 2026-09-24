@@ -2,8 +2,8 @@ use markdown_ast::ValidationLimits;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS))]
-#[serde(tag = "code", rename_all = "snake_case")]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(tag = "code", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ParseError {
     InvalidUtf8,
     ResourceLimit { resource: String },

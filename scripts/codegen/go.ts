@@ -88,7 +88,12 @@ function enumDeclaration(name: string, values: string[]) {
     `func (value *${name}) UnmarshalJSON(raw []byte) error {\n` +
     `if err := contractEnum(raw, ${values.map(value => q(value)).join(', ')}); err != nil { return err }\n` +
     `var decoded string\nif err := json.Unmarshal(raw, &decoded); err != nil { return err }\n` +
-    `*value = ${name}(decoded)\nreturn nil\n}\n`
+    `*value = ${name}(decoded)\nreturn nil\n}\n` +
+    `func (value ${name}) MarshalJSON() ([]byte, error) {\n` +
+    'raw, err := json.Marshal(string(value))\n' +
+    'if err != nil { return nil, err }\n' +
+    `if err := contractEnum(raw, ${values.map(value => q(value)).join(', ')}); err != nil { return nil, err }\n` +
+    'return raw, nil\n}\n'
   )
 }
 

@@ -1,6 +1,6 @@
 #[macro_use]
-#[path = "../node_types.rs"]
-mod node_types;
+#[path = "../node_catalog.rs"]
+mod node_catalog;
 #[path = "../limits.rs"]
 mod limits;
 #[path = "../node_metadata.rs"]
@@ -21,16 +21,15 @@ use traq_markdown_processing::rendering::RendererOptions;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let directory = std::env::args().nth(1).ok_or("Pass the output directory")?;
-    let config = ts_rs::Config::default()
-        .with_out_dir(&directory)
-        .with_import_extension(Some("js"));
-    <traq_markdown_grammar::ParseError as ts_rs::TS>::export_all(&config)?;
+    let parse_error = schemars::generate::SchemaSettings::default()
+        .with(|settings| settings.contract = schemars::generate::Contract::Serialize)
+        .into_generator()
+        .into_root_schema_for::<traq_markdown_grammar::ParseError>();
 
     let mut processing = serde_json::Map::new();
     macro_rules! processing_type {
         ($($ty:ident),*) => {
             $(
-                <$ty as ts_rs::TS>::export_all(&config)?;
                 let schema = schemars::generate::SchemaSettings::default()
                     .with(|settings| {
                         settings.contract = schemars::generate::Contract::Serialize
@@ -51,13 +50,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest = serde_json::json!({
         "buildId": env!("MARKDOWN_BUILD_ID"),
         "processing": processing,
+        "parseError": parse_error,
         "presets": traq_markdown_grammar::bindings::preset_exports(),
         "limits": {
             "inputBytes": limits::MAX_INPUT,
             "outputBytes": limits::MAX_OUTPUT,
             "memoryBytes": limits::MEMORY_BYTES,
         },
-        "nodes": node_metadata::export(&config)?,
+        "nodes": node_metadata::export()?,
     });
 
     std::fs::create_dir_all(&directory)?;

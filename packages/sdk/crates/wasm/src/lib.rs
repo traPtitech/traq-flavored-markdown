@@ -6,7 +6,7 @@ mod grammar;
 mod limits;
 mod rendering;
 #[macro_use]
-mod node_types;
+mod node_catalog;
 mod nodes;
 
 use buffers::IO;

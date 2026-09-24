@@ -6,16 +6,16 @@ pub(crate) fn codec() -> &'static Codec {
         let mut codec = Codec::default();
 
         macro_rules! register {
-            ($group:literal, $module:ident, $($ty:ident),* $(,)?) => {
+            ($group:literal; $($ty:ty => $kind:literal),+ $(,)?) => {
                 $(
                     codec
-                        .register::<$module::$ty>()
+                        .register::<$ty>()
                         .expect("unique node contract");
                 )*
             };
         }
 
-        node_types!(register);
+        selected_node_catalogs!(register);
 
         codec
     });
