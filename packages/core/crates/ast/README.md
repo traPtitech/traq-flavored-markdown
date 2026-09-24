@@ -5,12 +5,14 @@ contract crate that owns the data type. This crate uses only the standard
 library: it has no CommonMark types, serde dependency, or contract registry.
 
 ```rust
-use markdown_ast::{Node, NodeData, Span};
+use markdown_ast::{Node, NodeData, NodeRole, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Heading { level: u8 }
 
 impl NodeData for Heading {
+    fn role(&self) -> NodeRole { NodeRole::Block }
+    fn payload_bytes(&self) -> usize { 0 }
     fn validate(&self, _children: &[Node]) -> bool {
         (1..=6).contains(&self.level)
     }
@@ -28,12 +30,17 @@ Adding a node type never requires a core enum change.
 
 ## Validation
 
-`NodeData::validate` checks a node and its direct children. Use
-`document.validate(limits)` for a complete tree check: it validates source size,
-node count, depth, UTF-8 spans, containment, source-ordered non-overlapping
-siblings, and every node's data. The default
-limits are 65,536 source bytes, 16,384 nodes, and depth 64. Validation returns a
-`ValidationError` on failure and never checks codec registrations or handlers.
+Every external plugin node must implement `NodeData::role` and
+`NodeData::payload_bytes`. A role declares block, inline, structural, or opaque
+placement; existing parent contracts accept external nodes according to that
+declaration without registering their types in core. `payload_bytes` counts
+owned heap content, including every string field. `NodeData::validate` checks a node and
+its direct children. Use `document.validate(limits)` for a complete tree check:
+it validates source and payload size, node count, depth, UTF-8 spans,
+containment, source-ordered non-overlapping siblings, and every node's data. The
+default limits are 65,536 source bytes, 8 MiB of payload bytes, 16,384 nodes,
+and depth 64. Validation returns a `ValidationError` on failure and never checks
+codec registrations or handlers.
 
 AST construction and editing do not validate automatically. Validation is not
 cached, so validate again after an edit. `ValidatedDocument::new(&document)` uses

@@ -1,4 +1,4 @@
-use markdown_ast::{Node, NodeData};
+use markdown_ast::{Node, NodeData, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -16,6 +16,12 @@ pub enum Alignment {
 pub struct TableData {}
 
 impl NodeData for TableData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         let Some(header) = children.first() else {
             return false;
@@ -50,6 +56,12 @@ pub struct RowData {
 }
 
 impl NodeData for RowData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Structural
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         !children.is_empty() && children.iter().all(|node| node.get::<CellData>().is_some())
     }
@@ -63,16 +75,17 @@ pub struct CellData {
 }
 
 impl NodeData for CellData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Structural
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         inline_children(children)
     }
 }
 
 pub(crate) fn inline_children(children: &[Node]) -> bool {
-    children.iter().all(|node| {
-        node.get::<TableData>().is_none()
-            && node.get::<RowData>().is_none()
-            && node.get::<CellData>().is_none()
-            && node.get::<crate::BlockMathData>().is_none()
-    })
+    children.iter().all(|node| node.role() == NodeRole::Inline)
 }

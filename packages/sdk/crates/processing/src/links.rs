@@ -2,6 +2,16 @@
 //! Exact lexical matching shared with TypeScript through traq-links.json.
 use markdown_trap_extraction::is_canonical_reference_id;
 
+const MAX_ORIGIN_BYTES: usize = 2048;
+
+pub(crate) fn validate_origin(origin: &str) -> Result<(), &'static str> {
+    if origin.len() > MAX_ORIGIN_BYTES {
+        Err("origin_limit")
+    } else {
+        Ok(())
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Target {
     File { id: String },

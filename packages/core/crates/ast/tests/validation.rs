@@ -1,11 +1,18 @@
 use markdown_ast::{
-    Document, Node, NodeData, Span, ValidatedDocument, ValidationError as Error, ValidationLimits,
+    Document, Node, NodeData, NodeRole, Span, ValidatedDocument, ValidationError as Error,
+    ValidationLimits,
 };
 
 #[derive(Clone, Debug, PartialEq)]
 struct Data(bool);
 
 impl NodeData for Data {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _: &[Node]) -> bool {
         self.0
     }
@@ -27,6 +34,7 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
 
     let limits = ValidationLimits {
         source_bytes: 4,
+        payload_bytes: 0,
         nodes: 3,
         depth: 2,
     };
@@ -66,6 +74,7 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
 fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
     let limits = ValidationLimits {
         source_bytes: 0,
+        payload_bytes: 0,
         nodes: 0,
         depth: 0,
     };
@@ -99,7 +108,8 @@ fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
         doc.validate(ValidationLimits {
             depth: 128,
             nodes: 128,
-            source_bytes: 0
+            source_bytes: 0,
+            payload_bytes: 0,
         }),
         Ok(128)
     );
@@ -158,5 +168,51 @@ fn validated_borrow_can_use_the_producers_custom_limits() {
             }
         ),
         Err(Error::SourceBytes)
+    ));
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct Owned(String);
+impl NodeData for Owned {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
+
+#[test]
+fn payload_limit_counts_native_node_data_before_consumption() {
+    let doc = Document {
+        source: String::new(),
+        children: vec![
+            Node::leaf(Span { start: 0, end: 0 }, Owned("abc".into())),
+            Node::leaf(Span { start: 0, end: 0 }, Owned("def".into())),
+        ],
+    };
+    let limits = ValidationLimits {
+        payload_bytes: 5,
+        ..ValidationLimits::default()
+    };
+    assert_eq!(doc.validate(limits), Err(Error::PayloadBytes));
+    assert_eq!(
+        doc.validate(ValidationLimits {
+            payload_bytes: 6,
+            ..limits
+        }),
+        Ok(2)
+    );
+
+    let huge = Document {
+        source: String::new(),
+        children: vec![Node::leaf(
+            Span { start: 0, end: 0 },
+            Owned("x".repeat(ValidationLimits::default().payload_bytes + 1)),
+        )],
+    };
+    assert!(matches!(
+        ValidatedDocument::new(&huge),
+        Err(Error::PayloadBytes)
     ));
 }

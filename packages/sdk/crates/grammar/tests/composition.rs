@@ -1,7 +1,7 @@
 use markdown_commonmark_contracts::{HtmlInline, Text};
 use markdown_definitions::Plugin as Declaration;
 use markdown_generic_syntax::math::InlineMathData;
-use markdown_parser::NodeData;
+use markdown_parser::{NodeData, NodeRole};
 use traq_markdown_grammar::{
     Parser,
     engine::{
@@ -14,7 +14,14 @@ use traq_markdown_grammar::{
 
 #[derive(Debug, Clone, PartialEq)]
 struct ExternalNode;
-impl NodeData for ExternalNode {}
+impl NodeData for ExternalNode {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 #[test]
 fn third_party_syntax_can_extend_a_published_preset() {
@@ -37,6 +44,14 @@ fn third_party_syntax_can_extend_a_published_preset() {
             .iter()
             .any(|node| node.get::<ExternalNode>().is_some())
     );
+
+    let nested = parser.parse("before ^ after").unwrap();
+    assert!(nested.children.iter().any(|paragraph| {
+        paragraph
+            .children
+            .iter()
+            .any(|node| node.get::<ExternalNode>().is_some())
+    }));
 }
 
 #[test]

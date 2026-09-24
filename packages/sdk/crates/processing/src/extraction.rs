@@ -33,9 +33,7 @@ pub struct Extractor {
 
 impl Extractor {
     pub fn new(options: ExtractorOptions) -> Result<Self, &'static str> {
-        if options.origin.len() > 2048 {
-            return Err("origin_limit");
-        }
+        crate::links::validate_origin(&options.origin)?;
 
         Ok(Self {
             message: traq::message::Extractor::new(&options.origin),

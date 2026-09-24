@@ -1,4 +1,4 @@
-use markdown_ast::Node;
+use markdown_ast::{Node, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 pub struct BlankLineData {}
 
 impl markdown_ast::NodeData for BlankLineData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }

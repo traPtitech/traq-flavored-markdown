@@ -57,6 +57,7 @@ impl Parser {
             })
             .map_err(|error| match error {
                 ValidationError::SourceBytes => ParseError::limit("input_bytes"),
+                ValidationError::PayloadBytes => ParseError::limit("payload_bytes"),
                 ValidationError::Nodes if remaining_work <= self.limits.document.nodes => {
                     ParseError::limit("work")
                 }

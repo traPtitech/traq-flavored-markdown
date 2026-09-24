@@ -1,4 +1,4 @@
-use markdown_ast::Node;
+use markdown_ast::{Node, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -7,9 +7,13 @@ use serde::{Deserialize, Serialize};
 pub struct SpoilerData {}
 
 impl markdown_ast::NodeData for SpoilerData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
-        children
-            .iter()
-            .all(|node| node.get::<crate::BlankLineData>().is_none())
+        children.iter().all(|node| node.role() == NodeRole::Inline)
     }
 }

@@ -43,6 +43,7 @@ pub(crate) fn decode(
         source: &source,
         limits,
         count: 0,
+        payload_bytes: 0,
     };
 
     let children = state.children(Some(children), parent, 1)?;
@@ -72,6 +73,7 @@ struct State<'a> {
     source: &'a str,
     limits: CodecLimits,
     count: usize,
+    payload_bytes: usize,
 }
 impl State<'_> {
     fn node(
@@ -90,6 +92,12 @@ impl State<'_> {
         let kind: String = Deserialize::deserialize(fields.take("kind")?)?;
         let raw_children = fields.0.remove("children");
         let kind = (self.decode_kind)(&kind, fields)?;
+
+        self.payload_bytes = self
+            .payload_bytes
+            .checked_add(kind.payload_bytes())
+            .filter(|bytes| *bytes <= self.limits.document.payload_bytes)
+            .ok_or_else(|| error("payload byte limit"))?;
 
         let children = self.children(raw_children, span, depth + 1)?;
         if !kind.validate(&children) {

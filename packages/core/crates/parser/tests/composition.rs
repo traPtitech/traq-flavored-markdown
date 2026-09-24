@@ -1,11 +1,18 @@
 use markdown_definitions::Plugin as Declaration;
 use markdown_parser::{
-    BuildError, GrammarBuilder, NodeData, Parser, Plugin, engine::inline::InlineRule,
+    BuildError, GrammarBuilder, NodeData, NodeRole, Parser, Plugin, engine::inline::InlineRule,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
 fn plugin() -> Plugin {
     let mut plugin = Plugin::new(&Declaration::new("text"));
     plugin.text(Text);

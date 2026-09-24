@@ -1,9 +1,15 @@
-use markdown_ast::{Document, Node, NodeData, NodeKind, Span};
+use markdown_ast::{Document, Node, NodeData, NodeKind, NodeRole, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Score(f64);
 
 impl NodeData for Score {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }
@@ -12,6 +18,12 @@ impl NodeData for Score {
 struct Container;
 
 impl NodeData for Container {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.iter().all(|child| child.get::<Score>().is_some())
     }

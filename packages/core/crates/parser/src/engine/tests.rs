@@ -1,12 +1,19 @@
 use super::{BuildError, GrammarBuilder, Parser, Plugin};
-use markdown_ast::NodeData;
+use markdown_ast::{NodeData, NodeRole};
 use markdown_definitions::Plugin as Declaration;
 
 // Native grammar construction must not require serde, NodeType, or codec setup.
 #[derive(Clone, Debug, PartialEq)]
 struct Text(String);
 
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
 
 fn grammar_plugin(declaration: &Declaration) -> Plugin {
     let mut plugin = Plugin::new(declaration);

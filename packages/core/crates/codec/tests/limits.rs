@@ -43,6 +43,7 @@ fn bounded_input_and_output_accept_the_boundary() {
         json_bytes: bytes.len(),
         document: ValidationLimits {
             source_bytes: 3,
+            payload_bytes: 3,
             nodes: 1,
             depth: 1,
         },
@@ -217,5 +218,49 @@ fn custom_limits_round_trip_above_the_default_source_budget() {
                 }
             )
             .is_err()
+    );
+}
+
+#[test]
+fn payload_limit_is_enforced_by_both_codec_directions() {
+    let codec = codec();
+    let document = Document {
+        source: String::new(),
+        children: vec![
+            Node::leaf(
+                Span { start: 0, end: 0 },
+                Text {
+                    value: "abc".into(),
+                },
+            ),
+            Node::leaf(
+                Span { start: 0, end: 0 },
+                Text {
+                    value: "def".into(),
+                },
+            ),
+        ],
+    };
+    let bytes = codec.encode(&document).unwrap();
+    let limits = CodecLimits {
+        json_bytes: bytes.len(),
+        document: ValidationLimits {
+            payload_bytes: 5,
+            ..ValidationLimits::default()
+        },
+    };
+    assert!(
+        codec
+            .encode_with_limits(&document, limits)
+            .unwrap_err()
+            .to_string()
+            .contains("payload byte limit")
+    );
+    assert!(
+        codec
+            .decode_with_limits(&bytes, limits)
+            .unwrap_err()
+            .to_string()
+            .contains("payload byte limit")
     );
 }

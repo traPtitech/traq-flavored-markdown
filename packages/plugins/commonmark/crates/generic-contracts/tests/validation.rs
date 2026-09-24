@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span, ValidationError, ValidationLimits};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span, ValidationError, ValidationLimits};
 use markdown_generic_contracts::{
     Alignment, BlockMathData, CellData, InlineMathData, RowData, TableData,
 };
@@ -68,4 +68,46 @@ fn math_nodes_are_leaves() {
         .validate()
     );
     assert!(!Node::new(span(), BlockMathData { tex: "x".into() }, vec![child],).validate());
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExternalInline;
+impl NodeData for ExternalInline {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExternalBlock;
+impl NodeData for ExternalBlock {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
+
+#[test]
+fn table_cells_accept_external_inline_nodes_only() {
+    assert!(
+        Node::new(
+            span(),
+            CellData { alignment: None },
+            vec![Node::leaf(span(), ExternalInline)]
+        )
+        .validate()
+    );
+    assert!(
+        !Node::new(
+            span(),
+            CellData { alignment: None },
+            vec![Node::leaf(span(), ExternalBlock)]
+        )
+        .validate()
+    );
 }

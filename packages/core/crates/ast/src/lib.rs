@@ -6,7 +6,7 @@ mod data;
 mod node;
 mod validation;
 
-pub use data::{NodeData, NodeKind};
+pub use data::{NodeData, NodeKind, NodeRole};
 pub use node::Node;
 pub use validation::{ValidatedDocument, ValidationError, ValidationLimits};
 

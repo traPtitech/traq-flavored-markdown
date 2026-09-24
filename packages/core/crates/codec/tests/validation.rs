@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 mod support;
 use markdown_definitions::NodeType;
@@ -12,6 +12,12 @@ static CHECKS: AtomicUsize = AtomicUsize::new(0);
 struct Group {}
 
 impl NodeData for Group {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         CHECKS.fetch_add(1, Ordering::Relaxed);
         children

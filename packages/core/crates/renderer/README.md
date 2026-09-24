@@ -5,13 +5,16 @@ depends only on the AST and shared declarations, not on CommonMark, traQ, a
 parser, or a codec.
 
 ```rust
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole { NodeRole::Inline }
+    fn payload_bytes(&self) -> usize { self.0.len() }
+}
 
 let prefix = String::from("hello ");
 let mut plugin = Plugin::new(&Declaration::new("greeting"));
@@ -35,7 +38,7 @@ that was registered, so later plugin edits do not alter them.
 
 `render` validates every node, including descendants a parent handler chooses
 not to emit, before rendering. Handlers own escaping and other output semantics.
-Default limits are 65,536 source bytes, 16,384 nodes, depth 64, 1 MiB output,
+Default limits are 65,536 source bytes, 8 MiB of payload, 16,384 nodes, depth 64, 1 MiB output,
 and 8 MiB cumulative appends. Trusted handler code owns its own work limits.
 
 Use `render_validated(ValidatedDocument)` to reuse a shared immutable tree

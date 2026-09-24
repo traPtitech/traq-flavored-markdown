@@ -5,13 +5,16 @@ the AST and shared declarations, not on a grammar, parser, renderer, codec, or
 traQ-specific result type.
 
 ```rust
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_extractor::{Extractor, Plugin, PresetBuilder};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Reference(String);
-impl NodeData for Reference {}
+impl NodeData for Reference {
+    fn role(&self) -> NodeRole { NodeRole::Inline }
+    fn payload_bytes(&self) -> usize { self.0.len() }
+}
 
 let mut plugin = Plugin::<Vec<String>>::new(&Declaration::new("references"));
 plugin.on::<Reference>(|reference, result| {
@@ -38,7 +41,7 @@ an existing builder, preset, or extractor. Duplicate handlers are rejected.
 
 `extract` validates the whole tree and visits every node in document order
 (parent, descendants, next sibling). Unhandled nodes are still validated and
-traversed. The default validation limits are 65,536 source bytes, 16,384 nodes,
+traversed. The default validation limits are 65,536 source bytes, 8 MiB of payload, 16,384 nodes,
 and depth 64. Handlers own the limits of their work and result sizes.
 
 Use `extract_validated(ValidatedDocument)` to avoid repeating validation when

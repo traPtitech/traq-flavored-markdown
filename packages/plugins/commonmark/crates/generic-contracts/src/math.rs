@@ -1,4 +1,4 @@
-use markdown_ast::Node;
+use markdown_ast::{Node, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -9,6 +9,12 @@ pub struct InlineMathData {
 }
 
 impl markdown_ast::NodeData for InlineMathData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.tex.len()
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }
@@ -22,6 +28,12 @@ pub struct BlockMathData {
 }
 
 impl markdown_ast::NodeData for BlockMathData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        self.tex.len()
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }

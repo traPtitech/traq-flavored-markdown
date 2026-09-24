@@ -4,6 +4,7 @@ use crate::{Document, Span};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ValidationLimits {
     pub source_bytes: usize,
+    pub payload_bytes: usize,
     pub nodes: usize,
     pub depth: usize,
 }
@@ -12,6 +13,7 @@ impl Default for ValidationLimits {
     fn default() -> Self {
         Self {
             source_bytes: 65_536,
+            payload_bytes: 8 * 1024 * 1024,
             nodes: 16_384,
             depth: 64,
         }
@@ -21,6 +23,7 @@ impl Default for ValidationLimits {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValidationError {
     SourceBytes,
+    PayloadBytes,
     Nodes,
     Depth,
     InvalidSpan,
@@ -31,6 +34,7 @@ impl std::fmt::Display for ValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::SourceBytes => "source byte limit",
+            Self::PayloadBytes => "payload byte limit",
             Self::Nodes => "node limit",
             Self::Depth => "depth limit",
             Self::InvalidSpan => "invalid span",
@@ -46,7 +50,7 @@ impl ValidationError {
     pub fn code(self) -> &'static str {
         match self {
             Self::InvalidSpan | Self::InvalidNode => "invalid_node",
-            Self::SourceBytes | Self::Nodes | Self::Depth => "resource_limit",
+            Self::SourceBytes | Self::PayloadBytes | Self::Nodes | Self::Depth => "resource_limit",
         }
     }
 }
@@ -88,7 +92,7 @@ impl<'a> ValidatedDocument<'a> {
 impl Document {
     /// Validate the entire tree and return its node count. No handlers execute.
     ///
-    /// Checks source size, depth, node count, nested UTF-8 spans, ordered and
+    /// Checks source and payload size, depth, node count, nested UTF-8 spans, ordered and
     /// non-overlapping siblings, and each node's type-owned validation. It does
     /// not check codec or handler registration.
     /// Validation is not cached: public nodes may be edited after this call.
@@ -105,6 +109,7 @@ impl Document {
         // Count scheduled nodes before extending the stack. Wide trees cannot
         // allocate more pending work than the configured node budget.
         let mut count = self.children.len();
+        let mut payload_bytes = 0usize;
         if count > limits.nodes {
             return Err(ValidationError::Nodes);
         }
@@ -136,6 +141,11 @@ impl Document {
             if !node.validate() {
                 return Err(ValidationError::InvalidNode);
             }
+
+            payload_bytes = payload_bytes
+                .checked_add(node.payload_bytes())
+                .filter(|bytes| *bytes <= limits.payload_bytes)
+                .ok_or(ValidationError::PayloadBytes)?;
 
             if node.children.len() > limits.nodes - count {
                 return Err(ValidationError::Nodes);

@@ -1,4 +1,4 @@
-use markdown_ast::Node;
+use markdown_ast::{Node, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,6 +22,15 @@ pub struct EmbeddingData {
 }
 
 impl markdown_ast::NodeData for EmbeddingData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.id
+            .len()
+            .saturating_add(self.label.len())
+            .saturating_add(self.literal.len())
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }

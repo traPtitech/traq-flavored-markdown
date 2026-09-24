@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 use std::sync::{
@@ -8,11 +8,25 @@ use std::sync::{
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text;
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct Other;
-impl NodeData for Other {}
+impl NodeData for Other {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 fn document<T: NodeData>(value: T) -> Document {
     Document {

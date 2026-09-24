@@ -1,7 +1,7 @@
 //! Source-preserving message text and attachment/citation extraction from one AST.
 use super::labels;
 use crate::links::{Links, Target};
-use markdown_ast::{Document, Node, Span, ValidatedDocument};
+use markdown_ast::{Document, Node, Span, ValidatedDocument, ValidationError};
 use markdown_commonmark_contracts::{Link, LinkForm};
 use markdown_trap_contracts::{EmbeddingData, EmbeddingKind, ReferenceData};
 use markdown_trap_extraction::normalize_reference_id;
@@ -25,7 +25,7 @@ impl Extractor {
     }
 
     pub fn extract(&self, document: &Document) -> Result<Message, &'static str> {
-        self.extract_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
+        self.extract_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
     }
 
     /// Reuse an immutable validation, including explicitly configured tree limits.

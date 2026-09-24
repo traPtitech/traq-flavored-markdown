@@ -1,4 +1,4 @@
-use markdown_ast::Node;
+use markdown_ast::{Node, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 pub struct MarkData {}
 
 impl markdown_ast::NodeData for MarkData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         crate::table::inline_children(children)
     }

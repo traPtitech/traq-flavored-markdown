@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, Span};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 use markdown_definitions::NodeType;
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,12 @@ struct Score {
 }
 
 impl NodeData for Score {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         children.is_empty()
     }
@@ -21,7 +27,14 @@ struct RenamedScore {
     value: f64,
 }
 
-impl NodeData for RenamedScore {}
+impl NodeData for RenamedScore {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 #[test]
 fn shared_types_work_across_independent_registration_orders() {
@@ -56,7 +69,14 @@ fn first(codec: &mut Codec) -> Document {
         value: u8,
     }
 
-    impl NodeData for Collision {}
+    impl NodeData for Collision {
+        fn role(&self) -> NodeRole {
+            NodeRole::Opaque
+        }
+        fn payload_bytes(&self) -> usize {
+            0
+        }
+    }
 
     codec.register::<Collision>().unwrap();
 
@@ -76,7 +96,14 @@ fn second(codec: &mut Codec) -> Result<(), &'static str> {
         value: u16,
     }
 
-    impl NodeData for Collision {}
+    impl NodeData for Collision {
+        fn role(&self) -> NodeRole {
+            NodeRole::Opaque
+        }
+        fn payload_bytes(&self) -> usize {
+            0
+        }
+    }
 
     codec.register::<Collision>()
 }

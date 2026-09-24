@@ -1,3 +1,4 @@
+use markdown_ast::NodeRole;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -10,6 +11,32 @@ pub struct StampData {
 }
 
 impl markdown_ast::NodeData for StampData {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        let kind = match &self.kind {
+            StampKind::Normal { name }
+            | StampKind::User { name }
+            | StampKind::HexColor { name, .. } => name.len(),
+            StampKind::HslColor {
+                name,
+                hue,
+                saturation,
+                lightness,
+            } => name
+                .len()
+                .saturating_add(hue.len())
+                .saturating_add(saturation.len())
+                .saturating_add(lightness.len()),
+        };
+        self.literal.len().saturating_add(kind).saturating_add(
+            self.effects
+                .animations
+                .len()
+                .saturating_mul(std::mem::size_of::<StampAnimation>()),
+        )
+    }
     fn validate(&self, children: &[markdown_ast::Node]) -> bool {
         children.is_empty()
     }

@@ -1,5 +1,29 @@
-use markdown_ast::{Document, Node, Span, ValidationError, ValidationLimits};
-use markdown_commonmark_contracts::{Heading, Link, LinkForm, List, ListItem, Paragraph, Text};
+use markdown_ast::{Document, Node, NodeData, NodeRole, Span, ValidationError, ValidationLimits};
+use markdown_commonmark_contracts::{
+    Blockquote, Heading, Link, LinkForm, List, ListItem, Paragraph, Text,
+};
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExternalInline;
+impl NodeData for ExternalInline {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExternalBlock;
+impl NodeData for ExternalBlock {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
+}
 
 fn span() -> Span {
     Span { start: 0, end: 0 }
@@ -74,6 +98,58 @@ fn known_block_nodes_cannot_be_children_of_inline_containers() {
                 form: LinkForm::Explicit,
             },
             vec![paragraph()],
+        )
+        .validate()
+    );
+}
+
+#[test]
+fn parent_contracts_use_external_plugin_roles() {
+    assert!(
+        Node::new(
+            span(),
+            Paragraph {},
+            vec![Node::leaf(span(), ExternalInline)]
+        )
+        .validate()
+    );
+    assert!(
+        !Node::new(
+            span(),
+            Paragraph {},
+            vec![Node::leaf(span(), ExternalBlock)]
+        )
+        .validate()
+    );
+    assert!(
+        Node::new(
+            span(),
+            Blockquote {},
+            vec![Node::leaf(span(), ExternalBlock)]
+        )
+        .validate()
+    );
+    assert!(
+        !Node::new(
+            span(),
+            Blockquote {},
+            vec![Node::leaf(span(), ExternalInline)]
+        )
+        .validate()
+    );
+    assert!(
+        Node::new(
+            span(),
+            ListItem { marker: "-".into() },
+            vec![Node::leaf(span(), ExternalBlock)]
+        )
+        .validate()
+    );
+    assert!(
+        !Node::new(
+            span(),
+            ListItem { marker: "-".into() },
+            vec![Node::leaf(span(), ExternalInline)]
         )
         .validate()
     );

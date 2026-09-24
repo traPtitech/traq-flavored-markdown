@@ -1,6 +1,7 @@
 use markdown_definitions::Plugin as Declaration;
 use markdown_parser::{
-    GrammarBuilder, Limits, Node, NodeData, ParseError, Parser, Plugin, Span,
+    GrammarBuilder, Limits, Node, NodeData, NodeRole, ParseError, Parser, Plugin, Span,
+    ValidationLimits,
     engine::{
         block::{BlockMatch, BlockRule, DraftContent},
         inline::{InlineAction, InlineMatch, InlineRule},
@@ -12,11 +13,24 @@ struct CustomState(Option<String>);
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
-impl NodeData for Text {}
+impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.0.len()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct Invalid;
 impl NodeData for Invalid {
+    fn role(&self) -> NodeRole {
+        NodeRole::Opaque
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _: &[Node]) -> bool {
         false
     }
@@ -83,6 +97,22 @@ fn unsuccessful_rules_still_consume_the_work_budget() {
 
     assert!(matches!(parser.parse_inline("x"),
         Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+}
+
+#[test]
+fn parser_charges_plugin_owned_payload_bytes() {
+    let plugin = plugin();
+    let parser = parser(&plugin).with_limits(Limits {
+        document: ValidationLimits {
+            payload_bytes: 2,
+            ..ValidationLimits::default()
+        },
+        ..Limits::default()
+    });
+    assert!(matches!(
+        parser.parse_inline("abc"),
+        Err(ParseError::ResourceLimit { resource }) if resource == "payload_bytes"
+    ));
 }
 
 #[test]
@@ -207,6 +237,12 @@ fn final_validation_stops_at_the_remaining_work_budget() {
     struct Counted;
 
     impl NodeData for Counted {
+        fn role(&self) -> NodeRole {
+            NodeRole::Opaque
+        }
+        fn payload_bytes(&self) -> usize {
+            0
+        }
         fn validate(&self, _: &[Node]) -> bool {
             CHECKS.fetch_add(1, Ordering::Relaxed);
             true

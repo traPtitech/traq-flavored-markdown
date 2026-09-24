@@ -1,4 +1,4 @@
-use markdown_ast::{Node, NodeData};
+use markdown_ast::{Node, NodeData, NodeRole};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -15,6 +15,12 @@ pub enum LinkForm {
 #[serde(deny_unknown_fields)]
 pub struct Paragraph {}
 impl NodeData for Paragraph {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         inline_children(children)
     }
@@ -27,6 +33,12 @@ pub struct Heading {
     pub level: u8,
 }
 impl NodeData for Heading {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         (1..=6).contains(&self.level) && inline_children(children)
     }
@@ -37,6 +49,12 @@ impl NodeData for Heading {
 #[serde(deny_unknown_fields)]
 pub struct Blockquote {}
 impl NodeData for Blockquote {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         block_children(children)
     }
@@ -51,6 +69,12 @@ pub struct List {
     pub tight: bool,
 }
 impl NodeData for List {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         let Some(first) = children.first().and_then(|node| node.get::<ListItem>()) else {
             return false;
@@ -80,6 +104,12 @@ pub struct ListItem {
     pub marker: String,
 }
 impl NodeData for ListItem {
+    fn role(&self) -> NodeRole {
+        NodeRole::Structural
+    }
+    fn payload_bytes(&self) -> usize {
+        self.marker.len()
+    }
     fn validate(&self, children: &[Node]) -> bool {
         list_marker(&self.marker).is_some() && block_children(children)
     }
@@ -94,6 +124,12 @@ pub struct CodeBlock {
     pub literal: String,
 }
 impl NodeData for CodeBlock {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        self.info.len().saturating_add(self.literal.len())
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -106,6 +142,12 @@ pub struct ThematicBreak {
     pub marker: String,
 }
 impl NodeData for ThematicBreak {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        self.marker.len()
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -118,6 +160,12 @@ pub struct Text {
     pub value: String,
 }
 impl NodeData for Text {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.value.len()
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -128,6 +176,12 @@ impl NodeData for Text {
 #[serde(deny_unknown_fields)]
 pub struct Softbreak {}
 impl NodeData for Softbreak {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -138,6 +192,12 @@ impl NodeData for Softbreak {
 #[serde(deny_unknown_fields)]
 pub struct Hardbreak {}
 impl NodeData for Hardbreak {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -150,6 +210,12 @@ pub struct InlineCode {
     pub literal: String,
 }
 impl NodeData for InlineCode {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.literal.len()
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -160,6 +226,12 @@ impl NodeData for InlineCode {
 #[serde(deny_unknown_fields)]
 pub struct Emphasis {}
 impl NodeData for Emphasis {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         inline_children(children)
     }
@@ -170,6 +242,12 @@ impl NodeData for Emphasis {
 #[serde(deny_unknown_fields)]
 pub struct Strong {}
 impl NodeData for Strong {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        0
+    }
     fn validate(&self, children: &[Node]) -> bool {
         inline_children(children)
     }
@@ -184,6 +262,14 @@ pub struct Link {
     pub form: LinkForm,
 }
 impl NodeData for Link {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.destination
+            .len()
+            .saturating_add(self.title.as_ref().map_or(0, String::len))
+    }
     fn validate(&self, children: &[Node]) -> bool {
         inline_children(children)
     }
@@ -198,6 +284,15 @@ pub struct Image {
     pub label_source: String,
 }
 impl NodeData for Image {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.destination
+            .len()
+            .saturating_add(self.title.as_ref().map_or(0, String::len))
+            .saturating_add(self.label_source.len())
+    }
     fn validate(&self, children: &[Node]) -> bool {
         inline_children(children)
     }
@@ -210,6 +305,12 @@ pub struct HtmlInline {
     pub literal: String,
 }
 impl NodeData for HtmlInline {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.literal.len()
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
@@ -222,20 +323,15 @@ pub struct HtmlBlock {
     pub literal: String,
 }
 impl NodeData for HtmlBlock {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        self.literal.len()
+    }
     fn validate(&self, _children: &[Node]) -> bool {
         _children.is_empty()
     }
-}
-
-fn known_block(node: &Node) -> bool {
-    node.get::<Paragraph>().is_some()
-        || node.get::<Heading>().is_some()
-        || node.get::<Blockquote>().is_some()
-        || node.get::<List>().is_some()
-        || node.get::<ListItem>().is_some()
-        || node.get::<CodeBlock>().is_some()
-        || node.get::<ThematicBreak>().is_some()
-        || node.get::<HtmlBlock>().is_some()
 }
 
 fn list_marker(marker: &str) -> Option<(bool, u8, u32)> {
@@ -259,24 +355,12 @@ fn list_marker(marker: &str) -> Option<(bool, u8, u32)> {
     ))
 }
 
-fn known_inline(node: &Node) -> bool {
-    node.get::<Text>().is_some()
-        || node.get::<Softbreak>().is_some()
-        || node.get::<Hardbreak>().is_some()
-        || node.get::<InlineCode>().is_some()
-        || node.get::<Emphasis>().is_some()
-        || node.get::<Strong>().is_some()
-        || node.get::<Link>().is_some()
-        || node.get::<Image>().is_some()
-        || node.get::<HtmlInline>().is_some()
-}
-
 fn inline_children(children: &[Node]) -> bool {
-    children.iter().all(|child| !known_block(child))
+    children
+        .iter()
+        .all(|child| child.role() == NodeRole::Inline)
 }
 
 fn block_children(children: &[Node]) -> bool {
-    children
-        .iter()
-        .all(|child| !known_inline(child) && child.get::<ListItem>().is_none())
+    children.iter().all(|child| child.role() == NodeRole::Block)
 }

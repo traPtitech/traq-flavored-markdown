@@ -1,5 +1,5 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
-use markdown_ast::{Document, Node, Span, ValidatedDocument};
+use markdown_ast::{Document, Node, Span, ValidatedDocument, ValidationError};
 use markdown_commonmark_contracts::{Image, Link, Text};
 use markdown_trap_contracts::{EmbeddingData, ReferenceData};
 use serde::Serialize;
@@ -37,7 +37,7 @@ pub struct EmbeddingPlan {
 }
 
 pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
-    plan_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
+    plan_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
 }
 
 /// Reuse an immutable validation, including explicitly configured tree limits.

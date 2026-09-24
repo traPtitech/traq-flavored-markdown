@@ -1,7 +1,7 @@
 use markdown_commonmark_contracts::Link;
 use markdown_definitions::Plugin as Declaration;
 use markdown_parser::{
-    NodeData, Parser, Plugin,
+    NodeData, NodeRole, Parser, Plugin,
     engine::{
         block::BlockRule,
         inline::{InlineMatch, InlineRule, TextMatch, TextRule},
@@ -10,10 +10,30 @@ use markdown_parser::{
 use traq_markdown_grammar::presets;
 
 #[derive(Debug, Clone, PartialEq)]
-struct Note {
+struct BlockNote {
     title: String,
 }
-impl NodeData for Note {}
+impl NodeData for BlockNote {
+    fn role(&self) -> NodeRole {
+        NodeRole::Block
+    }
+    fn payload_bytes(&self) -> usize {
+        self.title.len()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct InlineNote {
+    title: String,
+}
+impl NodeData for InlineNote {
+    fn role(&self) -> NodeRole {
+        NodeRole::Inline
+    }
+    fn payload_bytes(&self) -> usize {
+        self.title.len()
+    }
+}
 
 fn has_link(nodes: &[markdown_parser::Node]) -> bool {
     nodes.iter().any(|node| {
@@ -39,7 +59,7 @@ fn note_block() -> BlockRule {
         Ok(Some(
             input.blocks(
                 end + 1,
-                Note {
+                BlockNote {
                     title: title.into(),
                 }
                 .into(),
@@ -57,7 +77,7 @@ fn note_inline() -> InlineRule {
         }
         Ok(Some(InlineMatch::leaf(
             input.position + 6,
-            Note {
+            InlineNote {
                 title: "inline".into(),
             }
             .into(),
@@ -73,7 +93,7 @@ fn note_text() -> TextRule {
         Ok(vec![TextMatch {
             start: input.range.start + offset,
             end: input.range.start + offset + 4,
-            kind: Note {
+            kind: InlineNote {
                 title: "text".into(),
             }
             .into(),
@@ -94,7 +114,10 @@ fn note() -> (Plugin, BlockRule) {
 fn count(nodes: &[markdown_parser::Node]) -> usize {
     nodes
         .iter()
-        .map(|n| usize::from(n.get::<Note>().is_some()) + count(&n.children))
+        .map(|n| {
+            usize::from(n.get::<BlockNote>().is_some() || n.get::<InlineNote>().is_some())
+                + count(&n.children)
+        })
         .sum()
 }
 

@@ -59,7 +59,13 @@ the parsed references for mention checks.
 The public Rust APIs are `extraction::Extractor::extract(&Document)` and
 `rendering::PlainTextRenderer::render(&Document)`. They do not select grammars
 or reparse source. `extract_validated` and `render_validated` can share one
-immutable AST validation. Use `ValidatedDocument::with_limits` to pass a document
-produced with custom tree limits to these methods. Source replacement is applied by span order: an outer
+immutable AST validation. By default, validation allows 65,536 source bytes,
+8 MiB of plugin-owned payload, 16,384 nodes, and depth 64. External plugin
+nodes must declare `NodeData::role` and `NodeData::payload_bytes`; validation
+checks these contracts before any handler clones or renders the payload. Use
+`ValidatedDocument::with_limits(&document, parser_limits.document)` or the
+equivalent codec limits to pass a document produced with custom limits to these
+methods. The standalone message and embedding APIs also accept a validated
+document. Source replacement is applied by span order: an outer
 replacement wins for equal or nested spans. Public AST consumers require
 source-ordered, non-overlapping siblings.
