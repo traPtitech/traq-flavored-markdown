@@ -116,7 +116,10 @@ fn reference_target(
         end += close + 1;
     }
 
-    let (target, title) = input.reference(&references::key(label))?;
+    let (target, title) = input
+        .state::<references::ReferenceMap>()?
+        .0
+        .get(&references::key(label))?;
     Some((end, target.clone(), title.clone()))
 }
 

@@ -2,10 +2,10 @@ use super::{apply, delimiters, text, token::*, tree};
 
 use crate::{
     Node, NodeKind,
-    engine::{Budget, Grammar, ParseError, block::References, source::SourceView},
+    engine::{Budget, Grammar, ParseError, ParseState, source::SourceView},
 };
 
-use std::ops::Range;
+use std::{any::Any, ops::Range};
 
 pub struct InlineInput<'a> {
     pub source: &'a SourceView,
@@ -13,7 +13,7 @@ pub struct InlineInput<'a> {
     pub bracket: Option<BracketInfo>,
     pub inside_brackets: bool,
     pub trailing_text: &'a str,
-    pub(crate) references: &'a References,
+    pub(crate) state: &'a ParseState,
 }
 
 impl InlineInput<'_> {
@@ -21,8 +21,8 @@ impl InlineInput<'_> {
         &self.source.text[self.position..]
     }
 
-    pub fn reference(&self, key: &str) -> Option<&(String, Option<String>)> {
-        self.references.get(key)
+    pub fn state<T: Any>(&self) -> Option<&T> {
+        self.state.get::<T>()
     }
 }
 
@@ -85,7 +85,7 @@ pub(crate) fn parse(
     source: &SourceView,
     grammar: &Grammar,
     budget: &mut Budget,
-    references: &References,
+    parse_state: &ParseState,
 ) -> Result<Vec<Node>, ParseError> {
     let mut state = State {
         source,
@@ -99,7 +99,7 @@ pub(crate) fn parse(
 
     while state.position < source.text.len() {
         state.budget.spend(1)?;
-        let (key, result) = find_match(&mut state, grammar, references)?;
+        let (key, result) = find_match(&mut state, grammar, parse_state)?;
         validate_match(source, state.position, &result)?;
 
         apply::matched(&mut state, key, result)?;
@@ -114,7 +114,7 @@ pub(crate) fn parse(
 fn find_match(
     state: &mut State<'_, '_>,
     grammar: &Grammar,
-    references: &References,
+    parse_state: &ParseState,
 ) -> Result<(usize, InlineMatch), ParseError> {
     let candidates = &grammar.data.dispatch[state.source.text.as_bytes()[state.position] as usize];
 
@@ -124,7 +124,7 @@ fn find_match(
         let input = InlineInput {
             source: state.source,
             position: state.position,
-            references,
+            state: parse_state,
             bracket: state.brackets.last().map(|b| b.info),
             inside_brackets: !state.brackets.is_empty(),
             trailing_text: match state.tokens.last() {

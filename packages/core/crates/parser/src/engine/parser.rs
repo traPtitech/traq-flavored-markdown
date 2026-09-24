@@ -1,4 +1,4 @@
-use super::{Budget, Grammar, Limits, ParseError, block, inline, source::SourceView};
+use super::{Budget, Grammar, Limits, ParseError, ParseState, block, inline, source::SourceView};
 use markdown_ast::{Document, ValidationError, ValidationLimits};
 
 pub struct Parser {
@@ -35,11 +35,12 @@ impl Parser {
 
         let view = SourceView::new(source);
         let mut budget = Budget::new(self.limits);
+        let mut state = ParseState::default();
 
         let children = if inline_only {
-            inline::parse(&view, grammar, &mut budget, &block::References::new())?
+            inline::parse(&view, grammar, &mut budget, &state)?
         } else {
-            block::parse(&view, grammar, &mut budget)?
+            block::parse(&view, grammar, &mut budget, &mut state)?
         };
 
         let document = Document {

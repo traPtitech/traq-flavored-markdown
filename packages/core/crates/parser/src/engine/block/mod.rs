@@ -4,7 +4,7 @@ pub use rule::BlockRule;
 mod draft;
 mod scan;
 
-use super::{Grammar, source::SourceView};
+use super::{Budget, Grammar, ParseError, ParseState, source::SourceView};
 pub use draft::{DraftContent, DraftNode};
 pub(crate) use scan::parse;
 use std::ops::Range;
@@ -14,18 +14,12 @@ pub struct BlockBatch {
     pub loose: bool,
 }
 
-pub struct Definition {
-    pub key: String,
-    pub destination: String,
-    pub title: Option<String>,
-}
-
-pub(crate) type References = std::collections::HashMap<String, (String, Option<String>)>;
+type Commit = Box<dyn FnOnce(&mut ParseState, &mut Budget) -> Result<(), ParseError>>;
 
 pub struct BlockMatch {
     pub end: usize,
     pub nodes: Vec<DraftNode>,
-    pub definitions: Vec<Definition>,
+    pub(crate) commits: Vec<Commit>,
     pub consume_separator: bool,
 }
 
@@ -34,7 +28,7 @@ impl BlockMatch {
         Self {
             end,
             nodes: vec![node],
-            definitions: vec![],
+            commits: vec![],
             consume_separator: true,
         }
     }
@@ -43,9 +37,18 @@ impl BlockMatch {
         Self {
             end,
             nodes: vec![],
-            definitions: vec![],
+            commits: vec![],
             consume_separator: false,
         }
+    }
+
+    /// Runs after the parser accepts this match, before resolving its block children.
+    pub fn on_accept(
+        mut self,
+        commit: impl FnOnce(&mut ParseState, &mut Budget) -> Result<(), ParseError> + 'static,
+    ) -> Self {
+        self.commits.push(Box::new(commit));
+        self
     }
 }
 

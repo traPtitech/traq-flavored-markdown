@@ -1,5 +1,9 @@
 use super::inlines::destination::destination;
 use markdown_parser::{ParseError, engine::Budget};
+use std::collections::HashMap;
+
+#[derive(Default)]
+pub(crate) struct ReferenceMap(pub(crate) HashMap<String, (String, Option<String>)>);
 
 pub(crate) fn key(value: &str) -> String {
     value

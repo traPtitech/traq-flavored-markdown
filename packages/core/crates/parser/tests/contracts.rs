@@ -2,10 +2,13 @@ use markdown_definitions::Plugin as Declaration;
 use markdown_parser::{
     GrammarBuilder, Limits, Node, NodeData, ParseError, Parser, Plugin, Span,
     engine::{
-        block::BlockRule,
+        block::{BlockMatch, BlockRule, DraftContent},
         inline::{InlineAction, InlineMatch, InlineRule},
     },
 };
+
+#[derive(Default)]
+struct CustomState(Option<String>);
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
@@ -101,6 +104,98 @@ fn source_helpers_reject_invalid_ranges() {
             Err(ParseError::InternalError)
         );
     }
+}
+
+#[test]
+fn accepted_block_matches_share_parse_scoped_state_with_inline_rules() {
+    let mut plugin = plugin();
+
+    plugin.add(BlockRule::new(|input, _| {
+        if let Some(value) = input.current().strip_prefix("def:") {
+            let value = value.to_owned();
+            return Ok(Some(BlockMatch::ignore(input.start + 1).on_accept(
+                move |state, _| {
+                    state.get_or_default::<CustomState>().0.get_or_insert(value);
+                    Ok(())
+                },
+            )));
+        }
+
+        Ok(Some(input.matched(
+            input.start + 1,
+            Text("container".into()).into(),
+            DraftContent::Inline(input.body(input.start..input.start + 1)?),
+        )?))
+    }));
+
+    plugin.add(InlineRule::new(b"x", |input, _| {
+        let value = input
+            .state::<CustomState>()
+            .and_then(|state| state.0.clone())
+            .unwrap_or_else(|| "missing".into());
+        Ok(Some(InlineMatch::leaf(
+            input.position + 1,
+            Text(value).into(),
+        )))
+    }));
+
+    let parser = parser(&plugin);
+    let with_definition = parser.parse("x\ndef:found").unwrap();
+    assert_eq!(
+        with_definition.children[0].children[0].get::<Text>(),
+        Some(&Text("found".into()))
+    );
+
+    let without_definition = parser.parse("x").unwrap();
+    assert_eq!(
+        without_definition.children[0].children[0].get::<Text>(),
+        Some(&Text("missing".into()))
+    );
+}
+
+#[test]
+fn rejected_block_matches_do_not_commit_state() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    let commits = Arc::new(AtomicUsize::new(0));
+    let mut plugin = plugin();
+    plugin.add(BlockRule::new({
+        let commits = Arc::clone(&commits);
+        move |input, _| {
+            let commits = Arc::clone(&commits);
+            Ok(Some(BlockMatch::ignore(input.start).on_accept(
+                move |_, _| {
+                    commits.fetch_add(1, Ordering::Relaxed);
+                    Ok(())
+                },
+            )))
+        }
+    }));
+
+    assert_eq!(parser(&plugin).parse("x"), Err(ParseError::InternalError));
+    assert_eq!(commits.load(Ordering::Relaxed), 0);
+}
+
+#[test]
+fn accepted_block_commits_obey_the_work_budget() {
+    let mut plugin = plugin();
+    plugin.add(BlockRule::new(|input, _| {
+        Ok(Some(
+            BlockMatch::ignore(input.start + 1).on_accept(|_, budget| budget.spend(10)),
+        ))
+    }));
+
+    let result = parser(&plugin)
+        .with_limits(Limits {
+            work: 5,
+            ..Limits::default()
+        })
+        .parse("x");
+
+    assert!(matches!(result, Err(ParseError::ResourceLimit { resource }) if resource == "work"));
 }
 
 #[test]
