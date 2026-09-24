@@ -2,6 +2,7 @@ import {
   isKnownNode,
   names
 } from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import { validateLink as defaultLinkPolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import type { Document, Node } from '@traq-flavored-markdown/core/renderer'
 import { names as trap } from '@traq-flavored-markdown/traq-plugin/nodes'
 
@@ -66,7 +67,11 @@ function isStandaloneLink(node: Node, previous?: Node): boolean {
 }
 
 /** Analyze a document once and keep presentation choices outside the AST. */
-export function analyzeMessage(document: Document, origin: string) {
+export function analyzeMessage(
+  document: Document,
+  origin: string,
+  validateLink: (value: string) => boolean = defaultLinkPolicy
+) {
   const links = new Map<Node, Embedding>()
   const embeddings: Embedding[] = []
   const childText = new Map<Node, string>()
@@ -76,7 +81,11 @@ export function analyzeMessage(document: Document, origin: string) {
     for (const node of nodes) {
       if (node.kind === trap.Spoiler) continue
 
-      if (isKnownNode(node) && node.kind === names.Link) {
+      if (
+        isKnownNode(node) &&
+        node.kind === names.Link &&
+        validateLink(node.data.destination)
+      ) {
         const embedding = embeddingFromUrl(node.data.destination, origin)
         if (embedding) {
           links.set(node, embedding)
@@ -111,7 +120,11 @@ export function analyzeMessage(document: Document, origin: string) {
 }
 
 /** Whether the final paragraph ends with an embedding on a line of its own. */
-export function endsWithEmbedding(document: Document, origin: string): boolean {
+export function endsWithEmbedding(
+  document: Document,
+  origin: string,
+  validateLink: (value: string) => boolean = defaultLinkPolicy
+): boolean {
   const blocks = document.children.filter(node => node.kind !== trap.BlankLine)
 
   const paragraph = blocks.at(-1)
@@ -133,5 +146,8 @@ export function endsWithEmbedding(document: Document, origin: string): boolean {
     return false
   }
 
-  return embeddingFromUrl(last.data.destination, origin) !== undefined
+  return (
+    validateLink(last.data.destination) &&
+    embeddingFromUrl(last.data.destination, origin) !== undefined
+  )
 }

@@ -6,7 +6,7 @@ import {
 } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
-test('core renders custom AST nodes without a grammar or Wasm runtime', () => {
+test('plugins are immutable values and presets retain the selected version', () => {
   const declaration = new Declaration('custom')
   const plugin = new Plugin(declaration).on('text', (n, c) =>
     c.escape(n.data as string)
@@ -18,14 +18,22 @@ test('core renders custom AST nodes without a grammar or Wasm runtime', () => {
     children: [{ kind: 'text', data: '<猫>', span: { start: 0, end: 5 } }]
   }
   expect(view.render(document)).toBe('&lt;猫&gt;')
-  plugin.replace('text', () => '<b>changed</b>')
+  const updated = plugin.replace('text', () => '<b>changed</b>')
+  expect(updated).not.toBe(plugin)
   expect(view.render(document)).toBe('&lt;猫&gt;')
   expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  expect(
+    renderer(new PresetBuilder().add(plugin).build()).render(document)
+  ).toBe('&lt;猫&gt;')
   expect(() => builder.add(plugin)).toThrow(/Duplicate plugin/)
+  expect(() => builder.add(updated)).toThrow(/Duplicate plugin/)
+  builder.remove(updated)
+  expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  builder.add(updated)
+  expect(renderer(builder.build()).render(document)).toBe('<b>changed</b>')
   builder.remove(plugin)
   expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
-  builder.add(plugin)
-  expect(renderer(builder.build()).render(document)).toBe('<b>changed</b>')
+  expect(view.render(document)).toBe('&lt;猫&gt;')
   expect(renderer(new PresetBuilder().build()).render(document)).toBe(
     '&lt;猫&gt;'
   )

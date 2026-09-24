@@ -36,17 +36,20 @@ test('rendering returns HTML and exposes no parser or token adapter', () => {
   expect((html as Record<string, unknown>).traqMarkdownIt).toBeUndefined()
 })
 
-test('replacement preserves defaults and earlier snapshots', () => {
+test('replacement preserves defaults and earlier presets', () => {
   const document = parser.parse('**bold** [link](https://example.com)')
   const plugin = common.plugin()
   const builder = new html.PresetBuilder().add(plugin)
   const before = html.renderer(builder.build())
-  plugin.replace(common.nodes.Link, (node, ctx) => ctx.render(node.children))
+  const updated = plugin.replace(common.nodes.Link, (node, ctx) =>
+    ctx.render(node.children)
+  )
   builder.remove(plugin)
-  const custom = html.renderer(build(plugin))
+  const custom = html.renderer(build(updated))
   expect(custom.render(document)).toMatch(/<strong>bold<\/strong>/)
   expect(custom.render(document)).not.toMatch(/<a /)
   expect(before.render(document)).toMatch(/<a /)
+  expect(html.renderer(build(plugin)).render(document)).toMatch(/<a /)
   expect(html.renderer(builder.build()).render(document)).toBe(
     '**bold** [link](https://example.com)'
   )
@@ -77,11 +80,14 @@ test('SDK html creates a renderer and accepts third-party plugins', () => {
   )
   const options = {
     plugins: [annotation],
-    configurePlugins({ common }: traq.HtmlPlugins) {
-      common.replace(
-        commonNodes.names.Strong,
-        (node, context) => '<b>' + context.render(node.children) + '</b>'
-      )
+    configurePlugins(plugins: traq.HtmlPlugins) {
+      return {
+        ...plugins,
+        common: plugins.common.replace(
+          commonNodes.names.Strong,
+          (node, context) => '<b>' + context.render(node.children) + '</b>'
+        )
+      }
     }
   }
   const view = traq.html(options)
@@ -139,7 +145,7 @@ test('composition validates selected names without changing earlier presets', ()
 
 test('custom HTML handlers receive escaped text helpers and rendered children', () => {
   const plugin = common.plugin({ rawHtml: 'escape' })
-  plugin.replace(
+  const customized = plugin.replace(
     common.nodes.Strong,
     (node, context) =>
       '<b title="' +
@@ -148,19 +154,24 @@ test('custom HTML handlers receive escaped text helpers and rendered children', 
       context.render(node.children) +
       '</b>'
   )
-  const view = html.renderer(build(plugin))
+  const view = html.renderer(build(customized))
   expect(view.render(parser.parseInline('**<x>**'))).toBe(
     '<b title="&quot;&lt;&amp;">&lt;x&gt;</b>'
   )
-  plugin.replace(common.nodes.Strong, () => [] as unknown as string)
+  const invalid = customized.replace(
+    common.nodes.Strong,
+    () => [] as unknown as string
+  )
   expect(() =>
-    html.renderer(build(plugin)).render(parser.parse('**x**'))
+    html.renderer(build(invalid)).render(parser.parse('**x**'))
   ).toThrow(/HTML strings/)
+  expect(view.render(parser.parseInline('**x**'))).toContain('<b')
 })
 
 test('fallback replacement keeps other extensions and does not require a store', () => {
-  const extension = trap.plugin()
-  extension.replace(trapNodes.names.Stamp, (node, ctx) => ctx.fallback(node))
+  const extension = trap
+    .plugin()
+    .replace(trapNodes.names.Stamp, (node, ctx) => ctx.fallback(node))
   const view = html.renderer(
     new html.PresetBuilder()
       .add(common.plugin())

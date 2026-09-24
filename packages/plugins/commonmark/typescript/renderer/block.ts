@@ -36,7 +36,7 @@ export function registerBlockHandlers(
   result: Plugin,
   { highlight, rawHtml, xhtmlOut }: BlockOptions
 ) {
-  result.on(
+  result = result.on(
     names.Paragraph,
     checked(names.Paragraph, isKnownNode, (n, ctx) => {
       const content = ctx.render(n.children)
@@ -48,7 +48,7 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.Heading,
     checked(
       names.Heading,
@@ -64,7 +64,7 @@ export function registerBlockHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.Blockquote,
     checked(
       names.Blockquote,
@@ -74,7 +74,7 @@ export function registerBlockHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.List,
     checked(names.List, isKnownNode, (n, ctx) => {
       const tag = n.data.ordered ? 'ol' : 'ul'
@@ -89,7 +89,7 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.ListItem,
     checked(names.ListItem, isKnownNode, (n, ctx) => {
       const children = n.children ?? []
@@ -123,7 +123,7 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.CodeBlock,
     checked(names.CodeBlock, isKnownNode, n => {
       const language = n.data.fenced ? codeLanguage(n.data.info ?? '') : ''
@@ -149,14 +149,14 @@ export function registerBlockHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.ThematicBreak,
     checked(names.ThematicBreak, isKnownNode, () =>
       xhtmlOut ? '<hr />\n' : '<hr>\n'
     )
   )
 
-  result.on(
+  result = result.on(
     names.HtmlBlock,
     checked(names.HtmlBlock, isKnownNode, n =>
       rawHtml === 'escape'
@@ -164,4 +164,6 @@ export function registerBlockHandlers(
         : n.data.literal
     )
   )
+
+  return result
 }

@@ -31,8 +31,8 @@ export type Options = CommonOptions &
   TrapOptions & {
     /** Additional handlers for nodes outside the built-in plugins. */
     plugins?: readonly Plugin[]
-    /** Customize built-in handlers before the preset captures them. */
-    configurePlugins?: (plugins: HtmlPlugins) => void
+    /** Return customized built-in handlers for the preset. */
+    configurePlugins?: (plugins: HtmlPlugins) => HtmlPlugins
   }
 
 const highlight = createHighlightFunc('traq-code traq-lang')
@@ -87,23 +87,20 @@ function buildPreset(
   })
 
   const genericPlugin = generic(condensed ? condensedOptions(options) : options)
-
   const trapPlugin = trap({ ...options, validateLink })
-
-  if (condensed) {
-    configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)
-  }
-
-  configurePlugins?.({
-    common: commonPlugin,
-    generic: genericPlugin,
-    traq: trapPlugin
-  })
+  const defaults = condensed
+    ? configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)
+    : {
+        common: commonPlugin,
+        generic: genericPlugin,
+        traq: trapPlugin
+      }
+  const selected = configurePlugins?.(defaults) ?? defaults
 
   const builder = new PresetBuilder()
-    .add(commonPlugin)
-    .add(genericPlugin)
-    .add(trapPlugin)
+    .add(selected.common)
+    .add(selected.generic)
+    .add(selected.traq)
   for (const plugin of plugins) builder.add(plugin)
   return builder.build()
 }
@@ -127,13 +124,14 @@ export function messageRenderers({
   if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:')
     throw new TypeError('Expected an HTTP(S) origin')
   const embeddingOrigin = normalizeTraqOrigin(origin)
+  const validateLink = options.validateLink ?? defaultLinkPolicy
 
   function create(condensed: boolean) {
     const view = renderer(buildPreset(options, condensed))
 
     return Object.freeze({
       render(document: Document) {
-        const analysis = analyzeMessage(document, embeddingOrigin)
+        const analysis = analyzeMessage(document, embeddingOrigin, validateLink)
         const overlay = {
           omittedNodes: analysis.omittedNodes,
           childText: condensed ? analysis.childText : undefined

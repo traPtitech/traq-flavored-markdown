@@ -75,12 +75,12 @@ export function registerInlineHandlers(
 ) {
   const linkAttrs = attributes(Object.entries(linkAttributes))
 
-  result.on(
+  result = result.on(
     names.Text,
     checked(names.Text, isKnownNode, n => escapeHtml(n.data.value))
   )
 
-  result.on(
+  result = result.on(
     names.InlineCode,
     checked(
       names.InlineCode,
@@ -89,21 +89,21 @@ export function registerInlineHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.Softbreak,
     checked(names.Softbreak, isKnownNode, () =>
       breaks ? (xhtmlOut ? '<br />\n' : '<br>\n') : '\n'
     )
   )
 
-  result.on(
+  result = result.on(
     names.Hardbreak,
     checked(names.Hardbreak, isKnownNode, () =>
       xhtmlOut ? '<br />\n' : '<br>\n'
     )
   )
 
-  result.on(
+  result = result.on(
     names.Emphasis,
     checked(
       names.Emphasis,
@@ -112,7 +112,7 @@ export function registerInlineHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.Strong,
     checked(
       names.Strong,
@@ -121,7 +121,7 @@ export function registerInlineHandlers(
     )
   )
 
-  result.on(
+  result = result.on(
     names.Link,
     checked(names.Link, isKnownNode, (n, ctx) => {
       if (!validateLink(n.data.destination)) return ctx.fallback(n)
@@ -140,7 +140,7 @@ export function registerInlineHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.Image,
     checked(names.Image, isKnownNode, (n, ctx) => {
       if (!validateImage(n.data.destination)) return ctx.fallback(n)
@@ -157,10 +157,12 @@ export function registerInlineHandlers(
     })
   )
 
-  result.on(
+  result = result.on(
     names.HtmlInline,
     checked(names.HtmlInline, isKnownNode, n =>
       rawHtml === 'escape' ? escapeHtml(n.data.literal) : n.data.literal
     )
   )
+
+  return result
 }

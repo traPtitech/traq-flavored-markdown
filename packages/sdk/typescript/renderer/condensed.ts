@@ -26,17 +26,17 @@ const blocks = (nodes: Node[] | undefined, ctx: RenderContext) =>
 
 function configureCommonCondensed(common: Plugin, options: Options) {
   for (const kind of [names.Softbreak, names.Hardbreak])
-    common.replace(
+    common = common.replace(
       kind,
       checked(kind, isKnownNode, () => ' ')
     )
 
-  common.replace(
+  common = common.replace(
     names.Paragraph,
     checked(names.Paragraph, isKnownNode, (n, ctx) => ctx.render(n.children))
   )
 
-  common.replace(
+  common = common.replace(
     names.Heading,
     checked(
       names.Heading,
@@ -45,7 +45,7 @@ function configureCommonCondensed(common: Plugin, options: Options) {
     )
   )
 
-  common.replace(
+  common = common.replace(
     names.Blockquote,
     checked(
       names.Blockquote,
@@ -54,7 +54,7 @@ function configureCommonCondensed(common: Plugin, options: Options) {
     )
   )
 
-  common.replace(
+  common = common.replace(
     names.List,
     checked(names.List, isKnownNode, (n, ctx) => {
       let index = 0
@@ -77,7 +77,7 @@ function configureCommonCondensed(common: Plugin, options: Options) {
     })
   )
 
-  common.replace(
+  common = common.replace(
     names.ListItem,
     checked(
       names.ListItem,
@@ -86,7 +86,7 @@ function configureCommonCondensed(common: Plugin, options: Options) {
     )
   )
 
-  common.replace(
+  common = common.replace(
     names.ThematicBreak,
     checked(
       names.ThematicBreak,
@@ -95,7 +95,7 @@ function configureCommonCondensed(common: Plugin, options: Options) {
     )
   )
 
-  common.replace(
+  common = common.replace(
     names.CodeBlock,
     checked(
       names.CodeBlock,
@@ -104,12 +104,12 @@ function configureCommonCondensed(common: Plugin, options: Options) {
     )
   )
 
-  common.replace(
+  common = common.replace(
     names.HtmlBlock,
     checked(names.HtmlBlock, isKnownNode, n => escapeHtml(n.data.literal))
   )
 
-  common.replace(
+  common = common.replace(
     names.Image,
     checked(names.Image, isKnownNode, (n, _ctx) => {
       const label = escapeHtml(n.data.label_source)
@@ -131,10 +131,12 @@ function configureCommonCondensed(common: Plugin, options: Options) {
       )
     })
   )
+
+  return common
 }
 
 function configureGenericCondensed(generic: Plugin) {
-  generic.replace(
+  generic = generic.replace(
     genericNames.Table,
     checked(genericNames.Table, genericNode, (n, ctx) =>
       (n.children ?? [])
@@ -156,13 +158,17 @@ function configureGenericCondensed(generic: Plugin) {
         .join(' ')
     )
   )
+
+  return generic
 }
 
 function configureTrapCondensed(trap: Plugin) {
-  trap.replace(
+  trap = trap.replace(
     trapNames.BlankLine,
     checked(trapNames.BlankLine, trapNode, () => ' ')
   )
+
+  return trap
 }
 
 /** A condensed traQ message is a flattened document, not inline-only parsing. */
@@ -172,7 +178,9 @@ export function configureCondensed(
   trap: Plugin,
   options: Options
 ) {
-  configureCommonCondensed(common, options)
-  configureGenericCondensed(generic)
-  configureTrapCondensed(trap)
+  return {
+    common: configureCommonCondensed(common, options),
+    generic: configureGenericCondensed(generic),
+    traq: configureTrapCondensed(trap)
+  }
 }

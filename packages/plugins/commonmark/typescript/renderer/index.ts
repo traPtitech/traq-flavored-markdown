@@ -29,9 +29,9 @@ export function plugin({
   highlight,
   linkAttributes = {}
 }: Options = {}) {
-  const result = new Plugin(declaration)
+  let result = new Plugin(declaration)
 
-  registerInlineHandlers(result, {
+  result = registerInlineHandlers(result, {
     validateLink,
     validateImage,
     breaks,
@@ -40,7 +40,7 @@ export function plugin({
     linkAttributes
   })
 
-  registerBlockHandlers(result, { highlight, rawHtml, xhtmlOut })
+  result = registerBlockHandlers(result, { highlight, rawHtml, xhtmlOut })
 
   return result
 }

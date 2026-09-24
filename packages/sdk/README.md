@@ -130,7 +130,7 @@ parsed AST. Complete Rust, Go, and TypeScript programs are in
 For direct HTML, `html(options)` returns a renderer. `htmlPreset(options)`
 returns a preset for the core `renderer()` composition API. Both accept
 third-party renderer plugins through `plugins`; `configurePlugins` can replace
-built-in handlers before they are captured:
+built-in handlers by returning updated plugin values:
 
 ```ts
 import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
@@ -141,9 +141,23 @@ const annotation = new Plugin(new Declaration('app')).on(
   'app::Annotation',
   (node, context) => context.render(node.children)
 )
-const view = html({ plugins: [annotation] })
+const view = html({
+  plugins: [annotation],
+  configurePlugins(plugins) {
+    return {
+      ...plugins,
+      common: plugins.common.replace(
+        'commonmark.strong',
+        (node, context) => '<b>' + context.render(node.children) + '</b>'
+      )
+    }
+  }
+})
 const rendered = view.render(document)
 ```
+
+`Plugin.on()` and `Plugin.replace()` return new values. Keep the returned
+plugin when composing a preset; existing plugins and presets are unchanged.
 
 ## Grammar versions
 
