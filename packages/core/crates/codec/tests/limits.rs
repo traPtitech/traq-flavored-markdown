@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{Document, Node, Span, ValidationLimits};
 use markdown_codec::{Codec, DecodeLimits};
 mod support;
 use markdown_definitions::NodeType;
@@ -41,9 +41,11 @@ fn bounded_input_and_output_accept_the_boundary() {
     let bytes = codec.encode(&document).unwrap();
     let limits = DecodeLimits {
         json_bytes: bytes.len(),
-        source_bytes: 3,
-        nodes: 1,
-        depth: 1,
+        document: ValidationLimits {
+            source_bytes: 3,
+            nodes: 1,
+            depth: 1,
+        },
     };
     assert_eq!(codec.decode_with_limits(&bytes, limits).unwrap(), document);
 
@@ -53,11 +55,26 @@ fn bounded_input_and_output_accept_the_boundary() {
             ..limits
         },
         DecodeLimits {
-            source_bytes: 2,
+            document: ValidationLimits {
+                source_bytes: 2,
+                ..limits.document
+            },
             ..limits
         },
-        DecodeLimits { nodes: 0, ..limits },
-        DecodeLimits { depth: 0, ..limits },
+        DecodeLimits {
+            document: ValidationLimits {
+                nodes: 0,
+                ..limits.document
+            },
+            ..limits
+        },
+        DecodeLimits {
+            document: ValidationLimits {
+                depth: 0,
+                ..limits.document
+            },
+            ..limits
+        },
     ] {
         assert!(codec.decode_with_limits(&bytes, lower).is_err());
     }
@@ -136,4 +153,28 @@ fn ambiguous_or_unknown_input_is_rejected() {
     }
 
     assert!(codec.decode(&[0xff]).is_err());
+}
+
+#[test]
+fn overlapping_siblings_are_rejected_at_both_codec_boundaries() {
+    let codec = codec();
+    let mut document = Document {
+        source: "abc".into(),
+        children: vec![
+            Node::leaf(Span { start: 0, end: 2 }, Text { value: "ab".into() }),
+            Node::leaf(Span { start: 2, end: 3 }, Text { value: "c".into() }),
+        ],
+    };
+
+    let mut encoded: serde_json::Value =
+        serde_json::from_slice(&codec.encode(&document).unwrap()).unwrap();
+    document.children[1].span.start = 1;
+    assert!(codec.encode(&document).is_err());
+
+    encoded["children"][1]["span"]["start"] = serde_json::json!(1);
+    assert!(
+        codec
+            .decode(&serde_json::to_vec(&encoded).unwrap())
+            .is_err()
+    );
 }

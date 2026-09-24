@@ -20,19 +20,15 @@ struct Position {
 #[derive(Clone, Copy)]
 pub struct DecodeLimits {
     pub json_bytes: usize,
-    pub source_bytes: usize,
-    pub nodes: usize,
-    pub depth: usize,
+    /// Source and tree limits shared with parsers and AST consumers.
+    pub document: ValidationLimits,
 }
 
 impl Default for DecodeLimits {
     fn default() -> Self {
-        let tree = ValidationLimits::default();
         Self {
             json_bytes: 8 * 1024 * 1024,
-            source_bytes: tree.source_bytes,
-            nodes: tree.nodes,
-            depth: tree.depth,
+            document: ValidationLimits::default(),
         }
     }
 }
@@ -77,7 +73,7 @@ fn check_json_limit(json: &[u8], limits: DecodeLimits) -> serde_json::Result<()>
 fn decode_source(fields: &mut Fields<'_>, limits: DecodeLimits) -> serde_json::Result<String> {
     let source: String = Deserialize::deserialize(fields.take("source")?)?;
 
-    if source.len() > limits.source_bytes {
+    if source.len() > limits.document.source_bytes {
         return Err(error("source byte limit"));
     }
 
@@ -91,12 +87,18 @@ struct State<'a> {
     count: usize,
 }
 impl State<'_> {
-    fn node(&mut self, raw: &RawValue, parent: Span, depth: usize) -> serde_json::Result<Node> {
+    fn node(
+        &mut self,
+        raw: &RawValue,
+        parent: Span,
+        previous_end: usize,
+        depth: usize,
+    ) -> serde_json::Result<Node> {
         self.check_limits(depth)?;
         self.count += 1;
 
         let mut fields: Fields<'_> = Deserialize::deserialize(raw)?;
-        let span = self.span(&mut fields, parent)?;
+        let span = self.span(&mut fields, parent, previous_end)?;
 
         let kind: String = Deserialize::deserialize(fields.take("kind")?)?;
         let raw_children = fields.0.remove("children");
@@ -111,18 +113,23 @@ impl State<'_> {
     }
 
     fn check_limits(&self, depth: usize) -> serde_json::Result<()> {
-        if self.count >= self.limits.nodes {
+        if self.count >= self.limits.document.nodes {
             return Err(error("node limit"));
         }
 
-        if depth > self.limits.depth {
+        if depth > self.limits.document.depth {
             return Err(error("depth limit"));
         }
 
         Ok(())
     }
 
-    fn span(&self, fields: &mut Fields<'_>, parent: Span) -> serde_json::Result<Span> {
+    fn span(
+        &self,
+        fields: &mut Fields<'_>,
+        parent: Span,
+        previous_end: usize,
+    ) -> serde_json::Result<Span> {
         let position: Position = Deserialize::deserialize(fields.take("span")?)?;
 
         let span = Span {
@@ -130,12 +137,7 @@ impl State<'_> {
             end: position.end,
         };
 
-        if span.start > span.end
-            || span.start < parent.start
-            || span.end > parent.end
-            || !self.source.is_char_boundary(span.start)
-            || !self.source.is_char_boundary(span.end)
-        {
+        if !span.valid_child_of(parent, previous_end, self.source) {
             return Err(error("invalid span"));
         }
 
@@ -184,13 +186,15 @@ impl<'de> Visitor<'de> for Children<'_, '_> {
 
     fn visit_seq<S: SeqAccess<'de>>(self, mut sequence: S) -> Result<Vec<Node>, S::Error> {
         let mut nodes = Vec::new();
+        let mut previous_end = self.parent.start;
 
         while let Some(raw) = sequence.next_element::<&RawValue>()? {
-            nodes.push(
-                self.state
-                    .node(raw, self.parent, self.depth)
-                    .map_err(S::Error::custom)?,
-            );
+            let node = self
+                .state
+                .node(raw, self.parent, previous_end, self.depth)
+                .map_err(S::Error::custom)?;
+            previous_end = node.span.end;
+            nodes.push(node);
         }
 
         Ok(nodes)

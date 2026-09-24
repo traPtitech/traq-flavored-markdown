@@ -222,7 +222,7 @@ fn final_validation_stops_at_the_remaining_work_budget() {
                 kind: Text("parent".into()).into(),
                 inhibit_brackets: false,
                 children: (0..30)
-                    .map(|_| Node::leaf(Span { start: 0, end: 1 }, Counted))
+                    .map(|_| Node::leaf(Span { start: 0, end: 0 }, Counted))
                     .collect(),
             },
         }))

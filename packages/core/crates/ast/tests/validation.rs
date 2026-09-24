@@ -102,3 +102,26 @@ fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
         Ok(128)
     );
 }
+
+#[test]
+fn siblings_must_follow_source_order_without_overlapping() {
+    let mut doc = Document {
+        source: "abcdef".into(),
+        children: vec![leaf(0, 2), leaf(2, 4), leaf(4, 6)],
+    };
+    let limits = ValidationLimits::default();
+    assert_eq!(doc.validate(limits), Ok(3));
+
+    doc.children[1].span = Span { start: 1, end: 4 };
+    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+
+    doc.children[1].span = Span { start: 5, end: 6 };
+    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+
+    doc.children = vec![Node::new(
+        Span { start: 0, end: 6 },
+        Data(true),
+        vec![leaf(1, 3), leaf(2, 4)],
+    )];
+    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+}

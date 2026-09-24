@@ -1,6 +1,7 @@
 use crate::{Document, Span};
 
-#[derive(Debug, Clone, Copy)]
+/// Shared source and tree limits for parsers, codecs, and AST consumers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ValidationLimits {
     pub source_bytes: usize,
     pub nodes: usize,
@@ -78,8 +79,9 @@ impl<'a> ValidatedDocument<'a> {
 impl Document {
     /// Validate the entire tree and return its node count. No handlers execute.
     ///
-    /// Checks source size, depth, node count, nested UTF-8 spans and each node's
-    /// type-owned validation. It does not check codec or handler registration.
+    /// Checks source size, depth, node count, nested UTF-8 spans, ordered and
+    /// non-overlapping siblings, and each node's type-owned validation. It does
+    /// not check codec or handler registration.
     /// Validation is not cached: public nodes may be edited after this call.
     pub fn validate(&self, limits: ValidationLimits) -> Result<usize, ValidationError> {
         if self.source.len() > limits.source_bytes {
@@ -100,22 +102,25 @@ impl Document {
         let mut pending: Vec<_> = self
             .children
             .iter()
+            .enumerate()
             .rev()
-            .map(|node| (node, 1, root))
+            .map(|(index, node)| {
+                let previous_end = if index == 0 {
+                    root.start
+                } else {
+                    self.children[index - 1].span.end
+                };
+                (node, 1, root, previous_end)
+            })
             .collect();
 
-        while let Some((node, depth, parent)) = pending.pop() {
+        while let Some((node, depth, parent, previous_end)) = pending.pop() {
             if depth > limits.depth {
                 return Err(ValidationError::Depth);
             }
 
             let span = node.span;
-            if span.start > span.end
-                || span.start < parent.start
-                || span.end > parent.end
-                || !self.source.is_char_boundary(span.start)
-                || !self.source.is_char_boundary(span.end)
-            {
+            if !span.valid_child_of(parent, previous_end, &self.source) {
                 return Err(ValidationError::InvalidSpan);
             }
 
@@ -136,8 +141,16 @@ impl Document {
                 pending.extend(
                     node.children
                         .iter()
+                        .enumerate()
                         .rev()
-                        .map(|child| (child, depth + 1, span)),
+                        .map(|(index, child)| {
+                            let previous_end = if index == 0 {
+                                span.start
+                            } else {
+                                node.children[index - 1].span.end
+                            };
+                            (child, depth + 1, span, previous_end)
+                        }),
                 );
             }
         }

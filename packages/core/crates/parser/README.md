@@ -27,7 +27,9 @@ Implementations are created from shared declarations. Editing a plugin after it
 is registered creates a new snapshot; existing grammars and parsers do not
 change. A grammar needs one plain-text provider. Nodes need `NodeData`, but do
 not need serde or codec registration. Completed ASTs are validated against data,
-span, depth, and node-count constraints.
+span, sibling order, depth, and node-count constraints. `Limits::document` uses
+the same `ValidationLimits` as codecs and AST consumers; `Limits::work` is
+specific to parsing.
 
 `bindings::Catalog` is a distribution-layer API. It registers implementations
 with `plugin(&plugin)` and validated preset compositions with `preset(&builder)`.

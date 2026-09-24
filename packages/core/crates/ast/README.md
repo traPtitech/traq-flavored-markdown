@@ -30,7 +30,8 @@ Adding a node type never requires a core enum change.
 
 `NodeData::validate` checks a node and its direct children. Use
 `document.validate(limits)` for a complete tree check: it validates source size,
-node count, depth, UTF-8 spans, containment, and every node's data. The default
+node count, depth, UTF-8 spans, containment, source-ordered non-overlapping
+siblings, and every node's data. The default
 limits are 65,536 source bytes, 16,384 nodes, and depth 64. Validation returns a
 `ValidationError` on failure and never checks codec registrations or handlers.
 
@@ -38,7 +39,7 @@ AST construction and editing do not validate automatically. Validation is not
 cached, so validate again after an edit. `ValidatedDocument::new(&document)` can
 share one successful validation across immutable renderer and extractor borrows;
 it neither copies nor persists the AST. Consumers still enforce their own codec,
-handler, source-order, and output rules.
+handler, and output rules.
 
 `Node` and `Document` implement `Clone`, `PartialEq`, `Send`, and `Sync`. They do
 not promise `Eq`, since a payload may contain values such as `NaN`. JSON is the

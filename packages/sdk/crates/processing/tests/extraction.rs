@@ -77,7 +77,7 @@ fn invalid_ast_and_oversized_configuration_are_rejected() {
 }
 
 #[test]
-fn source_edits_accept_reordered_and_duplicate_nodes_but_reject_crossing_ranges() {
+fn source_edit_consumers_require_a_canonical_ast() {
     use traq_markdown_processing::presets::traq::{embedding, message};
     let parser = bindings::parser("traq.v1").unwrap();
     let user = |name: &str| {
@@ -92,36 +92,23 @@ fn source_edits_accept_reordered_and_duplicate_nodes_but_reject_crossing_ranges(
     reordered.children.reverse();
     let mut duplicated = original.clone();
     duplicated.children.extend(original.children.clone());
-    for document in [reordered, duplicated] {
-        assert_eq!(
-            extractor.extract(&document).unwrap().message_text,
-            "@alice @bob"
-        );
-        assert_eq!(
-            embedding::plan(&document).unwrap().unembedded_text,
-            "@alice @bob"
-        );
-    }
-
     let mut crossing = original.clone();
     crossing.children.last_mut().unwrap().span.start = original.children[0].span.end - 1;
-    assert_eq!(embedding::plan(&crossing).unwrap_err(), "overlapping_edits");
-    assert_eq!(
-        message::Extractor::new("").extract(&crossing).unwrap_err(),
-        "overlapping_edits"
-    );
-    assert_eq!(
-        extractor.extract(&crossing).unwrap_err(),
-        "overlapping_edits"
-    );
+    for document in [reordered, duplicated, crossing] {
+        assert_eq!(embedding::plan(&document).unwrap_err(), "invalid_node");
+        assert_eq!(
+            message::Extractor::new("").extract(&document).unwrap_err(),
+            "invalid_node"
+        );
+        assert_eq!(extractor.extract(&document).unwrap_err(), "invalid_node");
+    }
     assert_eq!(
         extractor.extract(&original).unwrap().message_text,
         "@alice @bob"
     );
 
-    let mut mentions = parser.parse_inline("@alice **@bob**").unwrap();
+    let mentions = parser.parse_inline("@alice **@bob**").unwrap();
     let expected = embedding::plan(&mentions).unwrap();
-    mentions.children.reverse();
     assert_eq!(embedding::plan(&mentions).unwrap(), expected);
 }
 

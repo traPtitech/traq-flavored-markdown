@@ -3,7 +3,7 @@
 #![allow(clippy::single_range_in_vec_init)]
 #![doc = include_str!("../README.md")]
 
-pub use markdown_ast::{Document, Node, NodeData, NodeKind, Span};
+pub use markdown_ast::{Document, Node, NodeData, NodeKind, Span, ValidationLimits};
 pub mod engine;
 pub use engine::{BuildError, Grammar, GrammarBuilder, Limits, ParseError, Parser, Plugin};
 

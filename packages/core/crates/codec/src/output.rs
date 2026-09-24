@@ -1,5 +1,5 @@
 use super::Codec;
-use markdown_ast::{Document, Node, ValidationLimits};
+use markdown_ast::{Document, Node};
 use serde::{Serialize, Serializer};
 
 pub(super) fn encode(document: &Document, codec: &Codec) -> serde_json::Result<Vec<u8>> {
@@ -7,11 +7,7 @@ pub(super) fn encode(document: &Document, codec: &Codec) -> serde_json::Result<V
     let limits = crate::DecodeLimits::default();
 
     document
-        .validate(ValidationLimits {
-            source_bytes: limits.source_bytes,
-            nodes: limits.nodes,
-            depth: limits.depth,
-        })
+        .validate(limits.document)
         .map_err(<serde_json::Error as serde::ser::Error>::custom)?;
 
     let mut output = LimitedOutput {

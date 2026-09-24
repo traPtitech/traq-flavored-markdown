@@ -1,5 +1,5 @@
 use markdown_commonmark_contracts::{Link, Text};
-use markdown_parser::{Limits, Node, ParseError};
+use markdown_parser::{Limits, Node, ParseError, ValidationLimits};
 use markdown_trap_contracts::{StampData, StampKind};
 use traq_markdown_grammar::presets;
 
@@ -72,7 +72,10 @@ fn limits_cover_multibyte_input_and_nested_results() {
         (
             "日本",
             Limits {
-                input_bytes: 5,
+                document: ValidationLimits {
+                    source_bytes: 5,
+                    ..ValidationLimits::default()
+                },
                 ..Limits::default()
             },
             "input_bytes",
@@ -80,7 +83,10 @@ fn limits_cover_multibyte_input_and_nested_results() {
         (
             "**a *b***",
             Limits {
-                depth: 2,
+                document: ValidationLimits {
+                    depth: 2,
+                    ..ValidationLimits::default()
+                },
                 ..Limits::default()
             },
             "depth",
@@ -88,7 +94,10 @@ fn limits_cover_multibyte_input_and_nested_results() {
         (
             "*a* *b*",
             Limits {
-                nodes: 2,
+                document: ValidationLimits {
+                    nodes: 2,
+                    ..ValidationLimits::default()
+                },
                 ..Limits::default()
             },
             "tokens",

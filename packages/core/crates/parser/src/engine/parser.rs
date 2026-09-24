@@ -29,7 +29,7 @@ impl Parser {
 
     fn run(&self, source: &str, inline_only: bool) -> Result<Document, ParseError> {
         let grammar = &self.grammar;
-        if source.len() > self.limits.input_bytes {
+        if source.len() > self.limits.document.source_bytes {
             return Err(ParseError::limit("input_bytes"));
         }
 
@@ -52,13 +52,12 @@ impl Parser {
 
         let node_count = document
             .validate(ValidationLimits {
-                source_bytes: self.limits.input_bytes,
-                nodes: self.limits.nodes.min(remaining_work),
-                depth: self.limits.depth,
+                nodes: self.limits.document.nodes.min(remaining_work),
+                ..self.limits.document
             })
             .map_err(|error| match error {
                 ValidationError::SourceBytes => ParseError::limit("input_bytes"),
-                ValidationError::Nodes if remaining_work <= self.limits.nodes => {
+                ValidationError::Nodes if remaining_work <= self.limits.document.nodes => {
                     ParseError::limit("work")
                 }
                 ValidationError::Nodes => ParseError::limit("tokens"),
