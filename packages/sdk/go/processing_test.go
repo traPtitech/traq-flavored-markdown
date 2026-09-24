@@ -101,7 +101,7 @@ func TestASTConsumers(t *testing.T) {
 		t.Fatal("consumers changed document")
 	}
 
-	t.Run("source edit ordering and recoverable errors", func(t *testing.T) {
+	t.Run("malformed sibling spans are rejected without poisoning the extractor", func(t *testing.T) {
 		doc, err := parser.ParseInline(ctx, user+" "+user)
 		if err != nil {
 			t.Fatal(err)
@@ -113,19 +113,23 @@ func TestASTConsumers(t *testing.T) {
 				t.Fatalf("source edits: %+v %v", result, err)
 			}
 		}
+		checkInvalid := func(document *Document) {
+			t.Helper()
+			if _, err := extractor.Extract(ctx, document); err == nil || !strings.Contains(err.Error(), "invalid_node") {
+				t.Fatalf("expected invalid_node for malformed siblings, got %v", err)
+			}
+		}
 		reordered := *doc
 		reordered.Children = slices.Clone(doc.Children)
 		slices.Reverse(reordered.Children)
-		check(&reordered)
+		checkInvalid(&reordered)
 		duplicated := *doc
 		duplicated.Children = append(slices.Clone(doc.Children), doc.Children...)
-		check(&duplicated)
+		checkInvalid(&duplicated)
 		crossing := *doc
 		crossing.Children = slices.Clone(doc.Children)
 		crossing.Children[len(crossing.Children)-1].Span.Start = doc.Children[0].Span.End - 1
-		if _, err := extractor.Extract(ctx, &crossing); err == nil {
-			t.Fatal("accepted crossing source edits")
-		}
+		checkInvalid(&crossing)
 		check(doc)
 	})
 
