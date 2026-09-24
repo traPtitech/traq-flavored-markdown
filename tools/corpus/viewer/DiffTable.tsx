@@ -1,18 +1,12 @@
 import { diffStringsRaw } from 'jest-diff'
 import React, { useEffect, useRef } from 'react'
 
-type Row = {
-  index: number
-  source: string
-  before: string
-  after: string
-  error?: boolean
-}
+import type { DifferenceRow, Mode } from '../report-schema.ts'
 
 type DiffTableProps = {
-  rows: Row[]
+  rows: DifferenceRow[]
   outputView: 'rendered' | 'raw'
-  mode: string
+  mode: Mode
 }
 
 export default function DiffTable({ rows, outputView, mode }: DiffTableProps) {
@@ -33,7 +27,7 @@ export default function DiffTable({ rows, outputView, mode }: DiffTableProps) {
       <tbody id="rows">
         {rows.map(row => (
           <tr key={row.index}>
-            <SourceCell row={row} mode={mode} />
+            <SourceCell row={row} />
             {outputView === 'raw' ? (
               <RawDiffCells row={row} />
             ) : (
@@ -49,7 +43,7 @@ export default function DiffTable({ rows, outputView, mode }: DiffTableProps) {
   )
 }
 
-function SourceCell({ row }: { row: Row; mode: string }) {
+function SourceCell({ row }: { row: DifferenceRow }) {
   const [expanded, setExpanded] = React.useState(false)
 
   return (
@@ -65,7 +59,7 @@ function SourceCell({ row }: { row: Row; mode: string }) {
   )
 }
 
-function RenderCell({ text, mode }: { text: string; mode: string }) {
+function RenderCell({ text, mode }: { text: string; mode: Mode }) {
   const ref = useRef<HTMLDivElement | HTMLPreElement>(null)
 
   useEffect(() => {
@@ -97,13 +91,15 @@ function RenderCell({ text, mode }: { text: string; mode: string }) {
   )
 }
 
-function RawDiffCells({ row }: { row: Row }) {
+function RawDiffCells({ row }: { row: DifferenceRow }) {
   let parts: [number, string][]
   let coarse = false
 
   if (row.before.length + row.after.length <= 12000) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parts = diffStringsRaw(row.before, row.after, true) as any
+    parts = diffStringsRaw(row.before, row.after, true).map(part => [
+      part[0],
+      part[1]
+    ])
   } else {
     coarse = true
     let start = 0
@@ -182,22 +178,23 @@ function renderHTML(html: string) {
   const template = document.createElement('template')
   template.innerHTML = html
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const copy = (node: any): Node => {
-    if (node.nodeType === 3) return document.createTextNode(node.data!)
-    if (node.nodeType !== 1) return document.createTextNode('')
+  const copy = (node: Node): Node => {
+    if (node.nodeType === Node.TEXT_NODE)
+      return document.createTextNode(node.textContent ?? '')
+    if (node.nodeType !== Node.ELEMENT_NODE) return document.createTextNode('')
+    const element = node as Element
 
-    if (node.localName === 'img') {
+    if (element.localName === 'img') {
       const span = document.createElement('span')
       span.className = 'r-image'
       span.textContent =
-        '[画像: ' + (node.getAttribute?.('alt') || '外部画像') + ']'
+        '[画像: ' + (element.getAttribute('alt') || '外部画像') + ']'
       return span
     }
 
-    if (!allowed.has(node.localName!)) return document.createTextNode('')
+    if (!allowed.has(element.localName)) return document.createTextNode('')
 
-    const name = node.localName === 'a' ? 'span' : node.localName!
+    const name = element.localName === 'a' ? 'span' : element.localName
     const value = ['svg', 'path', 'line'].includes(name)
       ? document.createElementNS('http://www.w3.org/2000/svg', name)
       : document.createElement(name)
@@ -218,27 +215,25 @@ function renderHTML(html: string) {
       'y1',
       'y2'
     ]) {
-      if (node.hasAttribute?.(attr)) {
-        value.setAttribute(attr, node.getAttribute!(attr)!)
+      if (element.hasAttribute(attr)) {
+        value.setAttribute(attr, element.getAttribute(attr)!)
       }
     }
 
     for (const key of styleNames) {
-      const text = node.style?.getPropertyValue(key)
+      const text = (element as HTMLElement).style?.getPropertyValue(key)
       if (text && !/url|var\(|attr\(/i.test(text)) {
         ;(value as HTMLElement).style?.setProperty(key, text)
       }
     }
 
-    if (node.localName === 'a') {
+    if (element.localName === 'a') {
       ;(value as HTMLElement).classList.add('r-link')
-      ;(value as HTMLElement).title = node.getAttribute?.('href') || 'リンク'
+      ;(value as HTMLElement).title = element.getAttribute('href') || 'リンク'
     }
 
-    if (node.childNodes) {
-      for (const child of Array.from(node.childNodes)) {
-        value.appendChild(copy(child))
-      }
+    for (const child of Array.from(element.childNodes)) {
+      value.appendChild(copy(child))
     }
     return value
   }

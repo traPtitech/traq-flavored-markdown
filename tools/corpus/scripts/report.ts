@@ -3,6 +3,15 @@ import path from 'path'
 import { $ } from 'bun'
 
 import { corpusRoot } from '../../../scripts/paths.ts'
+import {
+  type DifferenceRow,
+  type ReportMetadata,
+  type ReportPayload,
+  byMode,
+  modes,
+  pageSize,
+  parseDifferenceRow
+} from '../report-schema.ts'
 import { parseArgs, resolveRepositoryPath } from './args.ts'
 import { ignoreMask } from './ignore-differences.ts'
 import { readLines } from './read-lines.ts'
@@ -18,24 +27,12 @@ values.data = resolveRepositoryPath(values.data)
 values.out = resolveRepositoryPath(values.out ?? values.data)
 await $`mkdir -p ${values.out}`
 
-const filterMasks: Record<string, number[]> = {
-  render: [],
-  inline: [],
-  plainText: []
-}
-const chunks: Record<string, string[]> = {
-  render: [],
-  inline: [],
-  plainText: []
-}
-const pending: Record<string, string[]> = {
-  render: [],
-  inline: [],
-  plainText: []
-}
-const counts: Record<string, number> = { render: 0, inline: 0, plainText: 0 }
+const filterMasks = byMode<number[]>(() => [])
+const chunks: ReportPayload = byMode<string[]>(() => [])
+const pending = byMode<DifferenceRow[]>(() => [])
+const counts = byMode(() => 0)
 
-function flush(mode: string) {
+function flush(mode: (typeof modes)[number]) {
   if (!pending[mode].length) return
   chunks[mode].push(
     Bun.gzipSync(JSON.stringify(pending[mode]), { level: 9 }).toBase64()
@@ -46,17 +43,17 @@ function flush(mode: string) {
 for (const file of ['sui-differences.jsonl', 'plain-text-differences.jsonl']) {
   for await (const line of readLines(path.join(values.data, file))) {
     if (!line) continue
-    const row = JSON.parse(line)
+    const row = parseDifferenceRow(JSON.parse(line))
     if (row.before === row.after && !row.error) {
       throw new Error('Equal result in difference list')
     }
     filterMasks[row.mode].push(ignoreMask(row))
     pending[row.mode].push(row)
     counts[row.mode]++
-    if (pending[row.mode].length === 50) flush(row.mode)
+    if (pending[row.mode].length === pageSize) flush(row.mode)
   }
 }
-for (const mode of Object.keys(chunks)) flush(mode)
+for (const mode of modes) flush(mode)
 
 const sui = JSON.parse(
   await Bun.file(path.join(values.data, 'sui-summary.json')).text()
@@ -77,10 +74,9 @@ if (
   throw new Error('Report counts mismatch')
 }
 
-const filters = Object.fromEntries(
-  Object.entries(filterMasks).map(([mode, flags]) => [mode, flags.join('')])
-)
-const metadata = {
+const filters = byMode(() => '')
+for (const mode of modes) filters[mode] = filterMasks[mode].join('')
+const metadata: ReportMetadata = {
   filters,
   messages: sui.messages,
   counts,
@@ -88,7 +84,7 @@ const metadata = {
   traq,
   revisions,
   generated: new Date().toISOString(),
-  pageSize: 50
+  pageSize
 }
 
 // Build React view
@@ -98,24 +94,29 @@ const indexHtmlPath = path.join(corpusRoot, 'dist', 'index.html')
 let html = await Bun.file(indexHtmlPath).text()
 
 // Inject data
-html = html.replace(
-  '<script type="application/json" id="metadata"></script>',
-  `<script type="application/json" id="metadata">${JSON.stringify(metadata).replaceAll('<', '\\u003c')}</script>`
-)
-html = html.replace(
-  '<script type="application/json" id="payload"></script>',
-  `<script type="application/json" id="payload">${JSON.stringify(chunks)}</script>`
-)
+for (const [id, data] of [
+  ['metadata', metadata],
+  ['payload', chunks]
+] as const) {
+  const placeholder = `<script type="application/json" id="${id}"></script>`
+  if (!html.includes(placeholder)) {
+    throw new Error(`Missing ${id} placeholder in built viewer`)
+  }
+  html = html.replace(
+    placeholder,
+    `<script type="application/json" id="${id}">${JSON.stringify(data).replaceAll('<', '\\u003c')}</script>`
+  )
+}
 
 await Bun.write(path.join(values.out, 'differences.html'), html)
 const documentLength = new TextEncoder().encode(html).byteLength
 
-const excluded = Object.fromEntries(
-  Object.entries(filterMasks).map(([mode, flags]) => [
-    mode,
-    { whitespace: flags.filter(n => n & 1).length }
-  ])
-)
+const excluded = byMode(() => ({ whitespace: 0 }))
+for (const mode of modes) {
+  excluded[mode] = {
+    whitespace: filterMasks[mode].filter(n => n & 1).length
+  }
+}
 console.log(
   JSON.stringify({
     excluded,

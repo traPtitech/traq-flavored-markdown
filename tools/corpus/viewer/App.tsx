@@ -1,29 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
+import {
+  type DifferenceRow,
+  type Mode,
+  type ReportMetadata,
+  type ReportPayload,
+  modes
+} from '../report-schema.ts'
 import DiffTable from './DiffTable.tsx'
 
-type Meta = {
-  messages: number
-  counts: Record<string, number>
-  filters: Record<string, string>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sui: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  traq: any
-  revisions: Record<string, string>
-  generated: string
-}
-
-type Payload = Record<string, string[]> // mode -> base64 gzipped strings
-type Row = {
-  index: number
-  source: string
-  before: string
-  after: string
-  error?: boolean
-}
-
-const labels = {
+const labels: Record<Mode, string> = {
   render: 'traQ_S-UI · 通常',
   inline: 'traQ_S-UI · インライン',
   plainText: 'traQ · プレーンテキスト'
@@ -42,138 +28,194 @@ const getInitialData = <T,>(id: string): T | null => {
 }
 
 export default function App() {
-  const [meta] = useState<Meta | null>(() => getInitialData('metadata'))
-  const [payload] = useState<Payload | null>(() => getInitialData('payload'))
+  const [meta] = useState<ReportMetadata | null>(() =>
+    getInitialData('metadata')
+  )
+  const [payload] = useState<ReportPayload | null>(() =>
+    getInitialData('payload')
+  )
   const loadingError = !meta || !payload
 
-  const [mode, setMode] = useState<keyof typeof labels>('render')
+  const [mode, setMode] = useState<Mode>('render')
   const [outputView, setOutputView] = useState<'rendered' | 'raw'>('rendered')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [searchDraft, setSearchDraft] = useState('')
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
 
-  const [hits, setHits] = useState<[number, number][] | null>(null)
-  const [rows, setRows] = useState<Row[]>([])
-  const [loading, setLoading] = useState(false)
-  const [statusText, setStatusText] = useState('')
+  const filterKey = JSON.stringify([
+    mode,
+    search.trim().toLowerCase(),
+    ignoreWhitespace
+  ])
+  const [filter, setFilter] = useState<{
+    key: string
+    hits: [number, number][] | null
+  } | null>(null)
+  const [filterProgress, setFilterProgress] = useState<{
+    key: string
+    done: number
+    total: number
+  } | null>(null)
+  const [rowResult, setRowResult] = useState<{
+    key: string
+    rows: DifferenceRow[]
+  } | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const num = (n: number | string) => Number(n).toLocaleString('ja-JP')
 
-  // Cache for loaded chunks
-  const chunkCache = useRef(new Map<string, Row[]>())
+  const chunkCache = useRef(new Map<string, Promise<DifferenceRow[]>>())
+  const loadChunk = useCallback(
+    async (m: Mode, index: number) => {
+      const key = `${m}:${index}`
+      const cached = chunkCache.current.get(key)
+      if (cached) return cached
+      const encoded = payload?.[m][index]
+      if (!encoded) throw new Error(`Missing ${m} chunk ${index}`)
+      const task = (async () => {
+        const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0))
+        const text = await new Response(
+          new Blob([bytes])
+            .stream()
+            .pipeThrough(new DecompressionStream('gzip'))
+        ).text()
+        return JSON.parse(text) as DifferenceRow[]
+      })()
+      chunkCache.current.set(key, task)
+      if (chunkCache.current.size > 10) {
+        chunkCache.current.delete(chunkCache.current.keys().next().value!)
+      }
+      try {
+        return await task
+      } catch (error) {
+        chunkCache.current.delete(key)
+        throw error
+      }
+    },
+    [payload]
+  )
 
-  const loadChunk = async (m: string, index: number) => {
-    const key = `${m}:${index}`
-    if (chunkCache.current.has(key)) return chunkCache.current.get(key)!
-    if (!payload) return []
-
-    const bytes = Uint8Array.from(atob(payload[m][index]), c => c.charCodeAt(0))
-    const text = await new Response(
-      new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
-    ).text()
-    const parsed = JSON.parse(text) as Row[]
-    chunkCache.current.set(key, parsed)
-    if (chunkCache.current.size > 10) {
-      chunkCache.current.delete(chunkCache.current.keys().next().value!)
-    }
-    return parsed
-  }
-
-  // Filter effect
   useEffect(() => {
     if (!meta || !payload) return
     let active = true
 
     const applyFilters = async () => {
-      const q = search.trim().toLowerCase()
-      const bit = ignoreWhitespace ? 1 : 0
-      if (!q && !bit) {
-        if (active) {
-          setHits(null)
-          setPage(1)
-        }
+      setLoadError(null)
+      setPage(1)
+      const query = search.trim().toLowerCase()
+      if (!query && !ignoreWhitespace) {
+        setFilter({ key: filterKey, hits: null })
         return
       }
 
-      setLoading(true)
-      const flags = meta.filters[mode]
-      const found: [number, number][] = []
+      try {
+        const flags = meta.filters[mode]
+        const found: [number, number][] = []
+        for (let chunk = 0; chunk < payload[mode].length; chunk++) {
+          const chunkRows = query ? await loadChunk(mode, chunk) : null
+          if (!active) return
 
-      for (let chunk = 0; chunk < payload[mode].length; chunk++) {
-        const chunkRows = q ? await loadChunk(mode, chunk) : null
-        if (!active) return
-
-        const length = Math.min(50, meta.counts[mode] - chunk * 50)
-        for (let j = 0; j < length; j++) {
-          if (bit && (flags.charCodeAt(chunk * 50 + j) - 48) & bit) continue
-          if (!q || chunkRows![j].source.toLowerCase().includes(q)) {
-            found.push([chunk, j])
+          const length = Math.min(
+            meta.pageSize,
+            meta.counts[mode] - chunk * meta.pageSize
+          )
+          for (let index = 0; index < length; index++) {
+            if (
+              ignoreWhitespace &&
+              flags[chunk * meta.pageSize + index] === '1'
+            )
+              continue
+            if (
+              !query ||
+              chunkRows![index].source.toLowerCase().includes(query)
+            ) {
+              found.push([chunk, index])
+            }
+          }
+          if (query && active) {
+            setFilterProgress({
+              key: filterKey,
+              done: chunk + 1,
+              total: payload[mode].length
+            })
           }
         }
-        if (q) {
-          setStatusText(`検索 ${num(chunk + 1)} / ${num(payload[mode].length)}`)
+        if (active) {
+          setFilter({
+            key: filterKey,
+            hits: found.length === meta.counts[mode] ? null : found
+          })
         }
-      }
-
-      if (active) {
-        setHits(found.length === meta.counts[mode] ? null : found)
-        setPage(1)
-        setLoading(false)
+      } catch (error) {
+        if (active) setLoadError(String(error))
       }
     }
 
-    applyFilters()
+    void applyFilters()
     return () => {
       active = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, search, ignoreWhitespace, meta, payload])
+  }, [mode, search, ignoreWhitespace, meta, payload, filterKey, loadChunk])
 
-  // Pagination & rows effect
+  const filterReady = filter?.key === filterKey
+  const hits = filterReady ? filter.hits : null
+  const totalHits = filterReady
+    ? hits === null
+      ? (meta?.counts[mode] ?? 0)
+      : hits.length
+    : (meta?.counts[mode] ?? 0)
+  const totalPages = Math.max(1, Math.ceil(totalHits / (meta?.pageSize ?? 1)))
+  const rowKey = `${filterKey}:${page}`
+
   useEffect(() => {
-    if (!meta || !payload) return
+    if (!meta || !payload || !filterReady) return
     let active = true
 
     const loadRows = async () => {
-      setLoading(true)
-      const total = hits === null ? meta.counts[mode] : hits.length
-      const pages = Math.max(1, Math.ceil(total / 50))
-      const validPage = Math.min(Math.max(1, page), pages)
+      const validPage = Math.min(Math.max(1, page), totalPages)
       if (page !== validPage) {
         setPage(validPage)
         return
       }
 
-      let newRows: Row[] = []
-      if (total > 0) {
-        if (hits === null) {
-          newRows = await loadChunk(mode, validPage - 1)
-        } else {
-          for (const [chunk, index] of hits.slice(
-            (validPage - 1) * 50,
-            validPage * 50
-          )) {
-            const chunkRows = await loadChunk(mode, chunk)
-            newRows.push(chunkRows[index])
+      try {
+        let newRows: DifferenceRow[] = []
+        if (totalHits > 0) {
+          if (hits === null) {
+            newRows = await loadChunk(mode, validPage - 1)
+          } else {
+            for (const [chunk, index] of hits.slice(
+              (validPage - 1) * meta.pageSize,
+              validPage * meta.pageSize
+            )) {
+              const chunkRows = await loadChunk(mode, chunk)
+              newRows.push(chunkRows[index])
+            }
           }
         }
-      }
-
-      if (active) {
-        setRows(newRows)
-        setStatusText(
-          `${num(total)} 件${hits === null ? '' : ` / 全 ${num(meta.counts[mode])} 件`}`
-        )
-        setLoading(false)
+        if (active) setRowResult({ key: rowKey, rows: newRows })
+      } catch (error) {
+        if (active) setLoadError(String(error))
       }
     }
 
-    loadRows()
+    void loadRows()
     return () => {
       active = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, page, hits, meta, payload])
+  }, [
+    mode,
+    page,
+    hits,
+    meta,
+    payload,
+    filterReady,
+    rowKey,
+    totalPages,
+    totalHits,
+    loadChunk
+  ])
 
   if (loadingError) {
     return (
@@ -188,8 +230,13 @@ export default function App() {
 
   if (!meta) return <div style={{ padding: 20 }}>Loading...</div>
 
-  const totalHits = hits === null ? meta.counts[mode] : hits.length
-  const totalPages = Math.max(1, Math.ceil(totalHits / 50))
+  const rows = rowResult?.key === rowKey && filterReady ? rowResult.rows : []
+  const loading = !loadError && (!filterReady || rowResult?.key !== rowKey)
+  const statusText =
+    loadError ??
+    (!filterReady && filterProgress?.key === filterKey
+      ? `検索 ${num(filterProgress.done)} / ${num(filterProgress.total)}`
+      : `${num(totalHits)} 件${hits === null ? '' : ` / 全 ${num(meta.counts[mode])} 件`}`)
 
   return (
     <>
@@ -198,8 +245,8 @@ export default function App() {
           <p className="eyebrow">MASTER → RUST</p>
           <h1>Markdown 差分一覧</h1>
           <p id="overview">
-            {num(meta.messages)} 件を比較 · 差分のある結果のみ · 1ページ 50件 ·
-            単独ファイルでオフライン閲覧
+            {num(meta.messages)} 件を比較 · 差分のある結果のみ · 1ページ{' '}
+            {num(meta.pageSize)}件 · 単独ファイルでオフライン閲覧
           </p>
         </div>
         <details className="speed">
@@ -226,13 +273,15 @@ export default function App() {
       <main>
         <nav className="toolbar">
           <div id="modes" className="modes">
-            {(Object.keys(labels) as (keyof typeof labels)[]).map(key => (
+            {modes.map(key => (
               <button
                 key={key}
                 aria-pressed={mode === key}
                 onClick={() => {
                   setMode(key)
                   setSearch('')
+                  setSearchDraft('')
+                  setPage(1)
                 }}
               >
                 {labels[key]} {num(meta.counts[key])}
@@ -255,11 +304,7 @@ export default function App() {
               id="search-form"
               onSubmit={e => {
                 e.preventDefault()
-                const form = e.target as HTMLFormElement
-                const input = form.elements.namedItem(
-                  'search'
-                ) as HTMLInputElement
-                setSearch(input.value)
+                setSearch(searchDraft)
               }}
             >
               <input
@@ -268,7 +313,8 @@ export default function App() {
                 type="search"
                 placeholder="原文を検索"
                 aria-label="原文を検索"
-                defaultValue={search}
+                value={searchDraft}
+                onChange={e => setSearchDraft(e.target.value)}
               />
               <button type="submit">検索</button>
             </form>
@@ -354,8 +400,8 @@ function SpeedTable({
   meta,
   labels
 }: {
-  meta: Meta
-  labels: Record<string, string>
+  meta: ReportMetadata
+  labels: Record<Mode, string>
 }) {
   const f = (n: number | string) =>
     Number(n).toLocaleString('ja-JP', { maximumFractionDigits: 2 })
@@ -371,7 +417,7 @@ function SpeedTable({
         </tr>
       </thead>
       <tbody>
-        {(Object.keys(labels) as (keyof typeof labels)[]).map(key => {
+        {modes.map(key => {
           const data = key === 'plainText' ? meta.traq : meta.sui.modes[key]
           return (
             <tr key={key}>
