@@ -49,7 +49,7 @@ export function plugin({
 
   result.on(
     names.Stamp,
-    checked(names.Stamp, isKnownNode, node => stamp(node.data.literal))
+    checked(names.Stamp, isKnownNode, node => stamp(node.data))
   )
 
   return result

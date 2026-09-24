@@ -693,6 +693,7 @@ dependencies = [
  "markdown-generic-contracts",
  "markdown-generic-syntax",
  "markdown-parser",
+ "markdown-trap-contracts",
  "markdown-trap-syntax",
  "serde_json",
 ]

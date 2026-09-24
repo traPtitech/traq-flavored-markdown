@@ -74,6 +74,41 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   expect(nonImage.render(parser.parseInline(':wave:'))).toBe(':wave:')
 })
 
+test('stamp presentation uses parsed kinds and effects without matching color substrings', () => {
+  const view = renderer(
+    rendering.html({
+      store: {
+        getStampByName: name =>
+          ['foo0x123456', '0x1234567', 'wave'].includes(name)
+            ? { name, fileId: name }
+            : undefined,
+        generateStampHref: id => `https://stamps.example/${id}`
+      }
+    })
+  )
+  const source = ':foo0x123456: :0x1234567: :0x123456: :hsl(0, 20.5%, 30%):'
+  const output = view.render(parser.parseInline(source))
+  expect(output).toContain('https://stamps.example/foo0x123456')
+  expect(output).toContain('https://stamps.example/0x1234567')
+  expect(output).toContain('background-color: #123456;')
+  expect(output).toContain('background-color: hsl(0, 20.5%, 30%);')
+  expect(view.render(parser.parseInline(':foohsl(0, 20%, 30%):'))).toBe(
+    ':foohsl(0, 20%, 30%):'
+  )
+
+  const effects = view.render(
+    parser.parseInline(':wave.marquee.large.rotate.small:')
+  )
+  expect(effects).toContain('emoji-effect conga small')
+  expect(effects).toContain('emoji-effect rotate')
+  expect(effects).not.toContain('marquee')
+  expect(
+    view.render(
+      parser.parseInline(':wave.rotate.rotate.rotate.rotate.rotate.rotate:')
+    )
+  ).toBe(':wave.rotate.rotate.rotate.rotate.rotate.rotate:')
+})
+
 test('reference highlighting and link/image policies belong to each renderer', () => {
   const common = commonParser()
   const view = renderer(

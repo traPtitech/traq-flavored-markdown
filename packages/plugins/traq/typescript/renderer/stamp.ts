@@ -1,209 +1,116 @@
 import { validateImage } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
+import type { StampData } from '@traq-flavored-markdown/traq-plugin/nodes'
 
-import { animeEffects, sizeEffects } from './stamp-effects.js'
 import type { Options } from './types.js'
 
-const animeEffectSet = new Set<string>(animeEffects)
-const sizeEffectSet = new Set<string>(sizeEffects)
-
-const animeEffectAliasMap = new Map([
-  ['marquee', 'conga'],
-  ['marquee-inv', 'conga-inv']
-])
-
-const maxEffectCount = 5
-
-const wrapWithEffect = (
-  stampHtml: string,
-  animeEffects: string[],
-  sizeEffect: string
-) => {
-  const filterOpenTag = animeEffects
+function wrapWithEffects(
+  html: string,
+  { animations, size }: StampData['effects']
+) {
+  const sizeClass = size === 'none' ? '' : size
+  const opening = animations
     .map(
-      (e, i) =>
-        `<span class="emoji-effect ${e}${i === 0 && sizeEffect ? ` ${sizeEffect}` : ''}">`
+      (effect, index) =>
+        `<span class="emoji-effect ${effect}${index === 0 && sizeClass ? ` ${sizeClass}` : ''}">`
     )
     .join('')
 
-  const filterCloseTag = '</span>'.repeat(animeEffects.length)
-
-  return filterOpenTag + stampHtml + filterCloseTag
+  return opening + html + '</span>'.repeat(animations.length)
 }
 
-const isSizeEffect = (e: string) => sizeEffectSet.has(e)
-const isAnimeEffect = (e: string) => animeEffectSet.has(e)
-
-const renderStampDomWithStyle = (
-  rawMatch: string,
-  stampName: string,
-  imgTitle: string,
-  style: string,
-  effects: string[]
-) => {
-  const escapedTitle = escapeHtml(imgTitle)
-  const escapedStyle = escapeHtml(style)
-  const escapedName = escapeHtml(stampName)
-  const sizeEffects = effects.filter(isSizeEffect)
-  const animeEffects = effects.filter(isAnimeEffect)
-
-  // 知らないエフェクトはダメ
-  if (sizeEffects.length + animeEffects.length < effects.length) {
-    return escapeHtml(rawMatch)
-  }
-
-  // アニメーション系エフェクトは5つまで
-  if (animeEffects.length > maxEffectCount) {
-    return escapeHtml(rawMatch)
-  }
-
-  // aliasの置き換え
-  const replacedAnimeEffects = animeEffects.map(
-    e => animeEffectAliasMap.get(e) ?? e
-  )
-
-  // 複数サイズ指定が合った場合は最後のものを適用
-  const sizeEffectClass = sizeEffects[sizeEffects.length - 1] || ''
-  const stampHtml = `<i class="emoji message-emoji ${sizeEffectClass}" title=":${escapedTitle}:" style="${escapedStyle};">:${escapedName}:</i>`
-
-  return wrapWithEffect(stampHtml, replacedAnimeEffects, sizeEffectClass)
+function renderWithStyle(
+  stamp: StampData,
+  name: string,
+  title: string,
+  style: string
+) {
+  const sizeClass = stamp.effects.size === 'none' ? '' : stamp.effects.size
+  const html = `<i class="emoji message-emoji ${sizeClass}" title=":${escapeHtml(title)}:" style="${escapeHtml(style)};">:${escapeHtml(name)}:</i>`
+  return wrapWithEffects(html, stamp.effects)
 }
 
-const renderStampDom = (
-  rawMatch: string,
-  stampName: string,
-  imgTitle: string,
-  imgUrl: string,
-  effects: string[]
-) => {
-  if (!validateImage(imgUrl)) {
-    return escapeHtml(rawMatch)
-  }
+function renderImage(
+  stamp: StampData,
+  name: string,
+  title: string,
+  url: string
+) {
+  if (!validateImage(url)) return escapeHtml(stamp.literal)
 
-  const safeUrl = imgUrl.replace(
+  const safeUrl = url.replace(
     /[\s"'()\\]/g,
-    c => '%' + c.charCodeAt(0).toString(16).toUpperCase()
+    character => '%' + character.charCodeAt(0).toString(16).toUpperCase()
   )
-
-  return renderStampDomWithStyle(
-    rawMatch,
-    stampName,
-    imgTitle,
-    'background-image: url(' + safeUrl + ')',
-    effects
+  return renderWithStyle(
+    stamp,
+    name,
+    title,
+    'background-image: url(' + safeUrl + ')'
   )
 }
 
-const stampReg = /^[a-zA-Z0-9+_-]{1,32}$/
-
-const hslReg =
-  /(?<color>hsl\(\d+,\s*[\d]+(?:\.[\d]+)?%,\s*[\d]+(?:\.[\d]+)?%\))(?<effects>.*)/
-
-const hexReg = /0x(?<color>[0-9a-fA-F]{6})(?<effects>.*)/
-
-const renderHslStamp = (match: RegExpExecArray) => {
-  // HSL: hsl(..., ...%, ...%)
-  const { color = '', effects = '' } = match.groups ?? {}
-
-  return renderStampDomWithStyle(
-    `:${match[0]}:`,
-    color,
-    color,
-    `background-color: ${color}`,
-    effects === '' ? [] : effects.split('.').slice(1)
-  )
-}
-
-const renderHexStamp = (match: RegExpExecArray) => {
-  // Hex: 0x......
-  const { color = '', effects = '' } = match.groups ?? {}
-
-  return renderStampDomWithStyle(
-    `:${match[0]}:`,
-    `0x${color}`,
-    `0x${color}`,
-    `background-color: #${color}`,
-    effects === '' ? [] : effects.split('.').slice(1)
-  )
+function cssNumber(value: string) {
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 ? String(number) : undefined
 }
 
 export function stampRenderer({ store, baseUrl = '' }: Options = {}) {
-  const getStampImageUrl = (fileId: string) => {
-    if (store?.generateStampHref) {
-      return store.generateStampHref(fileId)
-    }
+  const getStampImageUrl = (fileId: string) =>
+    store?.generateStampHref?.(fileId) ??
+    `${baseUrl}/api/v3/files/${encodeURIComponent(fileId)}`
 
-    return `${baseUrl}/api/v3/files/${encodeURIComponent(fileId)}`
+  return (stamp: StampData): string => {
+    const { kind } = stamp
+
+    switch (kind.type) {
+      case 'normal': {
+        const value = store?.getStampByName?.(kind.name)
+        return value
+          ? renderImage(
+              stamp,
+              kind.name,
+              value.name,
+              getStampImageUrl(value.fileId)
+            )
+          : escapeHtml(stamp.literal)
+      }
+      case 'user': {
+        const value = store?.getUserByName?.(kind.name)
+        const label = '@' + kind.name
+        return value
+          ? renderImage(stamp, label, label, getStampImageUrl(value.iconFileId))
+          : escapeHtml(stamp.literal)
+      }
+      case 'hex_color': {
+        if (!Number.isInteger(kind.rgb) || kind.rgb < 0 || kind.rgb > 0xffffff)
+          return escapeHtml(stamp.literal)
+        const color = '#' + kind.rgb.toString(16).padStart(6, '0')
+        return renderWithStyle(
+          stamp,
+          kind.name,
+          kind.name,
+          `background-color: ${color}`
+        )
+      }
+      case 'hsl_color': {
+        const hue = cssNumber(kind.hue)
+        const saturation = cssNumber(kind.saturation)
+        const lightness = cssNumber(kind.lightness)
+        if (
+          hue === undefined ||
+          saturation === undefined ||
+          lightness === undefined
+        )
+          return escapeHtml(stamp.literal)
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`
+        return renderWithStyle(
+          stamp,
+          kind.name,
+          kind.name,
+          `background-color: ${color}`
+        )
+      }
+    }
   }
-
-  const renderUserStamp = (
-    stampName: string,
-    raw: string,
-    effects: string[]
-  ) => {
-    // 先頭の@を除いたものがユーザー名
-    const userName = stampName.slice(1)
-    const user = store?.getUserByName?.(userName)
-
-    if (!user) {
-      return escapeHtml(raw)
-    }
-    return renderStampDom(
-      raw,
-      stampName,
-      stampName,
-      getStampImageUrl(user.iconFileId),
-      effects
-    )
-  }
-
-  const renderNormalStamp = (
-    stampName: string,
-    raw: string,
-    effects: string[]
-  ) => {
-    const stamp = store?.getStampByName?.(stampName)
-
-    if (!stamp) {
-      return escapeHtml(raw)
-    }
-
-    return renderStampDom(
-      raw,
-      stampName,
-      stamp.name,
-      getStampImageUrl(stamp.fileId),
-      effects
-    )
-  }
-
-  const renderStamp = (raw: string) => {
-    const inner = raw.slice(1, -1)
-
-    const hexMatch = hexReg.exec(inner)
-    if (hexMatch) {
-      return renderHexStamp(hexMatch)
-    }
-
-    const hslMatch = hslReg.exec(inner)
-    if (hslMatch) {
-      return renderHslStamp(hslMatch)
-    }
-
-    const [stampName, ...effects] = inner.split('.')
-
-    // ユーザーアイコン
-    if (stampName.startsWith('@')) {
-      return renderUserStamp(stampName, raw, effects)
-    }
-
-    if (!stampReg.exec(stampName)) {
-      return escapeHtml(raw)
-    }
-
-    // 通常スタンプ
-    return renderNormalStamp(stampName, raw, effects)
-  }
-
-  return renderStamp
 }

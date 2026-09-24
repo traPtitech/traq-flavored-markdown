@@ -743,7 +743,9 @@
                     "start": 0
                   },
                   "data": {
-                    "literal": ":stamp:"
+                    "literal": ":stamp:",
+                    "kind": { "type": "normal", "name": "stamp" },
+                    "effects": { "animations": [], "size": "none" }
                   }
                 },
                 {
@@ -763,7 +765,9 @@
                     "start": 8
                   },
                   "data": {
-                    "literal": ":stamp.large:"
+                    "literal": ":stamp.large:",
+                    "kind": { "type": "normal", "name": "stamp" },
+                    "effects": { "animations": [], "size": "large" }
                   }
                 },
                 {
@@ -783,7 +787,9 @@
                     "start": 22
                   },
                   "data": {
-                    "literal": ":@user:"
+                    "literal": ":@user:",
+                    "kind": { "type": "user", "name": "user" },
+                    "effects": { "animations": [], "size": "none" }
                   }
                 }
               ]
@@ -802,7 +808,9 @@
                 "start": 0
               },
               "data": {
-                "literal": ":stamp:"
+                "literal": ":stamp:",
+                "kind": { "type": "normal", "name": "stamp" },
+                "effects": { "animations": [], "size": "none" }
               }
             },
             {
@@ -822,7 +830,9 @@
                 "start": 8
               },
               "data": {
-                "literal": ":stamp.large:"
+                "literal": ":stamp.large:",
+                "kind": { "type": "normal", "name": "stamp" },
+                "effects": { "animations": [], "size": "large" }
               }
             },
             {
@@ -842,7 +852,9 @@
                 "start": 22
               },
               "data": {
-                "literal": ":@user:"
+                "literal": ":@user:",
+                "kind": { "type": "user", "name": "user" },
+                "effects": { "animations": [], "size": "none" }
               }
             }
           ],
