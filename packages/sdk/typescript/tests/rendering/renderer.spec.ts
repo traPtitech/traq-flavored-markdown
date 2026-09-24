@@ -228,8 +228,7 @@ test('CommonMark owns link policy and rejects malformed known payloads', () => {
   expect(common.html().render(document)).toBe('[label](https://example.com)')
   const heading = parser.parse('# title')
   expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
-  ;(heading.children[0].data as { level: string }).level =
-    '1 onclick="alert(1)"'
+  Object.assign(heading.children[0].data, { level: '1 onclick="alert(1)"' })
   expect(() => common.html().render(heading)).toThrow(/Invalid render payload/)
 })
 
