@@ -115,8 +115,8 @@ func TestASTConsumers(t *testing.T) {
 		}
 		checkInvalid := func(document *Document) {
 			t.Helper()
-			if _, err := extractor.Extract(ctx, document); err == nil || !strings.Contains(err.Error(), "invalid_node") {
-				t.Fatalf("expected invalid_node for malformed siblings, got %v", err)
+			if _, err := extractor.Extract(ctx, document); err == nil || !strings.Contains(err.Error(), "invalid span") {
+				t.Fatalf("expected invalid span for malformed siblings, got %v", err)
 			}
 		}
 		reordered := *doc

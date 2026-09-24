@@ -30,7 +30,7 @@ test('processing rejects malformed sibling spans without poisoning the extractor
     const last = crossing.children.at(-1)!
     last.span.start = crossing.children[0].span.end - 1
     for (const candidate of [reordered, duplicated, crossing])
-      expect(() => extractor.extract(candidate)).toThrow('invalid_node')
+      expect(() => extractor.extract(candidate)).toThrow('invalid span')
     expect(extractor.extract(document).messageText).toBe('@alice @bob')
   } finally {
     runtime.dispose()
