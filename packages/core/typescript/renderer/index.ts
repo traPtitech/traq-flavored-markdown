@@ -1,4 +1,5 @@
 import { escapeHtml } from './html.js'
+import { documentBytes } from './document.js'
 import { configuration } from './preset.js'
 import type {
   Document,
@@ -27,10 +28,9 @@ export function renderer(preset: Preset): Renderer {
   const { handlers, fallback: renderFallback } = configuration(preset)
 
   function render(document: Document, overlay: RenderOverlay = {}) {
-    let bytes: Uint8Array | undefined
+    const bytes = documentBytes(document)
 
     const fallback = (node: Node) => {
-      bytes ??= new TextEncoder().encode(document.source)
       const text = escapeHtml(
         new TextDecoder().decode(bytes.subarray(node.span.start, node.span.end))
       )

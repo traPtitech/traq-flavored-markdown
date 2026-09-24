@@ -113,3 +113,29 @@ test('render overlays select roots, omit nodes, and escape replacement child tex
   ).toBe('firstsecond')
   expect(view.render(document)).toBe('<p>firstsecond</p>second')
 })
+
+test('renderer rejects invalid UTF-8 spans throughout the document', () => {
+  const view = renderer(new PresetBuilder().build())
+  const valid = {
+    source: '猫x',
+    children: [
+      { kind: 'unknown', data: null, span: { start: 0, end: 3 } },
+      { kind: 'unknown', data: null, span: { start: 3, end: 4 } }
+    ]
+  }
+  expect(view.render(valid)).toBe('猫x')
+
+  const middleOfCharacter = structuredClone(valid)
+  middleOfCharacter.children[0].span.end = 1
+  const outsideSource = structuredClone(valid)
+  outsideSource.children[1].span.end = 5
+  const reversed = structuredClone(valid)
+  reversed.children.reverse()
+  for (const document of [middleOfCharacter, outsideSource, reversed])
+    expect(() => view.render(document)).toThrow(/Invalid render document span/)
+
+  const omitted = structuredClone(outsideSource)
+  expect(() =>
+    view.render(omitted, { omittedNodes: new Set([omitted.children[1]]) })
+  ).toThrow(/Invalid render document span/)
+})
