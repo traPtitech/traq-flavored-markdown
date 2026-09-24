@@ -22,10 +22,6 @@
     "./renderer": {
       "types": "./dist/renderer/index.d.ts",
       "import": "./dist/renderer/index.js"
-    },
-    "./stamp-effects": {
-      "types": "./dist/renderer/stamp-effects.d.ts",
-      "import": "./dist/renderer/stamp-effects.js"
     }
   },
   "files": [
