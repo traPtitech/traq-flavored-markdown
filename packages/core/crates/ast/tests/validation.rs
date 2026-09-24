@@ -1,4 +1,6 @@
-use markdown_ast::{Document, Node, NodeData, Span, ValidationError as Error, ValidationLimits};
+use markdown_ast::{
+    Document, Node, NodeData, Span, ValidatedDocument, ValidationError as Error, ValidationLimits,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 struct Data(bool);
@@ -124,4 +126,37 @@ fn siblings_must_follow_source_order_without_overlapping() {
         vec![leaf(1, 3), leaf(2, 4)],
     )];
     assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+}
+
+#[test]
+fn validated_borrow_can_use_the_producers_custom_limits() {
+    let doc = Document {
+        source: "x".repeat(ValidationLimits::default().source_bytes + 1),
+        children: vec![],
+    };
+    let limits = ValidationLimits {
+        source_bytes: doc.source.len(),
+        ..ValidationLimits::default()
+    };
+
+    assert!(matches!(
+        ValidatedDocument::new(&doc),
+        Err(Error::SourceBytes)
+    ));
+    assert_eq!(
+        ValidatedDocument::with_limits(&doc, limits)
+            .unwrap()
+            .document(),
+        &doc
+    );
+    assert!(matches!(
+        ValidatedDocument::with_limits(
+            &doc,
+            ValidationLimits {
+                source_bytes: doc.source.len() - 1,
+                ..limits
+            }
+        ),
+        Err(Error::SourceBytes)
+    ));
 }

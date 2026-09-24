@@ -40,9 +40,8 @@ pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
     plan_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
 }
 
-pub(crate) fn plan_validated(
-    document: ValidatedDocument<'_>,
-) -> Result<EmbeddingPlan, &'static str> {
+/// Reuse an immutable validation, including explicitly configured tree limits.
+pub fn plan_validated(document: ValidatedDocument<'_>) -> Result<EmbeddingPlan, &'static str> {
     let document = document.document();
     let mut result = EmbeddingPlan::default();
     let mut edits = Vec::new();

@@ -59,6 +59,7 @@ the parsed references for mention checks.
 The public Rust APIs are `extraction::Extractor::extract(&Document)` and
 `rendering::PlainTextRenderer::render(&Document)`. They do not select grammars
 or reparse source. `extract_validated` and `render_validated` can share one
-immutable AST validation. Source replacement is applied by span order: an outer
+immutable AST validation. Use `ValidatedDocument::with_limits` to pass a document
+produced with custom tree limits to these methods. Source replacement is applied by span order: an outer
 replacement wins for equal or nested spans. Public AST consumers require
 source-ordered, non-overlapping siblings.

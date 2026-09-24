@@ -1,6 +1,9 @@
 //! Bounded document framing; the caller supplies payload decoding.
-use crate::fields::{Fields, error};
-use markdown_ast::{Document, Node, NodeKind, Span, ValidationLimits};
+use crate::{
+    CodecLimits,
+    fields::{Fields, error},
+};
+use markdown_ast::{Document, Node, NodeKind, Span};
 
 use serde::{
     Deserialize, Deserializer,
@@ -17,25 +20,9 @@ struct Position {
     end: usize,
 }
 
-#[derive(Clone, Copy)]
-pub struct DecodeLimits {
-    pub json_bytes: usize,
-    /// Source and tree limits shared with parsers and AST consumers.
-    pub document: ValidationLimits,
-}
-
-impl Default for DecodeLimits {
-    fn default() -> Self {
-        Self {
-            json_bytes: 8 * 1024 * 1024,
-            document: ValidationLimits::default(),
-        }
-    }
-}
-
 pub(crate) fn decode(
     json: &[u8],
-    limits: DecodeLimits,
+    limits: CodecLimits,
     decode_kind: &dyn Fn(&str, Fields<'_>) -> serde_json::Result<NodeKind>,
 ) -> serde_json::Result<Document> {
     check_json_limit(json, limits)?;
@@ -62,7 +49,7 @@ pub(crate) fn decode(
     Ok(Document { source, children })
 }
 
-fn check_json_limit(json: &[u8], limits: DecodeLimits) -> serde_json::Result<()> {
+fn check_json_limit(json: &[u8], limits: CodecLimits) -> serde_json::Result<()> {
     if json.len() > limits.json_bytes {
         return Err(error("json byte limit"));
     }
@@ -70,7 +57,7 @@ fn check_json_limit(json: &[u8], limits: DecodeLimits) -> serde_json::Result<()>
     Ok(())
 }
 
-fn decode_source(fields: &mut Fields<'_>, limits: DecodeLimits) -> serde_json::Result<String> {
+fn decode_source(fields: &mut Fields<'_>, limits: CodecLimits) -> serde_json::Result<String> {
     let source: String = Deserialize::deserialize(fields.take("source")?)?;
 
     if source.len() > limits.document.source_bytes {
@@ -83,7 +70,7 @@ fn decode_source(fields: &mut Fields<'_>, limits: DecodeLimits) -> serde_json::R
 struct State<'a> {
     decode_kind: &'a dyn Fn(&str, Fields<'_>) -> serde_json::Result<NodeKind>,
     source: &'a str,
-    limits: DecodeLimits,
+    limits: CodecLimits,
     count: usize,
 }
 impl State<'_> {

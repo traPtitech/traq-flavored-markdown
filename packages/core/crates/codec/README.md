@@ -35,7 +35,9 @@ format. Producers and consumers must share compatible definitions and generated
 bindings; matching type keys alone do not guarantee payload compatibility.
 
 Default limits are 8 MiB of JSON, 65,536 source bytes, 16,384 nodes, and depth 64. Encoding validates type, position, and resource limits too.
-The tree limits come from `markdown_ast::ValidationLimits`; `DecodeLimits`
-adds only the JSON byte limit. `decode_with_limits` accepts custom limits.
+The tree limits come from `markdown_ast::ValidationLimits`; `CodecLimits`
+adds the JSON byte limit. `encode_with_limits` and `decode_with_limits` accept
+the same explicit limits when a producer uses a larger tree budget. The
+`DecodeLimits` name remains an alias for `CodecLimits`.
 Grammar selection and parser or
 renderer lifecycle management are outside this crate.

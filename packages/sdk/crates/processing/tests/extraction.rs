@@ -195,3 +195,48 @@ fn aggregate_analysis_matches_the_standalone_policies() {
         );
     }
 }
+
+#[test]
+fn custom_parser_limits_flow_through_validated_consumers() {
+    use markdown_ast::{ValidatedDocument, ValidationError, ValidationLimits};
+    use traq_markdown_grammar::Limits;
+    use traq_markdown_processing::presets::traq::{embedding, message};
+    use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
+
+    let source = "x".repeat(ValidationLimits::default().source_bytes + 1);
+    let document_limits = ValidationLimits {
+        source_bytes: source.len(),
+        ..ValidationLimits::default()
+    };
+    let parser = bindings::parser("traq.v1").unwrap().with_limits(Limits {
+        document: document_limits,
+        ..Limits::default()
+    });
+    let document = parser.parse(&source).unwrap();
+    assert!(matches!(
+        ValidatedDocument::new(&document),
+        Err(ValidationError::SourceBytes)
+    ));
+    let validated = ValidatedDocument::with_limits(&document, document_limits).unwrap();
+
+    let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
+    let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
+    assert_eq!(renderer.render_validated(validated).unwrap(), source);
+    assert_eq!(
+        extractor.extract_validated(validated).unwrap().message_text,
+        source
+    );
+    assert_eq!(
+        message::Extractor::new("")
+            .extract_validated(validated)
+            .unwrap()
+            .plain_text,
+        source
+    );
+    assert_eq!(
+        embedding::plan_validated(validated)
+            .unwrap()
+            .unembedded_text,
+        source
+    );
+}

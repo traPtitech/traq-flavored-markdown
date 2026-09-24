@@ -36,10 +36,12 @@ limits are 65,536 source bytes, 16,384 nodes, and depth 64. Validation returns a
 `ValidationError` on failure and never checks codec registrations or handlers.
 
 AST construction and editing do not validate automatically. Validation is not
-cached, so validate again after an edit. `ValidatedDocument::new(&document)` can
-share one successful validation across immutable renderer and extractor borrows;
-it neither copies nor persists the AST. Consumers still enforce their own codec,
-handler, and output rules.
+cached, so validate again after an edit. `ValidatedDocument::new(&document)` uses
+the default limits; `ValidatedDocument::with_limits(&document, limits)` carries
+a successful check with the limits chosen by a parser or codec. Either can
+share one validation across immutable renderer and extractor borrows without
+copying or persisting the AST. Consumers still enforce their own codec, handler,
+and output rules.
 
 `Node` and `Document` implement `Clone`, `PartialEq`, `Send`, and `Sync`. They do
 not promise `Eq`, since a payload may contain values such as `NaN`. JSON is the

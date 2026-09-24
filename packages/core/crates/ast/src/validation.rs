@@ -51,7 +51,7 @@ impl ValidationError {
     }
 }
 
-/// A document checked against the default consumer limits for this immutable borrow.
+/// A document checked against explicit limits for this immutable borrow.
 /// It does not assert codec registration, handler support, or source edit ordering.
 /// Payload implementations must preserve their invariants during the borrow.
 ///
@@ -66,8 +66,17 @@ impl ValidationError {
 pub struct ValidatedDocument<'a>(&'a Document);
 
 impl<'a> ValidatedDocument<'a> {
+    /// Validate with the default consumer limits.
     pub fn new(document: &'a Document) -> Result<Self, ValidationError> {
-        document.validate(ValidationLimits::default())?;
+        Self::with_limits(document, ValidationLimits::default())
+    }
+
+    /// Validate with the same tree limits used by a custom parser or codec.
+    pub fn with_limits(
+        document: &'a Document,
+        limits: ValidationLimits,
+    ) -> Result<Self, ValidationError> {
+        document.validate(limits)?;
         Ok(Self(document))
     }
 

@@ -1,5 +1,5 @@
 use markdown_ast::{Document, Node, Span, ValidationLimits};
-use markdown_codec::{Codec, DecodeLimits};
+use markdown_codec::{Codec, CodecLimits, DecodeLimits};
 mod support;
 use markdown_definitions::NodeType;
 use support::{Paragraph, Text};
@@ -175,6 +175,47 @@ fn overlapping_siblings_are_rejected_at_both_codec_boundaries() {
     assert!(
         codec
             .decode(&serde_json::to_vec(&encoded).unwrap())
+            .is_err()
+    );
+}
+
+#[test]
+fn custom_limits_round_trip_above_the_default_source_budget() {
+    let codec = codec();
+    let source = "x".repeat(ValidationLimits::default().source_bytes + 1);
+    let document = Document {
+        children: vec![Node::leaf(
+            Span {
+                start: 0,
+                end: source.len(),
+            },
+            Text {
+                value: source.clone(),
+            },
+        )],
+        source,
+    };
+    let limits = CodecLimits {
+        json_bytes: 8 * 1024 * 1024,
+        document: ValidationLimits {
+            source_bytes: document.source.len(),
+            ..ValidationLimits::default()
+        },
+    };
+
+    assert!(codec.encode(&document).is_err());
+    let bytes = codec.encode_with_limits(&document, limits).unwrap();
+    assert!(codec.decode(&bytes).is_err());
+    assert_eq!(codec.decode_with_limits(&bytes, limits).unwrap(), document);
+    assert!(
+        codec
+            .encode_with_limits(
+                &document,
+                CodecLimits {
+                    json_bytes: bytes.len() - 1,
+                    ..limits
+                }
+            )
             .is_err()
     );
 }

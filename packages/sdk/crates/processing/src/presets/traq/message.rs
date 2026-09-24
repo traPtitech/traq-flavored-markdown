@@ -28,7 +28,8 @@ impl Extractor {
         self.extract_validated(ValidatedDocument::new(document).map_err(|_| "invalid_node")?)
     }
 
-    pub(crate) fn extract_validated(
+    /// Reuse an immutable validation, including explicitly configured tree limits.
+    pub fn extract_validated(
         &self,
         document: ValidatedDocument<'_>,
     ) -> Result<Message, &'static str> {

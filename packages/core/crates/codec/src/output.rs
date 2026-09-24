@@ -1,11 +1,13 @@
-use super::Codec;
+use super::{Codec, CodecLimits};
 use markdown_ast::{Document, Node};
 use serde::{Serialize, Serializer};
 
-pub(super) fn encode(document: &Document, codec: &Codec) -> serde_json::Result<Vec<u8>> {
+pub(super) fn encode(
+    document: &Document,
+    codec: &Codec,
+    limits: CodecLimits,
+) -> serde_json::Result<Vec<u8>> {
     // Check before recursive serialization, including subtrees a renderer may hide.
-    let limits = crate::DecodeLimits::default();
-
     document
         .validate(limits.document)
         .map_err(<serde_json::Error as serde::ser::Error>::custom)?;
