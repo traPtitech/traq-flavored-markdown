@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct StampData {
     pub literal: String,
@@ -9,11 +9,15 @@ pub struct StampData {
     pub effects: StampEffects,
 }
 
-impl markdown_ast::NodeData for StampData {}
+impl markdown_ast::NodeData for StampData {
+    fn validate(&self, children: &[markdown_ast::Node]) -> bool {
+        children.is_empty()
+    }
+}
 
 /// Syntax and display data are parsed once, before any host renders the stamp.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StampKind {
     Normal {
@@ -35,7 +39,7 @@ pub enum StampKind {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct StampEffects {
     pub animations: Vec<StampAnimation>,
@@ -43,7 +47,7 @@ pub struct StampEffects {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StampAnimation {
     Rotate,
@@ -71,7 +75,7 @@ pub enum StampAnimation {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StampSize {
     #[default]

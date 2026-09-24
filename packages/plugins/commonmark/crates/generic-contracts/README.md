@@ -9,11 +9,8 @@ strikethrough, and linkify plugins. Grammars and rendering presets select and
 order their implementations separately. Linkify reuses CommonMark `Link` and
 `Text` nodes, so it has no dedicated payload type.
 
-Each payload owns its `NodeData` validation, serde representation, and
-`NodeType` metadata. The optional `contracts` feature is retained for existing
-TypeScript type and JSON Schema generation; the standard Wasm distribution does
-not require it.
-
-Generated keys reflect the defining type, for example
-`markdown_generic_contracts::math::InlineMathData`. They are not stable AST
-persistence or grammar-version IDs.
+Each payload owns its `NodeData` validation and serde representation. The
+`node_catalog!` macro is the single source for its stable wire kind, such as
+`generic.inline_math`, and for contract export. The optional `contracts` feature
+supports TypeScript type and JSON Schema generation; the standard Wasm
+distribution does not require it.
