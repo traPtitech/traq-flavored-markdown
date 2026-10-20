@@ -1,5 +1,5 @@
 use markdown_ast::{
-    Document, Node, NodeData, NodeRole, Span, ValidatedDocument, ValidationError as Error,
+    Document, Node, NodeData, NodeRole, Span, ValidatedDocument, ValidationErrorKind as Error,
     ValidationLimits,
 };
 
@@ -13,8 +13,13 @@ impl NodeData for Data {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> bool {
-        self.0
+    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = self.0;
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 fn leaf(start: usize, end: usize) -> Node {
@@ -39,7 +44,7 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
         depth: 2,
     };
 
-    assert_eq!(doc.validate(limits), Ok(3));
+    assert_eq!(doc.validate(limits).map_err(|error| error.kind), Ok(3));
 
     for (limits, error) in [
         (
@@ -52,22 +57,31 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
         (ValidationLimits { nodes: 2, ..limits }, Error::Nodes),
         (ValidationLimits { depth: 1, ..limits }, Error::Depth),
     ] {
-        assert_eq!(doc.validate(limits), Err(error));
+        assert_eq!(doc.validate(limits).map_err(|error| error.kind), Err(error));
     }
 
     doc.children[0].children[1].get_mut::<Data>().unwrap().0 = false;
-    assert_eq!(doc.validate(limits), Err(Error::InvalidNode));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::InvalidNode)
+    );
     doc.children[0].children[1].get_mut::<Data>().unwrap().0 = true;
 
     for (start, end) in [(1, 3), (3, 2), (0, 5), (0, usize::MAX)] {
         doc.children[0].children[1].span = Span { start, end };
-        assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+        assert_eq!(
+            doc.validate(limits).map_err(|error| error.kind),
+            Err(Error::InvalidSpan)
+        );
     }
 
     doc.children[0].span = Span { start: 0, end: 3 };
     doc.children[0].children[1] = leaf(3, 4);
 
-    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::InvalidSpan)
+    );
 }
 
 #[test]
@@ -84,13 +98,17 @@ fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
         children: vec![],
     };
 
-    assert_eq!(doc.validate(limits), Ok(0));
+    assert_eq!(doc.validate(limits).map_err(|error| error.kind), Ok(0));
     doc.children.push(leaf(0, 0));
 
-    assert_eq!(doc.validate(limits), Err(Error::Nodes));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::Nodes)
+    );
 
     assert_eq!(
-        doc.validate(ValidationLimits { nodes: 1, ..limits }),
+        doc.validate(ValidationLimits { nodes: 1, ..limits })
+            .map_err(|error| error.kind),
         Err(Error::Depth)
     );
 
@@ -102,7 +120,11 @@ fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
         )];
     }
 
-    assert_eq!(doc.validate(ValidationLimits::default()), Err(Error::Depth));
+    assert_eq!(
+        doc.validate(ValidationLimits::default())
+            .map_err(|error| error.kind),
+        Err(Error::Depth)
+    );
 
     assert_eq!(
         doc.validate(ValidationLimits {
@@ -122,20 +144,29 @@ fn siblings_must_follow_source_order_without_overlapping() {
         children: vec![leaf(0, 2), leaf(2, 4), leaf(4, 6)],
     };
     let limits = ValidationLimits::default();
-    assert_eq!(doc.validate(limits), Ok(3));
+    assert_eq!(doc.validate(limits).map_err(|error| error.kind), Ok(3));
 
     doc.children[1].span = Span { start: 1, end: 4 };
-    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::InvalidSpan)
+    );
 
     doc.children[1].span = Span { start: 5, end: 6 };
-    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::InvalidSpan)
+    );
 
     doc.children = vec![Node::new(
         Span { start: 0, end: 6 },
         Data(true),
         vec![leaf(1, 3), leaf(2, 4)],
     )];
-    assert_eq!(doc.validate(limits), Err(Error::InvalidSpan));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::InvalidSpan)
+    );
 }
 
 #[test]
@@ -150,7 +181,7 @@ fn validated_borrow_can_use_the_producers_custom_limits() {
     };
 
     assert!(matches!(
-        ValidatedDocument::new(&doc),
+        ValidatedDocument::new(&doc).map_err(|error| error.kind),
         Err(Error::SourceBytes)
     ));
     assert_eq!(
@@ -166,7 +197,8 @@ fn validated_borrow_can_use_the_producers_custom_limits() {
                 source_bytes: doc.source.len() - 1,
                 ..limits
             }
-        ),
+        )
+        .map_err(|error| error.kind),
         Err(Error::SourceBytes)
     ));
 }
@@ -195,7 +227,10 @@ fn payload_limit_counts_native_node_data_before_consumption() {
         payload_bytes: 5,
         ..ValidationLimits::default()
     };
-    assert_eq!(doc.validate(limits), Err(Error::PayloadBytes));
+    assert_eq!(
+        doc.validate(limits).map_err(|error| error.kind),
+        Err(Error::PayloadBytes)
+    );
     assert_eq!(
         doc.validate(ValidationLimits {
             payload_bytes: 6,
@@ -212,7 +247,49 @@ fn payload_limit_counts_native_node_data_before_consumption() {
         )],
     };
     assert!(matches!(
-        ValidatedDocument::new(&huge),
+        ValidatedDocument::new(&huge).map_err(|error| error.kind),
         Err(Error::PayloadBytes)
     ));
+}
+
+#[test]
+fn diagnostics_and_scoped_walk_share_tree_coordinates() {
+    let mut document = Document {
+        source: "abcd".into(),
+        children: vec![
+            Node::new(
+                Span { start: 0, end: 3 },
+                Data(true),
+                vec![leaf(0, 1), leaf(1, 3)],
+            ),
+            leaf(3, 4),
+        ],
+    };
+    let validated = ValidatedDocument::new(&document).unwrap();
+    assert_eq!(
+        validated
+            .walk()
+            .map(|visit| (visit.index, visit.depth, visit.parent.is_some()))
+            .collect::<Vec<_>>(),
+        [(0, 1, false), (0, 2, true), (1, 2, true), (1, 1, false)]
+    );
+    let mut seen = vec![];
+    validated
+        .try_visit(0, |visit, inherited| {
+            seen.push((visit.node.span.start, *inherited));
+            Ok::<_, ()>(*inherited + 1)
+        })
+        .unwrap();
+    assert_eq!(seen, [(0, 0), (0, 1), (1, 1), (3, 0)]);
+
+    document.children[0].children[1]
+        .get_mut::<Data>()
+        .unwrap()
+        .0 = false;
+    let error = ValidatedDocument::new(&document).unwrap_err();
+    assert_eq!(error.kind, Error::InvalidNode);
+    assert_eq!(error.path, [0, 1]);
+    assert_eq!(error.span, Some(Span { start: 1, end: 3 }));
+    assert_eq!(error.payload_type, Some(std::any::type_name::<Data>()));
+    assert_eq!(error.code(), "invalid_node");
 }

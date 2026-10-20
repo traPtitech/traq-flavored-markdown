@@ -32,16 +32,18 @@ After that, commit as usual.
 
 ## Common commands
 
-| Command                               | Purpose                                               |
-| ------------------------------------- | ----------------------------------------------------- |
-| `bun run format`                      | Apply Prettier, rustfmt, and gofmt                    |
-| `bun run format:check`                | Check formatting without changing files               |
-| `bun run lint:check`                  | Run ESLint without changing files                     |
-| `bun run build`                       | Generate bindings and build TypeScript, Wasm, and CSS |
-| `bun run typecheck`                   | Type-check all TypeScript packages                    |
-| `bun run test`                        | Run TypeScript, Rust, and Go tests                    |
-| `bun run check`                       | Run the complete local CI suite                       |
-| `bun run --cwd packages/sdk examples` | Run all public API examples                           |
+| Command                               | Purpose                                                         |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `bun run format`                      | Apply Prettier, rustfmt, and gofmt                              |
+| `bun run format:check`                | Check formatting without changing files                         |
+| `bun run lint:check`                  | Run ESLint without changing files                               |
+| `bun run build`                       | Generate bindings and build TypeScript, Wasm, and CSS           |
+| `bun run build:typescript`            | Build TypeScript from checked-in bindings without Cargo or Wasm |
+| `bun run test:unit`                   | Run pure TypeScript and contract unit tests                     |
+| `bun run typecheck`                   | Type-check all TypeScript packages                              |
+| `bun run test`                        | Run TypeScript, Rust, and Go tests                              |
+| `bun run check`                       | Run the complete local CI suite                                 |
+| `bun run --cwd packages/sdk examples` | Run all public API examples                                     |
 
 Root commands operate on every public package. Package commands, such as
 `bun run --cwd packages/sdk test`, are useful during iteration after the root
@@ -65,14 +67,26 @@ The root build pipeline:
 Generated sources are kept in each owner's `typescript/generated` and
 `go/generated_*.go` directories. Intermediate Rust contracts are under `target/`;
 distributable outputs are in each package's `dist/` directory. Changes to Rust
-inputs, including their paths, can change the Wasm build ID. Always distribute
-the SDK and Wasm built from the same source and locked dependencies.
+inputs, including their paths, can change source provenance. Three identities
+serve separate purposes: `contractId` hashes the normalized semantic contract,
+`sourceFingerprint` identifies the Rust build inputs, and SHA-256 identifies
+the exact Wasm bytes. Runtime compatibility uses `contractId`; distribution
+checks also verify source provenance and artifact bytes.
+
+Generators return an `OutputManifest` containing each owner, repository-relative
+path, and source text. One writer formats outputs before replacement and records
+managed paths in `.generated-outputs.json`. Replacing an owner's outputs removes
+only its retired managed files; unrelated files are preserved. The generated
+check emits into an isolated directory and compares the complete output sets
+without writing to the checkout. Build tasks share this contract prerequisite
+and visit each dependency once.
 
 Use the following commands when working on contracts or generated bindings:
 
 ```sh
 bun run generate:bindings
 bun run scripts/generate-bindings.ts commonmark-plugin
+bun run scripts/generate-bindings.ts extensions-plugin
 bun run scripts/generate-bindings.ts traq-plugin
 bun run scripts/generate-bindings.ts sdk
 bun run check:generated
@@ -80,8 +94,8 @@ bun run build:corpus
 ```
 
 After changing a Rust contract, run `bun run build`, review the generated diff,
-then run `bun run check`. The SDK's individual build regenerates only its own
-bindings; use the root build after changing plugin contracts.
+then run `bun run check`. The SDK build runs the same dependency task graph as
+the root build, including its plugin prerequisites.
 
 ## Workspace layout and dependencies
 
@@ -94,7 +108,13 @@ replacements for internal dependencies. Published `go.mod` files retain matching
 version requirements without local replacements. `go mod tidy` operates on one
 module rather than the workspace graph, so use workspace tests and `go list -m
 all` to verify local resolution. Go module paths follow the repository layout,
-including `packages/plugins/commonmark/go` and `packages/plugins/traq/go`.
+including the CommonMark, generic extensions, and traQ plugin directories.
+
+`scripts/workspace/descriptor.ts` explicitly declares package owners and allowed
+owner dependencies. npm manifests and Go module files provide the actual build
+graphs; Cargo metadata provides crate edges. Architecture checks compare those
+edges with the owner policy and explicit crate restrictions, so changing a
+package's dependencies cannot silently change its architectural permissions.
 
 `tsconfig.build.base.json` defines shared TypeScript emit options. Each package
 owns its source and output selection; `tsconfig.base.json` provides tooling

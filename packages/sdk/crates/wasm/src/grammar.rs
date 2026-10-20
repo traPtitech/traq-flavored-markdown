@@ -1,4 +1,5 @@
 use super::buffers::IO;
+use crate::abi::{self, Error, ErrorCode};
 use std::cell::RefCell;
 use traq_markdown_grammar::{Grammar, bindings};
 
@@ -12,13 +13,14 @@ pub fn get() -> Option<Grammar> {
 #[unsafe(no_mangle)]
 pub extern "C" fn configure() -> u32 {
     IO.with_borrow_mut(|io| {
-        let result = (|| -> Result<_, String> {
-            let source = io.source().map_err(|error| error.to_string())?;
-            let grammar = bindings::grammar(source).map_err(|error| error.to_string())?;
+        let result = (|| -> Result<_, Error> {
+            let source = io.source()?;
+            let grammar = bindings::grammar(source)
+                .map_err(|error| Error::new(ErrorCode::UnknownPreset, error))?;
             GRAMMAR.set(Some(grammar));
-            Ok(env!("MARKDOWN_BUILD_ID"))
+            Ok(abi::configured())
         })();
-        io.reply("configured", &result);
+        io.reply(&result);
         io.output.len() as u32
     })
 }

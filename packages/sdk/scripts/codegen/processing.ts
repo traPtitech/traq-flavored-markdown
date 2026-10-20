@@ -1,50 +1,43 @@
 import {
-  goContract,
+  emitGoDefinition,
   goValidationRuntime
 } from '../../../../scripts/codegen/go.ts'
+import {
+  type Direction,
+  normalizeContracts
+} from '../../../../scripts/codegen/ir.ts'
 import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
-import { typescriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
+import { emitContractValidators } from '../../../../scripts/codegen/typescript-validators.ts'
+import { emitTypeScriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
 
-export function processingFiles(schemas: Record<string, RawSchema>) {
-  const files = new Map<string, string>([
+export function processingFiles(
+  schemas: Record<string, RawSchema>,
+  directions: Readonly<Record<string, Direction>> = {}
+) {
+  const contracts = normalizeContracts(Object.values(schemas), directions)
+  return new Map([
     [
       'typescript/generated/processing.ts',
-      '// Generated from Rust processing contracts. Do not edit.\n'
+      '// Generated from Rust processing contracts. Do not edit.\n' +
+        [...emitTypeScriptDeclarations(contracts).values()].join('\n') +
+        '\n' +
+        emitContractValidators(
+          contracts,
+          '@traq-flavored-markdown/core/validation'
+        ) +
+        contracts.roots
+          .map(
+            name =>
+              `export const is${name} = (value: unknown): value is ${name} => validate${name}(value)`
+          )
+          .join('\n') +
+        '\n'
     ],
     [
       'go/generated_processing.go',
-      '// Code generated from Rust processing contracts. DO NOT EDIT.\npackage markdown\nimport (\n"bytes"\n"encoding/json"\n"fmt"\n)\n' +
-        goValidationRuntime
+      '// Code generated from Rust processing contracts. DO NOT EDIT.\npackage markdown\nimport (\n"bytes"\n"encoding/json"\n"fmt"\n"unicode/utf8"\n)\n' +
+        goValidationRuntime +
+        [...contracts.definitions.values()].map(emitGoDefinition).join('\n')
     ]
   ])
-  const types = typescriptDeclarations(Object.values(schemas))
-
-  let go = ''
-  const goDeclarations = new Map<string, string>()
-  function addGo(schema: RawSchema, root = schema) {
-    const source = goContract(schema, root)
-    if (!schema.title) throw new Error('Schema missing title')
-    const previous = goDeclarations.get(schema.title)
-    if (previous !== undefined && previous !== source)
-      throw new Error('Conflicting processing type: ' + schema.title)
-    if (previous === undefined) {
-      goDeclarations.set(schema.title, source)
-      go += source
-    }
-  }
-
-  for (const name of Object.keys(schemas)) {
-    const schema = schemas[name]
-    addGo(schema)
-    for (const [name, definition] of Object.entries(schema.$defs ?? {}))
-      addGo({ ...definition, title: name }, schema)
-  }
-  const tsPath = 'typescript/generated/processing.ts'
-  const goPath = 'go/generated_processing.go'
-  files.set(
-    tsPath,
-    (files.get(tsPath) ?? '') + [...types.values()].join('\n') + '\n'
-  )
-  files.set(goPath, (files.get(goPath) ?? '') + go)
-  return files
 }

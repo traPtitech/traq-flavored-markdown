@@ -8,11 +8,11 @@ pub(super) fn balance(
     budget: &mut Budget,
 ) -> Result<(), ParseError> {
     pair_delimiters(ds, budget)?;
-    mark_strong_pairs(tokens, ds, budget)
+    mark_pairs(tokens, ds, budget)
 }
 
 fn pair_delimiters(ds: &mut [Delimiter], budget: &mut Budget) -> Result<(), ParseError> {
-    let mut lower_bounds = std::collections::HashMap::<(usize, u8), [isize; 6]>::new();
+    let mut lower_bounds = std::collections::HashMap::<((usize, u8), u8), isize>::new();
     let mut jumps = vec![0; ds.len()];
     let (mut header, mut previous_token) = (0, None);
 
@@ -31,9 +31,10 @@ fn pair_delimiters(ds: &mut [Delimiter], budget: &mut Budget) -> Result<(), Pars
             continue;
         }
 
-        let bottom = lower_bounds.entry(ds[closer_index].key).or_insert([-1; 6]);
-        let parameter = usize::from(ds[closer_index].open) * 3 + ds[closer_index].length % 3;
-        let minimum = bottom[parameter];
+        let closing = ds[closer_index];
+        let class = (closing.pairing.policy.cache_class)(closing.run());
+        let bottom = lower_bounds.entry((closing.key, class)).or_insert(-1);
+        let minimum = *bottom;
         let mut opener = header as isize - jumps[header] as isize - 1;
         let mut new_min = opener;
 
@@ -44,11 +45,11 @@ fn pair_delimiters(ds: &mut [Delimiter], budget: &mut Budget) -> Result<(), Pars
             let opening = ds[opener_index];
             let closing = ds[closer_index];
 
-            let odd_match = (opening.close || closing.open)
-                && (opening.length + closing.length).is_multiple_of(3)
-                && (!opening.length.is_multiple_of(3) || !closing.length.is_multiple_of(3));
-
-            if opening.key == closing.key && opening.open && opening.end.is_none() && !odd_match {
+            if opening.key == closing.key
+                && opening.open
+                && opening.end.is_none()
+                && (closing.pairing.policy.accepts)(opening.run(), closing.run())
+            {
                 let jump = if opener_index > 0 && !ds[opener_index - 1].open {
                     jumps[opener_index - 1] + 1
                 } else {
@@ -72,14 +73,14 @@ fn pair_delimiters(ds: &mut [Delimiter], budget: &mut Budget) -> Result<(), Pars
         }
 
         if new_min != -1 {
-            bottom[parameter] = new_min;
+            *bottom = new_min;
         }
     }
 
     Ok(())
 }
 
-fn mark_strong_pairs(
+fn mark_pairs(
     tokens: &mut [Token],
     ds: &mut [Delimiter],
     budget: &mut Budget,
@@ -94,7 +95,7 @@ fn mark_strong_pairs(
             continue;
         };
 
-        let strong = ds[i].pairing.combine_pairs
+        let combined = ds[i].pairing.policy.combined.is_some()
             && i > 0
             && end + 1 < ds.len()
             && ds[i - 1].end == Some(end + 1)
@@ -105,10 +106,16 @@ fn mark_strong_pairs(
         let open_token = ds[i].token;
         let close_token = ds[end].token;
 
-        tokens[open_token].kind = TokenKind::Open(ds[i].pairing.make, strong);
+        let policy = ds[i].pairing.policy;
+        let make = if combined {
+            policy.combined.expect("combined pair was checked")
+        } else {
+            policy.single
+        };
+        tokens[open_token].kind = TokenKind::Open(make);
         tokens[close_token].kind = TokenKind::Close;
 
-        if strong {
+        if combined {
             tokens[open_token].start = tokens[ds[i - 1].token].start;
             tokens[close_token].end = tokens[ds[end + 1].token].end;
             tokens[ds[i - 1].token].kind = TokenKind::Empty;

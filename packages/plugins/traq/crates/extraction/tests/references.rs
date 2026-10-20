@@ -1,6 +1,6 @@
 use markdown_ast::{Document, Node, Span};
 use markdown_extractor::{Extractor, PresetBuilder};
-use markdown_trap_contracts::{ReferenceData, ReferenceKind};
+use markdown_trap_contracts::{Reference, ReferenceKind};
 use markdown_trap_extraction::{References, references};
 
 #[test]
@@ -41,7 +41,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
                     start: position,
                     end: position + 1,
                 },
-                ReferenceData {
+                Reference {
                     target,
                     id: id.clone(),
                     label: "label".into(),

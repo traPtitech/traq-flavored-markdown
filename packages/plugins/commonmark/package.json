@@ -18,21 +18,9 @@
       "types": "./dist/generated/commonmark.d.ts",
       "import": "./dist/generated/commonmark.js"
     },
-    "./generic/nodes": {
-      "types": "./dist/generated/generic.d.ts",
-      "import": "./dist/generated/generic.js"
-    },
     "./renderer": {
       "types": "./dist/renderer/index.d.ts",
       "import": "./dist/renderer/index.js"
-    },
-    "./generic/renderer": {
-      "types": "./dist/renderer/extensions/index.d.ts",
-      "import": "./dist/renderer/extensions/index.js"
-    },
-    "./generic/math": {
-      "types": "./dist/renderer/extensions/math.d.ts",
-      "import": "./dist/renderer/extensions/math.js"
     },
     "./highlight": {
       "types": "./dist/renderer/highlight.d.ts",
@@ -60,12 +48,10 @@
     "@traq-flavored-markdown/core": "0.1.7"
   },
   "devDependencies": {
-    "@traq-flavored-markdown/core": "workspace:*",
-    "@types/katex": "0.16.8"
+    "@traq-flavored-markdown/core": "workspace:*"
   },
   "dependencies": {
     "entities": "8.1.0",
-    "highlight.js": "11.12.0",
-    "katex": "0.18.7"
+    "highlight.js": "11.12.0"
   }
 }

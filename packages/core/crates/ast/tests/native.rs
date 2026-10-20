@@ -10,8 +10,13 @@ impl NodeData for Score {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        children.is_empty()
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = children.is_empty();
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 #[derive(Debug, Clone, PartialEq)]
@@ -24,8 +29,13 @@ impl NodeData for Container {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        children.iter().all(|child| child.get::<Score>().is_some())
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = children.iter().all(|child| child.get::<Score>().is_some());
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 
@@ -37,7 +47,7 @@ fn native_borrow_clone_validation_and_partial_equality() {
     let span = Span { start: 0, end: 1 };
     let original = Node::new(span, Container, vec![Node::leaf(span, Score(1.5))]);
 
-    assert!(original.validate());
+    assert!(original.validate().is_ok());
 
     let mut copy = original.clone();
     copy.children[0].get_mut::<Score>().unwrap().0 = 2.5;
@@ -47,7 +57,7 @@ fn native_borrow_clone_validation_and_partial_equality() {
     assert!(original.get::<Score>().is_none());
 
     copy.children.push(Node::leaf(span, Container));
-    assert!(!copy.validate());
+    assert!(copy.validate().is_err());
 
     let nan = Node::leaf(span, Score(f64::NAN));
     assert_ne!(nan, nan.clone());

@@ -5,14 +5,25 @@ import defaultSubset from './languages.js'
 
 const noHighlightRe = /^(no-?highlight|plain|text)$/i
 
-export const createHighlightFunc =
-  (preClass: string, withCaption = true, useSubsetForAuto = true) =>
+export interface HighlighterOptions {
+  preClass?: string
+  caption?: boolean
+  /** Restrict auto detection, or use all registered languages with null. */
+  autoLanguages?: readonly string[] | null
+}
+
+export const createHighlighter =
+  ({
+    preClass = '',
+    caption = true,
+    autoLanguages = defaultSubset
+  }: HighlighterOptions = {}) =>
   (code: string, lang: string) => {
     const pre = '<pre' + attributes([['class', preClass]]) + '>'
     let langName
     let citeTag = ''
 
-    if (withCaption) {
+    if (caption) {
       const [_langName, langCaption] = lang.split(':')
       langName = _langName ?? ''
 
@@ -32,7 +43,7 @@ export const createHighlightFunc =
     } else {
       const result = hljs.highlightAuto(
         code,
-        useSubsetForAuto ? defaultSubset : undefined
+        autoLanguages ? [...autoLanguages] : undefined
       )
       codeHtml = `<code class="lang-${result.language}">${result.value}</code>`
     }

@@ -1,3 +1,6 @@
+mod policy;
+pub(crate) use policy::CommonmarkBlocks;
+pub use policy::Interrupt;
 mod definition;
 mod leaf;
 mod list;
@@ -5,7 +8,6 @@ pub(crate) mod markers;
 mod paragraph;
 pub mod quote;
 
-use super::inlines::links::LinkOptions;
 use markdown_parser::engine::block::BlockRule;
 
 pub struct Rules {
@@ -20,12 +22,9 @@ pub struct Rules {
     pub paragraph: BlockRule,
 }
 
-pub(crate) fn rules(options: LinkOptions) -> Rules {
+pub(crate) fn rules() -> Rules {
     Rules {
-        definition: BlockRule::new(move |input, budget| {
-            definition::parse(input, budget, options.normalize)
-        })
-        .named("definition"),
+        definition: BlockRule::new(definition::parse).named("definition"),
 
         blank: BlockRule::new(|input, _| {
             Ok(markers::blank(input.current())

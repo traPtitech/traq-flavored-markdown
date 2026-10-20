@@ -53,9 +53,8 @@ impl PluginGroup {
         Self(Declaration::new(Some(self), name))
     }
 
-    // A group's new() creates a plugin, matching the agreed namespace API.
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new(&self, name: impl Into<String>) -> Plugin {
+    /// Create a plugin declaration within this namespace.
+    pub fn plugin(&self, name: impl Into<String>) -> Plugin {
         Plugin(Declaration::new(Some(self), name))
     }
 

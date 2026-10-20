@@ -1,0 +1,95 @@
+// DOM class -> keyframes/timing. Conga animates the image rather than its wrapper.
+$effects: (
+  rotate: (
+    keyframes: rotate,
+    duration: 1s
+  ),
+  rotate-inv: (
+    keyframes: rotate-inv,
+    duration: 1s
+  ),
+  wiggle: (
+    keyframes: wiggle,
+    duration: 0.3s
+  ),
+  parrot: (
+    keyframes: parrot,
+    duration: 0.5s
+  ),
+  zoom: (
+    keyframes: zoom,
+    duration: 1s
+  ),
+  inversion: (
+    keyframes: invert,
+    duration: 1.5s
+  ),
+  turn: (
+    keyframes: turn,
+    duration: 1.5s
+  ),
+  turn-v: (
+    keyframes: turn-v,
+    duration: 1.5s
+  ),
+  happa: (
+    keyframes: happa,
+    duration: 1.5s
+  ),
+  pyon: (
+    keyframes: pyon,
+    duration: 0.75s,
+    origin: bottom center
+  ),
+  flashy: (
+    keyframes: flashy,
+    duration: 1s
+  ),
+  pull: (
+    keyframes: pull,
+    duration: 0.5s
+  ),
+  atsumori: (
+    keyframes: atsumori,
+    duration: 2s
+  ),
+  stretch: (
+    keyframes: stretch,
+    duration: 1s
+  ),
+  stretch-v: (
+    keyframes: stretch-v,
+    duration: 1s
+  ),
+  conga: (
+    keyframes: conga,
+    duration: 1s,
+    image: true
+  ),
+  conga-inv: (
+    keyframes: conga-inv,
+    duration: 1s,
+    image: true
+  ),
+  attract: (
+    keyframes: attract,
+    duration: 3s
+  ),
+  ascension: (
+    keyframes: ascension,
+    duration: 2s
+  ),
+  shake: (
+    keyframes: shake,
+    duration: 0.5s
+  ),
+  party: (
+    keyframes: party,
+    duration: 0.5s,
+    origin: center bottom
+  ),
+  rainbow: (
+    keyframes: rainbow,
+    duration: 0.5s
+  )
+);

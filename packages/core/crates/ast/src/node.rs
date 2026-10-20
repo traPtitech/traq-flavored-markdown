@@ -32,6 +32,10 @@ impl Node {
         self.kind.data_type_id()
     }
 
+    pub fn data_type_name(&self) -> &'static str {
+        self.kind.data_type_name()
+    }
+
     pub fn role(&self) -> NodeRole {
         self.kind.role()
     }
@@ -41,7 +45,7 @@ impl Node {
     }
 
     /// Calls only this node's type-owned check. Does not validate descendants or spans.
-    pub fn validate(&self) -> bool {
+    pub fn validate(&self) -> Result<(), crate::PayloadError> {
         self.kind.validate(&self.children)
     }
 }

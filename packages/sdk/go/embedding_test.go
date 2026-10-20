@@ -71,7 +71,7 @@ func TestEmbeddingFixtures(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actual, err := EmbedReferences(fixture[0], output.Embedding, resolve)
+		actual, err := EmbedReferences(fixture[0], output.ReferenceEmbedding, resolve)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -197,15 +197,15 @@ func TestInitialization(t *testing.T) {
 	}
 }
 
-func TestBuildMismatch(t *testing.T) {
+func TestContractMismatch(t *testing.T) {
 	wasm, err := os.ReadFile("../dist/parser.wasm")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Contains(wasm, []byte(buildID)) {
-		t.Fatal("missing build ID")
+	if !bytes.Contains(wasm, []byte(contractID)) {
+		t.Fatal("missing contract ID")
 	}
-	other := bytes.ReplaceAll(wasm, []byte(buildID), []byte(strings.Repeat("0", len(buildID))))
+	other := bytes.ReplaceAll(wasm, []byte(contractID), []byte(strings.Repeat("0", len(contractID))))
 	r, err := NewRuntime(context.Background(), other)
 	if err != nil {
 		t.Fatal(err)

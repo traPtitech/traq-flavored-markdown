@@ -1,3 +1,4 @@
+use crate::abi::{self, Error};
 use crate::buffers::IO;
 use std::cell::RefCell;
 use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
@@ -7,15 +8,14 @@ thread_local! { static RENDERER: RefCell<Option<PlainTextRenderer>> = const { Re
 #[unsafe(no_mangle)]
 pub extern "C" fn configure_renderer() -> u32 {
     IO.with_borrow_mut(|io| {
-        let result = (|| -> Result<_, String> {
-            let source = io.source().map_err(|error| error.to_string())?;
-            let options: RendererOptions =
-                serde_json::from_str(source).map_err(|error| error.to_string())?;
-            let renderer = PlainTextRenderer::new(options)?;
+        let result = (|| -> Result<_, Error> {
+            let source = io.source()?;
+            let options: RendererOptions = serde_json::from_str(source).map_err(Error::request)?;
+            let renderer = PlainTextRenderer::new(options).map_err(Error::processing)?;
             RENDERER.set(Some(renderer));
-            Ok(env!("MARKDOWN_BUILD_ID"))
+            Ok(abi::configured())
         })();
-        io.reply("configured", &result);
+        io.reply(&result);
         io.output.len() as u32
     })
 }
@@ -27,12 +27,12 @@ pub extern "C" fn render() -> u32 {
             RENDERER.with_borrow(|renderer| {
                 renderer
                     .as_ref()
-                    .ok_or_else(|| "renderer is not configured".to_owned())?
-                    .render(&document)
-                    .map_err(str::to_owned)
+                    .ok_or_else(Error::not_configured)?
+                    .render_validated(document.validated())
+                    .map_err(Error::processing)
             })
         });
-        io.reply("result", &result);
+        io.reply(&result);
         io.output.len() as u32
     })
 }

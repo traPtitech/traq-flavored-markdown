@@ -1,4 +1,7 @@
-use super::{BlockBatch, BlockInput, DraftContent, DraftNode};
+use super::{
+    BlockBatch, BlockInput, DraftContent, DraftNode, Following, LineIndex, Lines, ResolvedBlock,
+    ResolvedContent,
+};
 
 use crate::{
     Node, ParseError,
@@ -32,8 +35,8 @@ pub(crate) fn parse(
 ) -> Result<Vec<Node>, ParseError> {
     let expanded;
 
-    let source = if source.text.contains('\t') {
-        budget.spend(source.text.len())?;
+    let source = if source.text().contains('\t') {
+        budget.spend(source.text().len())?;
         expanded = source.expand_tabs();
         &expanded
     } else {
@@ -52,50 +55,47 @@ fn tokenize(
     state: &mut ParseState,
     depth: usize,
 ) -> Result<BlockBatch, ParseError> {
-    budget.depth(depth)?;
+    budget.nesting(depth)?;
     budget.spend(source.work_len())?;
 
-    let lines = lines(&source.text);
-    let last_nonblank = lines
-        .iter()
-        .rposition(|line| !blank(source.text[line.clone()].trim_end_matches('\n')))
-        .unwrap_or(0);
+    let lines = lines(source.text());
+    let (mut position, mut nodes) = (LineIndex::new(0), vec![]);
+    let mut metadata = ParseState::default();
 
-    let (mut position, mut loose, mut nodes) = (0, false, vec![]);
-
-    while position < lines.len() {
+    while position < LineIndex::new(lines.len()) {
         budget.token()?;
         let input = BlockInput {
             source,
-            lines: &lines,
+            lines: Lines(&lines),
             start: position,
             grammar,
         };
 
         let found = match_block(&input, budget)?;
-        validate_match(&found, position, lines.len())?;
+        validate_match(&found, position, LineIndex::new(lines.len()))?;
 
         for commit in found.commits {
             commit(state, budget)?;
         }
 
-        for mut node in found.nodes {
-            resolve_blocks(&mut node, grammar, budget, state, depth)?;
-            nodes.push(node);
+        for node in found.nodes {
+            nodes.push(resolve_blocks(node, grammar, budget, state, depth)?);
         }
 
         position = found.end;
 
-        consume_separator(
-            &input,
-            found.consume_separator,
-            last_nonblank,
-            &mut position,
-            &mut loose,
-        );
+        if found.following == Following::Policy
+            && let Some(policy) = &grammar.data.block_policy
+        {
+            let next = policy.after_match(&input, position, &mut metadata)?;
+            if next < position || next > LineIndex::new(lines.len()) {
+                return Err(ParseError::InternalError);
+            }
+            position = next;
+        }
     }
 
-    Ok(BlockBatch { nodes, loose })
+    Ok(BlockBatch { nodes, metadata })
 }
 
 fn match_block(
@@ -103,6 +103,7 @@ fn match_block(
     budget: &mut Budget,
 ) -> Result<super::BlockMatch, ParseError> {
     for entry in &input.grammar.data.block {
+        budget.spend(1)?;
         if let Some(found) = (entry.data.implementation.parse)(input, budget)? {
             return Ok(found);
         }
@@ -113,8 +114,8 @@ fn match_block(
 
 fn validate_match(
     found: &super::BlockMatch,
-    start: usize,
-    line_count: usize,
+    start: LineIndex,
+    line_count: LineIndex,
 ) -> Result<(), ParseError> {
     if found.end <= start || found.end > line_count {
         return Err(ParseError::InternalError);
@@ -123,76 +124,68 @@ fn validate_match(
     Ok(())
 }
 
-fn consume_separator(
-    input: &BlockInput<'_>,
-    consume: bool,
-    last_nonblank: usize,
-    position: &mut usize,
-    loose: &mut bool,
-) {
-    if consume && *position < input.lines.len() && blank(input.line(*position)) {
-        *loose |= *position < last_nonblank;
-        *position += 1;
-    }
-}
-
 fn resolve_blocks(
-    node: &mut DraftNode,
+    draft: DraftNode,
     grammar: &Grammar,
     budget: &mut Budget,
     state: &mut ParseState,
     depth: usize,
-) -> Result<(), ParseError> {
-    budget.depth(depth)?;
-
-    match &mut node.content {
+) -> Result<ResolvedBlock, ParseError> {
+    budget.nesting(depth)?;
+    let mut metadata = ParseState::default();
+    let content = match draft.content {
+        DraftContent::Leaf => ResolvedContent::Leaf,
+        DraftContent::Inline(source) => ResolvedContent::Inline(source),
         DraftContent::Blocks(source) => {
-            let batch = tokenize(source, grammar, budget, state, depth + 1)?;
-            node.resolve_blocks(batch);
+            let batch = tokenize(&source, grammar, budget, state, depth + 1)?;
+            metadata = batch.metadata;
+            ResolvedContent::Nodes(batch.nodes)
         }
-
         DraftContent::Nodes(children) => {
+            let mut resolved = Vec::with_capacity(children.len());
             for child in children {
-                resolve_blocks(child, grammar, budget, state, depth + 1)?;
+                resolved.push(resolve_blocks(child, grammar, budget, state, depth + 1)?);
             }
+            ResolvedContent::Nodes(resolved)
         }
-
-        _ => {}
+    };
+    let mut node = ResolvedBlock {
+        span: draft.span,
+        kind: draft.kind,
+        content,
+        metadata,
+    };
+    if let Some(finish) = draft.finish {
+        finish(&mut node);
     }
-
-    if let Some(finish) = node.finish {
-        finish(node);
-    }
-
-    Ok(())
+    Ok(node)
 }
 
 fn resolve_inlines(
-    drafts: Vec<DraftNode>,
+    drafts: Vec<ResolvedBlock>,
     grammar: &Grammar,
     budget: &mut Budget,
     state: &ParseState,
     depth: usize,
 ) -> Result<Vec<Node>, ParseError> {
-    budget.depth(depth)?;
+    budget.nesting(depth)?;
 
     let mut nodes = Vec::with_capacity(drafts.len());
 
     for draft in drafts {
         let children = match draft.content {
-            DraftContent::Leaf => vec![],
+            ResolvedContent::Leaf => vec![],
 
-            DraftContent::Inline(source) => {
+            ResolvedContent::Inline(source) => {
                 inline::parse(&source.restore_tabs(), grammar, budget, state)?
             }
 
-            DraftContent::Nodes(children) => {
+            ResolvedContent::Nodes(children) => {
                 resolve_inlines(children, grammar, budget, state, depth + 1)?
             }
-
-            DraftContent::Blocks(_) => return Err(ParseError::InternalError),
         };
 
+        budget.node()?;
         nodes.push(Node::new(draft.span, draft.kind, children));
     }
 

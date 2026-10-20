@@ -21,6 +21,7 @@ test('Go tags use each module directory as their prefix', async () => {
   expect(await goReleaseTags('v0.1.4')).toEqual([
     'packages/core/go/v0.1.4',
     'packages/plugins/commonmark/go/v0.1.4',
+    'packages/plugins/extensions/go/v0.1.4',
     'packages/plugins/traq/go/v0.1.4',
     'packages/sdk/go/v0.1.4'
   ])
@@ -57,6 +58,7 @@ test('workspace replacements must point at the tagged local modules', async () =
     Use: [
       'packages/core/go',
       'packages/plugins/commonmark/go',
+      'packages/plugins/extensions/go',
       'packages/plugins/traq/go',
       'packages/sdk/go',
       'packages/sdk/examples/go'
@@ -64,6 +66,7 @@ test('workspace replacements must point at the tagged local modules', async () =
     Replace: [
       'packages/core/go',
       'packages/plugins/commonmark/go',
+      'packages/plugins/extensions/go',
       'packages/plugins/traq/go',
       'packages/sdk/go'
     ].map(directory => ({
@@ -79,7 +82,9 @@ test('workspace replacements must point at the tagged local modules', async () =
 })
 
 test('Go release refuses v2 until module paths have a major suffix', async () => {
-  await expect(runGoRelease(['v2.0.0', '--check'])).rejects.toThrow('usage:')
+  await expect(runGoRelease(['v2.0.0', '--check'])).rejects.toThrow(
+    'versioned module path'
+  )
 })
 
 test('Go release preparation synchronizes all module and workspace versions', async () => {
@@ -90,6 +95,7 @@ test('Go release preparation synchronizes all module and workspace versions', as
     const directories = [
       'packages/core/go',
       'packages/plugins/commonmark/go',
+      'packages/plugins/extensions/go',
       'packages/plugins/traq/go',
       'packages/sdk/go',
       'packages/sdk/examples/go'

@@ -1,0 +1,10 @@
+@each $name, $direction in (conga: 1em, conga-inv: -1em) {
+  @keyframes tfm-stamp-#{$name} {
+    0% {
+      background-position-x: 0;
+    }
+    100% {
+      background-position-x: $direction;
+    }
+  }
+}

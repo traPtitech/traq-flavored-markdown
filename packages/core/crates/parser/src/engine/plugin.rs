@@ -12,6 +12,7 @@ pub(crate) type TextFactory = Arc<dyn Fn(String) -> NodeKind + Send + Sync>;
 pub(crate) struct Definition {
     pub rules: Vec<Contribution>,
     pub text: Vec<TextFactory>,
+    pub block_policies: Vec<Arc<dyn super::block::BlockPolicy>>,
 }
 
 /// Parser implementation of a shared declaration. Editing a shared copy creates
@@ -36,6 +37,30 @@ impl Plugin {
 
     pub fn namespace(&self) -> Option<&PluginGroup> {
         self.declaration.namespace()
+    }
+
+    pub fn rules(&self) -> &[Contribution] {
+        &self.definition.rules
+    }
+
+    pub fn has_context_provider(&self) -> bool {
+        !self.definition.text.is_empty() || !self.definition.block_policies.is_empty()
+    }
+
+    pub fn extend_context_from(&mut self, plugin: &Plugin) {
+        Arc::make_mut(&mut self.definition)
+            .text
+            .extend(plugin.definition.text.iter().cloned());
+        Arc::make_mut(&mut self.definition)
+            .block_policies
+            .extend(plugin.definition.block_policies.iter().cloned());
+    }
+
+    pub fn block_policy(&mut self, policy: impl super::block::BlockPolicy + 'static) -> &mut Self {
+        Arc::make_mut(&mut self.definition)
+            .block_policies
+            .push(Arc::new(policy));
+        self
     }
 
     pub fn add(&mut self, rule: impl Into<Contribution>) -> &mut Self {
@@ -85,7 +110,7 @@ impl Plugin {
         })
     }
 
-    pub(crate) fn same(&self, other: &Self) -> bool {
+    pub fn same(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.definition, &other.definition)
     }
 

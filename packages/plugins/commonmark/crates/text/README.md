@@ -18,12 +18,12 @@ use markdown_commonmark_text as commonmark;
 use markdown_renderer::{PresetBuilder, Renderer};
 
 let mut plugin = commonmark::plugin();
-plugin.replace::<Link>(|link, _, _| Ok(link.destination.clone()))?;
+plugin.replace::<Link>(|link, _, _, output| output.push(&link.destination))?;
 let mut builder = PresetBuilder::new();
 builder.add(&plugin)?;
 builder.add(&commonmark::html::plugin())?;
 let renderer = Renderer::new(&builder.build()?);
-# Ok::<(), &'static str>(())
+# Ok::<(), markdown_renderer::Error>(())
 ```
 
 Factories return shared plugin snapshots by value. Replacing a handler changes

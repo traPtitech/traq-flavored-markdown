@@ -46,13 +46,39 @@ try {
     const archive = path.join(temporaryDirectory, packed.filename)
     archives.push(archive)
     const files = new Set(packed.files.map(file => file.path))
+    const manifest = await Bun.file(path.join(cwd, 'package.json')).json()
+    const exported = (value: unknown): string[] =>
+      typeof value === 'string'
+        ? value.includes('*')
+          ? []
+          : [value.replace(/^\.\//, '')]
+        : value && typeof value === 'object'
+          ? Object.values(value).flatMap(exported)
+          : []
     for (const name of [
       'LICENSE',
+      ...exported(manifest.exports),
       ...(repo === 'sdk' ? ['dist/browser.js', 'dist/browser.d.ts'] : []),
       'dist/renderer/index.js',
       'dist/renderer/index.d.ts'
     ])
       if (!files.has(name)) throw Error(repo + ': missing ' + name)
+    if (repo === 'sdk')
+      for (const directory of ['messages', 'profiles', 'runtime']) {
+        if (
+          ![...files].some(
+            file =>
+              file.startsWith(`dist/${directory}/`) && file.endsWith('.js')
+          ) ||
+          ![...files].some(
+            file =>
+              file.startsWith(`dist/${directory}/`) && file.endsWith('.d.ts')
+          )
+        )
+          throw Error(
+            `sdk: missing implementation/declarations in ${directory}`
+          )
+      }
     for (const name of files)
       if (/^(?:typescript|crates|go|tests|node_modules)\//.test(name))
         throw Error(repo + ': shipped source ' + name)
@@ -132,7 +158,7 @@ try {
     )
   }
   console.log(
-    'Four packed packages: SDK, renderer, declarations, CSS and Wasm integration passed'
+    `${packageNames.length} packed packages: SDK, renderer, declarations, CSS and Wasm integration passed`
   )
 } finally {
   await $`rm -rf ${temporaryDirectory}`

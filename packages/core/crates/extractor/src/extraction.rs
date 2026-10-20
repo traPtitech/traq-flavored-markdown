@@ -1,5 +1,5 @@
 use crate::{Preset, Result};
-use markdown_ast::{Document, Node, ValidatedDocument, ValidationError};
+use markdown_ast::{Document, Node, ValidatedDocument};
 
 pub struct Extractor<R> {
     preset: Preset<R>,
@@ -18,7 +18,7 @@ impl<R> Extractor<R> {
     where
         R: Default,
     {
-        self.extract_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
+        self.extract_validated(ValidatedDocument::new(document)?)
     }
 
     /// Reuse validation when several consumers share one immutable document.
@@ -27,19 +27,18 @@ impl<R> Extractor<R> {
         R: Default,
     {
         let mut result = R::default();
-        self.visit_nodes(&document.document().children, &mut result)?;
+        for visit in document.walk() {
+            self.observe(visit.node, &mut result)?;
+        }
         Ok(result)
     }
 
-    fn visit_nodes(&self, nodes: &[Node], result: &mut R) -> Result<()> {
-        let mut pending: Vec<_> = nodes.iter().rev().collect();
-        while let Some(node) = pending.pop() {
-            if let Some(handler) = self.preset.handlers.get(&node.data_type_id()) {
-                handler(node, result)?;
-            }
-            pending.extend(node.children.iter().rev());
+    /// Collect one node while another consumer owns validated document traversal.
+    /// Payload handlers inspect this node only and never recurse themselves.
+    pub fn observe(&self, node: &Node, result: &mut R) -> Result<()> {
+        if let Some(handler) = self.preset.handlers.get(&node.data_type_id()) {
+            handler(node, result)?;
         }
-
         Ok(())
     }
 }

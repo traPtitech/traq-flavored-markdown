@@ -1,57 +1,38 @@
 //! Source-preserving message text and attachment/citation extraction from one AST.
 use super::labels;
-use crate::links::{Links, Target};
-use markdown_ast::{Document, Node, Span, ValidatedDocument, ValidationError};
+use crate::links::{Target, TraqUrlClassifier};
+use markdown_ast::{Document, Node, Span, ValidatedDocument};
 use markdown_commonmark_contracts::{Link, LinkForm};
-use markdown_trap_contracts::{EmbeddingData, EmbeddingKind, ReferenceData};
+use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference};
 use markdown_trap_extraction::normalize_reference_id;
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Message {
-    pub plain_text: String,
+    pub source_text: String,
     pub attachments: Vec<String>,
     pub citations: Vec<String>,
 }
 
 pub struct Extractor {
-    links: Links,
+    links: TraqUrlClassifier,
 }
 
 impl Extractor {
     pub fn new(origin: &str) -> Self {
         Self {
-            links: Links::new(origin),
+            links: TraqUrlClassifier::new(origin),
         }
     }
 
-    pub fn extract(&self, document: &Document) -> Result<Message, &'static str> {
-        self.extract_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
+    pub fn extract(&self, document: &Document) -> crate::Result<Message> {
+        self.extract_validated(ValidatedDocument::new(document)?)
     }
 
     /// Reuse an immutable validation, including explicitly configured tree limits.
-    pub fn extract_validated(
-        &self,
-        document: ValidatedDocument<'_>,
-    ) -> Result<Message, &'static str> {
-        let document = document.document();
-        let mut message = Message::default();
-        let edits = self.collect_edits(document, &mut message);
-        message.plain_text = crate::edits::apply(&document.source, edits)?;
-        Ok(message)
-    }
-
-    fn collect_edits<'a>(
-        &self,
-        document: &'a Document,
-        message: &mut Message,
-    ) -> Vec<(Span, &'a str)> {
-        let mut edits = Vec::new();
-        let mut pending: Vec<_> = document.children.iter().rev().collect();
-        while let Some(node) = pending.pop() {
-            self.observe(node, &document.source, message, &mut edits);
-            pending.extend(node.children.iter().rev());
-        }
-        edits
+    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> crate::Result<Message> {
+        let mut collector = Collector::new(self);
+        crate::collectors::collect(document, &mut collector)?;
+        collector.finish(&document.document().source)
     }
 
     pub(crate) fn observe<'a>(
@@ -61,11 +42,11 @@ impl Extractor {
         message: &mut Message,
         edits: &mut Vec<(Span, &'a str)>,
     ) {
-        if let Some(reference) = node.get::<ReferenceData>() {
+        if let Some(reference) = node.get::<Reference>() {
             if normalize_reference_id(&reference.id).is_some() {
                 edits.push((node.span, reference.label.as_str()));
             }
-        } else if let Some(embedding) = node.get::<EmbeddingData>() {
+        } else if let Some(embedding) = node.get::<Embedding>() {
             if let Some(id) = normalize_reference_id(&embedding.id) {
                 let label = labels::for_embedding(embedding.target);
                 match embedding.target {
@@ -97,5 +78,35 @@ impl Extractor {
                 edits.push((span, label));
             }
         }
+    }
+}
+
+pub(crate) struct Collector<'a, 'policy> {
+    policy: &'policy Extractor,
+    message: Message,
+    edits: Vec<(Span, &'a str)>,
+}
+
+impl<'a, 'policy> Collector<'a, 'policy> {
+    pub(crate) fn new(policy: &'policy Extractor) -> Self {
+        Self {
+            policy,
+            message: Message::default(),
+            edits: vec![],
+        }
+    }
+    pub(crate) fn finish(mut self, source: &str) -> crate::Result<Message> {
+        self.message.source_text = crate::edits::apply(source, self.edits)?;
+        Ok(self.message)
+    }
+}
+
+impl<'a> crate::collectors::Collector<'a> for Collector<'a, '_> {
+    type Scope = ();
+    fn initial(&self) {}
+    fn observe(&mut self, node: &'a Node, source: &'a str, _: &()) -> crate::Result<()> {
+        self.policy
+            .observe(node, source, &mut self.message, &mut self.edits);
+        Ok(())
     }
 }

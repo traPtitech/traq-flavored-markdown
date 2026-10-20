@@ -4,9 +4,12 @@ use markdown_trap_extraction::is_canonical_reference_id;
 
 const MAX_ORIGIN_BYTES: usize = 2048;
 
-pub(crate) fn validate_origin(origin: &str) -> Result<(), &'static str> {
+pub(crate) fn validate_origin(origin: &str) -> crate::Result<()> {
     if origin.len() > MAX_ORIGIN_BYTES {
-        Err("origin_limit")
+        Err(crate::Error::ResourceLimit {
+            resource: "origin_bytes",
+            limit: MAX_ORIGIN_BYTES,
+        })
     } else {
         Ok(())
     }
@@ -18,22 +21,24 @@ pub enum Target {
     Message { id: String },
 }
 
-pub struct Links {
-    origin: String,
+/// Classifies absolute traQ resource URLs using an exact configured prefix.
+/// This is a lexical classifier, not a URL resolver: relative URLs are never
+/// joined to a base URL. An empty origin explicitly disables classification.
+pub struct TraqUrlClassifier {
+    origin: Option<String>,
 }
 
-impl Links {
+impl TraqUrlClassifier {
     pub fn new(origin: &str) -> Self {
+        let origin = origin.trim_end_matches('/');
         Self {
-            origin: origin.trim_end_matches('/').into(),
+            origin: (!origin.is_empty()).then(|| origin.into()),
         }
     }
 
     pub fn classify(&self, url: &str) -> Option<Target> {
-        if self.origin.is_empty() {
-            return None;
-        }
-        let path = url.strip_prefix(&self.origin)?.split(['?', '#']).next()?;
+        let origin = self.origin.as_deref()?;
+        let path = url.strip_prefix(origin)?.split(['?', '#']).next()?;
         if let Some(id) = path
             .strip_prefix("/files/")
             .filter(|id| is_canonical_reference_id(id))
@@ -68,7 +73,7 @@ mod tests {
         let fixtures: Vec<Fixture> =
             serde_json::from_str(include_str!("../../../tests/fixtures/traq-links.json")).unwrap();
         for fixture in fixtures {
-            let target = match Links::new(&fixture.origin).classify(&fixture.url) {
+            let target = match TraqUrlClassifier::new(&fixture.origin).classify(&fixture.url) {
                 Some(Target::File { id }) => serde_json::json!({"type": "file", "id": id}),
                 Some(Target::Message { id }) => serde_json::json!({"type": "message", "id": id}),
                 None => serde_json::Value::Null,

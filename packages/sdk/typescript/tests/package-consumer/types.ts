@@ -12,7 +12,7 @@ import {
   loadRuntime
 } from '@traq-flavored-markdown/sdk/browser'
 import {
-  type ReferenceData,
+  type Reference,
   names
 } from '@traq-flavored-markdown/traq-plugin/nodes'
 
@@ -21,7 +21,7 @@ const parser = runtime.createParser(presets.traq.v1)
 const document: Document = parser.parse('text')
 for (const node of document.children)
   if (node.kind === names.Reference) {
-    const reference: ReferenceData = node.data
+    const reference: Reference = node.data
     const id: string = reference.id
     void id
   }
@@ -36,13 +36,16 @@ if (isPreset(storedGrammarVersion)) runtime.createParser(storedGrammarVersion)
 runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
 const output: Extraction = extractor.extract(document)
+const plainText: string = runtime.createRenderer().render(document)
+runtime.createExtractor({})
 const mentions: string[] = output.references.mentions
 const browserRuntime = await loadRuntime()
 browserRuntime.createParser(presets.traq.v1)
 if (isBrowserPreset(storedGrammarVersion))
   browserRuntime.createParser(storedGrammarVersion)
 browserRuntime.createExtractor({ origin: '' })
-void mentions
+browserRuntime.createRenderer({})
+void [mentions, plainText]
 // @ts-expect-error The SDK owns the shared browser Runtime's lifetime.
 browserRuntime.dispose()
 // @ts-expect-error Extractor has no host AST parsing API

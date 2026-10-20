@@ -1,5 +1,3 @@
-import type { Node } from './types.js'
-
 const escapes: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -17,22 +15,4 @@ export function attributes(values: Iterable<readonly [string, string]>) {
 
     return ' ' + name + '="' + escapeHtml(value) + '"'
   }).join('')
-}
-
-export function checked<
-  NK extends { kind: string; data: unknown },
-  K extends NK['kind'],
-  C,
-  R
->(
-  kind: K,
-  isKnownNode: (node: Node) => node is Node & NK,
-  handler: (node: Node & Extract<NK, { kind: K }>, context: C) => R
-): (node: Node, context: C) => R {
-  return (node, context) => {
-    if (node.kind !== kind || !isKnownNode(node))
-      throw new TypeError('Invalid render payload: ' + node.kind)
-
-    return handler(node as Node & Extract<NK, { kind: K }>, context)
-  }
 }

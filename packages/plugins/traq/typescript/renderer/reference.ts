@@ -1,33 +1,20 @@
 import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { Node } from '@traq-flavored-markdown/core/renderer'
-import type { ReferenceData } from '@traq-flavored-markdown/traq-plugin/nodes'
+import type { Reference } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import type { Options } from './types.js'
 
 export function renderReference(
-  node: Node & { data: ReferenceData },
-  store: Options['store'],
+  node: Node & { data: Reference },
+  resolve: Options['resolveReference'],
   validateLink: (destination: string) => boolean
 ) {
-  const { type, id, label } = node.data
-
-  if (!store) return escapeHtml(label)
-
-  const me = store.getMe?.()
-  const href =
-    type === 'user'
-      ? store.generateUserHref?.(id)
-      : type === 'group'
-        ? store.generateUserGroupHref?.(id)
-        : store.generateChannelHref?.(id)
+  const { type } = node.data
+  const resolved = resolve?.(node.data)
+  const label = resolved?.label ?? node.data.label
+  const href = resolved?.href
 
   if (!href || !validateLink(href)) return escapeHtml(label)
-
-  const highlight =
-    type === 'user'
-      ? id === me?.id
-      : type === 'group' &&
-        (store.getUserGroup?.(id)?.members?.some(u => u.id === me?.id) ?? false)
 
   const cls = `message-${type}-link`
 
@@ -35,7 +22,7 @@ export function renderReference(
     '<a' +
     attributes([
       ['href', href],
-      ['class', highlight ? `${cls}-highlight ${cls}` : cls]
+      ['class', resolved?.highlight ? `${cls}-highlight ${cls}` : cls]
     ]) +
     '>' +
     escapeHtml(label) +

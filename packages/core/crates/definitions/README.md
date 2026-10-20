@@ -18,7 +18,7 @@ struct Issue { number: u32 }
 
 let generic = Plugin::group("Generic");
 let github = generic.group("GitHub");
-let links = github.new("Links");
+let links = github.plugin("Links");
 assert_eq!(links.name(), "Links");
 assert_eq!(links.namespace(), Some(&github));
 assert_eq!(github.parent(), Some(&generic));

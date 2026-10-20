@@ -43,7 +43,7 @@ fn message_extraction_and_rendering_share_resource_labels() {
 
         for source in [url, embedding] {
             let document = parser.parse(&source).unwrap();
-            assert_eq!(extractor.extract(&document).unwrap().plain_text, label);
+            assert_eq!(extractor.extract(&document).unwrap().source_text, label);
             assert_eq!(flatten(&renderer.render(&document).unwrap()), label);
         }
     }

@@ -100,13 +100,8 @@ jobs:
       - name: Synchronize package metadata with the release tag
         run: bun run release -- "$RELEASE_TAG" --prepare
 
-      - name: Synchronize Go module dependencies with the release tag
-        run: bun run scripts/release-go.ts "$RELEASE_TAG" --prepare
-
       - name: Validate shared version and internal dependencies
-        run: |
-          bun run release -- "$RELEASE_TAG" --check
-          bun run scripts/release-go.ts "$RELEASE_TAG" --check
+        run: bun run release -- "$RELEASE_TAG" --check
 
       - run: bun run check
 
@@ -129,22 +124,15 @@ jobs:
               exit 1
             fi
           done
-          git add \
-            package.json bun.lock go.work \
-            packages/core/package.json packages/plugins/commonmark/package.json \
-            packages/plugins/traq/package.json packages/sdk/package.json \
-            packages/core/go/go.mod packages/core/go/go.sum \
-            packages/plugins/commonmark/go/go.mod packages/plugins/commonmark/go/go.sum \
-            packages/plugins/traq/go/go.mod packages/plugins/traq/go/go.sum \
-            packages/sdk/go/go.mod packages/sdk/go/go.sum packages/sdk/go/parser.wasm \
-            packages/sdk/examples/go/go.mod packages/sdk/examples/go/go.sum
+          mapfile -t release_files < <(bun run scripts/release.ts "$RELEASE_TAG" --files)
+          git add -- "${release_files[@]}"
           if git diff --cached --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m "chore(release): $RELEASE_VERSION"
           git push "$repository_url" "HEAD:refs/heads/$DEFAULT_BRANCH"
 
-      - name: Release all four packages in dependency order
+      - name: Release packages in dependency order
         run: |
           if [ "$PUBLISH" = true ]; then
             bun run release -- "$RELEASE_TAG" --publish
@@ -158,14 +146,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           repository_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          mapfile -t go_tags < <(bun run scripts/release-go.ts "$RELEASE_TAG" --tags)
-          tag_refs=("refs/tags/$RELEASE_TAG")
-          git tag -a "$RELEASE_TAG" -m "$RELEASE_TAG"
-          for tag in "${go_tags[@]}"; do
-            git tag -a "$tag" -m "$tag"
-            tag_refs+=("refs/tags/$tag")
-          done
-          git push --atomic "$repository_url" "${tag_refs[@]}"
+          git remote set-url origin "$repository_url"
+          bun run scripts/release.ts "$RELEASE_TAG" --resume
 
       - name: Verify published Go modules outside the workspace
         if: env.PUBLISH == 'true'

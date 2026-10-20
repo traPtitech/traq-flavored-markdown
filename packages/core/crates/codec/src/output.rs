@@ -1,34 +1,65 @@
-use super::{Codec, CodecLimits};
-use markdown_ast::{Document, Node};
+use super::{Codec, CodecLimits, Error, ErrorKind, Result as CodecResult};
+use markdown_ast::{Document, Node, ValidatedDocument};
 use serde::{Serialize, Serializer};
 
 pub(super) fn encode(
     document: &Document,
     codec: &Codec,
     limits: CodecLimits,
-) -> serde_json::Result<Vec<u8>> {
+) -> CodecResult<Vec<u8>> {
     // Check before recursive serialization, including subtrees a renderer may hide.
-    document
-        .validate(limits.document)
-        .map_err(<serde_json::Error as serde::ser::Error>::custom)?;
+    let document = ValidatedDocument::with_limits(document, limits.document)?;
+    encode_validated(document, codec, limits)
+}
+
+pub(super) fn encode_validated(
+    document: ValidatedDocument<'_>,
+    codec: &Codec,
+    limits: CodecLimits,
+) -> CodecResult<Vec<u8>> {
+    document.check_limits(limits.document)?;
+    let mut path = vec![];
+    for visit in document.walk() {
+        path.truncate(visit.depth - 1);
+        path.push(visit.index);
+        if !codec.entries.contains_key(&visit.node.data_type_id()) {
+            return Err(Error::new(ErrorKind::UnregisteredPayload {
+                payload_type: visit.node.data_type_name(),
+            })
+            .at(&path, Some(visit.node.span)));
+        }
+    }
+    let document = document.document();
 
     let mut output = LimitedOutput {
         bytes: vec![],
         limit: limits.json_bytes,
+        exceeded: false,
     };
 
-    serde_json::to_writer(&mut output, &DocumentOutput { document, codec })?;
+    if let Err(error) = serde_json::to_writer(&mut output, &DocumentOutput { document, codec }) {
+        return Err(if output.exceeded {
+            Error::new(ErrorKind::ResourceLimit {
+                resource: "json_bytes",
+                limit: limits.json_bytes,
+            })
+        } else {
+            error.into()
+        });
+    }
     Ok(output.bytes)
 }
 
 struct LimitedOutput {
     bytes: Vec<u8>,
     limit: usize,
+    exceeded: bool,
 }
 
 impl std::io::Write for LimitedOutput {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
         if bytes.len() > self.limit.saturating_sub(self.bytes.len()) {
+            self.exceeded = true;
             return Err(std::io::Error::other("json byte limit"));
         }
         self.bytes.extend_from_slice(bytes);

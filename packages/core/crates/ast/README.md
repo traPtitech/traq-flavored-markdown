@@ -13,20 +13,30 @@ struct Heading { level: u8 }
 impl NodeData for Heading {
     fn role(&self) -> NodeRole { NodeRole::Block }
     fn payload_bytes(&self) -> usize { 0 }
-    fn validate(&self, _children: &[Node]) -> bool {
+    fn validate(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = (|| {
         (1..=6).contains(&self.level)
+    })();
+        if valid { Ok(()) } else { Err(markdown_ast::PayloadError::new("custom payload invariant")) }
     }
 }
 
 let node = Node::leaf(Span { start: 0, end: 4 }, Heading { level: 2 });
 assert_eq!(node.get::<Heading>().unwrap().level, 2);
-assert!(node.validate());
+assert!(node.validate().is_ok());
 ```
 
 `Node::new(span, data, children)` accepts a concrete data type. `NodeKind` holds
 type-erased data while a parser is still determining children and positions.
 `node.get::<T>()` borrows the stored value without copying or serializing it.
 Adding a node type never requires a core enum change.
+
+`SourceText::new(&source)` borrows the original UTF-8 text. Its `slice(span)`
+and `replace(&edits)` methods use checked byte offsets and preserve BOM, CRLF,
+NUL, and all other untouched bytes. `SourceEdit` ranges must be ordered and
+disjoint; processors that prefer outer edits select those ranges before calling
+this helper. `replace_with_limit(&edits, bytes)` checks every range and the
+complete output size before allocating the result.
 
 ## Validation
 

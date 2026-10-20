@@ -18,7 +18,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut builder = presets::traq::v1::builder();
-    builder.remove(extensions::math::plugin())?;
+    builder.remove(
+        &builder
+            .registration(extensions::math::plugin())
+            .expect("registered preset feature"),
+    )?;
     let customized = Parser::new(&builder.build()?);
     let document = customized.parse_inline("$literal without math$")?;
     print_text(&document.children);

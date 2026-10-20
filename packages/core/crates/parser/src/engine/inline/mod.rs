@@ -10,4 +10,4 @@ mod tree;
 
 pub(crate) use scan::parse;
 pub use scan::{InlineInput, TextInput, TextMatch};
-pub use token::{BracketInfo, InlineAction, InlineMatch, Pairing};
+pub use token::{BracketInfo, DelimiterPolicy, DelimiterRun, InlineAction, InlineMatch, Pairing};

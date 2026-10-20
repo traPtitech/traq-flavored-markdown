@@ -75,5 +75,8 @@ fn renderer_rejects_invalid_contract_children_before_rendering() {
     };
 
     let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
-    assert_eq!(renderer.render(&document), Err("invalid_node"));
+    assert_eq!(
+        renderer.render(&document).map_err(|error| error.code()),
+        Err("invalid_node")
+    );
 }

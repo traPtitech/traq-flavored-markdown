@@ -49,11 +49,11 @@ fn note_block() -> BlockRule {
             return Ok(None);
         };
         let mut end = input.start + 1;
-        while end < input.lines.len() && input.line(end) != ":::" {
+        while end < input.lines.end() && input.line(end) != ":::" {
             budget.spend(input.line(end).len() + 1)?;
             end += 1;
         }
-        if end == input.lines.len() {
+        if end == input.lines.end() {
             return Ok(None);
         }
         Ok(Some(
@@ -104,7 +104,7 @@ fn note_text() -> TextRule {
 
 fn note() -> (Plugin, BlockRule) {
     let block = note_block();
-    let mut plugin = Plugin::new(&Declaration::group("test").new("note"));
+    let mut plugin = Plugin::new(&Declaration::group("test").plugin("note"));
     plugin.add(&block);
     plugin.add(note_inline());
     plugin.add(note_text());
@@ -160,7 +160,8 @@ fn removal_covers_every_phase_and_presets_do_not_leak() {
         .unwrap();
     let enabled = builder.build().unwrap();
     let mut builder = presets::commonmark::builder();
-    builder.add(&plugin).unwrap().remove(&plugin).unwrap();
+    let registration = builder.register(&plugin).unwrap();
+    builder.remove(&registration).unwrap();
     let disabled = builder.build().unwrap();
     for _ in 0..3 {
         assert_eq!(

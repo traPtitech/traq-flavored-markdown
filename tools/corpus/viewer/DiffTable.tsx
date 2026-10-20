@@ -1,7 +1,8 @@
-import { diffStringsRaw } from 'jest-diff'
 import React, { useEffect, useRef } from 'react'
 
-import type { DifferenceRow, Mode } from '../report-schema.ts'
+import type { DifferenceRow, Mode, OutputKind } from '../report-schema.ts'
+import { outputDiff } from './data/diff.ts'
+import { renderHTML } from './preview/html.ts'
 
 type DiffTableProps = {
   rows: DifferenceRow[]
@@ -9,7 +10,7 @@ type DiffTableProps = {
   mode: Mode
 }
 
-export default function DiffTable({ rows, outputView, mode }: DiffTableProps) {
+export default function DiffTable({ rows, outputView }: DiffTableProps) {
   return (
     <table className="comparison">
       <colgroup>
@@ -32,8 +33,8 @@ export default function DiffTable({ rows, outputView, mode }: DiffTableProps) {
               <RawDiffCells row={row} />
             ) : (
               <>
-                <RenderCell text={row.before} mode={mode} />
-                <RenderCell text={row.after} mode={mode} />
+                <RenderCell text={row.before} kind={row.beforeType} />
+                <RenderCell text={row.after} kind={row.afterType} />
               </>
             )}
           </tr>
@@ -59,19 +60,19 @@ function SourceCell({ row }: { row: DifferenceRow }) {
   )
 }
 
-function RenderCell({ text, mode }: { text: string; mode: Mode }) {
+function RenderCell({ text, kind }: { text: string; kind: OutputKind }) {
   const ref = useRef<HTMLDivElement | HTMLPreElement>(null)
 
   useEffect(() => {
     if (!ref.current) return
-    if (mode === 'plainText' || text.startsWith('解析エラー:')) {
+    if (kind !== 'html') {
       ref.current.textContent = text
     } else {
       ref.current.replaceChildren(renderHTML(text))
     }
-  }, [text, mode])
+  }, [text, kind])
 
-  if (mode === 'plainText' || text.startsWith('解析エラー:')) {
+  if (kind !== 'html') {
     return (
       <td>
         <pre
@@ -92,38 +93,7 @@ function RenderCell({ text, mode }: { text: string; mode: Mode }) {
 }
 
 function RawDiffCells({ row }: { row: DifferenceRow }) {
-  let parts: [number, string][]
-  let coarse = false
-
-  if (row.before.length + row.after.length <= 12000) {
-    parts = diffStringsRaw(row.before, row.after, true).map(part => [
-      part[0],
-      part[1]
-    ])
-  } else {
-    coarse = true
-    let start = 0
-    let end = 0
-    while (
-      start < Math.min(row.before.length, row.after.length) &&
-      row.before[start] === row.after[start]
-    ) {
-      start++
-    }
-    while (
-      end < Math.min(row.before.length, row.after.length) - start &&
-      row.before[row.before.length - end - 1] ===
-        row.after[row.after.length - end - 1]
-    ) {
-      end++
-    }
-    parts = [
-      [0, row.before.slice(0, start)],
-      [-1, row.before.slice(start, row.before.length - end)],
-      [1, row.after.slice(start, row.after.length - end)],
-      [0, row.before.slice(row.before.length - end)]
-    ]
-  }
+  const { parts, coarse } = outputDiff(row.before, row.after)
 
   const title = coarse
     ? '長い出力のため、共通の先頭・末尾を除いた変更範囲をまとめて強調しています。文字列は省略していません。'
@@ -155,92 +125,4 @@ function RawDiffCells({ row }: { row: DifferenceRow }) {
       <td>{renderSide(true)}</td>
     </>
   )
-}
-
-const allowed = new Set(
-  'p div span pre code br hr strong b em i del s ins mark sub sup a ul ol li blockquote h1 h2 h3 h4 h5 h6 table thead tbody tr td th cite svg path line'.split(
-    ' '
-  )
-)
-const styleNames = [
-  'height',
-  'width',
-  'min-width',
-  'vertical-align',
-  'margin-right',
-  'margin-left',
-  'top',
-  'background-color',
-  'text-align'
-]
-
-function renderHTML(html: string) {
-  const template = document.createElement('template')
-  template.innerHTML = html
-
-  const copy = (node: Node): Node => {
-    if (node.nodeType === Node.TEXT_NODE)
-      return document.createTextNode(node.textContent ?? '')
-    if (node.nodeType !== Node.ELEMENT_NODE) return document.createTextNode('')
-    const element = node as Element
-
-    if (element.localName === 'img') {
-      const span = document.createElement('span')
-      span.className = 'r-image'
-      span.textContent =
-        '[画像: ' + (element.getAttribute('alt') || '外部画像') + ']'
-      return span
-    }
-
-    if (!allowed.has(element.localName)) return document.createTextNode('')
-
-    const name = element.localName === 'a' ? 'span' : element.localName
-    const value = ['svg', 'path', 'line'].includes(name)
-      ? document.createElementNS('http://www.w3.org/2000/svg', name)
-      : document.createElement(name)
-
-    for (const attr of [
-      'class',
-      'title',
-      'colspan',
-      'rowspan',
-      'start',
-      'aria-hidden',
-      'viewBox',
-      'd',
-      'width',
-      'height',
-      'x1',
-      'x2',
-      'y1',
-      'y2'
-    ]) {
-      if (element.hasAttribute(attr)) {
-        value.setAttribute(attr, element.getAttribute(attr)!)
-      }
-    }
-
-    for (const key of styleNames) {
-      const text = (element as HTMLElement).style?.getPropertyValue(key)
-      if (text && !/url|var\(|attr\(/i.test(text)) {
-        ;(value as HTMLElement).style?.setProperty(key, text)
-      }
-    }
-
-    if (element.localName === 'a') {
-      ;(value as HTMLElement).classList.add('r-link')
-      ;(value as HTMLElement).title = element.getAttribute('href') || 'リンク'
-    }
-
-    for (const child of Array.from(element.childNodes)) {
-      value.appendChild(copy(child))
-    }
-    return value
-  }
-
-  const result = document.createDocumentFragment()
-  for (const child of Array.from(template.content.childNodes)) {
-    result.appendChild(copy(child))
-  }
-  return result
 }

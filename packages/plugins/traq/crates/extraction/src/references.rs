@@ -1,6 +1,17 @@
 use markdown_extractor::{Plugin, Result};
-use markdown_trap_contracts::{EmbeddingData, EmbeddingKind, ReferenceData, ReferenceKind};
+use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum EmbeddedKind {
+    User,
+    Group,
+    Channel,
+    File,
+    Message,
+}
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
@@ -8,7 +19,7 @@ use serde::Serialize;
 pub struct EmbeddedInfo {
     pub raw: String,
     #[serde(rename = "type")]
-    pub kind: String,
+    pub kind: EmbeddedKind,
     pub id: String,
 }
 
@@ -30,14 +41,14 @@ pub fn plugin() -> Plugin<References> {
 }
 
 fn build() -> Result<Plugin<References>> {
-    let mut plugin = Plugin::<References>::new(&markdown_trap_contracts::preset().references);
+    let mut plugin = Plugin::<References>::new(&markdown_trap_contracts::declarations().references);
 
-    plugin.on::<ReferenceData>(|reference, result| {
+    plugin.on::<Reference>(|reference, result| {
         result.record_reference(reference);
         Ok(())
     })?;
 
-    plugin.on::<EmbeddingData>(|embedding, result| {
+    plugin.on::<Embedding>(|embedding, result| {
         result.record_embedding(embedding);
         Ok(())
     })?;
@@ -47,16 +58,15 @@ fn build() -> Result<Plugin<References>> {
 
 impl References {
     /// Record one reference in document order, preserving duplicates.
-    pub fn record_reference(&mut self, reference: &ReferenceData) {
+    pub fn record_reference(&mut self, reference: &Reference) {
         if !reference.id.is_empty() {
             self.embeddings.push(EmbeddedInfo {
                 raw: reference.label.clone(),
                 kind: match reference.target {
-                    ReferenceKind::User => "user",
-                    ReferenceKind::Group => "group",
-                    ReferenceKind::Channel => "channel",
-                }
-                .into(),
+                    ReferenceKind::User => EmbeddedKind::User,
+                    ReferenceKind::Group => EmbeddedKind::Group,
+                    ReferenceKind::Channel => EmbeddedKind::Channel,
+                },
                 id: reference.id.clone(),
             });
         }
@@ -73,15 +83,14 @@ impl References {
     }
 
     /// Record one embedding in document order.
-    pub fn record_embedding(&mut self, embedding: &EmbeddingData) {
+    pub fn record_embedding(&mut self, embedding: &Embedding) {
         if !embedding.id.is_empty() {
             self.embeddings.push(EmbeddedInfo {
                 raw: embedding.label.clone(),
                 kind: match embedding.target {
-                    EmbeddingKind::File => "file",
-                    EmbeddingKind::Message => "message",
-                }
-                .into(),
+                    EmbeddingKind::File => EmbeddedKind::File,
+                    EmbeddingKind::Message => EmbeddedKind::Message,
+                },
                 id: embedding.id.clone(),
             });
         }

@@ -8,9 +8,9 @@ members = [
   "packages/core/crates/parser",
   "packages/core/crates/renderer",
   "packages/plugins/commonmark/crates/contracts",
-  "packages/plugins/commonmark/crates/generic-contracts",
-  "packages/plugins/commonmark/crates/generic-syntax",
-  "packages/plugins/commonmark/crates/generic-text",
+  "packages/plugins/extensions/crates/contracts",
+  "packages/plugins/extensions/crates/syntax",
+  "packages/plugins/extensions/crates/text",
   "packages/plugins/commonmark/crates/syntax",
   "packages/plugins/commonmark/crates/text",
   "packages/plugins/traq/crates/contracts",
@@ -18,6 +18,7 @@ members = [
   "packages/plugins/traq/crates/syntax",
   "packages/plugins/traq/crates/text",
   "packages/sdk/crates/grammar",
+  "packages/sdk/crates/features",
   "packages/sdk/crates/processing",
   "packages/sdk/crates/wasm",
   "packages/sdk/examples/rust"
@@ -40,13 +41,14 @@ markdown-renderer = { path = "packages/core/crates/renderer" }
 markdown-commonmark = { path = "packages/plugins/commonmark/crates/syntax" }
 markdown-commonmark-contracts = { path = "packages/plugins/commonmark/crates/contracts" }
 markdown-commonmark-text = { path = "packages/plugins/commonmark/crates/text" }
-markdown-generic-contracts = { path = "packages/plugins/commonmark/crates/generic-contracts" }
-markdown-generic-syntax = { path = "packages/plugins/commonmark/crates/generic-syntax" }
-markdown-generic-text = { path = "packages/plugins/commonmark/crates/generic-text" }
+markdown-generic-contracts = { path = "packages/plugins/extensions/crates/contracts" }
+markdown-generic-syntax = { path = "packages/plugins/extensions/crates/syntax" }
+markdown-generic-text = { path = "packages/plugins/extensions/crates/text" }
 markdown-trap-contracts = { path = "packages/plugins/traq/crates/contracts" }
 markdown-trap-extraction = { path = "packages/plugins/traq/crates/extraction" }
 markdown-trap-syntax = { path = "packages/plugins/traq/crates/syntax" }
 markdown-trap-text = { path = "packages/plugins/traq/crates/text" }
+traq-markdown-features = { path = "packages/sdk/crates/features", default-features = false }
 
 [profile.release]
 opt-level = 2

@@ -48,7 +48,7 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
 
     let mut rendering = Plugin::new(&declaration);
     rendering
-        .on::<Text>(|_, _, _| Ok("rendered".into()))
+        .on::<Text>(|_, _, _, output| output.push("rendered"))
         .unwrap();
 
     let mut builder = PresetBuilder::new();
@@ -57,7 +57,13 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
     let renderer = Renderer::new(&builder.build().unwrap());
     let document = parser.parse_inline("hello").unwrap();
 
-    assert_eq!(renderer.render(&document).unwrap(), "rendered");
+    assert_eq!(
+        renderer
+            .render(&document)
+            .map_err(|error| error.code())
+            .unwrap(),
+        "rendered"
+    );
     assert_eq!(document.children[0].get::<Text>(), Some(&Text));
     assert_eq!(document.source, "hello");
 }
@@ -68,7 +74,9 @@ fn captured_configuration_is_shared_and_outlives_the_preset() {
     let weak = Arc::downgrade(&calls);
     let mut plugin = Plugin::new(&Declaration::new("configured"));
     plugin
-        .on::<Text>(move |_, _, _| Ok(calls.fetch_add(1, Ordering::Relaxed).to_string()))
+        .on::<Text>(move |_, _, _, output| {
+            output.push(&calls.fetch_add(1, Ordering::Relaxed).to_string())
+        })
         .unwrap();
 
     let mut builder = PresetBuilder::new();
@@ -81,11 +89,23 @@ fn captured_configuration_is_shared_and_outlives_the_preset() {
     drop(preset);
     drop(plugin);
 
-    assert_eq!(first.render(&document(Text)).unwrap(), "0");
+    assert_eq!(
+        first
+            .render(&document(Text))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "0"
+    );
 
     // Move an independent renderer to another thread, using the same capture.
     std::thread::spawn(move || {
-        assert_eq!(second.render(&document(Text)).unwrap(), "1");
+        assert_eq!(
+            second
+                .render(&document(Text))
+                .map_err(|error| error.code())
+                .unwrap(),
+            "1"
+        );
     })
     .join()
     .unwrap();
@@ -99,68 +119,110 @@ fn captured_configuration_is_shared_and_outlives_the_preset() {
 #[test]
 fn snapshots_are_isolated_and_failed_registration_is_atomic() {
     let mut plugin = Plugin::new(&Declaration::new("first"));
-    plugin.on::<Text>(|_, _, _| Ok("first".into())).unwrap();
+    plugin
+        .on::<Text>(|_, _, _, output| output.push("first"))
+        .unwrap();
 
     let registered = plugin.clone();
     let mut builder = PresetBuilder::new();
-    builder.add(&plugin).unwrap();
+    let registration = builder.register(&plugin).unwrap();
 
     let renderer = Renderer::new(&builder.clone().build().unwrap());
     assert!(builder.add(&plugin).is_err());
-    assert!(plugin.on::<Text>(|_, _, _| Ok("duplicate".into())).is_err());
+    assert!(
+        plugin
+            .on::<Text>(|_, _, _, output| output.push("duplicate"))
+            .is_err()
+    );
 
     // A rejected handler does not produce a new snapshot.
     let mut copy = builder.clone();
-    copy.remove(&plugin).unwrap();
+    copy.remove(&registration).unwrap();
 
-    plugin.on::<Other>(|_, _, _| Ok("new".into())).unwrap();
+    plugin
+        .on::<Other>(|_, _, _, output| output.push("new"))
+        .unwrap();
 
-    assert!(builder.remove(&plugin).is_err());
-    assert_eq!(renderer.render(&document(Other)), Err("unsupported_node"));
+    assert_eq!(builder.registration(&plugin), Some(registration.clone()));
+    assert_eq!(
+        renderer
+            .render(&document(Other))
+            .map_err(|error| error.code()),
+        Err("unsupported_node")
+    );
 
-    builder.remove(&registered).unwrap();
+    builder.remove(&registration).unwrap();
+    assert!(builder.remove(&registration).is_err());
     builder.add(&plugin).unwrap();
 
     assert_eq!(
         Renderer::new(&builder.build().unwrap())
             .render(&document(Other))
+            .map_err(|error| error.code())
             .unwrap(),
         "new"
     );
 
-    assert_eq!(renderer.render(&document(Text)).unwrap(), "first");
+    assert_eq!(
+        renderer
+            .render(&document(Text))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "first"
+    );
 
     let mut conflict = Plugin::new(&Declaration::new("conflict"));
-    conflict.on::<Other>(|_, _, _| Ok("leaked".into())).unwrap();
-    conflict.on::<Text>(|_, _, _| Ok("wrong".into())).unwrap();
+    conflict
+        .on::<Other>(|_, _, _, output| output.push("leaked"))
+        .unwrap();
+    conflict
+        .on::<Text>(|_, _, _, output| output.push("wrong"))
+        .unwrap();
 
     let mut builder = PresetBuilder::new();
     builder.add(&registered).unwrap();
     assert!(builder.add(&conflict).is_err());
 
     let renderer = Renderer::new(&builder.build().unwrap());
-    assert_eq!(renderer.render(&document(Other)), Err("unsupported_node"));
-    assert_eq!(renderer.render(&document(Text)).unwrap(), "first");
+    assert_eq!(
+        renderer
+            .render(&document(Other))
+            .map_err(|error| error.code()),
+        Err("unsupported_node")
+    );
+    assert_eq!(
+        renderer
+            .render(&document(Text))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "first"
+    );
 }
 
 #[test]
 fn display_name_validation_uses_shared_group_identity() {
     let group = Declaration::group("generic");
-    let left = Plugin::new(&group.group("left").new("same"));
-    let right = Plugin::new(&group.group("right").new("same"));
+    let left = Plugin::new(&group.group("left").plugin("same"));
+    let right = Plugin::new(&group.group("right").plugin("same"));
     let mut builder = PresetBuilder::new();
     builder.add(&left).unwrap().add(&right).unwrap();
     assert!(builder.build().is_ok());
 
-    let first = Plugin::new(&group.new("same"));
-    let second = Plugin::new(&group.new("same"));
+    let first = Plugin::new(&group.plugin("same"));
+    let second = Plugin::new(&group.plugin("same"));
     let mut builder = PresetBuilder::new();
     builder.add(&first).unwrap().add(&second).unwrap();
-    assert!(matches!(builder.build(), Err("duplicate_name")));
+    assert!(matches!(
+        builder.build().map_err(|error| error.code()),
+        Err("duplicate_name")
+    ));
 
     let unrelated = Declaration::group("generic");
-    let other = Plugin::new(&unrelated.new("other"));
+    let other = Plugin::new(&unrelated.plugin("other"));
     let mut builder = PresetBuilder::new();
     builder.add(&first).unwrap().add(&other).unwrap();
-    assert!(matches!(builder.build(), Err("duplicate_name")));
+    assert!(matches!(
+        builder.build().map_err(|error| error.code()),
+        Err("duplicate_name")
+    ));
 }

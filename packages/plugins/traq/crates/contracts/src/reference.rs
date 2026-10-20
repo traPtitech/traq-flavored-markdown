@@ -1,4 +1,4 @@
-use markdown_ast::{Node, NodeRole};
+use markdown_ast::NodeRole;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -13,21 +13,20 @@ pub enum ReferenceKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
-pub struct ReferenceData {
+pub struct Reference {
     #[serde(rename = "type")]
     pub target: ReferenceKind,
     pub id: String,
     pub label: String,
 }
 
-impl markdown_ast::NodeData for ReferenceData {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+impl markdown_ast::NodeData for Reference {
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.id.len().saturating_add(self.label.len())
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        children.is_empty()
     }
 }

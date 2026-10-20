@@ -6,6 +6,7 @@ import {
   packageRoot,
   repositoryRoot
 } from './paths.ts'
+import { allowsOwner } from './workspace/descriptor.ts'
 
 export type DependencyGraph<Name extends string> = {
   order: Name[]
@@ -88,13 +89,10 @@ export function npmPackageGraph(
         ] as const
     )
   )
-  // The workspace layout is the independent ownership boundary. Manifests may
-  // add or remove peers within that direction, but cannot redefine the layers.
-  const rank = new Map(packageNames.map((name, index) => [name, index]))
   for (const owner of packageNames) {
     const declared = graph.dependencies.get(owner)!
     for (const dependency of declared)
-      if (rank.get(dependency)! >= rank.get(owner)!)
+      if (dependency === owner || !allowsOwner(owner, dependency))
         throw new Error(`${owner}: upward npm dependency ${dependency}`)
     if (
       packageNames.some(
@@ -235,7 +233,6 @@ export async function readGoPackageGraph(
     )
       throw new Error(`${module.directory}: unexpected Go module path`)
 
-  const rank = new Map(packageNames.map((name, index) => [name, index]))
   const graph = dependencyGraph(
     [...modules.values()].map(
       module =>
@@ -248,7 +245,7 @@ export async function readGoPackageGraph(
                 throw new Error(
                   `${module.directory}: published module depends on example`
                 )
-              if (rank.get(dependency.owner)! > rank.get(module.owner)!)
+              if (!allowsOwner(module.owner, dependency.owner))
                 throw new Error(
                   `${module.directory}: upward Go dependency ${dependency.directory}`
                 )
@@ -274,14 +271,11 @@ export async function readGoPackageGraph(
   }
 }
 
-export function validateGoOwnership(
-  go: GoPackageGraph,
-  npm: DependencyGraph<PackageName>
-) {
+export function validateGoOwnership(go: GoPackageGraph) {
   for (const module of go.modules.values())
     for (const directory of go.graph.dependencies.get(module.directory) ?? []) {
       const dependency = go.modules.get(directory)!
-      if (!npm.allows(module.owner, dependency.owner))
+      if (!allowsOwner(module.owner, dependency.owner))
         throw new Error(
           `${module.directory}: upward Go dependency ${dependency.directory}`
         )

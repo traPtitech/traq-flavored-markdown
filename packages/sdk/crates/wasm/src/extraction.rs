@@ -1,3 +1,4 @@
+use crate::abi::{self, Error};
 use crate::buffers::IO;
 use std::cell::RefCell;
 use traq_markdown_processing::extraction::{Extractor, ExtractorOptions};
@@ -7,15 +8,14 @@ thread_local! { static EXTRACTOR: RefCell<Option<Extractor>> = const { RefCell::
 #[unsafe(no_mangle)]
 pub extern "C" fn configure_extractor() -> u32 {
     IO.with_borrow_mut(|io| {
-        let result = (|| -> Result<_, String> {
-            let source = io.source().map_err(|error| error.to_string())?;
-            let options: ExtractorOptions =
-                serde_json::from_str(source).map_err(|error| error.to_string())?;
-            let extractor = Extractor::new(options)?;
+        let result = (|| -> Result<_, Error> {
+            let source = io.source()?;
+            let options: ExtractorOptions = serde_json::from_str(source).map_err(Error::request)?;
+            let extractor = Extractor::new(options).map_err(Error::processing)?;
             EXTRACTOR.set(Some(extractor));
-            Ok(env!("MARKDOWN_BUILD_ID"))
+            Ok(abi::configured())
         })();
-        io.reply("configured", &result);
+        io.reply(&result);
         io.output.len() as u32
     })
 }
@@ -27,11 +27,12 @@ pub extern "C" fn extract() -> u32 {
             EXTRACTOR.with_borrow(|extractor| {
                 extractor
                     .as_ref()
-                    .ok_or_else(|| "extractor is not configured".to_owned())?
-                    .extract(&document)
+                    .ok_or_else(Error::not_configured)?
+                    .extract_validated(document.validated())
+                    .map_err(Error::processing)
             })
         });
-        io.reply("result", &result);
+        io.reply(&result);
         io.output.len() as u32
     })
 }

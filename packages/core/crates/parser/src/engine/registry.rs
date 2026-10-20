@@ -15,6 +15,7 @@ pub(crate) struct Compilation {
     pub(crate) inline: Vec<InlineRule>,
     pub(crate) block: Vec<BlockRule>,
     pub(crate) text: Vec<TextRule>,
+    pub(crate) block_policy: Option<std::sync::Arc<dyn super::block::BlockPolicy>>,
     pub(crate) make_text: super::plugin::TextFactory,
     pub(crate) dispatch: [Vec<usize>; 256],
 }

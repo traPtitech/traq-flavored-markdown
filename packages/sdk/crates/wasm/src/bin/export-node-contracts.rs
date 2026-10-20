@@ -1,6 +1,9 @@
 #[macro_use]
 #[path = "../node_catalog.rs"]
 mod node_catalog;
+#[path = "../abi.rs"]
+#[allow(dead_code)]
+mod abi;
 #[path = "../limits.rs"]
 mod limits;
 #[path = "../node_metadata.rs"]
@@ -28,11 +31,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut processing = serde_json::Map::new();
     macro_rules! processing_type {
-        ($($ty:ident),*) => {
+        ($direction:ident; $($ty:ident),*) => {
             $(
                 let schema = schemars::generate::SchemaSettings::default()
                     .with(|settings| {
-                        settings.contract = schemars::generate::Contract::Serialize
+                        settings.contract = schemars::generate::Contract::$direction
                     })
                     .into_generator()
                     .into_root_schema_for::<$ty>();
@@ -43,20 +46,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )*
         };
     }
-    processing_type!(ExtractorOptions, Extraction, RendererOptions);
+    processing_type!(Deserialize; ExtractorOptions, RendererOptions);
+    processing_type!(Serialize; Extraction);
 
     // Check that metadata and codec registrations agree before writing bindings.
     let _ = nodes::codec();
     let manifest = serde_json::json!({
-        "buildId": env!("MARKDOWN_BUILD_ID"),
+        "contractId": abi::CONTRACT_ID,
+        "provenance": { "sourceFingerprint": env!("MARKDOWN_SOURCE_FINGERPRINT") },
+        "abi": abi::descriptor(),
+        "directions": { "ExtractorOptions": "request", "RendererOptions": "request", "Extraction": "response" },
         "processing": processing,
         "parseError": parse_error,
         "presets": traq_markdown_grammar::bindings::preset_exports(),
-        "limits": {
-            "inputBytes": limits::MAX_INPUT,
-            "outputBytes": limits::MAX_OUTPUT,
-            "memoryBytes": limits::MEMORY_BYTES,
-        },
+        "limits": limits::metadata(),
         "nodes": node_metadata::export()?,
     });
 

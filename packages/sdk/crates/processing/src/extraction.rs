@@ -1,9 +1,6 @@
-//! Distribution-owned processing presets. All consumers borrow one native AST.
-#![forbid(unsafe_code)]
-
-use crate::{References, presets::traq};
-use markdown_ast::{Document, Span, ValidatedDocument, ValidationError};
-use markdown_trap_contracts::{EmbeddingData, ReferenceData};
+//! Message meaning is collected independently of rendering and response formatting.
+use crate::{References, Result, presets::traq};
+use markdown_ast::{Document, Node, ValidatedDocument};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -23,102 +20,80 @@ pub struct Extraction {
     pub attachments: Vec<String>,
     pub citations: Vec<String>,
     pub references: References,
-    pub embedding: traq::embedding::EmbeddingPlan,
+    pub reference_embedding: traq::embedding::ReferenceEmbeddingPlan,
 }
 
-/// Owns the Rust implementations, without external document handles or AST copies.
+/// Semantic analysis can be reused by presentation, source editing, and wire
+/// extraction without traversing the document for each view.
+#[derive(Debug, PartialEq)]
+pub struct MessageAnalysis {
+    pub references: References,
+    pub message: traq::message::Message,
+    pub reference_embedding: traq::embedding::ReferenceEmbeddingPlan,
+}
+impl From<MessageAnalysis> for Extraction {
+    fn from(analysis: MessageAnalysis) -> Self {
+        Self {
+            message_text: analysis.message.source_text,
+            attachments: analysis.message.attachments,
+            citations: analysis.message.citations,
+            references: analysis.references,
+            reference_embedding: analysis.reference_embedding,
+        }
+    }
+}
+
 pub struct Extractor {
     message: traq::message::Extractor,
+    references: markdown_extractor::Extractor<References>,
 }
-
 impl Extractor {
-    pub fn new(options: ExtractorOptions) -> Result<Self, &'static str> {
+    pub fn new(options: ExtractorOptions) -> Result<Self> {
         crate::links::validate_origin(&options.origin)?;
-
         Ok(Self {
             message: traq::message::Extractor::new(&options.origin),
+            references: markdown_extractor::Extractor::new(&traq::references::preset()?),
         })
     }
-
-    pub fn extract(&self, document: &Document) -> Result<Extraction, String> {
-        let document = ValidatedDocument::new(document).map_err(ValidationError::code)?;
-        self.extract_validated(document)
+    pub fn extract(&self, document: &Document) -> Result<Extraction> {
+        self.extract_validated(ValidatedDocument::new(document)?)
     }
-
-    /// Share one validation with other native consumers during this borrow.
-    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> Result<Extraction, String> {
-        Analysis::run(document.document(), &self.message)
+    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> Result<Extraction> {
+        self.analyze_validated(document).map(Into::into)
+    }
+    pub fn analyze(&self, document: &Document) -> Result<MessageAnalysis> {
+        self.analyze_validated(ValidatedDocument::new(document)?)
+    }
+    pub fn analyze_validated(&self, document: ValidatedDocument<'_>) -> Result<MessageAnalysis> {
+        let mut collectors = (
+            ReferenceCollector {
+                extractor: &self.references,
+                references: References::default(),
+            },
+            (
+                traq::message::Collector::new(&self.message),
+                traq::embedding::Collector::default(),
+            ),
+        );
+        crate::collectors::collect(document, &mut collectors)?;
+        let (references, (message, embedding)) = collectors;
+        let source = &document.document().source;
+        Ok(MessageAnalysis {
+            references: references.references,
+            message: message.finish(source)?,
+            reference_embedding: embedding.finish(source)?,
+        })
     }
 }
 
-#[derive(Default)]
-struct Analysis<'a> {
+struct ReferenceCollector<'a> {
+    extractor: &'a markdown_extractor::Extractor<References>,
     references: References,
-    message: traq::message::Message,
-    embedding: traq::embedding::EmbeddingPlan,
-    message_edits: Vec<(Span, &'a str)>,
-    embedding_edits: Vec<(Span, &'a str)>,
 }
-
-impl<'a> Analysis<'a> {
-    fn run(
-        document: &'a Document,
-        message_policy: &traq::message::Extractor,
-    ) -> Result<Extraction, String> {
-        let mut analysis = Self::default();
-        let mut pending: Vec<_> = document
-            .children
-            .iter()
-            .rev()
-            .map(|node| (node, true))
-            .collect();
-
-        while let Some((node, allow_embedding)) = pending.pop() {
-            if let Some(reference) = node.get::<ReferenceData>() {
-                analysis.references.record_reference(reference);
-            } else if let Some(embedding) = node.get::<EmbeddingData>() {
-                analysis.references.record_embedding(embedding);
-            }
-
-            message_policy.observe(
-                node,
-                &document.source,
-                &mut analysis.message,
-                &mut analysis.message_edits,
-            );
-            let allow_children = traq::embedding::observe(
-                node,
-                &document.source,
-                allow_embedding,
-                &mut analysis.embedding,
-                &mut analysis.embedding_edits,
-            );
-            pending.extend(
-                node.children
-                    .iter()
-                    .rev()
-                    .map(|child| (child, allow_children)),
-            );
-        }
-
-        let Analysis {
-            references,
-            mut message,
-            embedding,
-            message_edits,
-            embedding_edits,
-        } = analysis;
-        message.plain_text =
-            crate::edits::apply(&document.source, message_edits).map_err(str::to_owned)?;
-        let embedding = traq::embedding::finish(&document.source, embedding, embedding_edits)
-            .map_err(str::to_owned)?;
-
-        Ok(Extraction {
-            message_text: message.plain_text,
-            attachments: message.attachments,
-            citations: message.citations,
-            references,
-            embedding,
-        })
+impl<'a> crate::collectors::Collector<'a> for ReferenceCollector<'_> {
+    type Scope = ();
+    fn initial(&self) {}
+    fn observe(&mut self, node: &'a Node, _: &'a str, _: &()) -> Result<()> {
+        Ok(self.extractor.observe(node, &mut self.references)?)
     }
 }

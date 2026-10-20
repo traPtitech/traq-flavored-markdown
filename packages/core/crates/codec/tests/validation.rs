@@ -18,11 +18,18 @@ impl NodeData for Group {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        CHECKS.fetch_add(1, Ordering::Relaxed);
-        children
-            .iter()
-            .all(|node| node.get::<Group>().is_some() || node.get::<Text>().is_some())
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = {
+            CHECKS.fetch_add(1, Ordering::Relaxed);
+            children
+                .iter()
+                .all(|node| node.get::<Group>().is_some() || node.get::<Text>().is_some())
+        };
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 
@@ -52,6 +59,42 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     let bytes = codec.encode(&doc).unwrap();
 
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
+
+    let validated = codec.decode_validated(&bytes).unwrap();
+    assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
+    assert_eq!(validated.validated().node_count(), 3);
+    assert_eq!(
+        codec.encode_validated(validated.validated()).unwrap(),
+        bytes
+    );
+    assert_eq!(
+        codec.encode_validated(validated.validated()).unwrap(),
+        bytes
+    );
+    assert_eq!(
+        CHECKS.load(Ordering::Relaxed),
+        0,
+        "proof survives boundary reuse"
+    );
+
+    let limited = markdown_codec::CodecLimits {
+        document: markdown_ast::ValidationLimits {
+            nodes: 2,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    assert!(
+        codec
+            .encode_validated_with_limits(validated.validated(), limited)
+            .is_err()
+    );
+    assert_eq!(
+        CHECKS.load(Ordering::Relaxed),
+        0,
+        "tightening limits uses validation facts"
+    );
+    assert_eq!(validated.into_document(), doc);
     assert_eq!(codec.decode(&bytes).unwrap(), doc);
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
 

@@ -4,6 +4,7 @@ package markdown
 import (
 	"context"
 
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding"
 )
 
@@ -15,9 +16,12 @@ func NewRuntime(ctx context.Context, wasm []byte) (*Runtime, error) {
 		ctx,
 		wasm,
 		binding.Artifact{
-			BuildID:     buildID,
+			ContractID:  contractID,
 			InputBytes:  inputBytes,
+			OutputBytes: outputBytes,
 			MemoryPages: memoryPages,
+			Exports:     abiExports,
+			ErrorCodes:  wireErrorCodes,
 		},
 	)
 	if err != nil {
@@ -30,7 +34,7 @@ func (r *Runtime) Close(ctx context.Context) error { return r.runtime.Close(ctx)
 func (p *Parser) Close(ctx context.Context) error  { return p.instance.Close(ctx) }
 
 func (r *Runtime) NewParser(ctx context.Context, preset Preset) (*Parser, error) {
-	instance, err := r.runtime.NewInstance(ctx, "configure", string(preset))
+	instance, err := r.runtime.NewInstance(ctx, operationConfigure, string(preset))
 	if err != nil {
 		return nil, err
 	}
@@ -44,10 +48,35 @@ func (p *Parser) ParseInline(ctx context.Context, source string) (*Document, err
 	return p.parse(ctx, source, 1)
 }
 
-func (p *Parser) parse(ctx context.Context, source string, mode uint64) (*Document, error) {
-	raw, err := p.instance.Call(ctx, "parse", source, mode)
+// ParseValidated returns an immutable snapshot reusable by AST consumers.
+func (p *Parser) ParseValidated(ctx context.Context, source string) (*ValidatedDocument, error) {
+	return p.parseValidated(ctx, source, 0)
+}
+func (p *Parser) ParseInlineValidated(ctx context.Context, source string) (*ValidatedDocument, error) {
+	return p.parseValidated(ctx, source, 1)
+}
+func (p *Parser) parseValidated(ctx context.Context, source string, mode uint64) (*ValidatedDocument, error) {
+	raw, err := p.instance.Call(ctx, operationParse, source, mode)
 	if err != nil {
 		return nil, err
 	}
-	return DecodeDocument(raw)
+	document, err := ast.DecodeValidatedDocument(raw, newPayload)
+	if err != nil {
+		p.instance.Close(context.Background())
+		return nil, &Error{Code: "transport_error", Message: "Wasm returned an invalid document: " + err.Error()}
+	}
+	return document, nil
+}
+
+func (p *Parser) parse(ctx context.Context, source string, mode uint64) (*Document, error) {
+	raw, err := p.instance.Call(ctx, operationParse, source, mode)
+	if err != nil {
+		return nil, err
+	}
+	document, err := DecodeDocument(raw)
+	if err != nil {
+		p.instance.Close(context.Background())
+		return nil, &Error{Code: "transport_error", Message: "Wasm returned an invalid document: " + err.Error()}
+	}
+	return document, nil
 }

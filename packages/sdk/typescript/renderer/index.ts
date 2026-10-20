@@ -1,105 +1,45 @@
-import { math } from '@traq-flavored-markdown/commonmark-plugin/generic/math'
-import type { Options as GenericOptions } from '@traq-flavored-markdown/commonmark-plugin/generic/renderer'
-import { plugin as generic } from '@traq-flavored-markdown/commonmark-plugin/generic/renderer'
-import { createHighlightFunc } from '@traq-flavored-markdown/commonmark-plugin/highlight'
-import { validateLink as defaultLinkPolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
-import type { Options as CommonOptions } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import { plugin as common } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import type { DocumentContext } from '@traq-flavored-markdown/core'
 import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
-import type { Document, Plugin } from '@traq-flavored-markdown/core/renderer'
+import type { Document } from '@traq-flavored-markdown/core/renderer'
 import { renderer } from '@traq-flavored-markdown/core/renderer'
-import type { Options as TrapOptions } from '@traq-flavored-markdown/traq-plugin/renderer'
+import { plugin as extensions } from '@traq-flavored-markdown/extensions-plugin/renderer'
 import { plugin as trap } from '@traq-flavored-markdown/traq-plugin/renderer'
 
+import { analyzeMessage, messageContext } from '../messages/analysis.js'
+import { normalizeTraqOrigin } from '../messages/cards.js'
+import { resolveOptions } from '../profiles/traq.js'
+import type { Options, ResolvedOptions } from '../profiles/traq.js'
 import { configureCondensed } from './condensed.js'
-import { analyzeMessage } from './embeddings.js'
-import imageDomains from './image-domains.js'
-import { normalizeTraqOrigin } from './links.js'
+import { configureSpacing } from './spacing.js'
 
-export { endsWithEmbedding } from './embeddings.js'
-export { embeddingFromUrl } from './links.js'
-export type { Embedding } from './links.js'
-
-export interface HtmlPlugins {
-  common: Plugin
-  generic: Plugin
-  traq: Plugin
-}
-
-export type Options = CommonOptions &
-  GenericOptions &
-  TrapOptions & {
-    /** Additional handlers for nodes outside the built-in plugins. */
-    plugins?: readonly Plugin[]
-    /** Return customized built-in handlers for the preset. */
-    configurePlugins?: (plugins: HtmlPlugins) => HtmlPlugins
-  }
-
-const highlight = createHighlightFunc('traq-code traq-lang')
-
-const validateImage = (value: string) => {
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' && imageDomains.includes(url.hostname)
-  } catch {
-    return false
-  }
-}
-
-function condensedOptions(options: Options) {
-  const customMath = options.math
-
-  return {
-    ...options,
-    math: customMath
-      ? (tex: string) => customMath(tex, false)
-      : (tex: string) =>
-          math(tex, false, {
-            maxSize: 1,
-            macros: {
-              '\\Huge': '',
-              '\\huge': '',
-              '\\LARGE': '',
-              '\\Large': '',
-              '\\large': ''
-            }
-          })
-  }
-}
+export { endsWithResourceCard } from '../messages/analysis.js'
+export { resourceCardFromUrl } from '../messages/cards.js'
+export type { ResourceCard } from '../messages/cards.js'
+export type { HtmlPlugins, Options } from '../profiles/traq.js'
 
 function buildPreset(
-  { plugins = [], configurePlugins, ...options }: Options = {},
+  { plugins = [], configurePlugins, ...options }: ResolvedOptions,
   condensed = false
 ) {
-  const validateLink = options.validateLink ?? defaultLinkPolicy
-  const commonPlugin = common({
-    breaks: true,
-    rawHtml: 'escape',
-    xhtmlOut: false,
-    highlight,
-    validateLink,
-    validateImage,
-    linkAttributes: {
-      target: '_blank',
-      rel: 'nofollow noopener noreferrer'
-    },
-    ...options
-  })
+  const commonPlugin = configureSpacing(common(options), options.xhtmlOut)
 
-  const genericPlugin = generic(condensed ? condensedOptions(options) : options)
-  const trapPlugin = trap({ ...options, validateLink })
+  const extensionsPlugin = extensions({
+    math: condensed ? options.condensedMath : options.math
+  })
+  const trapPlugin = trap(options)
   const defaults = condensed
-    ? configureCondensed(commonPlugin, genericPlugin, trapPlugin, options)
+    ? configureCondensed(commonPlugin, extensionsPlugin, trapPlugin, options)
     : {
         common: commonPlugin,
-        generic: genericPlugin,
+        extensions: extensionsPlugin,
         traq: trapPlugin
       }
   const selected = configurePlugins?.(defaults) ?? defaults
 
   const builder = new PresetBuilder()
     .add(selected.common)
-    .add(selected.generic)
+    .add(selected.extensions)
     .add(selected.traq)
   for (const plugin of plugins) builder.add(plugin)
   return builder.build()
@@ -107,7 +47,7 @@ function buildPreset(
 
 /** Compose the standard HTML handlers with optional third-party plugins. */
 export function htmlPreset(options?: Options) {
-  return buildPreset(options)
+  return buildPreset(resolveOptions(options))
 }
 
 /** Create a renderer with the standard HTML handlers. */
@@ -123,36 +63,51 @@ export function messageRenderers({
   const parsedOrigin = new URL(origin)
   if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:')
     throw new TypeError('Expected an HTTP(S) origin')
-  const embeddingOrigin = normalizeTraqOrigin(origin)
-  const validateLink = options.validateLink ?? defaultLinkPolicy
+  const cardOrigin = normalizeTraqOrigin(origin)
+  const resolvedOptions = resolveOptions(options)
 
-  function create(condensed: boolean) {
-    const view = renderer(buildPreset(options, condensed))
+  const standardView = renderer(buildPreset(resolvedOptions))
+  const condensedView = renderer(buildPreset(resolvedOptions, true))
 
+  function prepare(document: Document | DocumentContext) {
+    const standard = standardView.createSession(document)
+    const context = messageContext(standard.context)
+    const condensed = condensedView.createSession(context)
+    const analysis = analyzeMessage(
+      context,
+      cardOrigin,
+      resolvedOptions.validateLink
+    )
+    const render = (compact: boolean) => ({
+      rawText: context.source.text,
+      renderedText: (compact ? condensed : standard).render({
+        roots: analysis.roots,
+        omittedNodes: analysis.omittedNodes,
+        childText: compact ? analysis.childText : undefined,
+        rootSeparator: compact ? ' ' : ''
+      }),
+      cards: analysis.cards.map(card => ({ ...card }))
+    })
     return Object.freeze({
-      render(document: Document) {
-        const analysis = analyzeMessage(document, embeddingOrigin, validateLink)
-        const overlay = {
-          omittedNodes: analysis.omittedNodes,
-          childText: condensed ? analysis.childText : undefined
-        }
-        const renderedText = condensed
-          ? analysis.roots
-              .map(node => view.render(document, { ...overlay, roots: [node] }))
-              .join(' ')
-          : view.render(document, { ...overlay, roots: analysis.roots })
-
-        return {
-          rawText: document.source,
-          renderedText,
-          embeddings: analysis.embeddings
-        }
-      }
+      context,
+      standard: () => render(false),
+      condensed: () => render(true)
     })
   }
 
   return Object.freeze({
-    standard: create(false),
-    condensed: create(true)
+    prepare,
+    render(document: Document | DocumentContext) {
+      const message = prepare(document)
+      return { standard: message.standard(), condensed: message.condensed() }
+    },
+    standard: Object.freeze({
+      render: (document: Document | DocumentContext) =>
+        prepare(document).standard()
+    }),
+    condensed: Object.freeze({
+      render: (document: Document | DocumentContext) =>
+        prepare(document).condensed()
+    })
   })
 }

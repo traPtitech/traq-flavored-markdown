@@ -83,7 +83,6 @@ pub(super) struct Marker {
     pub ordered: bool,
     pub start: u32,
     pub delimiter: u8,
-    pub text: String,
 }
 
 pub(super) fn item(line: &str) -> Option<Marker> {
@@ -126,7 +125,6 @@ pub(super) fn item(line: &str) -> Option<Marker> {
         ordered,
         start,
         delimiter: bytes[end - 1],
-        text: line[..end].into(),
     })
 }
 

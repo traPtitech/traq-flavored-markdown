@@ -1,5 +1,5 @@
 use markdown_renderer::{Plugin, Result};
-use markdown_trap_contracts::SpoilerData;
+use markdown_trap_contracts::Spoiler;
 
 use std::sync::LazyLock;
 
@@ -9,24 +9,20 @@ pub fn plugin() -> Plugin {
 }
 
 fn build() -> Result<Plugin> {
-    let mut spoiler = Plugin::new(&markdown_trap_contracts::preset().spoiler);
+    let mut spoiler = Plugin::new(&markdown_trap_contracts::declarations().spoiler);
 
-    spoiler.on::<SpoilerData>(|_, nodes, ctx| {
-        let content = ctx.children(nodes)?;
-        let mut output = String::new();
+    spoiler.on::<Spoiler>(|_, nodes, ctx, output| {
+        let content = ctx.capture_children(nodes)?;
 
         for ch in content.chars() {
-            ctx.append(
-                &mut output,
-                match ch {
-                    '\r' => "\r",
-                    '\n' => "\n",
-                    _ => "█",
-                },
-            )?;
+            output.push(match ch {
+                '\r' => "\r",
+                '\n' => "\n",
+                _ => "█",
+            })?;
         }
 
-        Ok(output)
+        Ok(())
     })?;
 
     Ok(spoiler)

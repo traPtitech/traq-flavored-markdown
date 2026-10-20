@@ -10,18 +10,19 @@ contracts = ["markdown-trap-extraction/contracts", "dep:schemars"]
 
 
 [dependencies]
+traq-markdown-features = { workspace = true, features = ["text"] }
 serde = { version = "=1.0.229", features = ["derive"] }
 schemars = { version = "=1.2.2", optional = true }
 markdown-trap-contracts.workspace = true
 markdown-ast.workspace = true
-markdown-commonmark-text.workspace = true
 markdown-commonmark-contracts.workspace = true
-markdown-generic-text.workspace = true
-markdown-trap-text.workspace = true
 markdown-trap-extraction.workspace = true
 markdown-renderer.workspace = true
 markdown-extractor.workspace = true
 
 [dev-dependencies]
+markdown-commonmark-text.workspace = true
+markdown-generic-text.workspace = true
+markdown-trap-text.workspace = true
 traq-markdown-grammar = { path = "../grammar" }
 serde_json = "=1.0.151"

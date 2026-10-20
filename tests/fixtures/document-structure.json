@@ -1,0 +1,777 @@
+[
+  {
+    "name": "empty document",
+    "valid": true,
+    "document": {
+      "source": "",
+      "children": []
+    }
+  },
+  {
+    "name": "inline content",
+    "valid": true,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.paragraph",
+          "data": {},
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "commonmark.text",
+              "data": {
+                "value": ""
+              },
+              "span": {
+                "start": 0,
+                "end": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "list with block content",
+    "valid": true,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.list",
+          "data": {
+            "kind": {
+              "type": "bullet",
+              "marker": "-"
+            },
+            "tight": true
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "commonmark.list_item",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "commonmark.paragraph",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "table header and body",
+    "valid": true,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.table_header_row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "generic.row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "leaf with children",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.text",
+          "data": {
+            "value": ""
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "commonmark.text",
+              "data": {
+                "value": ""
+              },
+              "span": {
+                "start": 0,
+                "end": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "block inside paragraph",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.paragraph",
+          "data": {},
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "commonmark.list",
+              "data": {
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
+                "tight": true
+              },
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "commonmark.list_item",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.paragraph",
+                      "data": {},
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      },
+                      "children": [
+                        {
+                          "kind": "commonmark.text",
+                          "data": {
+                            "value": ""
+                          },
+                          "span": {
+                            "start": 0,
+                            "end": 0
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "structural child inside paragraph",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.paragraph",
+          "data": {},
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.cell",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "list without items",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.list",
+          "data": {
+            "kind": {
+              "type": "bullet",
+              "marker": "-"
+            },
+            "tight": true
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "list with paragraph",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.list",
+          "data": {
+            "kind": {
+              "type": "bullet",
+              "marker": "-"
+            },
+            "tight": true
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "commonmark.paragraph",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "commonmark.text",
+                  "data": {
+                    "value": ""
+                  },
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "table without header",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "table without rows",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "table header width mismatch",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.table_header_row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "table body width mismatch",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.table_header_row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "generic.row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "second header",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.table_header_row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "generic.table_header_row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "generic.cell",
+                  "data": {},
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "data": {
+                        "value": ""
+                      },
+                      "span": {
+                        "start": 0,
+                        "end": 0
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "row with noncell child",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "generic.table",
+          "data": {
+            "alignments": [
+              null
+            ]
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "generic.table_header_row",
+              "data": {},
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "children": [
+                {
+                  "kind": "commonmark.text",
+                  "data": {
+                    "value": ""
+                  },
+                  "span": {
+                    "start": 0,
+                    "end": 0
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "invalid heading payload",
+    "valid": false,
+    "document": {
+      "source": "",
+      "children": [
+        {
+          "kind": "commonmark.heading",
+          "data": {
+            "level": 7
+          },
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "children": [
+            {
+              "kind": "commonmark.text",
+              "data": {
+                "value": ""
+              },
+              "span": {
+                "start": 0,
+                "end": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

@@ -42,8 +42,13 @@ impl NodeData for Invalid {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> bool {
-        false
+    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = false;
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 
@@ -71,7 +76,9 @@ fn plugin(calls: Arc<AtomicUsize>) -> Plugin<Collected> {
         .on::<Reference>(move |value, result: &mut Collected| {
             calls.fetch_add(1, Ordering::Relaxed);
             if value.0 == 99 {
-                return Err("handler_failure");
+                return Err(markdown_extractor::Error::Handler {
+                    message: "handler failure".into(),
+                });
             }
             result.ids.push(value.0);
             result.count.set(result.count.get() + 1);
@@ -126,14 +133,20 @@ fn validation_precedes_all_handlers_and_failed_runs_do_not_leak_results() {
         node(Container, vec![node(Invalid, vec![])]),
     ]);
 
-    assert!(matches!(extractor.extract(&doc), Err("invalid_node")));
+    assert!(matches!(
+        extractor.extract(&doc).map_err(|error| error.code()),
+        Err("invalid_node")
+    ));
     assert_eq!(calls.load(Ordering::Relaxed), 0);
 
     let mut doc = document(vec![node(Reference(1), vec![])]);
     doc.source = "é".into();
     doc.children[0].span = Span { start: 1, end: 2 };
 
-    assert!(matches!(extractor.extract(&doc), Err("invalid_node")));
+    assert!(matches!(
+        extractor.extract(&doc).map_err(|error| error.code()),
+        Err("invalid_node")
+    ));
     assert_eq!(calls.load(Ordering::Relaxed), 0);
 
     let doc = document(vec![
@@ -141,23 +154,25 @@ fn validation_precedes_all_handlers_and_failed_runs_do_not_leak_results() {
         node(Reference(99), vec![]),
     ]);
 
-    assert!(matches!(extractor.extract(&doc), Err("handler_failure")));
+    assert!(matches!(
+        extractor.extract(&doc).map_err(|error| error.code()),
+        Err("handler_error")
+    ));
     assert!(extractor.extract(&document(vec![])).unwrap().ids.is_empty());
 }
 
 #[test]
 fn snapshots_duplicate_rejection_and_removal_are_atomic() {
     let mut plugin = plugin(Arc::new(AtomicUsize::new(0)));
-    let original = plugin.clone();
     let mut builder = PresetBuilder::new();
 
-    builder.add(&plugin).unwrap();
+    let registration = builder.register(&plugin).unwrap();
     let old = Extractor::new(&builder.clone().build().unwrap());
 
     assert!(builder.add(&plugin).is_err());
     assert!(plugin.on::<Reference>(|_, _| Ok(())).is_err());
 
-    builder.clone().remove(&plugin).unwrap();
+    builder.clone().remove(&registration).unwrap();
     plugin
         .on::<Container>(|_, result| {
             result.ids.push(3);
@@ -165,7 +180,7 @@ fn snapshots_duplicate_rejection_and_removal_are_atomic() {
         })
         .unwrap();
 
-    assert!(builder.remove(&plugin).is_err());
+    assert_eq!(builder.registration(&plugin), Some(registration.clone()));
     assert!(builder.add(&plugin).is_err());
 
     let doc = document(vec![node(Container, vec![])]);
@@ -179,7 +194,8 @@ fn snapshots_duplicate_rejection_and_removal_are_atomic() {
             .is_empty()
     );
 
-    builder.remove(&original).unwrap().add(&plugin).unwrap();
+    builder.remove(&registration).unwrap().add(&plugin).unwrap();
+    assert!(builder.remove(&registration).is_err());
 
     assert_eq!(
         Extractor::new(&builder.build().unwrap())
@@ -199,7 +215,10 @@ fn limits_also_apply_to_unregistered_nodes() {
 
     doc.children.push(node(Container, vec![]));
 
-    assert!(matches!(extractor.extract(&doc), Err("resource_limit")));
+    assert!(matches!(
+        extractor.extract(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    ));
 
     let mut root = node(Container, vec![]);
 
@@ -211,14 +230,20 @@ fn limits_also_apply_to_unregistered_nodes() {
     assert!(extractor.extract(&doc).is_ok());
 
     doc.children = vec![node(Container, doc.children)];
-    assert!(matches!(extractor.extract(&doc), Err("resource_limit")));
+    assert!(matches!(
+        extractor.extract(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    ));
 
     doc.children.clear();
     doc.source = "x".repeat(65_536);
     assert!(extractor.extract(&doc).is_ok());
 
     doc.source.push('x');
-    assert!(matches!(extractor.extract(&doc), Err("resource_limit")));
+    assert!(matches!(
+        extractor.extract(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    ));
 }
 
 #[test]
@@ -226,18 +251,21 @@ fn selected_names_are_checked_using_namespace_identity() {
     let group = Declaration::group("generic");
     let mut builder = PresetBuilder::<Collected>::new();
 
-    builder.add(&Plugin::new(&group.new("same"))).unwrap();
-    builder.add(&Plugin::new(&group.new("same"))).unwrap();
-    assert!(matches!(builder.build(), Err("duplicate_name")));
+    builder.add(&Plugin::new(&group.plugin("same"))).unwrap();
+    builder.add(&Plugin::new(&group.plugin("same"))).unwrap();
+    assert!(matches!(
+        builder.build().map_err(|error| error.code()),
+        Err("duplicate_name")
+    ));
 
     let mut builder = PresetBuilder::<Collected>::new();
 
     builder
-        .add(&Plugin::new(&group.group("one").new("same")))
+        .add(&Plugin::new(&group.group("one").plugin("same")))
         .unwrap();
 
     builder
-        .add(&Plugin::new(&group.group("two").new("same")))
+        .add(&Plugin::new(&group.group("two").plugin("same")))
         .unwrap();
 
     assert!(builder.build().is_ok());

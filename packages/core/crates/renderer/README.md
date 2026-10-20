@@ -18,7 +18,10 @@ impl NodeData for Text {
 
 let prefix = String::from("hello ");
 let mut plugin = Plugin::new(&Declaration::new("greeting"));
-plugin.on::<Text>(move |text, _, _| Ok(format!("{prefix}{}", text.0)))?;
+plugin.on::<Text>(move |text, _, _, output| {
+    output.push(&prefix)?;
+    output.push(&text.0)
+})?;
 let mut builder = PresetBuilder::new();
 builder.add(&plugin)?;
 let renderer = Renderer::new(&builder.build()?);
@@ -27,7 +30,7 @@ let document = Document {
     children: vec![Node::leaf(Span { start: 0, end: 5 }, Text("world".into()))],
 };
 assert_eq!(renderer.render(&document)?, "hello world");
-# Ok::<(), &'static str>(())
+# Ok::<(), markdown_renderer::Error>(())
 ```
 
 `Plugin::on` registers a handler for one concrete node type. Handler closures
@@ -39,7 +42,13 @@ that was registered, so later plugin edits do not alter them.
 `render` validates every node, including descendants a parent handler chooses
 not to emit, before rendering. Handlers own escaping and other output semantics.
 Default limits are 65,536 source bytes, 8 MiB of payload, 16,384 nodes, depth 64, 1 MiB output,
-and 8 MiB cumulative appends. Trusted handler code owns its own work limits.
+and 8 MiB of written bytes, including temporary captures. `RenderLimits` configures
+output and work limits. Handlers write through `Output`; ordinary wrappers call
+`context.children(nodes, output)` without allocating a subtree string. Use
+`capture_children` only when transforming rendered children.
+
+`builder.register(&plugin)` returns a `RegistrationHandle`. Removal uses that
+handle, so editing the plugin never changes which registration is removed.
 
 Use `render_validated(ValidatedDocument)` to reuse a shared immutable tree
 validation. It still checks handler coverage and per-render output limits.

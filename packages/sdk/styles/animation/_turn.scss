@@ -1,0 +1,10 @@
+@each $name, $axis in (turn: Y, turn-v: X) {
+  @keyframes tfm-stamp-#{$name} {
+    0% {
+      transform: rotate#{$axis }(0);
+    }
+    100% {
+      transform: rotate#{$axis }(1turn);
+    }
+  }
+}

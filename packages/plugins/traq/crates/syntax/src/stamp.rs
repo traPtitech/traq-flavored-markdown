@@ -5,7 +5,7 @@ use markdown_parser::{
         inline::{InlineMatch, InlineRule},
     },
 };
-pub use markdown_trap_contracts::StampData;
+pub use markdown_trap_contracts::Stamp;
 use markdown_trap_contracts::{StampAnimation, StampEffects, StampKind, StampSize};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -37,7 +37,7 @@ fn parse(
     )))
 }
 
-fn parse_stamp(literal: &str) -> Option<StampData> {
+fn parse_stamp(literal: &str) -> Option<Stamp> {
     let inner = literal.strip_prefix(':')?.strip_suffix(':')?;
 
     let (kind, suffix) = if inner.starts_with("hsl(") {
@@ -52,10 +52,11 @@ fn parse_stamp(literal: &str) -> Option<StampData> {
         let captures = HSL.captures(name)?;
         (
             StampKind::HslColor {
-                name: name.into(),
-                hue: captures["hue"].into(),
-                saturation: captures["saturation"].into(),
-                lightness: captures["lightness"].into(),
+                hue: captures["hue"].bytes().fold(0u16, |value, digit| {
+                    (value * 10 + u16::from(digit - b'0')) % 360
+                }),
+                saturation: percentage(&captures["saturation"]),
+                lightness: percentage(&captures["lightness"]),
             },
             &inner[end..],
         )
@@ -78,7 +79,6 @@ fn parse_stamp(literal: &str) -> Option<StampData> {
             && name[2..].bytes().all(|c| c.is_ascii_hexdigit())
         {
             StampKind::HexColor {
-                name: name.into(),
                 rgb: u32::from_str_radix(&name[2..], 16).ok()?,
             }
         } else if (1..=32).contains(&name.len())
@@ -93,11 +93,17 @@ fn parse_stamp(literal: &str) -> Option<StampData> {
         (kind, suffix)
     };
 
-    Some(StampData {
+    Some(Stamp {
         literal: literal.into(),
         kind,
         effects: parse_effects(suffix)?,
     })
+}
+
+fn percentage(decimal: &str) -> f64 {
+    // CSS percentages clamp to this interval. Overflowing positive decimal
+    // notation still has the same clamped meaning; the literal stays untouched.
+    decimal.parse::<f64>().unwrap_or(f64::INFINITY).min(100.0)
 }
 
 fn parse_effects(suffix: &str) -> Option<StampEffects> {
@@ -145,7 +151,7 @@ fn parse_effects(suffix: &str) -> Option<StampEffects> {
 
 pub fn plugin() -> &'static Plugin {
     static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_trap_contracts::preset().stamp);
+        let mut plugin = Plugin::new(&markdown_trap_contracts::declarations().stamp);
         plugin.add(inline_rule());
         plugin
     });
@@ -172,10 +178,7 @@ mod tests {
         );
         assert_eq!(
             parse_stamp(":0x123456:").unwrap().kind,
-            StampKind::HexColor {
-                name: "0x123456".into(),
-                rgb: 0x123456
-            }
+            StampKind::HexColor { rgb: 0x123456 }
         );
         for name in ["foo0x123456", "0x1234567"] {
             assert_eq!(
@@ -186,10 +189,9 @@ mod tests {
         assert_eq!(
             parse_stamp(":hsl(0, 20.5%, 30%):").unwrap().kind,
             StampKind::HslColor {
-                name: "hsl(0, 20.5%, 30%)".into(),
-                hue: "0".into(),
-                saturation: "20.5".into(),
-                lightness: "30".into()
+                hue: 0,
+                saturation: 20.5,
+                lightness: 30.0
             }
         );
         assert!(parse_stamp(":foohsl(0, 20%, 30%):").is_none());
@@ -221,5 +223,30 @@ mod tests {
         ] {
             assert!(parse_stamp(invalid).is_none(), "{invalid}");
         }
+    }
+
+    #[test]
+    fn color_values_are_canonical_but_authored_notation_is_retained() {
+        let literal = ":hsl(0000720, 200.5%, 030.25%).rotate:";
+        let stamp = parse_stamp(literal).unwrap();
+        assert_eq!(stamp.literal, literal);
+        assert_eq!(
+            stamp.kind,
+            StampKind::HslColor {
+                hue: 0,
+                saturation: 100.0,
+                lightness: 30.25
+            }
+        );
+        let huge = format!(":hsl({}, {}%, 0%):", "9".repeat(1000), "9".repeat(1000));
+        let stamp = parse_stamp(&huge).unwrap();
+        assert_eq!(
+            stamp.kind,
+            StampKind::HslColor {
+                hue: 279,
+                saturation: 100.0,
+                lightness: 0.0
+            }
+        );
     }
 }

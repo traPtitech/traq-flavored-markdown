@@ -1,4 +1,4 @@
-use markdown_ast::{Node, NodeRole};
+use markdown_ast::NodeRole;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -12,7 +12,7 @@ pub enum EmbeddingKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
-pub struct EmbeddingData {
+pub struct Embedding {
     #[serde(rename = "type")]
     pub target: EmbeddingKind,
     pub id: String,
@@ -21,17 +21,16 @@ pub struct EmbeddingData {
     pub literal: String,
 }
 
-impl markdown_ast::NodeData for EmbeddingData {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+impl markdown_ast::NodeData for Embedding {
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.id
             .len()
             .saturating_add(self.label.len())
             .saturating_add(self.literal.len())
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        children.is_empty()
     }
 }

@@ -190,6 +190,10 @@ checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
 [[package]]
 name = "markdown-ast"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "markdown-codec"
@@ -300,7 +304,6 @@ dependencies = [
  "markdown-definitions",
  "schemars",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -651,6 +654,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "traq-markdown-features"
+version = "0.1.0"
+dependencies = [
+ "markdown-ast",
+ "markdown-commonmark",
+ "markdown-commonmark-contracts",
+ "markdown-commonmark-text",
+ "markdown-definitions",
+ "markdown-generic-contracts",
+ "markdown-generic-syntax",
+ "markdown-generic-text",
+ "markdown-parser",
+ "markdown-renderer",
+ "markdown-trap-contracts",
+ "markdown-trap-syntax",
+ "markdown-trap-text",
+]
+
+[[package]]
 name = "traq-markdown-grammar"
 version = "0.1.0"
 dependencies = [
@@ -662,7 +684,9 @@ dependencies = [
  "markdown-parser",
  "markdown-trap-contracts",
  "markdown-trap-syntax",
+ "serde",
  "serde_json",
+ "traq-markdown-features",
 ]
 
 [[package]]
@@ -681,6 +705,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "traq-markdown-features",
  "traq-markdown-grammar",
 ]
 
@@ -698,6 +723,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "traq-markdown-features",
  "traq-markdown-grammar",
  "traq-markdown-processing",
 ]

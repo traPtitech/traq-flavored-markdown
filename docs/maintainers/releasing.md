@@ -5,13 +5,14 @@ it is not required reading for ordinary contributions.
 
 ## Release policy
 
-The four public npm packages and four Go modules are released together at one
+The five public npm packages and five Go modules are released together at one
 shared version:
 
 | npm package                                 | Package directory             |
 | ------------------------------------------- | ----------------------------- |
 | `@traq-flavored-markdown/core`              | `packages/core`               |
 | `@traq-flavored-markdown/commonmark-plugin` | `packages/plugins/commonmark` |
+| `@traq-flavored-markdown/extensions-plugin` | `packages/plugins/extensions` |
 | `@traq-flavored-markdown/traq-plugin`       | `packages/plugins/traq`       |
 | `@traq-flavored-markdown/sdk`               | `packages/sdk`                |
 
@@ -19,6 +20,7 @@ shared version:
 | -------------------------------- | ------------------------------------------- |
 | `packages/core/go`               | `packages/core/go/v<version>`               |
 | `packages/plugins/commonmark/go` | `packages/plugins/commonmark/go/v<version>` |
+| `packages/plugins/extensions/go` | `packages/plugins/extensions/go/v<version>` |
 | `packages/plugins/traq/go`       | `packages/plugins/traq/go/v<version>`       |
 | `packages/sdk/go`                | `packages/sdk/go/v<version>`                |
 
@@ -28,7 +30,7 @@ example is not published as a module. A release does not update external
 dependencies, tooling, or Rust crate versions.
 
 Release versions are `<version>`. The npm release tag is `v<version>`; each Go
-module uses its directory prefix, such as `packages/sdk/go/v<version>`. All five
+module uses its directory prefix, such as `packages/sdk/go/v<version>`. All six
 tags point to the same release commit. The workflow synchronizes npm manifests,
 `bun.lock`, Go requirements and sums, and `go.work` in its isolated runner. The
 SDK Go module includes its matching Wasm as `parser.wasm`. After checks pass, the
@@ -40,27 +42,30 @@ version beyond v1 until those paths are migrated.
 
 ## Prepare and validate
 
-`bun run release` prepares and publishes npm packages. The separate
-`scripts/release-go.ts` synchronizes and checks Go module versions; pushing the
-four prefixed Git tags publishes them to Go consumers. Local use is optional and
-is useful when investigating a failed workflow.
+All phases consume the same release plan: npm packages in dependency order,
+Go module tags, generated output paths, changed release files, and artifacts.
+The plan is derived from the workspace descriptor, manifests, and managed output
+index. The version parser is shared by npm, Go, and external consumer checks;
+stable releases use the `latest` dist-tag and prereleases use `next`.
+
+`--plan` and `--files` inspect local inputs. `--inspect` also reads the npm
+registry and remote Git tags without changing them. Local use is optional and
+helps investigate a failed workflow.
 
 ```sh
-bun run release -- v0.1.4 --prepare
-bun run scripts/release-go.ts v0.1.4 --prepare
-bun run release -- v0.1.4 --check
-bun run scripts/release-go.ts v0.1.4 --check
-bun run release -- v0.1.4            # pack and dry-run npm publishing
-bun run scripts/release-go.ts v0.1.4 --tags
+bun run release -- v0.1.8 --plan
+bun run release -- v0.1.8 --prepare
+bun run release -- v0.1.8 --check
+bun run release -- v0.1.8 --dry-run
+bun run release -- v0.1.8 --inspect
 ```
 
-The npm `--prepare` uses native npm workspace commands and updates `bun.lock`.
-The Go `--prepare` updates all internal `go.mod` requirements, including the
-example, and the root `go.work` replacements. Neither command commits, tags,
-publishes, or changes external dependencies. `bun run check` builds the SDK and
-verifies that its tracked Go Wasm has the same source build ID, contract, and ABI
-as the build. It also runs a temporary
-consumer with `GOWORK=off` and local release-candidate modules.
+`--prepare` updates npm versions and internal peers, `bun.lock`, all internal
+Go requirements including the example, and `go.work` replacements. It does not
+commit, tag, or publish. The lower-level `scripts/release-go.ts` commands remain
+available for isolated module diagnostics. `bun run check` verifies generated
+sources, semantic contract identity, source provenance, matching Wasm bytes,
+and a temporary Go consumer with `GOWORK=off`.
 
 ## Normal release
 
@@ -73,8 +78,8 @@ SemVer version from its root `package.json`, synchronizes npm and Go release
 metadata, and runs `bun run check`. It commits the synchronized manifests,
 `bun.lock`, `go.work`, Go sums, and tracked Go Wasm to the default branch with
 the message `chore(release): <version>`. It publishes the npm workspaces in
-dependency order (core, commonmark-plugin, traq-plugin, then SDK), then atomically pushes the npm tag and
-four Go module tags for that commit. A fresh consumer fetches the tagged Go SDK
+dependency order (core, CommonMark, extensions, traQ, then SDK), then publishes
+the npm release tag and five Go module tags for that commit. A fresh consumer fetches the tagged Go SDK
 without `go.work` or local replacements and runs the bundled Wasm. The workflow
 then creates a GitHub Release with generated notes. These increment options
 produce stable npm releases using the `latest` dist-tag. The global
@@ -104,32 +109,25 @@ Actions bot to bypass any branch rule that would reject that push.
 
 ## Recover from a partial publication
 
-Native npm publishing is sequential, not atomic, and stops at the first failure.
-Published versions are immutable. Do not rerun the full release after a partial
-failure. The generated `<version>` commit is already on the default branch at
-this point. Use `npm view` to identify published packages, then publish only the
-remaining workspaces from that commit after a successful
-`bun run check`. The Go tags have not yet been pushed.
-
-For example, if core and commonmark-plugin were published:
+A partial publication is recoverable from the exact release commit. Published
+npm versions and Git tags are immutable. Check out that commit, verify the
+artifacts with `bun run check`, and inspect the remote state before resuming:
 
 ```sh
-npm publish --workspace=packages/plugins/traq --workspace=packages/sdk --access public --ignore-scripts --tag latest
+bun run release -- v0.1.8 --inspect
+bun run release -- v0.1.8 --resume
 ```
 
-Use `--tag next` for a prerelease. npm does not retry a partial publication. If a
-local `min-release-age` policy hides newly published versions from `npm view`,
-add `--min-release-age-exclude=@traq-flavored-markdown/*` to that inspection
-command.
+`--resume` checks every npm version and release tag, skips completed actions,
+and publishes only missing packages and tags. A remote tag pointing to a
+different commit fails before any publishing begins. A local tag left by a
+failed push is reused only when it already points to the release commit.
+`--publish` performs the npm portion alone, as used by the normal workflow.
+The CLI prints or performs the computed plan; it never moves an existing tag.
 
-After the npm packages are complete, push the npm release tag and four Go module
-tags from the release commit, then run
-`bun run scripts/checks/go-consumer.ts v<version> --remote` and create the GitHub
-Release. Never move an existing published Go tag. If the tag push fails, inspect
-all five remote tags before retrying; the workflow uses one atomic push so they
-should either all exist or all be absent. If the remote Go consumer check fails
-after the tags are published, diagnose the download or module graph and publish a
-new version for any content correction.
+After resuming, run `bun run scripts/checks/go-consumer.ts v0.1.8 --remote`
+and create the GitHub Release if that final workflow step did not complete.
+If the published content needs correction, prepare a new version.
 
 For npm's current settings, see its
 [trusted-publishing guide](https://docs.npmjs.com/trusted-publishers/) and

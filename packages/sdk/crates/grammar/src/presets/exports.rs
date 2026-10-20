@@ -1,45 +1,31 @@
-use crate::{
-    bindings::Catalog,
-    syntax::{commonmark, extensions, trap},
-};
-use serde_json::json;
+use crate::bindings::Catalog;
+use serde_json::{Map, Value, json};
 
 /// Export members are SDK API names. Display labels never resolve these members.
 pub(crate) fn catalog() -> Catalog {
     let mut catalog = Catalog::default();
-    let core = catalog.plugin(&super::commonmark::syntax().plugin);
-    let html = catalog.plugin(commonmark::html::plugin());
-    let math = catalog.plugin(extensions::math::plugin());
-    let mark = catalog.plugin(extensions::mark::plugin());
-    let strikethrough = catalog.plugin(extensions::strikethrough::plugin());
-    let table = catalog.plugin(extensions::table::plugin());
-    let linkify = catalog.plugin(extensions::linkify::plugin());
-    let spoiler = catalog.plugin(trap::spoiler::plugin());
-    let references = catalog.plugin(trap::references::plugin());
-    let stamp = catalog.plugin(trap::stamp::plugin());
-    let compat = catalog.plugin(trap::compat::plugin());
+    let mut plugins = Map::new();
+    for feature in traq_markdown_features::all() {
+        let index = catalog.plugin((feature.syntax)());
+        let group = plugins
+            .entry(feature.export.group)
+            .or_insert_with(|| json!({}));
+        assert!(
+            group
+                .as_object_mut()
+                .expect("plugin export group")
+                .insert(feature.export.member.into(), json!(index))
+                .is_none(),
+            "duplicate SDK feature export"
+        );
+    }
 
     for preset in crate::bindings::PRESETS {
         catalog.preset(&(preset.builder)()).expect("valid preset");
     }
 
     catalog.exports = json!({
-        "plugins": {
-            "commonmark": { "core": core, "html": html },
-            "generic": {
-                "math": math,
-                "mark": mark,
-                "strikethrough": strikethrough,
-                "table": table,
-                "linkify": linkify,
-            },
-            "trap": {
-                "spoiler": spoiler,
-                "references": references,
-                "stamp": stamp,
-                "compat": compat,
-            }
-        },
+        "plugins": Value::Object(plugins),
         "presets": crate::bindings::preset_exports()
     });
     catalog

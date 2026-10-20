@@ -1,21 +1,24 @@
+use super::Interrupt;
 use super::markers::*;
 use crate::references;
+use markdown_parser::engine::block::LineIndex;
 
 use markdown_parser::{
     ParseError,
     engine::{
         Budget,
-        block::{BlockInput, BlockMatch, Interrupt},
+        block::{BlockInput, BlockMatch},
     },
 };
 
-type DefinitionValue = (String, String, Option<String>);
-type DefinitionMatch = (usize, DefinitionValue);
+struct DefinitionMatch {
+    end: LineIndex,
+    value: references::ParsedDefinition,
+}
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
     budget: &mut Budget,
-    normalize: fn(&str) -> Option<String>,
 ) -> Result<Option<BlockMatch>, ParseError> {
     let line = input.current();
 
@@ -25,12 +28,17 @@ pub(super) fn parse(
 
     let lines = input.lines;
 
-    let Some((mut end, (key, destination, title))) = find_definition(input, budget, normalize)?
+    let Some(DefinitionMatch {
+        mut end,
+        value: references::ParsedDefinition {
+            key, target, title, ..
+        },
+    }) = find_definition(input, budget)?
     else {
         return Ok(None);
     };
 
-    if end < lines.len() && blank(input.line(end)) {
+    if end < lines.end() && blank(input.line(end)) {
         end += 1;
     }
 
@@ -39,7 +47,7 @@ pub(super) fn parse(
             .get_or_default::<references::ReferenceMap>()
             .0
             .entry(key)
-            .or_insert((destination, title));
+            .or_insert((target, title));
         Ok(())
     })))
 }
@@ -47,48 +55,41 @@ pub(super) fn parse(
 fn find_definition(
     input: &BlockInput<'_>,
     budget: &mut Budget,
-    normalize: fn(&str) -> Option<String>,
 ) -> Result<Option<DefinitionMatch>, ParseError> {
-    let line = input.current();
     let first = input.start;
-    let lines = input.lines;
-
-    let mut last = first + 1;
-    let mut found = None;
-
-    while last <= lines.len() {
-        if last > first + 1 && input.interrupts(last - 1, Interrupt::Reference) {
+    let start = input.lines[first].start;
+    let text = &input.source.text()[start..];
+    let Some(mut value) = references::definition(text, budget)? else {
+        return Ok(None);
+    };
+    let line_count = |end: usize| {
+        let consumed = &text[..end];
+        consumed.bytes().filter(|byte| *byte == b'\n').count()
+            + usize::from(!consumed.ends_with('\n'))
+    };
+    let mut end = first + line_count(value.end);
+    // Only inspect the lines actually used by this candidate. A block interrupt
+    // can truncate a multiline title, requiring at most one shorter parse.
+    for line in input.lines.indices(first + 1..end) {
+        budget.spend(1)?;
+        if input.interrupts(line, Interrupt::Reference) {
+            let boundary = input.lines[line].start - start;
+            let Some(shorter) = references::definition(&text[..boundary], budget)? else {
+                return Ok(None);
+            };
+            value = shorter;
+            end = first + line_count(value.end);
             break;
         }
-
-        let text = input
-            .source
-            .literal(lines[first].start..lines[last - 1].end);
-
-        budget.spend(text.len())?;
-
-        if let Some(definition) = references::definition(&text, budget, normalize)? {
-            found = Some((last, definition));
-
-            if last == lines.len()
-                || !input
-                    .line(last)
-                    .trim_start_matches([' ', '\t'])
-                    .starts_with(['\'', '"', '('])
-            {
-                break;
-            }
-        }
-
-        if last == first + 1
-            && references::label_end(line.trim_start_matches([' ', '\t'])).is_some()
-            && !line.contains("]:")
-        {
-            break;
-        }
-
-        last += 1;
     }
-
-    Ok(found)
+    // Restore authored tabs only within the accepted prefix, never by copying
+    // an ever-growing candidate or the remainder of the document.
+    let literal = input.source.literal(start..input.lines[end - 1].end);
+    if let std::borrow::Cow::Owned(literal) = literal {
+        let Some(restored) = references::definition(&literal, budget)? else {
+            return Ok(None);
+        };
+        value = restored;
+    }
+    Ok(Some(DefinitionMatch { end, value }))
 }

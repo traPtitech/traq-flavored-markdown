@@ -1,4 +1,7 @@
-use super::{destination::destination, url};
+use super::{
+    destination::{ParsedDestination, destination},
+    url,
+};
 use crate::references;
 use markdown_commonmark_contracts::LinkForm;
 
@@ -10,27 +13,9 @@ use markdown_parser::{
     },
 };
 
-#[derive(Clone, Copy)]
-pub struct LinkOptions {
-    pub direct_images: bool,
-    pub nested_autolinks: bool,
-    pub normalize: fn(&str) -> Option<String>,
-}
-
-impl Default for LinkOptions {
-    fn default() -> Self {
-        Self {
-            direct_images: true,
-            nested_autolinks: false,
-            normalize: |value| Some(url::encode(value)),
-        }
-    }
-}
-
 pub fn link(
     input: &InlineInput<'_>,
     budget: &mut Budget,
-    options: LinkOptions,
 ) -> Result<Option<InlineMatch>, ParseError> {
     let source = &input.source.text();
     let pos = input.position;
@@ -41,7 +26,7 @@ pub fn link(
             end: pos + if image { 2 } else { 1 },
             action: InlineAction::OpenBracket {
                 tag: if image { "image" } else { "link" },
-                inhibit_on_inner: !image || !options.direct_images,
+                inhibit_on_inner: !image,
             },
         }));
     }
@@ -61,10 +46,10 @@ pub fn link(
         return Ok(discard());
     };
 
-    let direct = destination(source, pos + 1, budget, options.normalize)?;
-    let image = bracket.tag == "image" && (options.direct_images || direct.is_none());
+    let direct = destination(source, pos + 1, budget)?;
+    let image = bracket.tag == "image";
 
-    let (end, target, title) = if let Some(direct) = direct {
+    let ParsedDestination { end, target, title } = if let Some(direct) = direct {
         direct
     } else {
         let Some(reference) = reference_target(input, source, pos, bracket.label_start) else {
@@ -91,7 +76,6 @@ pub fn link(
         end,
         action: InlineAction::CloseBracket {
             kind,
-            prefix: usize::from(bracket.tag == "image" && !image),
             inhibit_brackets: !image,
         },
     }))
@@ -102,7 +86,7 @@ fn reference_target(
     source: &str,
     pos: usize,
     label_start: usize,
-) -> Option<(usize, String, Option<String>)> {
+) -> Option<ParsedDestination> {
     let mut label = &source[label_start..pos];
     let mut end = pos + 1;
 
@@ -120,13 +104,16 @@ fn reference_target(
         .state::<references::ReferenceMap>()?
         .0
         .get(&references::key(label))?;
-    Some((end, target.clone(), title.clone()))
+    Some(ParsedDestination {
+        end,
+        target: target.clone(),
+        title: title.clone(),
+    })
 }
 
 pub fn autolink(
     input: &InlineInput<'_>,
     budget: &mut Budget,
-    options: LinkOptions,
 ) -> Result<Option<InlineMatch>, ParseError> {
     let source = &input.source.text();
     let pos = input.position;
@@ -154,13 +141,11 @@ pub fn autolink(
         return Ok(None);
     }
 
-    let Some(destination) = (options.normalize)(&if email {
+    let destination = url::encode(&if email {
         format!("mailto:{value}")
     } else {
         value.into()
-    }) else {
-        return Ok(None);
-    };
+    });
 
     let children = vec![Node::leaf(
         input.source.span_for(pos + 1..end)?,
@@ -178,7 +163,7 @@ pub fn autolink(
                 form: LinkForm::Autolink,
             }),
             children,
-            inhibit_brackets: !options.nested_autolinks,
+            inhibit_brackets: true,
         },
     }))
 }

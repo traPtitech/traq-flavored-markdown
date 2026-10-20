@@ -29,7 +29,7 @@ let document = Document {
     children: vec![Node::leaf(Span { start: 0, end: 0 }, Reference("id".into()))],
 };
 assert_eq!(extractor.extract(&document)?, ["id"]);
-# Ok::<(), &'static str>(())
+# Ok::<(), markdown_extractor::Error>(())
 ```
 
 The result type must implement `Default`; every call gets a new result. Handlers
@@ -38,6 +38,8 @@ result type does not need `Clone`, `Send`, or `Sync`.
 
 Plugins are snapshot-based. Adding, removing, or editing a plugin never changes
 an existing builder, preset, or extractor. Duplicate handlers are rejected.
+`register` returns a stable registration handle; `remove` consumes its identity
+independently of later edits to the original plugin.
 
 `extract` validates the whole tree and visits every node in document order
 (parent, descendants, next sibling). Unhandled nodes are still validated and

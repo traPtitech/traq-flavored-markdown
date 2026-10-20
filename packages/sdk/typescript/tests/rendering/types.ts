@@ -4,11 +4,11 @@ import {
   names
 } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { plugin } from '@traq-flavored-markdown/commonmark-plugin/renderer'
-import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
+import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
 import {
-  Plugin,
   PresetBuilder,
   type RenderContext,
+  RenderPlugin,
   renderer
 } from '@traq-flavored-markdown/core/renderer'
 import {
@@ -16,7 +16,7 @@ import {
   createRuntime,
   presets
 } from '@traq-flavored-markdown/sdk'
-import type { Store } from '@traq-flavored-markdown/traq-plugin/renderer'
+import type { ReferenceResolver } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)
@@ -38,37 +38,37 @@ const openResult: string = view.render(openDocument)
 const custom = plugin().replace(names.Link, (node, context) => {
   if (isKnownNode(node) && node.kind === names.Link) {
     const destination: string = node.data.destination
-    return context.escape(destination) + context.render(node.children)
+    return context.escape(destination) + context.renderChildren()
   }
   return context.fallback(node)
 })
 const builder = new PresetBuilder().add(custom)
-const declaration = Declaration.group('custom').new('annotation')
+const declaration = Declaration.group('custom').plugin('annotation')
 builder.add(
-  new Plugin(declaration).on('custom::annotation', (node, context) =>
-    context.render(node.children)
+  new RenderPlugin(declaration).on('custom::annotation', (node, context) =>
+    context.renderChildren()
   )
 )
-const store: Store = {
-  getMe: () => ({ id: 'me' }),
-  generateUserHref: id => '#' + id
-}
+const resolve: ReferenceResolver = ({ id }) => ({
+  href: '#' + id,
+  highlight: id === 'me'
+})
 renderer(
   rendering.htmlPreset({
-    store,
-    math: tex => tex,
-    highlight: code => ({ kind: 'content', html: code })
+    references: { resolve },
+    math: { render: tex => tex },
+    code: { highlight: code => ({ kind: 'content', html: code }) }
   })
 )
 
 // @ts-expect-error handlers return HTML strings
-new Plugin(declaration).on('invalid', () => [])
+new RenderPlugin(declaration).on('invalid', () => [])
 // @ts-expect-error presets have runtime identity
 renderer({})
 // @ts-expect-error shared declarations are explicit objects
-new Plugin('name')
+new RenderPlugin('name')
 declare const context: RenderContext
-const renderedChildren: string = context.render([])
+const renderedChildren: string = context.renderChildren()
 void [
   result,
   messageHtml,
@@ -81,8 +81,9 @@ void [
 // @ts-expect-error html returns a renderer; use htmlPreset for composition.
 renderer(rendering.html())
 
-// @ts-expect-error Choose a message presentation before rendering.
-messageView.render(parser.parse('text'))
+const bothViews = messageView.render(parser.parse('text'))
+const prepared = messageView.prepare(parser.parse('text'))
+void [bothViews.standard.renderedText, prepared.condensed().renderedText]
 // @ts-expect-error Each message renderer exposes only render.
 messageView.condensed.renderInline(parser.parse('text'))
 

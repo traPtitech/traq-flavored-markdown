@@ -8,7 +8,7 @@ use crate::{
 pub(super) fn children_budget(nodes: &[Node], budget: &mut Budget) -> Result<(), ParseError> {
     let mut pending: Vec<_> = nodes.iter().collect();
     while let Some(node) = pending.pop() {
-        budget.token()?;
+        budget.node()?;
         pending.extend(&node.children);
     }
     Ok(())
@@ -45,9 +45,8 @@ pub(super) fn matched(
 
         InlineAction::CloseBracket {
             kind,
-            prefix,
             inhibit_brackets,
-        } => brackets::close(state, end, kind, prefix, inhibit_brackets)?,
+        } => brackets::close(state, end, kind, inhibit_brackets)?,
 
         InlineAction::DiscardBracket => {
             state.brackets.pop();
@@ -55,7 +54,11 @@ pub(super) fn matched(
         }
     }
 
-    state.position = end;
+    let mut cursor = state
+        .source
+        .cursor(state.source.offset(start)?, state.budget)?;
+    cursor.advance(end - start)?;
+    state.position = cursor.position().get();
 
     Ok(())
 }
@@ -126,17 +129,13 @@ fn apply_delimiter(
             start + offset,
             start + offset + pairing.width,
             TokenKind::Marker(
-                state.source.text[start + offset..start + offset + pairing.width].into(),
+                state.source.text()[start + offset..start + offset + pairing.width].into(),
             ),
         )?;
 
         state.delimiters.push(Delimiter {
             key: (key, pairing.marker),
-            length: if pairing.rule_of_three {
-                pairing.run_length
-            } else {
-                0
-            },
+            length: pairing.run_length,
             token,
             open: pairing.open,
             close: pairing.close,
@@ -159,7 +158,7 @@ fn validate_delimiter(
     }
 
     if !(end - start).is_multiple_of(pairing.width)
-        || !source.text.as_bytes()[start..end]
+        || !source.text().as_bytes()[start..end]
             .iter()
             .all(|byte| *byte == pairing.marker)
     {
@@ -176,6 +175,7 @@ fn open_bracket(
     tag: &'static str,
     inhibit_on_inner: bool,
 ) -> Result<(), ParseError> {
+    state.budget.nesting(state.brackets.len() + 1)?;
     state.brackets.push(Bracket {
         token: state.tokens.len(),
         bottom: state.delimiters.len(),
@@ -190,6 +190,6 @@ fn open_bracket(
     state.push(
         start,
         end,
-        TokenKind::Marker(state.source.text[start..end].into()),
+        TokenKind::Marker(state.source.text()[start..end].into()),
     )
 }

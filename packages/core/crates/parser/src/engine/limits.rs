@@ -32,6 +32,10 @@ pub struct Limits {
     pub document: ValidationLimits,
     /// Parser-specific work budget, including failed rule attempts.
     pub work: usize,
+    /// Maximum intermediate tokens, independent of the final AST size.
+    pub tokens: usize,
+    /// Maximum syntax nesting while scanning blocks, brackets, and destinations.
+    pub nesting: usize,
 }
 
 impl Default for Limits {
@@ -39,6 +43,8 @@ impl Default for Limits {
         Self {
             document: ValidationLimits::default(),
             work: 2_000_000,
+            tokens: 16_384,
+            nesting: 64,
         }
     }
 }
@@ -47,6 +53,7 @@ impl Default for Limits {
 pub struct Budget {
     pub(crate) limits: Limits,
     tokens: usize,
+    nodes: usize,
     work: usize,
 }
 
@@ -55,6 +62,7 @@ impl Budget {
         Self {
             limits,
             tokens: 0,
+            nodes: 0,
             work: 0,
         }
     }
@@ -82,16 +90,28 @@ impl Budget {
             .checked_add(1)
             .ok_or_else(|| ParseError::limit("tokens"))?;
 
-        if self.tokens > self.limits.document.nodes {
+        if self.tokens > self.limits.tokens {
             return Err(ParseError::limit("tokens"));
         }
 
         Ok(())
     }
 
-    pub fn depth(&self, depth: usize) -> Result<(), ParseError> {
-        if depth > self.limits.document.depth {
-            return Err(ParseError::limit("depth"));
+    /// Charge a final AST node before it is inserted into an output vector.
+    pub fn node(&mut self) -> Result<(), ParseError> {
+        self.nodes = self
+            .nodes
+            .checked_add(1)
+            .ok_or_else(|| ParseError::limit("nodes"))?;
+        if self.nodes > self.limits.document.nodes {
+            return Err(ParseError::limit("nodes"));
+        }
+        Ok(())
+    }
+
+    pub fn nesting(&self, depth: usize) -> Result<(), ParseError> {
+        if depth > self.limits.nesting {
+            return Err(ParseError::limit("nesting"));
         }
 
         Ok(())

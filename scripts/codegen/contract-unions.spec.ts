@@ -6,8 +6,8 @@ import ts from 'typescript'
 
 import { packageRoot } from '../paths.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
-import { javascript } from './javascript.ts'
 import type { RawSchema } from './schema.ts'
+import { emitTypeScriptValidators } from './typescript-validators.ts'
 
 test('tagged Rust unions validate their discriminators and variant fields', async () => {
   const schema: RawSchema = {
@@ -53,10 +53,11 @@ test('tagged Rust unions validate their discriminators and variant fields', asyn
       }
     }
   }
-  const source = javascript(
+  const source = emitTypeScriptValidators(
     [['example::StampData', schema]],
     pathToFileURL(path.join(packageRoot('core'), 'typescript', 'validation.ts'))
-      .href
+      .href,
+    pathToFileURL(path.join(packageRoot('core'), 'typescript', 'nodes.ts')).href
   )
   const compiled = ts.transpileModule(source, {
     compilerOptions: {

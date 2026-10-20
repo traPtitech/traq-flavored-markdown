@@ -1,5 +1,5 @@
 use markdown_commonmark_contracts::{Link, Text};
-use markdown_generic_contracts::TableData;
+use markdown_generic_contracts::Table;
 use traq_markdown_grammar::presets;
 
 #[test]
@@ -9,7 +9,7 @@ fn table_pipes_follow_backslash_parity() {
     let even = "| a\\\\| b | c |\n| --- | --- | --- |\n| x | y | z |";
     let document = parser.parse(even).unwrap();
     let table = &document.children[0];
-    assert!(table.get::<TableData>().is_some());
+    assert!(table.get::<Table>().is_some());
     assert_eq!(table.children[0].children.len(), 3);
     assert_eq!(
         table.children[0].children[0].children[0]
@@ -22,7 +22,7 @@ fn table_pipes_follow_backslash_parity() {
     let odd = "| a\\\\\\| b | c |\n| --- | --- |\n| x | y |";
     let document = parser.parse(odd).unwrap();
     let table = &document.children[0];
-    assert!(table.get::<TableData>().is_some());
+    assert!(table.get::<Table>().is_some());
     assert_eq!(table.children[0].children.len(), 2);
     assert_eq!(
         table.children[0].children[0].children[0]

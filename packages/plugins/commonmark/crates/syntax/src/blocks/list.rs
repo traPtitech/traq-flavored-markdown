@@ -1,10 +1,13 @@
+use super::Interrupt;
 use super::markers::*;
+use markdown_commonmark_contracts::{BulletMarker, ListKind, OrderedDelimiter};
+use markdown_parser::engine::block::LineIndex;
 
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
         Budget,
-        block::{BlockInput, BlockMatch, DraftNode, Interrupt},
+        block::{BlockInput, BlockMatch, DraftNode, ResolvedBlock},
     },
 };
 
@@ -26,7 +29,7 @@ pub(super) fn parse(
     let mut children = vec![];
     let mut tight = true;
 
-    while i < lines.len() {
+    while i < lines.end() {
         if thematic(content(source, &lines[i])) {
             break;
         }
@@ -44,7 +47,7 @@ pub(super) fn parse(
         let lazy = super::paragraph::paragraph_start(first_content, input);
 
         let end = if first_content.is_empty()
-            && (i + 1 == lines.len() || blank(content(source, &lines[i + 1])))
+            && (i + 1 == lines.end() || blank(content(source, &lines[i + 1])))
         {
             lines[i].start + marker.content
         } else {
@@ -74,9 +77,7 @@ pub(super) fn parse(
         budget.token()?;
         children.push(DraftNode::blocks(
             source.span_for(lines[item_start].start..lines[i - 1].end)?,
-            NodeKind::new(markdown_commonmark_contracts::ListItem {
-                marker: marker.text,
-            }),
+            NodeKind::new(markdown_commonmark_contracts::ListItem {}),
             source.join(&ranges)?,
         ));
     }
@@ -84,8 +85,24 @@ pub(super) fn parse(
     let mut node = DraftNode::nodes(
         source.span_for(lines[first].start..lines[i - 1].end)?,
         NodeKind::new(markdown_commonmark_contracts::List {
-            ordered: first_marker.ordered,
-            start: first_marker.start,
+            kind: if first_marker.ordered {
+                ListKind::Ordered {
+                    start: first_marker.start,
+                    delimiter: if first_marker.delimiter == b'.' {
+                        OrderedDelimiter::Period
+                    } else {
+                        OrderedDelimiter::Parenthesis
+                    },
+                }
+            } else {
+                ListKind::Bullet {
+                    marker: match first_marker.delimiter {
+                        b'-' => BulletMarker::Dash,
+                        b'+' => BulletMarker::Plus,
+                        _ => BulletMarker::Asterisk,
+                    },
+                }
+            },
             tight,
         }),
         children,
@@ -102,25 +119,27 @@ fn collect_continuation(
     marker: &Marker,
     first_content: &str,
     lazy: bool,
-    mut i: usize,
+    mut i: LineIndex,
     ranges: &mut Vec<Range<usize>>,
-) -> (usize, bool) {
+) -> (LineIndex, bool) {
     let source = input.source;
     let lines = input.lines;
 
     let mut item_tight = true;
 
-    while i < lines.len() {
+    while i < lines.end() {
         let continuation = content(source, &lines[i]);
 
         if blank(continuation) {
-            let next = (i + 1..lines.len()).find(|j| !blank(content(source, &lines[*j])));
+            let next = lines
+                .indices(i + 1..lines.end())
+                .find(|j| !blank(content(source, &lines[*j])));
 
             let Some(next) = next else {
                 if !blank(first_content) {
                     ranges.extend_from_slice(&lines[i..]);
                 }
-                return (lines.len(), item_tight);
+                return (lines.end(), item_tight);
             };
 
             let next_line = content(source, &lines[next]);
@@ -185,9 +204,11 @@ fn unindent_blank_continuations(
     }
 }
 
-fn finish_list(node: &mut DraftNode) {
+fn finish_list(node: &mut ResolvedBlock) {
     let loose = node.children().iter().any(|item| {
-        item.is_loose()
+        item.metadata
+            .get::<super::policy::BlockSpacing>()
+            .is_some_and(|spacing| spacing.loose)
             || item
                 .children()
                 .iter()

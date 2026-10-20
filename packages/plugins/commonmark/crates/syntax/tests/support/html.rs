@@ -58,12 +58,16 @@ fn render_node(node: &Node, tight: bool) -> String {
     } else if node.get::<Blockquote>().is_some() {
         format!("<blockquote>\n{}</blockquote>\n", nested())
     } else if let Some(list) = node.get::<List>() {
-        let tag = if list.ordered { "ol" } else { "ul" };
-
-        let start = if list.ordered && list.start != 1 {
-            format!(" start=\"{}\"", list.start)
-        } else {
-            String::new()
+        let (tag, start) = match list.kind {
+            ListKind::Ordered { start, .. } => (
+                "ol",
+                if start != 1 {
+                    format!(" start=\"{start}\"")
+                } else {
+                    String::new()
+                },
+            ),
+            ListKind::Bullet { .. } => ("ul", String::new()),
         };
 
         format!(

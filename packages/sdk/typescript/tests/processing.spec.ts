@@ -1,11 +1,65 @@
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
+import structureFixtures from '../../../../tests/fixtures/document-structure.json' with { type: 'json' }
 import { createRuntime, presets } from '../../dist/index.js'
+import type { Document } from '../../dist/index.js'
 
 const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
 ).bytes()
+
+test('native Wasm operations follow the shared cross-language structure contract', async () => {
+  const runtime = await createRuntime(bytes)
+  try {
+    const extractor = runtime.createExtractor()
+    const renderer = runtime.createRenderer()
+    for (const fixture of structureFixtures) {
+      const document = fixture.document as Document
+      for (const operation of [
+        () => extractor.extract(document),
+        () => renderer.render(document)
+      ]) {
+        if (fixture.valid) expect(operation, fixture.name).not.toThrow()
+        else {
+          let failure: unknown
+          try {
+            operation()
+          } catch (error) {
+            failure = error
+          }
+          expect(failure, fixture.name).toMatchObject({
+            code: 'invalid_document'
+          })
+        }
+      }
+    }
+  } finally {
+    runtime.dispose()
+  }
+})
+
+test('native text rendering and extraction resolve omitted options and expose typed failures', async () => {
+  const runtime = await createRuntime(bytes)
+  try {
+    const parser = runtime.createParser(presets.traq.v1)
+    const extractor = runtime.createExtractor()
+    const renderer = runtime.createRenderer()
+    const document = parser.parse('**hello** world')
+    expect(extractor.extract(document).messageText).toBe('**hello** world')
+    expect(renderer.render(document)).toBe('hello world')
+    renderer.dispose()
+    try {
+      renderer.render(document)
+      throw new Error('Expected disposed error')
+    } catch (error) {
+      expect(error).toMatchObject({ code: 'disposed', operation: 'render' })
+    }
+    expect(extractor.extract(document).messageText).toBe(document.source)
+  } finally {
+    runtime.dispose()
+  }
+})
 
 test('processing rejects malformed sibling spans without poisoning the extractor', async () => {
   const runtime = await createRuntime(bytes)
@@ -51,8 +105,8 @@ test('processing consumes the supplied AST and returns metadata without renderin
   expect(Object.keys(output).sort()).toEqual([
     'attachments',
     'citations',
-    'embedding',
     'messageText',
+    'referenceEmbedding',
     'references'
   ])
   expect(output.messageText).toBe('**@alice**')

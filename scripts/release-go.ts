@@ -4,10 +4,10 @@ import {
   type GoModule,
   type GoPackageGraph,
   readGoPackageGraph,
-  readNpmPackageGraph,
   validateGoOwnership
 } from './package-graph.ts'
 import { repositoryRoot } from './paths.ts'
+import { goVersion } from './release/version.ts'
 
 type GoWork = {
   Use: { DiskPath: string }[] | null
@@ -21,7 +21,7 @@ type GoWork = {
 
 async function releaseGraph(root: string) {
   const go = await readGoPackageGraph(root)
-  validateGoOwnership(go, (await readNpmPackageGraph()).graph)
+  validateGoOwnership(go)
   return go
 }
 
@@ -107,15 +107,14 @@ export async function runGoRelease(args: string[], root = repositoryRoot) {
   const [version, mode, ...rest] = args
   if (
     !version ||
-    !/^v(?:0|1)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/.test(
-      version
-    ) ||
     !['--prepare', '--check', '--tags'].includes(mode ?? '') ||
     rest.length
   )
     throw new Error(
       'usage: bun scripts/release-go.ts v<0-or-1>.<minor>.<patch> [--prepare|--check|--tags]'
     )
+
+  goVersion(version)
 
   let graph = await releaseGraph(root)
   if (mode === '--tags') {

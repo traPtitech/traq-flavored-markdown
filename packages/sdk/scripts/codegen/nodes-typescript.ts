@@ -25,7 +25,8 @@ export function typescriptFiles(manifest: {
       ' AstNode<NodeKind | (AllowUnknown extends true ? {kind:string;data:unknown} : never)>;\n' +
       'export type Document<AllowUnknown extends boolean = false> = AstDocument<NodeKind | (AllowUnknown extends true ? {kind:string;data:unknown} : never)>;\n' +
       `export const names = Object.freeze({${owners.map(g => `...${g}.names`).join(',')}});\n` +
-      `const validators = new Map<string,(data:unknown)=>boolean>([${owners.map(g => `...${g}.nodes`).join(',')}]);\n` +
+      `export const definitions = Object.freeze({${owners.map(g => `...${g}.definitions`).join(',')}});\n` +
+      'const validators = new Map<string,(data:unknown)=>boolean>(Object.values(definitions).map(definition => [definition.kind, definition.validateData]));\n' +
       'export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map(validators);\n' +
       'export function isKnownNode(node:Node<true>):node is Node<true> & NodeKind {return validators.get(node.kind)?.(node.data) ?? false;}\n' +
       [...typescriptDeclarations([manifest.parseError]).values()].join('\n')

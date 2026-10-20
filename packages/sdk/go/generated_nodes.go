@@ -4,7 +4,7 @@ package markdown
 import (
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
-	generic "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go/generic"
+	generic "github.com/traPtitech/traq-flavored-markdown/packages/plugins/extensions/go"
 	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
@@ -14,6 +14,9 @@ type Span = ast.Span
 type Payload = ast.Payload
 
 func DecodeDocument(raw []byte) (*Document, error) { return ast.DecodeDocument(raw, newPayload) }
+func ValidateDocument(document *Document) (*ast.ValidatedDocument, error) {
+	return ast.ValidateDocument(document, newPayload)
+}
 func newPayload(kind string) ast.Payload {
 	if value := commonmark.NewPayload(kind); value != nil {
 		return value

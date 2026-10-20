@@ -1,6 +1,6 @@
-use markdown_commonmark_contracts::{Link, Text};
+use markdown_commonmark_contracts::Link;
 use markdown_parser::{Limits, Node, ParseError, ValidationLimits};
-use markdown_trap_contracts::{StampData, StampKind};
+use markdown_trap_contracts::{Stamp, StampKind};
 use traq_markdown_grammar::presets;
 
 fn has_link(nodes: &[Node]) -> bool {
@@ -25,27 +25,18 @@ fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
                 name: "0x1234567".into(),
             },
         ),
-        (
-            ":0x123456:",
-            StampKind::HexColor {
-                name: "0x123456".into(),
-                rgb: 0x123456,
-            },
-        ),
+        (":0x123456:", StampKind::HexColor { rgb: 0x123456 }),
     ] {
         let document = parser.parse_inline(source).unwrap();
         assert_eq!(document.children.len(), 1, "{source}");
-        assert_eq!(
-            document.children[0].get::<StampData>().unwrap().kind,
-            expected
-        );
+        assert_eq!(document.children[0].get::<Stamp>().unwrap().kind, expected);
     }
     let document = parser.parse_inline(":foohsl(0, 20%, 30%):").unwrap();
     assert!(
         document
             .children
             .iter()
-            .all(|node| node.get::<StampData>().is_none())
+            .all(|node| node.get::<Stamp>().is_none())
     );
 }
 
@@ -78,7 +69,7 @@ fn limits_cover_multibyte_input_and_nested_results() {
                 },
                 ..Limits::default()
             },
-            "input_bytes",
+            "source_bytes",
         ),
         (
             "**a *b***",
@@ -100,7 +91,7 @@ fn limits_cover_multibyte_input_and_nested_results() {
                 },
                 ..Limits::default()
             },
-            "tokens",
+            "nodes",
         ),
     ] {
         assert!(
@@ -113,15 +104,79 @@ fn limits_cover_multibyte_input_and_nested_results() {
 #[test]
 fn syntax_and_rendering_policy_are_separate() {
     let source = "[x](javascript:alert) <file:///a>";
-    let commonmark = presets::commonmark::parser().parse_inline(source).unwrap();
-    assert_eq!(
-        commonmark
+    for parser in [presets::commonmark::parser(), presets::traq::v1::parser()] {
+        let document = parser.parse_inline(source).unwrap();
+        let destinations: Vec<_> = document
             .children
             .iter()
-            .filter(|n| n.get::<Link>().is_some())
-            .count(),
-        2
+            .filter_map(|node| node.get::<Link>())
+            .map(|link| link.destination.as_str())
+            .collect();
+        assert_eq!(destinations, ["javascript:alert", "file:///a"]);
+    }
+}
+
+#[test]
+fn intermediate_tokens_syntax_nesting_and_final_tree_limits_are_independent() {
+    for (source, limits, resource) in [
+        (
+            "**a**",
+            Limits {
+                tokens: 1,
+                ..Limits::default()
+            },
+            "tokens",
+        ),
+        (
+            "[a](/url)",
+            Limits {
+                nesting: 0,
+                ..Limits::default()
+            },
+            "nesting",
+        ),
+        (
+            "*a*",
+            Limits {
+                document: ValidationLimits {
+                    depth: 1,
+                    ..ValidationLimits::default()
+                },
+                ..Limits::default()
+            },
+            "depth",
+        ),
+        (
+            "a *b*",
+            Limits {
+                document: ValidationLimits {
+                    nodes: 1,
+                    ..ValidationLimits::default()
+                },
+                ..Limits::default()
+            },
+            "nodes",
+        ),
+    ] {
+        let result = presets::traq::v1::parser()
+            .with_limits(limits)
+            .parse_inline(source);
+        assert!(
+            matches!(result, Err(ParseError::ResourceLimit { resource: actual }) if actual == resource),
+            "{source}: {resource}"
+        );
+    }
+    assert!(
+        presets::traq::v1::parser()
+            .with_limits(Limits {
+                nesting: 0,
+                document: ValidationLimits {
+                    nodes: 1,
+                    ..ValidationLimits::default()
+                },
+                ..Limits::default()
+            })
+            .parse_inline("ordinary text")
+            .is_ok()
     );
-    let traq = presets::traq::v1::parser().parse_inline(source).unwrap();
-    assert!(traq.children.iter().all(|n| n.get::<Text>().is_some()));
 }

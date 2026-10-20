@@ -1,6 +1,9 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span, ValidationError, ValidationLimits};
+use markdown_ast::{
+    Document, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
+};
 use markdown_commonmark_contracts::{
-    Blockquote, Heading, Link, LinkForm, List, ListItem, Paragraph, Text,
+    Blockquote, Heading, Link, LinkForm, List, ListItem, ListKind, OrderedDelimiter, Paragraph,
+    Text,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -34,63 +37,69 @@ fn paragraph() -> Node {
 }
 
 #[test]
-fn list_children_and_markers_follow_the_list_contract() {
-    let item = |marker: &str| {
-        Node::new(
-            span(),
-            ListItem {
-                marker: marker.into(),
-            },
-            vec![paragraph()],
-        )
-    };
-    let list = |children| Document {
+fn lists_store_one_semantic_kind_and_validate_item_shape() {
+    let item = || Node::new(span(), ListItem {}, vec![paragraph()]);
+    let list = |start, children| Document {
         source: String::new(),
         children: vec![Node::new(
             span(),
             List {
-                ordered: true,
-                start: 3,
+                kind: ListKind::Ordered {
+                    start,
+                    delimiter: OrderedDelimiter::Period,
+                },
                 tight: true,
             },
             children,
         )],
     };
-
     assert!(
-        list(vec![item("3."), item("4.")])
+        list(3, vec![item(), item()])
             .validate(ValidationLimits::default())
             .is_ok()
     );
-    for children in [
-        vec![],
-        vec![item("2.")],
-        vec![item("3."), item("4)")],
-        vec![item("3."), paragraph()],
+    assert!(
+        list(999_999_999, vec![item()])
+            .validate(ValidationLimits::default())
+            .is_ok()
+    );
+    for document in [
+        list(3, vec![]),
+        list(3, vec![item(), paragraph()]),
+        list(1_000_000_000, vec![item()]),
     ] {
         assert_eq!(
-            list(children).validate(ValidationLimits::default()),
-            Err(ValidationError::InvalidNode)
+            document
+                .validate(ValidationLimits::default())
+                .map_err(|error| error.kind),
+            Err(ValidationErrorKind::InvalidNode)
         );
     }
-
-    assert!(!item("1234567890.").validate());
     assert!(
-        !Node::new(
+        Node::new(
             span(),
-            ListItem { marker: "-".into() },
-            vec![Node::leaf(span(), Text { value: "x".into() })],
+            ListItem {},
+            vec![Node::leaf(span(), Text { value: "x".into() })]
         )
         .validate()
+        .is_err()
     );
 }
 
 #[test]
 fn known_block_nodes_cannot_be_children_of_inline_containers() {
-    assert!(!Node::new(span(), Paragraph {}, vec![paragraph()]).validate());
-    assert!(!Node::new(span(), Heading { level: 1 }, vec![paragraph()],).validate());
     assert!(
-        !Node::new(
+        Node::new(span(), Paragraph {}, vec![paragraph()])
+            .validate()
+            .is_err()
+    );
+    assert!(
+        Node::new(span(), Heading { level: 1 }, vec![paragraph()],)
+            .validate()
+            .is_err()
+    );
+    assert!(
+        Node::new(
             span(),
             Link {
                 destination: "/".into(),
@@ -100,6 +109,7 @@ fn known_block_nodes_cannot_be_children_of_inline_containers() {
             vec![paragraph()],
         )
         .validate()
+        .is_err()
     );
 }
 
@@ -112,14 +122,16 @@ fn parent_contracts_use_external_plugin_roles() {
             vec![Node::leaf(span(), ExternalInline)]
         )
         .validate()
+        .is_ok()
     );
     assert!(
-        !Node::new(
+        Node::new(
             span(),
             Paragraph {},
             vec![Node::leaf(span(), ExternalBlock)]
         )
         .validate()
+        .is_err()
     );
     assert!(
         Node::new(
@@ -128,29 +140,29 @@ fn parent_contracts_use_external_plugin_roles() {
             vec![Node::leaf(span(), ExternalBlock)]
         )
         .validate()
+        .is_ok()
     );
     assert!(
-        !Node::new(
+        Node::new(
             span(),
             Blockquote {},
             vec![Node::leaf(span(), ExternalInline)]
         )
         .validate()
+        .is_err()
+    );
+    assert!(
+        Node::new(span(), ListItem {}, vec![Node::leaf(span(), ExternalBlock)])
+            .validate()
+            .is_ok()
     );
     assert!(
         Node::new(
             span(),
-            ListItem { marker: "-".into() },
-            vec![Node::leaf(span(), ExternalBlock)]
-        )
-        .validate()
-    );
-    assert!(
-        !Node::new(
-            span(),
-            ListItem { marker: "-".into() },
+            ListItem {},
             vec![Node::leaf(span(), ExternalInline)]
         )
         .validate()
+        .is_err()
     );
 }

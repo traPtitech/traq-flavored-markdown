@@ -6,16 +6,16 @@ export class GitRepo {
   constructor(public repoPath: string) {}
 
   async exec(args: string[]) {
-    return (await $`git -C ${path.resolve(this.repoPath)} ${args}`.quiet())
-      .text()
-      .trim()
+    return (
+      await $`git -C ${path.resolve(this.repoPath)} ${args}`.quiet()
+    ).text()
   }
 
   async revParse(ref: string) {
-    return this.exec(['rev-parse', ref])
+    return (await this.exec(['rev-parse', ref])).trim()
   }
 
   async show(ref: string, file: string) {
-    return (await this.exec(['show', `${ref}:${file}`])) + '\n'
+    return this.exec(['show', `${ref}:${file}`])
   }
 }

@@ -86,8 +86,8 @@ fn process_rule(
             if found.start < begin
                 || found.start >= found.end
                 || found.end > token.end
-                || !source.text.is_char_boundary(found.start)
-                || !source.text.is_char_boundary(found.end)
+                || !source.text().is_char_boundary(found.start)
+                || !source.text().is_char_boundary(found.end)
             {
                 return Err(ParseError::InternalError);
             }
@@ -97,7 +97,7 @@ fn process_rule(
                 result.push(Token {
                     start: begin,
                     end: found.start,
-                    kind: TokenKind::Text(source.text[begin..found.start].into()),
+                    kind: TokenKind::Text(source.text()[begin..found.start].into()),
                 });
             }
 
@@ -117,7 +117,7 @@ fn process_rule(
             result.push(Token {
                 start: begin,
                 end: token.end,
-                kind: TokenKind::Text(source.text[begin..token.end].into()),
+                kind: TokenKind::Text(source.text()[begin..token.end].into()),
             });
         }
 

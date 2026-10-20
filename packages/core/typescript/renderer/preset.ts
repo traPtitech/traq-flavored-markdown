@@ -1,11 +1,16 @@
+import type { NodeDefinition } from '../nodes.js'
 import type { PluginGroup } from './definitions.js'
-import type { Implementation, Plugin } from './plugin.js'
+import type { Implementation, RenderPlugin } from './plugin.js'
 import { implementation } from './plugin.js'
 import type { Fallback, Handler, Preset } from './types.js'
 
 const presets = new WeakMap<
   Preset,
-  { handlers: Map<string, Handler>; fallback: Fallback }
+  {
+    handlers: Map<string, Handler>
+    definitions: Map<string, NodeDefinition>
+    fallback: Fallback
+  }
 >()
 
 const defaultFallback: Fallback = text => text
@@ -49,12 +54,13 @@ function validateNames(plugins: Implementation[]) {
 }
 
 export class PresetBuilder {
-  #plugins: Plugin[] = []
+  #plugins = new Map<RegistrationHandle, RenderPlugin>()
 
-  add(plugin: Plugin) {
+  #validate(plugin: RenderPlugin, replaced?: RegistrationHandle) {
     const state = implementation(plugin)
 
-    for (const existing of this.#plugins) {
+    for (const [handle, existing] of this.#plugins) {
+      if (handle === replaced) continue
       const current = implementation(existing)
       if (current.declaration === state.declaration)
         throw new Error('Duplicate plugin')
@@ -63,20 +69,29 @@ export class PresetBuilder {
         if (current.handlers.has(kind))
           throw new Error('Duplicate handler: ' + kind)
     }
+  }
 
-    this.#plugins.push(plugin)
+  register(plugin: RenderPlugin): RegistrationHandle {
+    this.#validate(plugin)
+    const handle = Object.freeze({}) as RegistrationHandle
+    this.#plugins.set(handle, plugin)
+    return handle
+  }
+
+  add(plugin: RenderPlugin) {
+    this.register(plugin)
     return this
   }
 
-  remove(plugin: Plugin) {
-    const declaration = implementation(plugin).declaration
-    const index = this.#plugins.findIndex(
-      entry => implementation(entry).declaration === declaration
-    )
+  remove(handle: RegistrationHandle) {
+    if (!this.#plugins.delete(handle)) throw new Error('Missing registration')
+    return this
+  }
 
-    if (index < 0) throw new Error('Missing plugin')
-
-    this.#plugins.splice(index, 1)
+  replace(handle: RegistrationHandle, plugin: RenderPlugin) {
+    if (!this.#plugins.has(handle)) throw new Error('Missing registration')
+    this.#validate(plugin, handle)
+    this.#plugins.set(handle, plugin)
     return this
   }
 
@@ -84,16 +99,23 @@ export class PresetBuilder {
     if (typeof fallback !== 'function')
       throw new TypeError('Expected render fallback')
 
-    const plugins = this.#plugins.map(implementation)
+    const plugins = [...this.#plugins.values()].map(implementation)
     validateNames(plugins)
 
     const preset = Object.freeze({}) as Preset
 
     presets.set(preset, {
       handlers: new Map(plugins.flatMap(p => [...p.handlers])),
+      definitions: new Map(plugins.flatMap(p => [...p.definitions])),
       fallback
     })
 
     return preset
   }
+}
+
+declare const registration: unique symbol
+/** A durable registration in one builder, independent of plugin revisions. */
+export interface RegistrationHandle {
+  readonly [registration]: 'renderer-registration'
 }

@@ -7,13 +7,26 @@ import {
   packageRoot,
   repositoryRoot
 } from './paths.ts'
+import { runGoRelease } from './release-go.ts'
+import {
+  type ReleasePorts,
+  inspectRelease,
+  loadReleasePlan,
+  resumeRelease
+} from './release/plan.ts'
+import { parseVersion } from './release/version.ts'
 
 const registry = 'https://registry.npmjs.org'
 const packageName = (name: PackageName) => `@traq-flavored-markdown/${name}`
-const versionPattern =
-  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
-
-type Mode = 'prepare' | 'check' | 'dry-run' | 'publish'
+type Mode =
+  | 'prepare'
+  | 'check'
+  | 'dry-run'
+  | 'publish'
+  | 'plan'
+  | 'files'
+  | 'inspect'
+  | 'resume'
 
 export type Release = {
   version: string
@@ -35,16 +48,15 @@ export type Workspace = {
 }
 
 const usage =
-  'usage: bun scripts/release.ts v<version> [--prepare|--check|--dry-run|--publish]'
+  'usage: bun scripts/release.ts v<version> [--prepare|--check|--dry-run|--plan|--files|--inspect|--publish|--resume]'
 
 const validVersion = (version: string) => {
-  const match = version.match(versionPattern)
-  return (
-    !!match &&
-    !match[5] &&
-    Bun.semver.satisfies(version, `=${version}`) &&
-    !match[4]?.split('.').some(identifier => /^0\d+$/.test(identifier))
-  )
+  try {
+    parseVersion(version)
+    return true
+  } catch {
+    return false
+  }
 }
 
 const internalPeers = (manifest: Manifest, workspace: Workspace) =>
@@ -57,16 +69,21 @@ export const parseRelease = (args: string[]): Release => {
   const version = label?.startsWith('v') ? label.slice(1) : undefined
   if (!version || !validVersion(version) || options.length > 1)
     throw new Error(usage)
-  const mode =
-    options[0] === '--prepare'
-      ? 'prepare'
-      : options[0] === '--check'
-        ? 'check'
-        : options[0] === '--publish'
-          ? 'publish'
-          : !options.length || options[0] === '--dry-run'
-            ? 'dry-run'
-            : undefined
+  const mode = (options[0]?.slice(2) ?? 'dry-run') as Mode
+  if (
+    (options[0] && !options[0].startsWith('--')) ||
+    ![
+      'prepare',
+      'check',
+      'dry-run',
+      'publish',
+      'plan',
+      'files',
+      'inspect',
+      'resume'
+    ].includes(mode)
+  )
+    throw new Error(usage)
   if (!mode) throw new Error(usage)
   return { version, tag: version.includes('-') ? 'next' : 'latest', mode }
 }
@@ -140,16 +157,116 @@ const run = async (args: string[]) => {
   if ((await subprocess.exited) !== 0) throw new Error(`${args[0]} failed`)
 }
 
+async function capture(args: string[]) {
+  const process = Bun.spawn(args, {
+    cwd: repositoryRoot,
+    stdout: 'pipe',
+    stderr: 'pipe'
+  })
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(process.stdout).text(),
+    new Response(process.stderr).text(),
+    process.exited
+  ])
+  if (code) throw new Error(`${args[0]} failed: ${stderr}`)
+  return stdout.trim()
+}
+
+const releasePorts: ReleasePorts = {
+  async npmVersion(name, version) {
+    const response = await fetch(
+      `${registry}/${encodeURIComponent(name)}/${version}`
+    )
+    if (response.status === 404) return false
+    if (!response.ok)
+      throw new Error(
+        `Cannot inspect ${name}@${version}: HTTP ${response.status}`
+      )
+    return true
+  },
+  async tagRevision(tag) {
+    const refs = (
+      await capture([
+        'git',
+        'ls-remote',
+        '--tags',
+        'origin',
+        `refs/tags/${tag}`,
+        `refs/tags/${tag}^{}`
+      ])
+    )
+      .split('\n')
+      .filter(Boolean)
+      .map(line => line.split(/\s+/))
+    return refs.find(([, name]) => name.endsWith('^{}'))?.[0] ?? refs[0]?.[0]
+  },
+  publishPackage: (name, version) =>
+    run([
+      npm,
+      'publish',
+      `--workspace=${name}`,
+      '--ignore-scripts',
+      '--access',
+      'public',
+      `--registry=${registry}`,
+      '--tag',
+      version.distTag
+    ]),
+  async publishTag(tag, revision) {
+    const existing = await capture(['git', 'tag', '--list', tag])
+    if (existing) {
+      const local = await capture(['git', 'rev-parse', `refs/tags/${tag}^{}`])
+      if (local !== revision)
+        throw new Error(
+          `Local tag ${tag} points to ${local}, expected ${revision}`
+        )
+    } else await run(['git', 'tag', '-a', tag, revision, '-m', tag])
+    await run(['git', 'push', 'origin', `refs/tags/${tag}`])
+  }
+}
+
 export const runRelease = async (args: string[]) => {
   const release = parseRelease(args)
+  const plan = await loadReleasePlan(`v${release.version}`)
+  if (
+    ['plan', 'files', 'inspect', 'resume', 'publish'].includes(release.mode)
+  ) {
+    if (release.mode === 'plan') {
+      console.log(JSON.stringify(plan, null, 2))
+      return
+    }
+    if (release.mode === 'files') {
+      for (const file of plan.changedFiles)
+        if (await Bun.file(path.join(repositoryRoot, file)).exists())
+          console.log(file)
+      return
+    }
+    validateWorkspace(await readWorkspace(), release.version)
+    await runGoRelease([plan.version.tag, '--check'])
+    const revision = await capture(['git', 'rev-parse', 'HEAD'])
+    if (release.mode === 'inspect')
+      console.log(
+        JSON.stringify(
+          await inspectRelease(plan, revision, releasePorts),
+          null,
+          2
+        )
+      )
+    else
+      await resumeRelease(
+        plan,
+        revision,
+        releasePorts,
+        release.mode === 'publish'
+      )
+    return
+  }
   const workspace = await readWorkspace()
   const graph = validateWorkspace(
     workspace,
     release.mode === 'prepare' ? undefined : release.version
   )
-  const workspaces = graph.order.map(
-    name => `--workspace=${workspace.packages[name].name}`
-  )
+  const workspaces = plan.packages.map(item => `--workspace=${item.name}`)
   if (release.mode === 'prepare') {
     await run([
       npm,
@@ -177,9 +294,11 @@ export const runRelease = async (args: string[]) => {
     }
     validateWorkspace(await readWorkspace(), release.version)
     await run([Bun.argv[0], 'install', '--lockfile-only', '--ignore-scripts'])
+    await runGoRelease([plan.version.tag, '--prepare'])
     return
   }
 
+  await runGoRelease([plan.version.tag, '--check'])
   if (release.mode === 'check') return
   await run([
     npm,

@@ -1,13 +1,10 @@
-import { validateImage } from '@traq-flavored-markdown/commonmark-plugin/policy'
+import { validateImage as defaultImagePolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
-import type { StampData } from '@traq-flavored-markdown/traq-plugin/nodes'
+import type { Stamp } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import type { Options } from './types.js'
 
-function wrapWithEffects(
-  html: string,
-  { animations, size }: StampData['effects']
-) {
+function wrapWithEffects(html: string, { animations, size }: Stamp['effects']) {
   const sizeClass = size === 'none' ? '' : size
   const opening = animations
     .map(
@@ -20,7 +17,7 @@ function wrapWithEffects(
 }
 
 function renderWithStyle(
-  stamp: StampData,
+  stamp: Stamp,
   name: string,
   title: string,
   style: string
@@ -31,10 +28,11 @@ function renderWithStyle(
 }
 
 function renderImage(
-  stamp: StampData,
+  stamp: Stamp,
   name: string,
   title: string,
-  url: string
+  url: string,
+  validateImage: (destination: string) => boolean
 ) {
   if (!validateImage(url)) return escapeHtml(stamp.literal)
 
@@ -50,64 +48,56 @@ function renderImage(
   )
 }
 
-function cssNumber(value: string) {
-  const number = Number(value)
-  return Number.isFinite(number) && number >= 0 ? String(number) : undefined
-}
-
-export function stampRenderer({ store, baseUrl = '' }: Options = {}) {
-  const getStampImageUrl = (fileId: string) =>
-    store?.generateStampHref?.(fileId) ??
-    `${baseUrl}/api/v3/files/${encodeURIComponent(fileId)}`
-
-  return (stamp: StampData): string => {
+export function stampRenderer({
+  resolveStamp,
+  validateStampImage = defaultImagePolicy
+}: Options = {}) {
+  return (stamp: Stamp): string => {
     const { kind } = stamp
 
     switch (kind.type) {
       case 'normal': {
-        const value = store?.getStampByName?.(kind.name)
+        const value = resolveStamp?.(kind)
         return value
           ? renderImage(
               stamp,
               kind.name,
-              value.name,
-              getStampImageUrl(value.fileId)
+              value.title ?? kind.name,
+              value.url,
+              validateStampImage
             )
           : escapeHtml(stamp.literal)
       }
       case 'user': {
-        const value = store?.getUserByName?.(kind.name)
+        const value = resolveStamp?.(kind)
         const label = '@' + kind.name
         return value
-          ? renderImage(stamp, label, label, getStampImageUrl(value.iconFileId))
+          ? renderImage(
+              stamp,
+              label,
+              value.title ?? label,
+              value.url,
+              validateStampImage
+            )
           : escapeHtml(stamp.literal)
       }
       case 'hex_color': {
-        if (!Number.isInteger(kind.rgb) || kind.rgb < 0 || kind.rgb > 0xffffff)
-          return escapeHtml(stamp.literal)
-        const color = '#' + kind.rgb.toString(16).padStart(6, '0')
+        const digits = kind.rgb.toString(16).padStart(6, '0')
+        const color = '#' + digits
+        const label = '0x' + digits
         return renderWithStyle(
           stamp,
-          kind.name,
-          kind.name,
+          label,
+          label,
           `background-color: ${color}`
         )
       }
       case 'hsl_color': {
-        const hue = cssNumber(kind.hue)
-        const saturation = cssNumber(kind.saturation)
-        const lightness = cssNumber(kind.lightness)
-        if (
-          hue === undefined ||
-          saturation === undefined ||
-          lightness === undefined
-        )
-          return escapeHtml(stamp.literal)
-        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`
+        const color = `hsl(${kind.hue}, ${kind.saturation}%, ${kind.lightness}%)`
         return renderWithStyle(
           stamp,
-          kind.name,
-          kind.name,
+          color,
+          color,
           `background-color: ${color}`
         )
       }

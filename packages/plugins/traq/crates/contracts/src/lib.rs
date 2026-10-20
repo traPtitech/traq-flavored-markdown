@@ -3,7 +3,7 @@
 
 mod catalog;
 mod declarations;
-pub use declarations::{Contracts, preset};
+pub use declarations::{PluginDeclarations, declarations};
 
 mod reference;
 pub use reference::*;
@@ -14,8 +14,8 @@ pub use stamp::*;
 mod spoiler;
 pub use spoiler::*;
 
-mod compat;
-pub use compat::*;
+mod spacing;
+pub use spacing::*;
 
 mod embedding;
 pub use embedding::*;

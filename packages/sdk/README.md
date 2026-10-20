@@ -7,7 +7,7 @@ contracts, and validation; the SDK exposes the supported presets and host APIs.
 - npm: `@traq-flavored-markdown/sdk`
 - Go module: `github.com/traPtitech/traq-flavored-markdown/packages/sdk/go`
 
-This package combines the core, CommonMark plugin, and traQ plugin layers for
+This package combines the core, CommonMark, extensions, and traQ plugin layers for
 traQ.
 
 The TypeScript `html()` renderer applies traQ display policy to CommonMark
@@ -16,10 +16,21 @@ nodes: raw HTML is escaped, links use a restricted scheme list (including
 source. The CommonMark plugin's `specHtml()` renderer is for specification output
 and can emit unsafe HTML; it is not used for message display.
 
+traQ's `spacing` syntax preserves additional blank lines with their source spans
+and container structure. Empty quote visibility is a presentation choice: the
+standard traQ renderer supplies a line break without inserting an AST node.
+Links and both direct and reference images use CommonMark parsing. URL encoding
+belongs to parsing; URL scheme and image domain restrictions belong to each
+renderer. The standard traQ view displays HTTPS images from its allowed domains
+and preserves escaped source for rejected images. Applications can supply
+`images.validate` and `links.validate` independently. Explicit `undefined` options
+use the same display defaults as omitted options.
+
 ## Contents
 
 | Location                      | Purpose                                                       |
 | ----------------------------- | ------------------------------------------------------------- |
+| `crates/features`             | Typed feature bindings and profile membership                 |
 | `crates/grammar`              | Published grammar presets                                     |
 | `crates/processing`           | traQ plain-text rendering, extraction, and embedding policies |
 | `crates/wasm`                 | Wasm interface for the shipped grammar and processing APIs    |
@@ -47,8 +58,8 @@ parser.dispose()
 
 `loadRuntime` fetches the packaged Wasm once and retains its shared runtime for
 the page. It deliberately exposes no runtime `dispose`; dispose individual
-parsers and extractors when they are no longer needed. Node payload types and
-optional guards are exported by the CommonMark and traQ plugin packages.
+parsers, extractors, and plain-text renderers when they are no longer needed.
+Node payload types and optional guards are exported by their plugin packages.
 `@traq-flavored-markdown/sdk/nodes` exports the complete node-name catalog.
 
 ### Bun and other TypeScript hosts
@@ -89,7 +100,7 @@ if err != nil { return err }
 
 The Go module embeds the matching Wasm, so `NewBundledRuntime` works without a
 separate artifact or npm package. Use `NewRuntime(ctx, wasmBytes)` when loading a
-matching Wasm artifact yourself. The four Go modules are tagged at the same
+matching Wasm artifact yourself. The Go modules are tagged at the same
 version as the npm packages; install the SDK with
 `go get github.com/traPtitech/traq-flavored-markdown/packages/sdk/go@v0.1.4`
 for the first Go release, then use the matching version for later releases.
@@ -98,6 +109,25 @@ for the first Go release, then use the matching version for later releases.
 types are generated from Rust contracts. Calls to one parser are serialized. For
 parallel parsing, create multiple parsers from the same runtime. Closing a
 runtime closes all of its parsers, extractors, and renderers.
+
+For repeated processing, `ParseValidated` and `ParseInlineValidated` return an
+immutable `ValidatedDocument`. Pass it to `ExtractValidated` and
+`RenderValidated` to reuse the owned wire snapshot. `ValidateDocument` snapshots
+a mutable document after checking its complete tree and payloads. Invalid UTF-8,
+missing wire fields, unordered or overlapping sibling spans, and spans that
+split a UTF-8 character are rejected before consumers run. Source bytes,
+including a leading BOM, CRLF, and NUL, are preserved.
+
+Go failures expose `*markdown.Error` with a stable `Code` and optional
+`Resource`, `Path`, `Offset`, and `Span`. Use `errors.As` to inspect them.
+Domain errors leave an instance usable; a Wasm trap or malformed response
+closes that instance. A later call reports `disposed`.
+
+The generated contract ID identifies ABI operations, request and response
+schemas, node contracts, presets, and limits. Source provenance and the binary
+digest are recorded separately, so a source-only refactor does not change
+the semantic contract ID. Build through the shared SDK pipeline to pair Wasm
+with the generated TypeScript and Go descriptors.
 
 ## Render and extract a document
 
@@ -116,12 +146,18 @@ const view = messageRenderers({ origin: 'https://q.example.test' })
 const document = parser.parse('**hello** !!secret!!')
 
 const extraction = extractor.extract(document)
-const rendered = view.standard.render(document)
+const prepared = view.prepare(document)
+const rendered = prepared.standard()
+const condensed = prepared.condensed()
 const html = rendered.renderedText
 ```
 
-`messageRenderers` builds `standard` and `condensed` views. Each `render` call
-returns `rawText`, `renderedText`, and `embeddings`; the extractor returns
+`messageRenderers` builds `standard` and `condensed` views. `prepare(document)`
+validates and analyzes an owned snapshot once, then shares it between both views.
+`view.render(document)` returns both results; individual
+`view.standard.render(document)` and `view.condensed.render(document)` are also
+available. Preparation also accepts an existing core `DocumentContext`.
+Each result contains `rawText`, `renderedText`, and `cards`; the extractor returns
 source-preserving message text, references, attachment and citation IDs, and an
 embedding plan. The two views apply presentation choices without rewriting the
 parsed AST. Complete Rust, Go, and TypeScript programs are in
@@ -133,13 +169,14 @@ third-party renderer plugins through `plugins`; `configurePlugins` can replace
 built-in handlers by returning updated plugin values:
 
 ```ts
-import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
-import { Plugin } from '@traq-flavored-markdown/core/renderer'
+import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import { PluginDeclaration } from '@traq-flavored-markdown/core/definitions'
+import { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { html } from '@traq-flavored-markdown/sdk/renderer'
 
-const annotation = new Plugin(new Declaration('app')).on(
+const annotation = new RenderPlugin(new PluginDeclaration('app')).on(
   'app::Annotation',
-  (node, context) => context.render(node.children)
+  (_node, context) => context.renderChildren()
 )
 const view = html({
   plugins: [annotation],
@@ -147,8 +184,8 @@ const view = html({
     return {
       ...plugins,
       common: plugins.common.replace(
-        'commonmark.strong',
-        (node, context) => '<b>' + context.render(node.children) + '</b>'
+        definitions.Strong,
+        (_node, context) => '<b>' + context.renderChildren() + '</b>'
       )
     }
   }
@@ -156,8 +193,58 @@ const view = html({
 const rendered = view.render(document)
 ```
 
-`Plugin.on()` and `Plugin.replace()` return new values. Keep the returned
+`RenderPlugin.on()` and `RenderPlugin.replace()` return new values. Keep the returned
 plugin when composing a preset; existing plugins and presets are unchanged.
+
+Built-in plugin groups are `common`, `extensions`, and `traq`. Generated node
+definitions carry the node kind, payload validator, and child-structure contract,
+so handlers infer their data types and invalid known nodes fail before rendering.
+Custom nodes nested inside a known paragraph must use a definition with
+`role: 'inline'`; see the [core API guide](../core/README.md) for `defineNode`.
+Unknown roots and children of unconstrained parents use the escaped-source
+fallback unless an application plugin handles them.
+
+Display options are grouped by responsibility:
+
+| Option                                                                 | Purpose                                                |
+| ---------------------------------------------------------------------- | ------------------------------------------------------ |
+| `links.validate`, `links.attributes`                                   | Destination policy and anchor attributes               |
+| `images.validate`                                                      | Markdown image destination policy                      |
+| `code.highlight`                                                       | Optional trusted code HTML adapter                     |
+| `math.render`                                                          | Optional trusted math HTML adapter                     |
+| `references.resolve`                                                   | Application reference labels, routes, and highlighting |
+| `stamps.resolve`, `stamps.validateUrl`                                 | Stamp lookup and resolved image policy                 |
+| `presentation.breaks`, `presentation.rawHtml`, `presentation.xhtmlOut` | Line breaks, raw HTML, and void-tag style              |
+
+For example, `references.resolve(reference)` returns
+`{ href, label, highlight }`, while `stamps.resolve(stamp)` returns
+`{ url, title }`. Both may return `undefined` when unresolved. The renderer does
+not know application stores or API endpoint layouts. Custom HTML adapters are
+trusted code; escape document values before including them in generated HTML.
+
+Direct rendering also supports repeated views with
+`const session = html().createSession(document)`. Call `session.render(plan)`
+with `roots`, `omittedNodes`, `childText`, or `rootSeparator` to change presentation
+without editing the source AST. A plan may reference original or snapshot nodes
+from that document; foreign nodes are rejected before handlers run.
+
+TypeScript runtime failures are `MarkdownError` values with `code`, `operation`,
+and optional `resource`, `path`, `offset`, and `span`. Invalid requests and native
+domain errors leave an instance reusable. A trap or malformed Wasm response
+closes the instance; later calls report `disposed`. `contract_mismatch` identifies
+an artifact whose semantic contract differs from the generated SDK. The original
+wire details are also retained in `cause`.
+
+`runtime.createRenderer()` exposes native display plain text, independently of
+host HTML. `createExtractor()` and `createRenderer()` accept omitted options;
+their `origin` defaults to an empty string. Card presentation uses the
+`ResourceCard` type, `resourceCardFromUrl()`, and `endsWithResourceCard()` from
+the renderer entrypoint. Reference embedding is a separate source-editing API.
+
+The stylesheet shares stamp sizes through `--tfm-stamp-normal-size`,
+`--tfm-stamp-small-size`, `--tfm-stamp-large-size`, and
+`--tfm-stamp-ex-large-size`. Compact message views use the normal size for large
+stamps and their effects. Animation keyframes use the `tfm-stamp-` prefix.
 
 ## Grammar versions
 

@@ -4,20 +4,23 @@ export const nodeGroups = {
     owner: 'commonmark-plugin',
     crate: 'markdown-commonmark-contracts',
     typescriptNodes: 'commonmark-plugin/nodes',
+    typescriptGeneratedPath: 'typescript/generated/commonmark.ts',
     goPackage: 'plugins/commonmark/go',
     goGeneratedPath: 'go/generated_nodes.go'
   },
   generic: {
-    owner: 'commonmark-plugin',
+    owner: 'extensions-plugin',
     crate: 'markdown-generic-contracts',
-    typescriptNodes: 'commonmark-plugin/generic/nodes',
-    goPackage: 'plugins/commonmark/go/generic',
-    goGeneratedPath: 'go/generic/generated_nodes.go'
+    typescriptNodes: 'extensions-plugin/nodes',
+    typescriptGeneratedPath: 'typescript/generated/nodes.ts',
+    goPackage: 'plugins/extensions/go',
+    goGeneratedPath: 'go/generated_nodes.go'
   },
   trap: {
     owner: 'traq-plugin',
     crate: 'markdown-trap-contracts',
     typescriptNodes: 'traq-plugin/nodes',
+    typescriptGeneratedPath: 'typescript/generated/trap.ts',
     goPackage: 'plugins/traq/go',
     goGeneratedPath: 'go/generated_nodes.go'
   }

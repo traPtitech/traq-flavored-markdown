@@ -34,16 +34,16 @@ func TestDecodeDocumentValidatesStructuralLimits(t *testing.T) {
 		raw  []byte
 		want string
 	}{
-		{"utf8 span", []byte(`{"source":"é","children":[{"kind":"text","span":{"start":1,"end":2},"data":{}}]}`), "invalid node span"},
-		{"nested span", []byte(`{"source":"ab","children":[{"kind":"text","span":{"start":0,"end":1},"data":{},"children":[{"kind":"text","span":{"start":1,"end":2},"data":{}}]}]}`), "invalid node span"},
-		{"depth", []byte(`{"source":"a","children":[` + deep + `]}`), "node depth limit"},
-		{"nodes", []byte(`{"source":"a","children":[` + strings.TrimSuffix(strings.Repeat(node+",", maxDocumentNodes+1), ",") + `]}`), "node count limit"},
-		{"JSON bytes", []byte(strings.Repeat(" ", maxJSONBytes+1)), "JSON byte limit"},
+		{"utf8 span", []byte(`{"source":"é","children":[{"kind":"text","span":{"start":1,"end":2},"data":{}}]}`), "splits UTF-8"},
+		{"nested span", []byte(`{"source":"ab","children":[{"kind":"text","span":{"start":0,"end":1},"data":{},"children":[{"kind":"text","span":{"start":1,"end":2},"data":{}}]}]}`), "outside its parent"},
+		{"depth", []byte(`{"source":"a","children":[` + deep + `]}`), "depth limit"},
+		{"nodes", []byte(`{"source":"a","children":[` + strings.TrimSuffix(strings.Repeat(node+",", maxDocumentNodes+1), ",") + `]}`), "nodes limit"},
+		{"JSON bytes", []byte(strings.Repeat(" ", maxJSONBytes+1)), "json_bytes limit"},
 	}
 	longSource, err := json.Marshal(struct {
 		Source   string `json:"source"`
 		Children []Node `json:"children"`
-	}{Source: strings.Repeat("x", maxSourceBytes+1)})
+	}{Source: strings.Repeat("x", maxSourceBytes+1), Children: []Node{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestDecodeDocumentValidatesStructuralLimits(t *testing.T) {
 		name string
 		raw  []byte
 		want string
-	}{"source bytes", longSource, "source byte limit"})
+	}{"source bytes", longSource, "source_bytes limit"})
 
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {

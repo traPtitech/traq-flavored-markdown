@@ -4,6 +4,7 @@ import * as ts from 'typescript'
 
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot } from '../paths.ts'
+import { allowsOwner } from '../workspace/descriptor.ts'
 
 const { manifests, graph } = await readNpmPackageGraph()
 const byName = new Map(
@@ -38,7 +39,7 @@ for (const repo of graph.order) {
       if (!specifier.startsWith('@traq-flavored-markdown/')) return
       const name = specifier.split('/').slice(0, 2).join('/')
       const dependency = byName.get(name)
-      if (!dependency || !graph.allows(repo, dependency))
+      if (!dependency || !allowsOwner(repo, dependency))
         throw new Error(file + ': upward dependency ' + name)
     }
     const visit = (node: ts.Node): void => {

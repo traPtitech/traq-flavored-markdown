@@ -7,7 +7,8 @@ by language within each package.
 | Directory                                                            | Responsibility                                                   | npm package                                 |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------- |
 | [packages/core](packages/core/README.md)                             | Grammar-independent AST, parser, renderer, extractor and codec   | `@traq-flavored-markdown/core`              |
-| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark and reusable syntax/rendering extensions              | `@traq-flavored-markdown/commonmark-plugin` |
+| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark grammar, contracts, and rendering                     | `@traq-flavored-markdown/commonmark-plugin` |
+| [packages/plugins/extensions](packages/plugins/extensions/README.md) | Optional tables, math, mark, strikethrough, and linkify          | `@traq-flavored-markdown/extensions-plugin` |
 | [packages/plugins/traq](packages/plugins/traq/README.md)             | traP references, stamps, spoilers and their rendering/extraction | `@traq-flavored-markdown/traq-plugin`       |
 | [packages/sdk](packages/sdk/README.md)                               | traQ presets, presentation, Wasm and SDK distribution            | `@traq-flavored-markdown/sdk`               |
 
@@ -26,6 +27,7 @@ layer directly only when composing a custom integration:
 ```sh
 npm install @traq-flavored-markdown/core
 npm install @traq-flavored-markdown/commonmark-plugin
+npm install @traq-flavored-markdown/extensions-plugin
 npm install @traq-flavored-markdown/traq-plugin
 ```
 

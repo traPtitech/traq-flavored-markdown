@@ -20,3 +20,15 @@ export interface Document<
   source: string
   children: Node<Kind>[]
 }
+
+export { SourceText } from './source.js'
+export type { SourceEdit } from './source.js'
+export { DocumentContext, documentLimits } from './document.js'
+export type { DocumentLimits, DocumentOptions } from './document.js'
+export { defineNode } from './nodes.js'
+export type {
+  NodeDefinition,
+  DefinedNode,
+  NodeRole,
+  NodeStructure
+} from './nodes.js'

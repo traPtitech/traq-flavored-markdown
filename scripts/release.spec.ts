@@ -8,6 +8,7 @@ import { type Manifest, parseRelease, validateWorkspace } from './release.ts'
 const names = {
   core: '@traq-flavored-markdown/core',
   commonmark: '@traq-flavored-markdown/commonmark-plugin',
+  extensions: '@traq-flavored-markdown/extensions-plugin',
   traq: '@traq-flavored-markdown/traq-plugin',
   sdk: '@traq-flavored-markdown/sdk'
 }
@@ -27,6 +28,7 @@ const workspace = () => ({
   packages: {
     core: manifest(names.core),
     'commonmark-plugin': manifest(names.commonmark, { [names.core]: '0.1.0' }),
+    'extensions-plugin': manifest(names.extensions, { [names.core]: '0.1.0' }),
     'traq-plugin': manifest(names.traq, {
       [names.core]: '0.1.0',
       [names.commonmark]: '0.1.0'
@@ -34,6 +36,7 @@ const workspace = () => ({
     sdk: manifest(names.sdk, {
       [names.core]: '0.1.0',
       [names.commonmark]: '0.1.0',
+      [names.extensions]: '0.1.0',
       [names.traq]: '0.1.0'
     })
   }
@@ -85,7 +88,7 @@ test('workspace validation rejects version and peer mismatches', () => {
   )
 })
 
-test('repository root keeps the four package versions and peers synchronized', async () => {
+test('repository root keeps package versions and peers synchronized', async () => {
   const root = (await Bun.file(
     path.join(repositoryRoot, 'package.json')
   ).json()) as Manifest

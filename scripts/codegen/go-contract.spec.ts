@@ -65,7 +65,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     )
     .join('\n')
   const source =
-    'package contract\nimport ("bytes"; "encoding/json"; "fmt")\n' +
+    'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
     goValidationRuntime +
     definitions +
     goContract(schema)
@@ -149,7 +149,7 @@ test('tagged Rust unions generate typed Go variants and strict round trips', asy
     }
   }
   const source =
-    'package contract\nimport ("bytes"; "encoding/json"; "fmt")\n' +
+    'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
     goValidationRuntime +
     goContract({ ...schema.$defs!.StampKind, title: 'StampKind' }, schema) +
     goContract(schema)
@@ -182,3 +182,111 @@ func TestStampKind(t *testing.T) {
     await runCommand(['go', 'test', './...'], directory)
   })
 }, 20_000)
+
+test('request defaults preserve explicit zero and bounded fractional values', async () => {
+  const schema: RawSchema = {
+    title: 'Request',
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      origin: { type: 'string', default: '' },
+      count: {
+        type: 'integer',
+        format: 'uint16',
+        minimum: 0,
+        maximum: 10,
+        default: 2
+      },
+      percentage: {
+        type: 'number',
+        format: 'double',
+        minimum: 0,
+        maximum: 100
+      },
+      nullable: { type: ['string', 'null'] }
+    },
+    required: ['percentage']
+  }
+  await withTempDirectory('go-defaults-', async directory => {
+    await write(`${directory}/go.mod`, 'module example.com/defaults\ngo 1.23\n')
+    await write(
+      `${directory}/contract.go`,
+      'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
+        goValidationRuntime +
+        goContract(schema)
+    )
+    await write(
+      `${directory}/contract_test.go`,
+      `package contract
+import ("bytes"; "encoding/json"; "testing")
+func TestRequest(t *testing.T) {
+ var value Request
+ if err := json.Unmarshal([]byte("{\\"percentage\\":12.5}"), &value); err != nil { t.Fatal(err) }
+ if value.Count != 2 || value.Percentage != 12.5 || value.Nullable != nil { t.Fatalf("wrong defaults: %#v", value) }
+ if err := json.Unmarshal([]byte("{\\"percentage\\":0,\\"count\\":0,\\"nullable\\":null}"), &value); err != nil { t.Fatal(err) }
+ if value.Count != 0 || value.Nullable == nil || *value.Nullable != nil { t.Fatalf("lost zero or null: %#v", value) }
+ raw, err := json.Marshal(value); if err != nil { t.Fatal(err) }
+ if !bytes.Contains(raw, []byte("\\"count\\":0")) { t.Fatalf("lost explicit zero: %s", raw) }
+ for _, raw := range []string{"{\\"percentage\\":100.1}", "{\\"percentage\\":-1}", "{\\"percentage\\":5,\\"count\\":11}", "{\\"percentage\\":null}"} {
+  if json.Unmarshal([]byte(raw), new(Request)) == nil { t.Fatalf("accepted %s", raw) }
+ }
+}
+`
+    )
+    await runCommand(['go', 'test', './...'], directory)
+  })
+}, 30_000)
+
+test('direct generated decoders reject duplicate keys and lossy Unicode repairs', async () => {
+  const schema: RawSchema = {
+    title: 'Text',
+    type: 'object',
+    additionalProperties: false,
+    properties: { value: { type: 'string' } },
+    required: ['value']
+  }
+  const invalid = [
+    String.raw`{"value":"a","value":"b"}`,
+    String.raw`{"value":"a","\u0076alue":"b"}`,
+    String.raw`{"value":"\ud800"}`,
+    String.raw`{"value":"\udc00"}`,
+    String.raw`{"value":"\ud800x"}`,
+    String.raw`{"value":"\ud800\u0041"}`,
+    String.raw`{"value":"x"} {"value":"y"}`
+  ]
+  const valid = [
+    String.raw`{"value":"\ud83d\ude00"}`,
+    String.raw`{"value":"\\ud800"}`,
+    String.raw`{"value":"\ufffd"}`
+  ]
+  await withTempDirectory('go-strict-json-', async directory => {
+    await write(
+      `${directory}/go.mod`,
+      'module example.com/strictjson\ngo 1.23\n'
+    )
+    await write(
+      `${directory}/contract.go`,
+      'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
+        goValidationRuntime +
+        goContract(schema)
+    )
+    await write(
+      `${directory}/contract_test.go`,
+      `package contract
+import "testing"
+func TestDirectDecoder(t *testing.T) {
+ for _, raw := range []string{${invalid.map(value => JSON.stringify(value)).join(',')}} {
+  if err := new(Text).UnmarshalJSON([]byte(raw)); err == nil { t.Fatalf("accepted invalid JSON %s", raw) }
+ }
+ for _, raw := range []string{${valid.map(value => JSON.stringify(value)).join(',')}} {
+  if err := new(Text).UnmarshalJSON([]byte(raw)); err != nil { t.Fatalf("rejected valid JSON %s: %v", raw, err) }
+ }
+ raw := append([]byte(${JSON.stringify('{"value":"')}), 0xff)
+ raw = append(raw, []byte(${JSON.stringify('"}')})...)
+ if err := new(Text).UnmarshalJSON(raw); err == nil { t.Fatal("repaired invalid UTF-8") }
+}
+`
+    )
+    await runCommand(['go', 'test', './...'], directory)
+  })
+}, 30_000)

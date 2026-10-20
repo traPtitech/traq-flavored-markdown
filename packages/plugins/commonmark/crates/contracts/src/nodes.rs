@@ -15,14 +15,15 @@ pub enum LinkForm {
 #[serde(deny_unknown_fields)]
 pub struct Paragraph {}
 impl NodeData for Paragraph {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Block, NodeRole::Inline)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        inline_children(children)
     }
 }
 
@@ -30,17 +31,28 @@ impl NodeData for Paragraph {
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Heading {
+    #[cfg_attr(feature = "contracts", schemars(range(min = 1, max = 6)))]
     pub level: u8,
 }
 impl NodeData for Heading {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Block, NodeRole::Inline)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        (1..=6).contains(&self.level) && inline_children(children)
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        Self::structure().validate(children, None)?;
+        if (1..=6).contains(&self.level) {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("heading level 1..=6")
+                .actual(self.level.to_string()))
+        }
     }
 }
 
@@ -49,14 +61,15 @@ impl NodeData for Heading {
 #[serde(deny_unknown_fields)]
 pub struct Blockquote {}
 impl NodeData for Blockquote {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Block, NodeRole::Block)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        block_children(children)
     }
 }
 
@@ -64,54 +77,81 @@ impl NodeData for Blockquote {
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct List {
-    pub ordered: bool,
-    pub start: u32,
+    pub kind: ListKind,
     pub tight: bool,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ListKind {
+    Ordered {
+        #[cfg_attr(feature = "contracts", schemars(range(min = 0, max = 999_999_999)))]
+        start: u32,
+        delimiter: OrderedDelimiter,
+    },
+    Bullet {
+        marker: BulletMarker,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum OrderedDelimiter {
+    Period,
+    Parenthesis,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+pub enum BulletMarker {
+    #[serde(rename = "-")]
+    Dash,
+    #[serde(rename = "+")]
+    Plus,
+    #[serde(rename = "*")]
+    Asterisk,
+}
 impl NodeData for List {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::children::<ListItem>(NodeRole::Block, true)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        let Some(first) = children.first().and_then(|node| node.get::<ListItem>()) else {
-            return false;
-        };
-        let Some((ordered, delimiter, start)) = list_marker(&first.marker) else {
-            return false;
-        };
-
-        if ordered != self.ordered || start != self.start {
-            return false;
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        Self::structure().validate(children, None)?;
+        if let ListKind::Ordered { start, .. } = self.kind
+            && start > 999_999_999
+        {
+            return Err(
+                markdown_ast::PayloadError::new("ordered list start 0..=999999999")
+                    .actual(start.to_string()),
+            );
         }
-
-        children.iter().all(|node| {
-            node.get::<ListItem>()
-                .and_then(|item| list_marker(&item.marker))
-                .is_some_and(|(ordered, item_delimiter, _)| {
-                    ordered == self.ordered && item_delimiter == delimiter
-                })
-        })
+        Ok(())
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
-pub struct ListItem {
-    pub marker: String,
-}
+pub struct ListItem {}
 impl NodeData for ListItem {
-    fn role(&self) -> NodeRole {
-        NodeRole::Structural
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Structural, NodeRole::Block)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
-        self.marker.len()
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        list_marker(&self.marker).is_some() && block_children(children)
+        0
     }
 }
 
@@ -124,14 +164,13 @@ pub struct CodeBlock {
     pub literal: String,
 }
 impl NodeData for CodeBlock {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Block));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.info.len().saturating_add(self.literal.len())
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -142,14 +181,13 @@ pub struct ThematicBreak {
     pub marker: String,
 }
 impl NodeData for ThematicBreak {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Block));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.marker.len()
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -160,14 +198,13 @@ pub struct Text {
     pub value: String,
 }
 impl NodeData for Text {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.value.len()
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -176,14 +213,13 @@ impl NodeData for Text {
 #[serde(deny_unknown_fields)]
 pub struct Softbreak {}
 impl NodeData for Softbreak {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -192,14 +228,13 @@ impl NodeData for Softbreak {
 #[serde(deny_unknown_fields)]
 pub struct Hardbreak {}
 impl NodeData for Hardbreak {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -210,14 +245,13 @@ pub struct InlineCode {
     pub literal: String,
 }
 impl NodeData for InlineCode {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.literal.len()
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -226,14 +260,15 @@ impl NodeData for InlineCode {
 #[serde(deny_unknown_fields)]
 pub struct Emphasis {}
 impl NodeData for Emphasis {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Inline, NodeRole::Inline)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        inline_children(children)
     }
 }
 
@@ -242,14 +277,15 @@ impl NodeData for Emphasis {
 #[serde(deny_unknown_fields)]
 pub struct Strong {}
 impl NodeData for Strong {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Inline, NodeRole::Inline)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        inline_children(children)
     }
 }
 
@@ -262,16 +298,17 @@ pub struct Link {
     pub form: LinkForm,
 }
 impl NodeData for Link {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Inline, NodeRole::Inline)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.destination
             .len()
             .saturating_add(self.title.as_ref().map_or(0, String::len))
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        inline_children(children)
     }
 }
 
@@ -284,17 +321,18 @@ pub struct Image {
     pub label_source: String,
 }
 impl NodeData for Image {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| {
+                markdown_ast::NodeStructure::roles(NodeRole::Inline, NodeRole::Inline)
+            });
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.destination
             .len()
             .saturating_add(self.title.as_ref().map_or(0, String::len))
             .saturating_add(self.label_source.len())
-    }
-    fn validate(&self, children: &[Node]) -> bool {
-        inline_children(children)
     }
 }
 
@@ -305,14 +343,13 @@ pub struct HtmlInline {
     pub literal: String,
 }
 impl NodeData for HtmlInline {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Inline));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.literal.len()
-    }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
     }
 }
 
@@ -323,44 +360,12 @@ pub struct HtmlBlock {
     pub literal: String,
 }
 impl NodeData for HtmlBlock {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
+            std::sync::LazyLock::new(|| markdown_ast::NodeStructure::leaf(NodeRole::Block));
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.literal.len()
     }
-    fn validate(&self, _children: &[Node]) -> bool {
-        _children.is_empty()
-    }
-}
-
-fn list_marker(marker: &str) -> Option<(bool, u8, u32)> {
-    let bytes = marker.as_bytes();
-    if let [delimiter @ (b'-' | b'+' | b'*')] = bytes {
-        return Some((false, *delimiter, 1));
-    }
-
-    let (&delimiter, digits) = bytes.split_last()?;
-    if !(2..=10).contains(&bytes.len())
-        || !matches!(delimiter, b'.' | b')')
-        || !digits.iter().all(u8::is_ascii_digit)
-    {
-        return None;
-    }
-
-    Some((
-        true,
-        delimiter,
-        std::str::from_utf8(digits).ok()?.parse().ok()?,
-    ))
-}
-
-fn inline_children(children: &[Node]) -> bool {
-    children
-        .iter()
-        .all(|child| child.role() == NodeRole::Inline)
-}
-
-fn block_children(children: &[Node]) -> bool {
-    children.iter().all(|child| child.role() == NodeRole::Block)
 }

@@ -36,34 +36,30 @@ pub(super) fn build(
             kind => kind,
         };
 
-        flush(&mut text, &mut children, source, make_text);
+        flush(&mut text, &mut children, source, make_text, budget)?;
 
         match kind {
             TokenKind::Atom(kind, nested) => {
+                budget.node()?;
                 children.push(Node::new(source.span(token.start, token.end), kind, nested));
             }
 
-            TokenKind::Open(make, combined) => {
-                budget.depth(stack.len() + 1)?;
-                stack.push((make, combined, token.start, std::mem::take(&mut children)));
+            TokenKind::Open(make) => {
+                budget.nesting(stack.len() + 1)?;
+                stack.push((make, token.start, std::mem::take(&mut children)));
             }
 
             TokenKind::Close => {
-                let (make, combined, start, previous) =
-                    stack.pop().ok_or(ParseError::InternalError)?;
+                let (make, start, previous) = stack.pop().ok_or(ParseError::InternalError)?;
                 let nested = std::mem::replace(&mut children, previous);
-                children.push(Node::new(
-                    source.span(start, token.end),
-                    make(combined),
-                    nested,
-                ));
+                children.push(Node::new(source.span(start, token.end), make(), nested));
             }
 
             _ => unreachable!("text and empty tokens handled above"),
         }
     }
 
-    flush(&mut text, &mut children, source, make_text);
+    flush(&mut text, &mut children, source, make_text, budget)?;
 
     if !stack.is_empty() {
         return Err(ParseError::InternalError);
@@ -77,8 +73,11 @@ fn flush(
     children: &mut Vec<Node>,
     source: &SourceView,
     make_text: &TextFactory,
-) {
+    budget: &mut Budget,
+) -> Result<(), ParseError> {
     if let Some((start, end, value)) = text.take() {
+        budget.node()?;
         children.push(Node::leaf(source.span(start, end), make_text(value)));
     }
+    Ok(())
 }

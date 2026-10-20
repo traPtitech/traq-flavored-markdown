@@ -1,6 +1,6 @@
 use markdown_commonmark_contracts::{HtmlInline, Text};
 use markdown_definitions::Plugin as Declaration;
-use markdown_generic_syntax::math::InlineMathData;
+use markdown_generic_syntax::math::InlineMath;
 use markdown_parser::{NodeData, NodeRole};
 use traq_markdown_grammar::{
     Parser,
@@ -58,12 +58,18 @@ fn third_party_syntax_can_extend_a_published_preset() {
 fn removing_an_extension_does_not_change_an_existing_parser() {
     let original = presets::traq::v1::parser();
     let mut builder = presets::traq::v1::builder();
-    builder.remove(extensions::math::plugin()).unwrap();
+    builder
+        .remove(
+            &builder
+                .registration(extensions::math::plugin())
+                .expect("registered preset feature"),
+        )
+        .unwrap();
     let customized = Parser::new(&builder.build().unwrap());
     let plain = customized.parse_inline("$x$").unwrap();
     assert_eq!(plain.children[0].get::<Text>().unwrap().value, "$x$");
     let math = original.parse_inline("$x$").unwrap();
-    assert_eq!(math.children[0].get::<InlineMathData>().unwrap().tex, "x");
+    assert_eq!(math.children[0].get::<InlineMath>().unwrap().tex, "x");
 }
 
 #[test]

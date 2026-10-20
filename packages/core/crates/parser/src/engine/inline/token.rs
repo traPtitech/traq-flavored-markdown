@@ -1,5 +1,31 @@
 use crate::{Node, NodeKind};
 
+/// Syntax-owned matching policy. The engine only pairs accepted runs and
+/// caches failed searches within the policy's bounded equivalence classes.
+#[derive(Clone, Copy)]
+pub struct DelimiterPolicy {
+    pub accepts: fn(DelimiterRun, DelimiterRun) -> bool,
+    pub cache_class: fn(DelimiterRun) -> u8,
+    pub single: fn() -> NodeKind,
+    pub combined: Option<fn() -> NodeKind>,
+}
+impl DelimiterPolicy {
+    pub const fn simple(single: fn() -> NodeKind) -> Self {
+        Self {
+            accepts: |_, _| true,
+            cache_class: |_| 0,
+            single,
+            combined: None,
+        }
+    }
+}
+#[derive(Clone, Copy)]
+pub struct DelimiterRun {
+    pub length: usize,
+    pub open: bool,
+    pub close: bool,
+}
+
 /// Meaning and flanking are supplied by syntax; pairing is owned by the engine.
 #[derive(Clone, Copy)]
 pub struct Pairing {
@@ -8,9 +34,7 @@ pub struct Pairing {
     pub run_length: usize,
     pub open: bool,
     pub close: bool,
-    pub rule_of_three: bool,
-    pub combine_pairs: bool,
-    pub make: fn(bool) -> NodeKind,
+    pub policy: DelimiterPolicy,
 }
 
 pub struct InlineMatch {
@@ -46,7 +70,6 @@ pub enum InlineAction {
 
     CloseBracket {
         kind: NodeKind,
-        prefix: usize,
         inhibit_brackets: bool,
     },
 
@@ -92,7 +115,7 @@ pub(super) enum TokenKind {
     Decoded(String),
     Marker(String),
     Atom(NodeKind, Vec<Node>),
-    Open(fn(bool) -> NodeKind, bool),
+    Open(fn() -> NodeKind),
     Close,
     Empty,
 }
@@ -119,4 +142,14 @@ pub(super) struct Bracket {
     pub bottom: usize,
     pub info: BracketInfo,
     pub inhibit_on_inner: bool,
+}
+
+impl Delimiter {
+    pub fn run(self) -> DelimiterRun {
+        DelimiterRun {
+            length: self.length,
+            open: self.open,
+            close: self.close,
+        }
+    }
 }

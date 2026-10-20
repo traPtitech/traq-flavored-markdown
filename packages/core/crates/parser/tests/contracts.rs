@@ -31,8 +31,13 @@ impl NodeData for Invalid {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> bool {
-        false
+    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = false;
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 
@@ -100,6 +105,28 @@ fn unsuccessful_rules_still_consume_the_work_budget() {
 }
 
 #[test]
+fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
+    let mut rejected = plugin();
+    rejected.add(InlineRule::new(b"x", |_, _| Ok(None)));
+    assert!(
+        matches!(parser(&rejected).with_limits(Limits { work: 1, ..Limits::default() }).parse_inline("x"),
+        Err(ParseError::ResourceLimit { resource }) if resource == "work")
+    );
+
+    let mut accepted = plugin();
+    accepted.add(InlineRule::new(b"a", |input, _| {
+        Ok(Some(InlineMatch::leaf(
+            input.source.text().len(),
+            Text("node".into()).into(),
+        )))
+    }));
+    assert!(
+        matches!(parser(&accepted).with_limits(Limits { work: 9, ..Limits::default() }).parse_inline("abcdefgh"),
+        Err(ParseError::ResourceLimit { resource }) if resource == "work")
+    );
+}
+
+#[test]
 fn parser_charges_plugin_owned_payload_bytes() {
     let plugin = plugin();
     let parser = parser(&plugin).with_limits(Limits {
@@ -124,9 +151,20 @@ fn source_helpers_reject_invalid_ranges() {
                 .leaf(input.start, Text(String::new()).into())
                 .map(Some),
             1 => input
-                .blocks(input.lines.len() + 1, Text(String::new()).into(), 0..0)
+                .blocks(
+                    input.lines.end() + 1,
+                    Text(String::new()).into(),
+                    input.start..input.start,
+                )
                 .map(Some),
-            _ => input.blocks(1, Text(String::new()).into(), 0..99).map(Some),
+            _ => input
+                .blocks(
+                    markdown_parser::engine::block::LineIndex::new(1),
+                    Text(String::new()).into(),
+                    markdown_parser::engine::block::LineIndex::new(0)
+                        ..markdown_parser::engine::block::LineIndex::new(99),
+                )
+                .map(Some),
         }));
 
         assert_eq!(
@@ -243,9 +281,16 @@ fn final_validation_stops_at_the_remaining_work_budget() {
         fn payload_bytes(&self) -> usize {
             0
         }
-        fn validate(&self, _: &[Node]) -> bool {
-            CHECKS.fetch_add(1, Ordering::Relaxed);
-            true
+        fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+            let valid = {
+                CHECKS.fetch_add(1, Ordering::Relaxed);
+                true
+            };
+            if valid {
+                Ok(())
+            } else {
+                Err(markdown_ast::PayloadError::new("custom payload invariant"))
+            }
         }
     }
 

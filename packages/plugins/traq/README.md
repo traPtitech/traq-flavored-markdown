@@ -25,4 +25,16 @@ module is `github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 
+The HTML plugin accepts `resolveReference(reference)` and
+`resolveStamp(namedStamp)` adapters. A reference resolver returns optional
+`href`, `label`, and `highlight`; a stamp resolver returns `url` and optional
+`title`. Applications own user/group stores, routes, and stamp API paths.
+Unresolved stamps preserve their escaped original notation. URL policies are
+applied after resolution, independently for links and stamp images.
+
+`spacing` preserves additional source blank lines in their original containers.
+An empty quote needs no synthetic node; the SDK display profile controls its
+visibility. Stamps store semantic colors (numeric RGB or canonical HSL) and keep
+their literal source separately.
+
 The SDK processing crate owns the traQ composition and runnable native examples.

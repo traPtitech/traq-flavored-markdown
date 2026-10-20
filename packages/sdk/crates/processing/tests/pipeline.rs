@@ -23,9 +23,10 @@ fn one_ast_supports_plain_text_and_reference_collection() {
     );
 
     let mut builder = traq::references::builder().unwrap();
-    builder
-        .remove(&markdown_trap_extraction::references::plugin())
+    let registration = builder
+        .registration(&markdown_trap_extraction::references::plugin())
         .unwrap();
+    builder.remove(&registration).unwrap();
     let empty = Extractor::new(&builder.build().unwrap());
     assert_eq!(empty.extract(&document).unwrap(), References::default());
     assert_eq!(extractor.extract(&document).unwrap().mentions, [id, id]);
@@ -43,7 +44,9 @@ fn preset_configuration_is_independent_and_bounded() {
     assert_eq!(special.render(&document).unwrap().trim(), "[添付ファイル]");
     assert!(traq::plain_text::builder(&"x".repeat(2048)).is_ok());
     assert_eq!(
-        traq::plain_text::builder(&"x".repeat(2049)).err(),
-        Some("origin_limit")
+        traq::plain_text::builder(&"x".repeat(2049))
+            .err()
+            .map(|error| error.resource()),
+        Some(Some("origin_bytes"))
     );
 }

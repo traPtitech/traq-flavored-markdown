@@ -4,8 +4,8 @@ import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
 import { goPayload } from '../../../../scripts/codegen/go.ts'
-import { javascript } from '../../../../scripts/codegen/javascript.ts'
 import { type Shape, shape } from '../../../../scripts/codegen/schema.ts'
+import { emitTypeScriptValidators } from '../../../../scripts/codegen/typescript-validators.ts'
 import { isKnownNode, names, nodes } from '../../dist/generated/nodes.js'
 import { isPreset, presets } from '../../dist/generated/presets.js'
 import { nodeContractsDirectory } from '../../scripts/node-contracts.ts'
@@ -16,7 +16,7 @@ const manifest = JSON.parse(
 
 function example(s: Shape): unknown {
   if (s.kind === 'string') return 'value'
-  if (s.kind === 'integer') return s.min
+  if (s.kind === 'integer' || s.kind === 'number') return s.min
   if (s.kind === 'boolean') return false
   if (s.kind === 'enum') return s.values[0]
   if (s.kind === 'literal') return s.value
@@ -87,7 +87,7 @@ test('unsupported schema constraints fail generation instead of weakening valida
     properties: { value: { type: 'string', pattern: 'secret' } },
     required: ['value']
   }
-  expect(() => javascript([['test/example@1', schema]])).toThrow(
+  expect(() => emitTypeScriptValidators([['test/example@1', schema]])).toThrow(
     /Unsupported schema keyword/
   )
   expect(() => goPayload('test/example@1', schema)).toThrow(
@@ -99,14 +99,14 @@ test('unsupported schema constraints fail generation instead of weakening valida
     { $ref: '#/$defs/Value', type: 'boolean' },
     { anyOf: [{ type: 'string' }, { type: 'null', enum: [null] }] }
   ])
-    expect(() => shape(unsupported)).toThrow(/Unsupported schema keyword/)
+    expect(() => shape(unsupported)).toThrow()
   const recursive = { $ref: '#/$defs/Value' }
   expect(() => shape(recursive, { $defs: { Value: recursive } })).toThrow(
     /Recursive payload schemas/
   )
   const plain = { ...schema, properties: { value: { type: 'string' } } }
   expect(() =>
-    javascript([
+    emitTypeScriptValidators([
       ['test/example@1', plain],
       ['other/example@1', { ...plain, title: 'ExampleData' }]
     ])

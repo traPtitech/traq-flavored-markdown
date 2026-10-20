@@ -6,6 +6,4 @@
 pub use markdown_ast::{Document, Node, NodeData, NodeKind, NodeRole, Span, ValidationLimits};
 pub mod engine;
 pub use engine::{BuildError, Grammar, GrammarBuilder, Limits, ParseError, Parser, Plugin};
-
-/// Distribution metadata. Applications normally use generated preset instances.
-pub mod bindings;
+pub use markdown_definitions::RegistrationHandle;

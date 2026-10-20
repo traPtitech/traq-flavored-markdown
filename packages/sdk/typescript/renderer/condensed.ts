@@ -1,186 +1,121 @@
-import {
-  names as genericNames,
-  isKnownNode as genericNode
-} from '@traq-flavored-markdown/commonmark-plugin/generic/nodes'
-import {
-  isKnownNode,
-  names
-} from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import { validateLink as defaultPolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
-import {
-  attributes,
-  checked,
-  escapeHtml
-} from '@traq-flavored-markdown/core/html'
-import type { Node, RenderContext } from '@traq-flavored-markdown/core/renderer'
-import type { Plugin } from '@traq-flavored-markdown/core/renderer'
-import {
-  names as trapNames,
-  isKnownNode as trapNode
-} from '@traq-flavored-markdown/traq-plugin/nodes'
+import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
+import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
+import { definitions as extensionDefinitions } from '@traq-flavored-markdown/extensions-plugin/nodes'
+import { definitions as trapDefinitions } from '@traq-flavored-markdown/traq-plugin/nodes'
 
-import type { Options } from './index.js'
+import type { ResolvedOptions } from '../profiles/traq.js'
 
-const blocks = (nodes: Node[] | undefined, ctx: RenderContext) =>
-  (nodes ?? []).map(node => ctx.render([node])).join(' ')
+function configureCommonCondensed(
+  common: RenderPlugin,
+  options: Pick<ResolvedOptions, 'validateLink'>
+) {
+  for (const definition of [definitions.Softbreak, definitions.Hardbreak])
+    common = common.replace(definition, () => ' ')
 
-function configureCommonCondensed(common: Plugin, options: Options) {
-  for (const kind of [names.Softbreak, names.Hardbreak])
-    common = common.replace(
-      kind,
-      checked(kind, isKnownNode, () => ' ')
+  common = common.replace(definitions.Paragraph, (n, ctx) =>
+    ctx.renderChildren()
+  )
+
+  common = common.replace(
+    definitions.Heading,
+    (n, ctx) => '#'.repeat(n.data.level) + ' ' + ctx.renderChildren()
+  )
+
+  common = common.replace(
+    definitions.Blockquote,
+    (_n, ctx) => '> ' + ctx.renderChildren(' ')
+  )
+
+  common = common.replace(definitions.List, (_n, ctx) =>
+    ctx.renderChildren(' ')
+  )
+
+  common = common.replace(definitions.ListItem, (n, ctx) => {
+    const list = ctx.ancestors.at(-1)
+    if (!list || !definitions.List.is(list))
+      throw new TypeError('Expected list parent')
+    const kind = list.data.kind
+    const marker =
+      kind.type === 'ordered'
+        ? String(kind.start + ctx.index) +
+          (kind.delimiter === 'period' ? '.' : ')')
+        : kind.marker
+    return marker + ' ' + ctx.renderChildren(' ')
+  })
+
+  common = common.replace(
+    definitions.ThematicBreak,
+    n => ' ' + escapeHtml(n.data.marker) + ' '
+  )
+
+  common = common.replace(
+    definitions.CodeBlock,
+    n => '<code>' + escapeHtml(n.data.literal) + '</code>'
+  )
+
+  common = common.replace(definitions.HtmlBlock, n =>
+    escapeHtml(n.data.literal)
+  )
+
+  common = common.replace(definitions.Image, (n, _ctx) => {
+    const label = escapeHtml(n.data.label_source)
+
+    if (!options.validateLink(n.data.destination)) return label
+
+    return (
+      '<a' +
+      attributes([
+        ['href', n.data.destination],
+        ...(n.data.title === null
+          ? []
+          : [['title', n.data.title] as [string, string]])
+      ]) +
+      ' data-is-image>' +
+      label +
+      '</a>'
     )
-
-  common = common.replace(
-    names.Paragraph,
-    checked(names.Paragraph, isKnownNode, (n, ctx) => ctx.render(n.children))
-  )
-
-  common = common.replace(
-    names.Heading,
-    checked(
-      names.Heading,
-      isKnownNode,
-      (n, ctx) => '#'.repeat(n.data.level) + ' ' + ctx.render(n.children)
-    )
-  )
-
-  common = common.replace(
-    names.Blockquote,
-    checked(
-      names.Blockquote,
-      isKnownNode,
-      (n, ctx) => '> ' + blocks(n.children, ctx)
-    )
-  )
-
-  common = common.replace(
-    names.List,
-    checked(names.List, isKnownNode, (n, ctx) => {
-      let index = 0
-      const children = n.data.ordered
-        ? (n.children ?? []).map(child => {
-            if (!isKnownNode(child) || child.kind !== names.ListItem) {
-              return child
-            }
-
-            return {
-              ...child,
-              data: {
-                marker: `${n.data.start + index++}${child.data.marker.slice(-1)}`
-              }
-            }
-          })
-        : n.children
-
-      return blocks(children, ctx)
-    })
-  )
-
-  common = common.replace(
-    names.ListItem,
-    checked(
-      names.ListItem,
-      isKnownNode,
-      (n, ctx) => n.data.marker + ' ' + blocks(n.children, ctx)
-    )
-  )
-
-  common = common.replace(
-    names.ThematicBreak,
-    checked(
-      names.ThematicBreak,
-      isKnownNode,
-      n => ' ' + escapeHtml(n.data.marker) + ' '
-    )
-  )
-
-  common = common.replace(
-    names.CodeBlock,
-    checked(
-      names.CodeBlock,
-      isKnownNode,
-      n => '<code>' + escapeHtml(n.data.literal) + '</code>'
-    )
-  )
-
-  common = common.replace(
-    names.HtmlBlock,
-    checked(names.HtmlBlock, isKnownNode, n => escapeHtml(n.data.literal))
-  )
-
-  common = common.replace(
-    names.Image,
-    checked(names.Image, isKnownNode, (n, _ctx) => {
-      const label = escapeHtml(n.data.label_source)
-
-      if (!(options.validateLink ?? defaultPolicy)(n.data.destination))
-        return label
-
-      return (
-        '<a' +
-        attributes([
-          ['href', n.data.destination],
-          ...(n.data.title === null
-            ? []
-            : [['title', n.data.title] as [string, string]])
-        ]) +
-        ' data-is-image>' +
-        label +
-        '</a>'
-      )
-    })
-  )
+  })
 
   return common
 }
 
-function configureGenericCondensed(generic: Plugin) {
-  generic = generic.replace(
-    genericNames.Table,
-    checked(genericNames.Table, genericNode, (n, ctx) =>
-      (n.children ?? [])
-        .map(row => {
-          if (!genericNode(row) || row.kind !== genericNames.Row)
-            throw new TypeError('Invalid table row')
-
-          return (
-            (row.children ?? [])
-              .map(cell => {
-                if (!genericNode(cell) || cell.kind !== genericNames.Cell)
-                  throw new TypeError('Invalid table cell')
-
-                return '| ' + ctx.render(cell.children)
-              })
-              .join(' ') + ' |'
-          )
-        })
-        .join(' ')
-    )
+function configureExtensionsCondensed(extensions: RenderPlugin) {
+  extensions = extensions.replace(extensionDefinitions.Table, (_n, ctx) =>
+    ctx.renderChildren(' ')
+  )
+  extensions = extensions.replace(
+    extensionDefinitions.Row,
+    (_n, ctx) => ctx.renderChildren(' ') + ' |'
+  )
+  extensions = extensions.replace(
+    extensionDefinitions.HeaderRow,
+    (_n, ctx) => ctx.renderChildren(' ') + ' |'
+  )
+  extensions = extensions.replace(
+    extensionDefinitions.Cell,
+    (_n, ctx) => '| ' + ctx.renderChildren()
   )
 
-  return generic
+  return extensions
 }
 
-function configureTrapCondensed(trap: Plugin) {
-  trap = trap.replace(
-    trapNames.BlankLine,
-    checked(trapNames.BlankLine, trapNode, () => ' ')
-  )
+function configureTrapCondensed(trap: RenderPlugin) {
+  trap = trap.replace(trapDefinitions.BlankLine, () => ' ')
 
   return trap
 }
 
 /** A condensed traQ message is a flattened document, not inline-only parsing. */
 export function configureCondensed(
-  common: Plugin,
-  generic: Plugin,
-  trap: Plugin,
-  options: Options
+  common: RenderPlugin,
+  extensions: RenderPlugin,
+  trap: RenderPlugin,
+  options: Pick<ResolvedOptions, 'validateLink'>
 ) {
   return {
     common: configureCommonCondensed(common, options),
-    generic: configureGenericCondensed(generic),
+    extensions: configureExtensionsCondensed(extensions),
     traq: configureTrapCondensed(trap)
   }
 }

@@ -5,35 +5,18 @@ use crate::{
 use std::sync::LazyLock;
 
 pub fn syntax() -> &'static commonmark::Syntax {
-    static SYNTAX: LazyLock<commonmark::Syntax> =
-        LazyLock::new(|| commonmark::Syntax::new(trap::compat::links()));
-    &SYNTAX
+    traq_markdown_features::commonmark_syntax()
 }
 
 pub fn builder() -> GrammarBuilder {
     let base = syntax();
     let mut builder = GrammarBuilder::new();
-    builder.add(&base.plugin).expect("unique base rules");
-    add_plugins(&mut builder);
+    for feature in traq_markdown_features::selected(traq_markdown_features::Profile::TraqV1) {
+        builder.add((feature.syntax)()).expect("unique V1 features");
+    }
     set_inline_precedence(&mut builder, base);
     set_block_precedence(&mut builder, base);
     builder
-}
-
-fn add_plugins(builder: &mut GrammarBuilder) {
-    for plugin in [
-        extensions::table::plugin(),
-        extensions::math::plugin(),
-        extensions::strikethrough::plugin(),
-        extensions::mark::plugin(),
-        trap::spoiler::plugin(),
-        trap::references::plugin(),
-        trap::stamp::plugin(),
-        extensions::linkify::plugin(),
-        trap::compat::plugin(),
-    ] {
-        builder.add(plugin).expect("unique V1 plugins");
-    }
 }
 
 fn set_inline_precedence(builder: &mut GrammarBuilder, base: &commonmark::Syntax) {
@@ -48,7 +31,10 @@ fn set_inline_precedence(builder: &mut GrammarBuilder, base: &commonmark::Syntax
         (extensions::mark::inline_rule(), &base.inline.emphasis),
         (trap::references::inline_rule(), &base.inline.link),
         (trap::stamp::inline_rule(), &base.inline.entity),
-        (extensions::linkify::inline_rule(), &base.inline.entity),
+        (
+            &traq_markdown_features::traq_linkify_syntax().inline,
+            &base.inline.entity,
+        ),
     ] {
         builder
             .before(rule, anchor)
@@ -58,10 +44,9 @@ fn set_inline_precedence(builder: &mut GrammarBuilder, base: &commonmark::Syntax
 
 fn set_block_precedence(builder: &mut GrammarBuilder, base: &commonmark::Syntax) {
     for (rule, anchor) in [
-        (trap::compat::blank_rule(), &base.block.blank),
+        (trap::spacing::blank_rule(), &base.block.blank),
         (extensions::table::block_rule(), &base.block.fence),
         (extensions::math::block_rule(), &base.block.fence),
-        (trap::compat::quote_rule(), &base.block.quote),
     ] {
         builder
             .before(rule, anchor)

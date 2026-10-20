@@ -1,26 +1,29 @@
 import path from 'path'
 
 import { sdkRoot } from '../../../scripts/paths.ts'
+import { abiExports } from '../typescript/generated/abi.ts'
 
 type WasmMetadata = {
-  buildId: string
-  limits: { inputBytes: number; outputBytes: number; memoryBytes: number }
+  contractId: string
+  provenance: { sourceFingerprint: string }
+  limits: {
+    inputBytes: number
+    outputBytes: number
+    memoryBytes: number
+    document: {
+      sourceBytes: number
+      payloadBytes: number
+      nodes: number
+      depth: number
+    }
+  }
   presets: Record<string, unknown>
 }
 
 const requiredExports = {
   memory: 'memory',
-  input_ptr: 'function',
-  output_ptr: 'function',
-  configure: 'function',
-  parse: 'function',
-  configure_extractor: 'function',
-  extract: 'function',
-  configure_renderer: 'function',
-  render: 'function',
-  contract_ptr: 'function',
-  contract_len: 'function'
-} as const
+  ...Object.fromEntries(Object.keys(abiExports).map(name => [name, 'function']))
+}
 
 export async function readWasmMetadata(
   bytes: Uint8Array
@@ -40,6 +43,14 @@ export async function readWasmMetadata(
     contract_ptr: () => number
     contract_len: () => number
     memory: WebAssembly.Memory
+  }
+  for (const [name, signature] of Object.entries(abiExports)) {
+    const exported = (wasm as unknown as Record<string, unknown>)[name]
+    if (
+      typeof exported !== 'function' ||
+      exported.length !== signature.params.length
+    )
+      throw new Error(`Wasm ${name} parameter signature does not match the ABI`)
   }
   const pointer = wasm.contract_ptr()
   const length = wasm.contract_len()
@@ -62,11 +73,18 @@ export async function readWasmMetadata(
   if (
     !metadata ||
     typeof metadata !== 'object' ||
-    typeof metadata.buildId !== 'string' ||
+    typeof metadata.contractId !== 'string' ||
+    typeof metadata.provenance?.sourceFingerprint !== 'string' ||
     !metadata.limits ||
     !Number.isSafeInteger(metadata.limits.inputBytes) ||
     !Number.isSafeInteger(metadata.limits.outputBytes) ||
     !Number.isSafeInteger(metadata.limits.memoryBytes) ||
+    !metadata.limits.document ||
+    !['sourceBytes', 'payloadBytes', 'nodes', 'depth'].every(key => {
+      const limit =
+        metadata.limits.document[key as keyof typeof metadata.limits.document]
+      return Number.isSafeInteger(limit) && limit > 0
+    }) ||
     !metadata.presets ||
     typeof metadata.presets !== 'object'
   ) {
@@ -132,7 +150,7 @@ export async function writeWasmContract() {
     JSON.stringify(contract, null, 2) + '\n'
   )
   console.log(
-    `Wasm build ${contract.buildId}: ${contract.bytes} bytes, SHA-256 ${contract.sha256}`
+    `Wasm contract ${contract.contractId}: ${contract.bytes} bytes, SHA-256 ${contract.sha256}`
   )
 }
 

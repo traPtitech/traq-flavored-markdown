@@ -1,31 +1,64 @@
-// Package binding implements the shared Markdown Wasm ABI, independent of presets.
+// Package binding implements the generated Markdown Wasm ABI, independent of presets.
 package binding
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
+	"sync/atomic"
+	"unicode/utf8"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 )
 
-// Runtime compiles Wasm once and owns its parser and processor instances.
+type Operation struct {
+	Export        string
+	Input         string
+	Params        []string
+	Result        string
+	Configuration bool
+}
+type Signature struct {
+	Params  []string
+	Results []string
+}
+type Artifact struct {
+	ContractID  string
+	InputBytes  int
+	OutputBytes int
+	MemoryPages uint32
+	Exports     map[string]Signature
+	ErrorCodes  map[string]bool
+}
+
+// Error is shared by domain failures and host transport/lifecycle failures.
+type Error struct {
+	Code     string    `json:"code"`
+	Message  string    `json:"message"`
+	Resource string    `json:"resource,omitempty"`
+	Path     string    `json:"path,omitempty"`
+	Offset   *uint32   `json:"offset,omitempty"`
+	Span     *ast.Span `json:"span,omitempty"`
+}
+
+func (e *Error) Error() string            { return e.Code + ": " + e.Message }
+func failure(code, message string) *Error { return &Error{Code: code, Message: message} }
+func resource(name string) *Error {
+	return &Error{Code: "resource_limit", Message: name + " limit exceeded", Resource: name}
+}
+
 type Runtime struct {
 	runtime  wazero.Runtime
 	compiled wazero.CompiledModule
 	artifact Artifact
+	closed   atomic.Bool
 }
 
-// Artifact pairs the Rust build identity with its generated resource limits.
-type Artifact struct {
-	BuildID     string
-	InputBytes  int
-	MemoryPages uint32
-}
-
-// Instance owns one serialized Wasm execution context. Cancellation during a call closes it.
+// Instance serializes calls. A trap or malformed reply permanently closes it.
 type Instance struct {
 	artifact Artifact
 	module   api.Module
@@ -33,170 +66,243 @@ type Instance struct {
 }
 
 func NewRuntime(ctx context.Context, wasm []byte, artifact Artifact) (*Runtime, error) {
+	if artifact.ContractID == "" || artifact.InputBytes <= 0 || artifact.OutputBytes <= 0 || artifact.MemoryPages == 0 || len(artifact.Exports) == 0 {
+		return nil, failure("contract_mismatch", "incomplete artifact descriptor")
+	}
 	rt := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfig().WithMemoryLimitPages(artifact.MemoryPages).WithCloseOnContextDone(true))
 	compiled, err := rt.CompileModule(ctx, wasm)
 	if err != nil {
 		rt.Close(context.Background())
-		return nil, err
+		return nil, failure("transport_error", err.Error())
 	}
-
-	if err := validateExports(compiled); err != nil {
+	if err := validateExports(compiled, artifact.Exports); err != nil {
 		rt.Close(context.Background())
 		return nil, err
 	}
-
 	return &Runtime{runtime: rt, compiled: compiled, artifact: artifact}, nil
 }
-
-func validateExports(compiled wazero.CompiledModule) error {
+func validateExports(compiled wazero.CompiledModule, signatures map[string]Signature) error {
 	if compiled.ExportedMemories()["memory"] == nil {
-		return fmt.Errorf("invalid parser Wasm exports")
+		return failure("contract_mismatch", "missing Wasm memory")
 	}
-
-	for _, name := range []string{"input_ptr", "output_ptr", "configure", "parse"} {
-		if compiled.ExportedFunctions()[name] == nil {
-			return fmt.Errorf("invalid parser Wasm exports")
+	for name, signature := range signatures {
+		function := compiled.ExportedFunctions()[name]
+		if function == nil || !matches(function.ParamTypes(), signature.Params) || !matches(function.ResultTypes(), signature.Results) {
+			return failure("contract_mismatch", "invalid Wasm export signature: "+name)
 		}
 	}
-
 	return nil
 }
-
-// Close releases the compiled module and all parsers created by this Runtime.
-func (r *Runtime) Close(ctx context.Context) error { return r.runtime.Close(ctx) }
-
-// NewInstance configures an independent instance of the compiled module.
-func (r *Runtime) NewInstance(ctx context.Context, operation, config string) (*Instance, error) {
-	module, err := r.runtime.InstantiateModule(ctx, r.compiled, wazero.NewModuleConfig().WithName(""))
-	if err != nil {
+func matches(actual []api.ValueType, expected []string) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+	for i, value := range expected {
+		if value != "i32" || actual[i] != api.ValueTypeI32 {
+			return false
+		}
+	}
+	return true
+}
+func (r *Runtime) Close(ctx context.Context) error { r.closed.Store(true); return r.runtime.Close(ctx) }
+func (r *Runtime) NewInstance(ctx context.Context, operation Operation, config string) (*Instance, error) {
+	if r.closed.Load() {
+		return nil, failure("disposed", "Wasm runtime is closed")
+	}
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-
-	p := &Instance{module: module, gate: make(chan struct{}, 1), artifact: r.artifact}
-
+	if !operation.Configuration {
+		return nil, failure("invalid_request", "instance requires a configuration operation")
+	}
+	module, err := r.runtime.InstantiateModule(ctx, r.compiled, wazero.NewModuleConfig().WithName(""))
+	if err != nil {
+		return nil, failure("transport_error", err.Error())
+	}
+	p := &Instance{artifact: r.artifact, module: module, gate: make(chan struct{}, 1)}
 	if _, err := p.call(ctx, operation, config); err != nil {
 		p.Close(context.Background())
 		return nil, err
 	}
-
 	return p, nil
 }
-
-// Close releases only this instance, leaving its Runtime usable.
 func (p *Instance) Close(ctx context.Context) error { return p.module.Close(ctx) }
-
-// Call invokes a Markdown ABI operation and copies its JSON result before unlocking.
-func (p *Instance) Call(ctx context.Context, operation, source string, args ...uint64) (json.RawMessage, error) {
+func (p *Instance) Call(ctx context.Context, operation Operation, input string, args ...uint64) (json.RawMessage, error) {
 	select {
 	case p.gate <- struct{}{}:
 		defer func() { <-p.gate }()
-
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-
-	return p.call(ctx, operation, source, args...)
+	return p.call(ctx, operation, input, args...)
 }
-
-func (p *Instance) call(ctx context.Context, operation, input string, args ...uint64) (json.RawMessage, error) {
-	if p.module.IsClosed() {
-		return nil, fmt.Errorf("parser is closed")
-	}
-
-	if err := p.writeInput(ctx, input); err != nil {
-		return nil, err
-	}
-
-	length, err := p.run(ctx, operation, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	output, err := p.readOutput(ctx, length)
-	if err != nil {
-		return nil, err
-	}
-
-	return decodeReply(output, operation, p.artifact.BuildID)
-}
-
-func (p *Instance) writeInput(ctx context.Context, input string) error {
-	if len(input) > p.artifact.InputBytes {
-		return fmt.Errorf("Wasm input limit exceeded")
-	}
-
-	pointer, err := p.module.ExportedFunction("input_ptr").Call(ctx, uint64(len(input)))
-	if err != nil {
+func (p *Instance) poison(err error) error {
+	p.module.Close(context.Background())
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
-	if pointer[0] == 0 {
-		return fmt.Errorf("Wasm input limit exceeded")
+	var typed *Error
+	if errors.As(err, &typed) {
+		return err
 	}
-	if !p.module.Memory().Write(uint32(pointer[0]), []byte(input)) {
-		return fmt.Errorf("invalid Wasm input range")
-	}
-
-	return nil
+	return failure("transport_error", err.Error())
 }
-
-func (p *Instance) run(ctx context.Context, operation string, args ...uint64) (uint64, error) {
-	function := p.module.ExportedFunction(operation)
-	if function == nil {
-		return 0, fmt.Errorf("unsupported Wasm operation: %s", operation)
+func (p *Instance) call(ctx context.Context, operation Operation, input string, args ...uint64) (json.RawMessage, error) {
+	if p.module.IsClosed() {
+		return nil, failure("disposed", "Wasm instance is closed")
 	}
-
-	result, err := function.Call(ctx, args...)
+	if len(args) != len(operation.Params) {
+		return nil, failure("invalid_request", "wrong operation argument count")
+	}
+	signature, ok := p.artifact.Exports[operation.Export]
+	if !ok || len(signature.Params) != len(args) {
+		return nil, failure("invalid_request", "unsupported operation")
+	}
+	for _, arg := range args {
+		if arg > uint64(^uint32(0)) {
+			return nil, failure("invalid_request", "operation argument is outside i32")
+		}
+	}
+	if len(input) > p.artifact.InputBytes {
+		return nil, resource("input_bytes")
+	}
+	if !utf8.ValidString(input) {
+		return nil, failure("invalid_utf8", "input is not valid UTF-8")
+	}
+	pointer, err := p.invoke(ctx, "input_ptr", uint64(len(input)))
+	if err != nil {
+		return nil, p.poison(err)
+	}
+	if pointer == 0 {
+		return nil, p.poison(failure("transport_error", "Wasm rejected bounded input allocation"))
+	}
+	if !p.module.Memory().Write(pointer, []byte(input)) {
+		return nil, p.poison(failure("transport_error", "invalid Wasm input range"))
+	}
+	length, err := p.invoke(ctx, operation.Export, args...)
+	if err != nil {
+		return nil, p.poison(err)
+	}
+	if length == 0 || uint64(length) > uint64(p.artifact.OutputBytes) {
+		return nil, p.poison(failure("transport_error", "invalid Wasm output length"))
+	}
+	pointer, err = p.invoke(ctx, "output_ptr")
+	if err != nil {
+		return nil, p.poison(err)
+	}
+	output, ok := p.module.Memory().Read(pointer, length)
+	if !ok {
+		return nil, p.poison(failure("transport_error", "invalid Wasm output range"))
+	}
+	result, err := decodeReply(output, operation, p.artifact.ContractID, p.artifact.ErrorCodes)
+	var typed *Error
+	if err != nil && (!errors.As(err, &typed) || typed.Code == "transport_error" || typed.Code == "contract_mismatch") {
+		return nil, p.poison(err)
+	}
+	return result, err
+}
+func (p *Instance) invoke(ctx context.Context, name string, args ...uint64) (uint32, error) {
+	function := p.module.ExportedFunction(name)
+	if function == nil {
+		return 0, failure("transport_error", "missing Wasm export: "+name)
+	}
+	values, err := function.Call(ctx, args...)
 	if err != nil {
 		if ctx.Err() != nil {
 			return 0, ctx.Err()
 		}
 		return 0, err
 	}
-
-	return result[0], nil
-}
-
-func (p *Instance) readOutput(ctx context.Context, length uint64) ([]byte, error) {
-	pointer, err := p.module.ExportedFunction("output_ptr").Call(ctx)
-	if err != nil {
-		return nil, err
+	if len(values) != 1 || values[0] > uint64(^uint32(0)) {
+		return 0, failure("transport_error", "invalid Wasm result: "+name)
 	}
-
-	output, ok := p.module.Memory().Read(uint32(pointer[0]), uint32(length))
+	return uint32(values[0]), nil
+}
+func decodeReply(output []byte, operation Operation, contractID string, errorCodes map[string]bool) (json.RawMessage, error) {
+	malformed := func() (json.RawMessage, error) { return nil, failure("transport_error", "malformed Wasm reply") }
+	if ast.ValidateJSON(output) != nil {
+		return malformed()
+	}
+	var reply map[string]json.RawMessage
+	if json.Unmarshal(output, &reply) != nil || len(reply) != 1 {
+		return malformed()
+	}
+	if raw, ok := reply["error"]; ok {
+		var fields map[string]json.RawMessage
+		if json.Unmarshal(raw, &fields) != nil {
+			return malformed()
+		}
+		for name := range fields {
+			switch name {
+			case "code", "message", "resource", "path", "offset", "span":
+			default:
+				return malformed()
+			}
+		}
+		var err Error
+		decoder := json.NewDecoder(bytes.NewReader(raw))
+		decoder.DisallowUnknownFields()
+		if decoder.Decode(&err) != nil || err.Message == "" {
+			return malformed()
+		}
+		if err.Span != nil {
+			var spanFields map[string]json.RawMessage
+			if json.Unmarshal(fields["span"], &spanFields) != nil || len(spanFields) != 2 || spanFields["start"] == nil || spanFields["end"] == nil {
+				return malformed()
+			}
+			var fields struct {
+				Span struct {
+					Start *uint32 `json:"start"`
+					End   *uint32 `json:"end"`
+				} `json:"span"`
+			}
+			if json.Unmarshal(raw, &fields) != nil || fields.Span.Start == nil || fields.Span.End == nil {
+				return malformed()
+			}
+		}
+		if errorCodes[err.Code] {
+			return nil, &err
+		}
+		return malformed()
+	}
+	raw, ok := reply["ok"]
 	if !ok {
-		return nil, fmt.Errorf("invalid Wasm output range")
+		return malformed()
 	}
-
-	return output, nil
+	if operation.Configuration {
+		var config map[string]json.RawMessage
+		var received string
+		if json.Unmarshal(raw, &config) != nil || len(config) != 1 || json.Unmarshal(config["contractId"], &received) != nil || received == "" {
+			return malformed()
+		}
+		if received != contractID {
+			return nil, failure("contract_mismatch", "Wasm contract does not match this SDK")
+		}
+	}
+	if operation.Result == "text" {
+		var text string
+		if json.Unmarshal(raw, &text) != nil {
+			return malformed()
+		}
+	}
+	if bytes.Equal(raw, []byte("null")) {
+		return malformed()
+	}
+	return raw, nil
 }
 
-func decodeReply(output []byte, operation, buildID string) (json.RawMessage, error) {
-	var reply struct {
-		Document   json.RawMessage `json:"document"`
-		Result     json.RawMessage `json:"result"`
-		Error      json.RawMessage `json:"error"`
-		Configured string          `json:"configured"`
+// DocumentError preserves structured validation diagnostics in the ABI error family.
+func DocumentError(err error) error {
+	var validation *ast.ValidationError
+	if errors.As(err, &validation) {
+		code := "invalid_document"
+		if validation.Resource != "" {
+			code = "resource_limit"
+		}
+		return &Error{Code: code, Message: validation.Message, Path: validation.Path, Resource: validation.Resource, Span: validation.Span}
 	}
-
-	if err := json.Unmarshal(output, &reply); err != nil {
-		return nil, err
-	}
-
-	if reply.Error != nil {
-		return nil, fmt.Errorf("markdown: %s", reply.Error)
-	}
-
-	if strings.HasPrefix(operation, "configure") && reply.Configured != buildID {
-		return nil, fmt.Errorf("Wasm does not match this SDK build")
-	}
-
-	if reply.Document != nil {
-		return reply.Document, nil
-	}
-
-	return reply.Result, nil
+	return failure("invalid_document", fmt.Sprint(err))
 }

@@ -486,17 +486,20 @@
                 "end": 52,
                 "start": 0
               },
-              "data": {},
+              "data": {
+                "alignments": [
+                  "left",
+                  "right"
+                ]
+              },
               "children": [
                 {
-                  "kind": "generic.row",
+                  "kind": "generic.table_header_row",
                   "span": {
                     "end": 17,
                     "start": 0
                   },
-                  "data": {
-                    "header": true
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "generic.cell",
@@ -504,9 +507,7 @@
                         "end": 6,
                         "start": 2
                       },
-                      "data": {
-                        "alignment": "left"
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "commonmark.text",
@@ -526,9 +527,7 @@
                         "end": 14,
                         "start": 9
                       },
-                      "data": {
-                        "alignment": "right"
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "commonmark.text",
@@ -550,9 +549,7 @@
                     "end": 52,
                     "start": 33
                   },
-                  "data": {
-                    "header": false
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "generic.cell",
@@ -560,9 +557,7 @@
                         "end": 42,
                         "start": 35
                       },
-                      "data": {
-                        "alignment": "left"
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "commonmark.strong",
@@ -592,9 +587,7 @@
                         "end": 50,
                         "start": 45
                       },
-                      "data": {
-                        "alignment": "right"
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "generic.inline_math",
@@ -744,8 +737,14 @@
                   },
                   "data": {
                     "literal": ":stamp:",
-                    "kind": { "type": "normal", "name": "stamp" },
-                    "effects": { "animations": [], "size": "none" }
+                    "kind": {
+                      "type": "normal",
+                      "name": "stamp"
+                    },
+                    "effects": {
+                      "animations": [],
+                      "size": "none"
+                    }
                   }
                 },
                 {
@@ -766,8 +765,14 @@
                   },
                   "data": {
                     "literal": ":stamp.large:",
-                    "kind": { "type": "normal", "name": "stamp" },
-                    "effects": { "animations": [], "size": "large" }
+                    "kind": {
+                      "type": "normal",
+                      "name": "stamp"
+                    },
+                    "effects": {
+                      "animations": [],
+                      "size": "large"
+                    }
                   }
                 },
                 {
@@ -788,8 +793,14 @@
                   },
                   "data": {
                     "literal": ":@user:",
-                    "kind": { "type": "user", "name": "user" },
-                    "effects": { "animations": [], "size": "none" }
+                    "kind": {
+                      "type": "user",
+                      "name": "user"
+                    },
+                    "effects": {
+                      "animations": [],
+                      "size": "none"
+                    }
                   }
                 }
               ]
@@ -809,8 +820,14 @@
               },
               "data": {
                 "literal": ":stamp:",
-                "kind": { "type": "normal", "name": "stamp" },
-                "effects": { "animations": [], "size": "none" }
+                "kind": {
+                  "type": "normal",
+                  "name": "stamp"
+                },
+                "effects": {
+                  "animations": [],
+                  "size": "none"
+                }
               }
             },
             {
@@ -831,8 +848,14 @@
               },
               "data": {
                 "literal": ":stamp.large:",
-                "kind": { "type": "normal", "name": "stamp" },
-                "effects": { "animations": [], "size": "large" }
+                "kind": {
+                  "type": "normal",
+                  "name": "stamp"
+                },
+                "effects": {
+                  "animations": [],
+                  "size": "large"
+                }
               }
             },
             {
@@ -853,8 +876,14 @@
               },
               "data": {
                 "literal": ":@user:",
-                "kind": { "type": "user", "name": "user" },
-                "effects": { "animations": [], "size": "none" }
+                "kind": {
+                  "type": "user",
+                  "name": "user"
+                },
+                "effects": {
+                  "animations": [],
+                  "size": "none"
+                }
               }
             }
           ],
@@ -1711,32 +1740,22 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 1,
+                    "end": 37,
                     "start": 0
                   },
                   "data": {
-                    "value": "!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 37,
-                    "start": 1
-                  },
-                  "data": {
                     "destination": "https://example.com/image.png",
-                    "form": "explicit",
-                    "title": null
+                    "title": null,
+                    "label_source": "alt"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 5,
-                        "start": 2
+                        "start": 2,
+                        "end": 5
                       },
                       "data": {
                         "value": "alt"
@@ -1754,32 +1773,22 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 1,
+                "end": 37,
                 "start": 0
               },
               "data": {
-                "value": "!"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 37,
-                "start": 1
-              },
-              "data": {
                 "destination": "https://example.com/image.png",
-                "form": "explicit",
-                "title": null
+                "title": null,
+                "label_source": "alt"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 5,
-                    "start": 2
+                    "start": 2,
+                    "end": 5
                   },
                   "data": {
                     "value": "alt"
@@ -2023,8 +2032,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -2034,9 +2045,7 @@
                     "end": 25,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -2065,8 +2074,10 @@
                         "start": 10
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -2076,9 +2087,7 @@
                             "end": 25,
                             "start": 10
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",

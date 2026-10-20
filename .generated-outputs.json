@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "outputs": [
+    {
+      "owner": "commonmark-plugin",
+      "path": "packages/plugins/commonmark/go/generated_nodes.go"
+    },
+    {
+      "owner": "commonmark-plugin",
+      "path": "packages/plugins/commonmark/typescript/generated/commonmark.ts"
+    },
+    {
+      "owner": "extensions-plugin",
+      "path": "packages/plugins/extensions/go/generated_nodes.go"
+    },
+    {
+      "owner": "extensions-plugin",
+      "path": "packages/plugins/extensions/typescript/generated/nodes.ts"
+    },
+    {
+      "owner": "traq-plugin",
+      "path": "packages/plugins/traq/go/generated_nodes.go"
+    },
+    {
+      "owner": "traq-plugin",
+      "path": "packages/plugins/traq/typescript/generated/trap.ts"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/go/generated_artifact.go"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/go/generated_nodes.go"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/go/generated_presets.go"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/go/generated_processing.go"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/typescript/generated/abi.ts"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/typescript/generated/artifact.ts"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/typescript/generated/nodes.ts"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/typescript/generated/presets.ts"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/typescript/generated/processing.ts"
+    }
+  ]
+}

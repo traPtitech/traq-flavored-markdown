@@ -24,12 +24,12 @@ export class PluginGroup {
     return new PluginGroup(name, this)
   }
 
-  new(name: string) {
-    return new Plugin(name, this)
+  plugin(name: string) {
+    return new PluginDeclaration(name, this)
   }
 }
 
-export class Plugin {
+export class PluginDeclaration {
   declare private readonly identity: void
 
   readonly name: string

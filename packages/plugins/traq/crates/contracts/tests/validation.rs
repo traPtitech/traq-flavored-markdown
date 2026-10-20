@@ -1,6 +1,6 @@
 use markdown_ast::{Node, Span};
 use markdown_trap_contracts::{
-    BlankLineData, EmbeddingData, EmbeddingKind, ReferenceData, ReferenceKind, SpoilerData,
+    BlankLine, Embedding, EmbeddingKind, Reference, ReferenceKind, Spoiler,
 };
 
 fn span() -> Span {
@@ -9,11 +9,11 @@ fn span() -> Span {
 
 #[test]
 fn references_embeddings_and_blank_lines_are_leaves() {
-    let child = Node::leaf(span(), BlankLineData {});
+    let child = Node::leaf(span(), BlankLine {});
     assert!(
-        !Node::new(
+        Node::new(
             span(),
-            ReferenceData {
+            Reference {
                 target: ReferenceKind::User,
                 id: "id".into(),
                 label: "label".into(),
@@ -21,11 +21,12 @@ fn references_embeddings_and_blank_lines_are_leaves() {
             vec![child.clone()],
         )
         .validate()
+        .is_err()
     );
     assert!(
-        !Node::new(
+        Node::new(
             span(),
-            EmbeddingData {
+            Embedding {
                 target: EmbeddingKind::File,
                 id: "id".into(),
                 label: "label".into(),
@@ -34,7 +35,16 @@ fn references_embeddings_and_blank_lines_are_leaves() {
             vec![child.clone()],
         )
         .validate()
+        .is_err()
     );
-    assert!(!Node::new(span(), BlankLineData {}, vec![child.clone()]).validate());
-    assert!(!Node::new(span(), SpoilerData {}, vec![child]).validate());
+    assert!(
+        Node::new(span(), BlankLine {}, vec![child.clone()])
+            .validate()
+            .is_err()
+    );
+    assert!(
+        Node::new(span(), Spoiler {}, vec![child])
+            .validate()
+            .is_err()
+    );
 }
