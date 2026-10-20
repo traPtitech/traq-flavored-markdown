@@ -1,7 +1,6 @@
 import path from 'path'
 
 import { sdkRoot } from '../../../scripts/paths.ts'
-import { abiExports } from '../typescript/generated/abi.ts'
 
 type WasmMetadata = {
   contractId: string
@@ -20,14 +19,18 @@ type WasmMetadata = {
   presets: Record<string, unknown>
 }
 
-const requiredExports = {
-  memory: 'memory',
-  ...Object.fromEntries(Object.keys(abiExports).map(name => [name, 'function']))
-}
-
 export async function readWasmMetadata(
   bytes: Uint8Array
 ): Promise<WasmMetadata> {
+  // The workspace graph generates the ABI and builds core before assembling
+  // Wasm. Loading its validators at startup would require core/dist too early.
+  const { abiExports } = await import('../typescript/generated/abi.ts')
+  const requiredExports = {
+    memory: 'memory',
+    ...Object.fromEntries(
+      Object.keys(abiExports).map(name => [name, 'function'])
+    )
+  }
   const module = await WebAssembly.compile(new Uint8Array(bytes).buffer)
   const exports = new Map(
     WebAssembly.Module.exports(module).map(item => [item.name, item.kind])
