@@ -31,10 +31,11 @@ async function wasmRustFlags() {
     )
   }
 
-  const config = Bun.TOML.parse(
-    await Bun.file(path.join(repositoryRoot, '.cargo', 'config.toml')).text()
-  ) as { target?: Record<string, { rustflags?: unknown }> }
-  const targetFlags = config.target?.['wasm32-unknown-unknown']?.rustflags
+  const configFile = Bun.file(path.join(repositoryRoot, '.cargo', 'config.toml'))
+  const config = (await configFile.exists()
+    ? Bun.TOML.parse(await configFile.text())
+    : {}) as { target?: Record<string, { rustflags?: unknown }> }
+  const targetFlags = config.target?.['wasm32-unknown-unknown']?.rustflags ?? []
   if (
     !Array.isArray(targetFlags) ||
     !targetFlags.every(flag => typeof flag === 'string')
@@ -60,8 +61,8 @@ async function wasmRustFlags() {
     )
   )
 
-  // CARGO_ENCODED_RUSTFLAGS overrides target rustflags, so retain the memory
-  // linker limit from Cargo's config alongside the remapping flags.
+  // Preserve user target flags alongside remapping. The crate's build script
+  // derives the linker memory limit from its native artifact limits.
   return [
     ...targetFlags,
     ...(Bun.env.CARGO_ENCODED_RUSTFLAGS
