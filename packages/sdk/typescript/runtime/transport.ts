@@ -11,6 +11,7 @@ import {
 import type { Document } from '../generated/nodes.js'
 import { type Extraction, isExtraction } from '../generated/processing.js'
 import { MarkdownError } from './errors.js'
+import type { ProcessedDocument } from './index.js'
 import { encodeRequest } from './json.js'
 
 type OperationName = keyof typeof operations
@@ -19,6 +20,7 @@ type Results = {
   document: Document
   extraction: Extraction
   text: string
+  processing: ProcessedDocument
 }
 type Result<N extends OperationName> = Results[(typeof operations)[N]['result']]
 type Input<N extends OperationName> =
@@ -146,9 +148,9 @@ export function createTransport(
         cause
       )
     }
-    const byteLimit =
-      operation === 'parse' ? documentLimits.sourceBytes : inputBytes
-    const resource = operation === 'parse' ? 'source_bytes' : 'input_bytes'
+    const sourceInput = descriptor.input === 'text' && !descriptor.configuration
+    const byteLimit = sourceInput ? documentLimits.sourceBytes : inputBytes
+    const resource = sourceInput ? 'source_bytes' : 'input_bytes'
     if (source.length > byteLimit)
       throw new MarkdownError(
         {
@@ -217,7 +219,13 @@ export function createTransport(
               ? isDocument(value)
               : descriptor.result === 'extraction'
                 ? isExtraction(value)
-                : typeof value === 'string'
+                : descriptor.result === 'processing'
+                  ? fields(value, {
+                      document: isDocument,
+                      extraction: isExtraction,
+                      plainText: string
+                    })
+                  : typeof value === 'string'
         if (!valid) throw new Error('Malformed Wasm success value')
       }
     } catch (cause) {

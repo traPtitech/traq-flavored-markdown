@@ -13,12 +13,17 @@ export type {
   MarkdownErrorCode,
   Parser,
   Extractor,
-  PlainTextRenderer
+  PlainTextRenderer,
+  Processor,
+  ProcessedDocument
 } from './index.js'
 
 export type BrowserRuntime = Pick<
   Runtime,
-  'createParser' | 'createExtractor' | 'createRenderer'
+  | 'createParser'
+  | 'createExtractor'
+  | 'createPlainTextRenderer'
+  | 'createProcessor'
 >
 
 let loading: Promise<BrowserRuntime> | undefined
@@ -43,7 +48,8 @@ export function loadRuntime(): Promise<BrowserRuntime> {
     const shared: BrowserRuntime = {
       createParser: runtime.createParser,
       createExtractor: runtime.createExtractor,
-      createRenderer: runtime.createRenderer
+      createPlainTextRenderer: runtime.createPlainTextRenderer,
+      createProcessor: runtime.createProcessor
     }
 
     return Object.freeze(shared)

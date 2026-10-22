@@ -1,8 +1,12 @@
+import type { ReadonlyDocument } from '@traq-flavored-markdown/core'
 import type { Document } from '../generated/nodes.js'
 import type { Preset } from '../generated/presets.js'
 import type {
   Extraction,
   ExtractorOptions,
+  ProcessingResult,
+  ProcessorOptions,
+  ProcessorConfiguration,
   RendererOptions
 } from '../generated/processing.js'
 import { MarkdownError } from './errors.js'
@@ -14,17 +18,26 @@ export interface Parser {
   dispose(): void
 }
 export interface Extractor {
-  extract(document: Document): Extraction
+  extract(document: ReadonlyDocument): Extraction
   dispose(): void
 }
 export interface PlainTextRenderer {
-  render(document: Document): string
+  render(document: ReadonlyDocument): string
+  dispose(): void
+}
+export interface ProcessedDocument extends ProcessingResult {
+  document: Document
+}
+export interface Processor {
+  process(source: string): ProcessedDocument
+  processInline(source: string): ProcessedDocument
   dispose(): void
 }
 export interface Runtime {
   createParser(preset: Preset): Parser
   createExtractor(options?: ExtractorOptions): Extractor
-  createRenderer(options?: RendererOptions): PlainTextRenderer
+  createPlainTextRenderer(options?: RendererOptions): PlainTextRenderer
+  createProcessor(preset: Preset, options?: ProcessorOptions): Processor
   dispose(): void
 }
 
@@ -53,14 +66,22 @@ export async function createRuntime(bytes: Uint8Array): Promise<Runtime> {
     createExtractor(options: ExtractorOptions = {}): Extractor {
       const instance = instantiate('configureExtractor', options)
       return Object.freeze({
-        extract: (document: Document) => instance.call('extract', document),
+        extract: (document: ReadonlyDocument) => instance.call('extract', document),
         dispose: instance.dispose
       })
     },
-    createRenderer(options: RendererOptions = {}): PlainTextRenderer {
+    createPlainTextRenderer(options: RendererOptions = {}): PlainTextRenderer {
       const instance = instantiate('configureRenderer', options)
       return Object.freeze({
-        render: (document: Document) => instance.call('render', document),
+        render: (document: ReadonlyDocument) => instance.call('render', document),
+        dispose: instance.dispose
+      })
+    },
+    createProcessor(preset: Preset, options: ProcessorOptions = {}): Processor {
+      const instance = instantiate('configureProcessor', { preset, options })
+      return Object.freeze({
+        process: (source: string) => instance.call('process', source, 0),
+        processInline: (source: string) => instance.call('process', source, 1),
         dispose: instance.dispose
       })
     },
@@ -71,8 +92,16 @@ export async function createRuntime(bytes: Uint8Array): Promise<Runtime> {
   })
 
   function instantiate(
-    operation: 'configure' | 'configureExtractor' | 'configureRenderer',
-    input: string | ExtractorOptions | RendererOptions
+    operation:
+      | 'configure'
+      | 'configureExtractor'
+      | 'configureRenderer'
+      | 'configureProcessor',
+    input:
+      | string
+      | ExtractorOptions
+      | RendererOptions
+      | ProcessorConfiguration
   ): Transport {
     if (!module)
       throw new MarkdownError(

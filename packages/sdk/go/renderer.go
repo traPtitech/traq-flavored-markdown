@@ -2,8 +2,6 @@ package markdown
 
 import (
 	"context"
-	"encoding/json"
-	"unicode/utf8"
 
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding"
 )
@@ -12,18 +10,7 @@ import (
 type PlainTextRenderer struct{ instance *binding.Instance }
 
 func (r *Runtime) NewPlainTextRenderer(ctx context.Context, options RendererOptions) (*PlainTextRenderer, error) {
-	if len(options.Origin) > inputBytes {
-		return nil, &Error{Code: "resource_limit", Resource: "input_bytes", Message: "input_bytes limit exceeded"}
-	}
-	if !utf8.ValidString(options.Origin) {
-		return nil, &Error{Code: "invalid_utf8", Message: "origin is not valid UTF-8"}
-	}
-	config, err := json.Marshal(options)
-	if err != nil {
-		return nil, err
-	}
-
-	instance, err := r.runtime.NewInstance(ctx, operationConfigureRenderer, string(config))
+	instance, err := r.configure(ctx, operationConfigureRenderer, options, options.Origin)
 	if err != nil {
 		return nil, err
 	}
@@ -45,18 +32,7 @@ func (r *PlainTextRenderer) RenderValidated(ctx context.Context, document *Valid
 		return "", &Error{Code: "invalid_document", Message: "document is required"}
 	}
 
-	raw, err := r.instance.Call(ctx, operationRender, string(document.JSON()))
-	if err != nil {
-		return "", err
-	}
-
-	var text string
-	if err := json.Unmarshal(raw, &text); err != nil {
-		r.instance.Close(context.Background())
-		return "", &Error{Code: "transport_error", Message: "Wasm returned invalid text: " + err.Error()}
-	}
-
-	return text, nil
+	return callDecoded(ctx, r.instance, operationRender, string(document.JSON()), decodeJSON[string])
 }
 
 func (r *PlainTextRenderer) Close(ctx context.Context) error {

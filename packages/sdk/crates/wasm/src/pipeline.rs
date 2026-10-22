@@ -1,27 +1,19 @@
 //! A configured pipeline keeps parsing and related consumers on one native tree.
 use crate::{
-    abi::{self, Error, ErrorCode},
+    abi::{self, Error, ErrorCode, ProcessorConfiguration},
     buffers::IO,
     grammar,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::cell::RefCell;
 use traq_markdown_grammar::{Grammar, bindings};
-use traq_markdown_processing::pipeline::{ProcessingResult, Processor, ProcessorOptions};
+use traq_markdown_processing::pipeline::{ProcessingResult, Processor};
 
 struct Pipeline {
     grammar: Grammar,
     processor: Processor,
 }
 thread_local! { static PIPELINE: RefCell<Option<Pipeline>> = const { RefCell::new(None) }; }
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Configuration {
-    preset: String,
-    #[serde(default)]
-    options: ProcessorOptions,
-}
 
 #[derive(Serialize)]
 struct ProcessedDocument {
@@ -34,7 +26,7 @@ struct ProcessedDocument {
 pub extern "C" fn configure_processor() -> u32 {
     IO.with_borrow_mut(|io| {
         let result = (|| {
-            let config: Configuration =
+            let config: ProcessorConfiguration =
                 serde_json::from_str(io.source()?).map_err(Error::request)?;
             let grammar = bindings::grammar(&config.preset)
                 .map_err(|error| Error::new(ErrorCode::UnknownPreset, error))?;

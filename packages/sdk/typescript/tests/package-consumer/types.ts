@@ -1,4 +1,6 @@
 import { type Extraction } from '@traq-flavored-markdown/sdk'
+import { DocumentContext } from '@traq-flavored-markdown/core'
+import { html as composeHtml } from '@traq-flavored-markdown/sdk/renderer/composition'
 import {
   type Document,
   type Node,
@@ -36,7 +38,17 @@ if (isPreset(storedGrammarVersion)) runtime.createParser(storedGrammarVersion)
 runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
 const output: Extraction = extractor.extract(document)
-const plainText: string = runtime.createRenderer().render(document)
+const plainText: string = runtime.createPlainTextRenderer().render(document)
+const processed = runtime.createProcessor(presets.traq.v1, { whitespace: 'preserve' }).process('text')
+const processedDocument: Document = processed.document
+const snapshot = new DocumentContext(processedDocument)
+runtime.createPlainTextRenderer().render(snapshot.document)
+const customHtml: string = composeHtml({ math: { render: tex => tex } }).render(snapshot.document)
+const snapshotNode = snapshot.document.children[0]
+if (isKnownNode(snapshotNode) && snapshotNode.kind === names.Stamp) {
+  // @ts-expect-error generated guards preserve snapshot payload ownership
+  snapshotNode.data.effects.animations.push('rotate')
+}
 runtime.createExtractor({})
 const mentions: string[] = output.references.mentions
 const browserRuntime = await loadRuntime()
@@ -44,8 +56,8 @@ browserRuntime.createParser(presets.traq.v1)
 if (isBrowserPreset(storedGrammarVersion))
   browserRuntime.createParser(storedGrammarVersion)
 browserRuntime.createExtractor({ origin: '' })
-browserRuntime.createRenderer({})
-void [mentions, plainText]
+browserRuntime.createPlainTextRenderer({})
+void [mentions, plainText, customHtml]
 // @ts-expect-error The SDK owns the shared browser Runtime's lifetime.
 browserRuntime.dispose()
 // @ts-expect-error Extractor has no host AST parsing API

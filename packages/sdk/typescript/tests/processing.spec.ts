@@ -9,11 +9,47 @@ const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
 ).bytes()
 
+test('fused processing returns the same AST, extraction and text as independent consumers', async () => {
+  const runtime = await createRuntime(bytes)
+  try {
+    const origin = 'https://q.example.test'
+    const source =
+      '**hello**\n\n' + origin + '/files/00000000-0000-0000-0000-000000000001'
+    const parser = runtime.createParser(presets.traq.v1)
+    const extractor = runtime.createExtractor({ origin })
+    const renderer = runtime.createPlainTextRenderer({ origin })
+    const processor = runtime.createProcessor(presets.traq.v1, { origin })
+    for (const inline of [false, true]) {
+      const document = inline
+        ? parser.parseInline(source)
+        : parser.parse(source)
+      const result = inline
+        ? processor.processInline(source)
+        : processor.process(source)
+      expect(result).toEqual({
+        document,
+        extraction: extractor.extract(document),
+        plainText: renderer.render(document)
+      })
+    }
+    const preserved = runtime.createProcessor(presets.traq.v1, {
+      whitespace: 'preserve'
+    })
+    expect(preserved.process('a\n\nb').plainText).toContain('\n')
+    expect(processor.process('a\n\nb').plainText).toBe('a b')
+    processor.dispose()
+    expect(() => processor.process(source)).toThrow(/disposed/)
+    expect(preserved.process(source).document.source).toBe(source)
+  } finally {
+    runtime.dispose()
+  }
+})
+
 test('native Wasm operations follow the shared cross-language structure contract', async () => {
   const runtime = await createRuntime(bytes)
   try {
     const extractor = runtime.createExtractor()
-    const renderer = runtime.createRenderer()
+    const renderer = runtime.createPlainTextRenderer()
     for (const fixture of structureFixtures) {
       const document = fixture.document as Document
       for (const operation of [
@@ -44,7 +80,7 @@ test('native text rendering and extraction resolve omitted options and expose ty
   try {
     const parser = runtime.createParser(presets.traq.v1)
     const extractor = runtime.createExtractor()
-    const renderer = runtime.createRenderer()
+    const renderer = runtime.createPlainTextRenderer()
     const document = parser.parse('**hello** world')
     expect(extractor.extract(document).messageText).toBe('**hello** world')
     expect(renderer.render(document)).toBe('hello world')

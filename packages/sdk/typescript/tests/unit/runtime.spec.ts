@@ -162,10 +162,48 @@ test('successful values and contract mismatches are checked before reaching call
   stale.dispose()
 })
 
+test('fused processing rejects malformed members before exposing a result', async () => {
+  const extraction = {
+    attachments: [],
+    citations: [],
+    messageText: 'x',
+    referenceEmbedding: { candidates: [], unembeddedText: 'x' },
+    references: {
+      channelLinks: [],
+      embeddings: [],
+      groupMentions: [],
+      mentions: []
+    }
+  }
+  const result = {
+    document: { source: 'x', children: [] },
+    extraction,
+    plainText: 'x'
+  }
+  const runtime = await createRuntime(
+    moduleBytes(JSON.stringify({ ok: result }))
+  )
+  expect(runtime.createProcessor('commonmark').process('x')).toEqual(result)
+  runtime.dispose()
+  for (const invalid of [
+    { ...result, document: null },
+    { ...result, extraction: {} },
+    { ...result, plainText: null }
+  ]) {
+    const runtime = await createRuntime(
+      moduleBytes(JSON.stringify({ ok: invalid }))
+    )
+    const processor = runtime.createProcessor('commonmark')
+    expect(thrown(() => processor.process('x')).code).toBe('transport_error')
+    expect(thrown(() => processor.process('x')).code).toBe('disposed')
+    runtime.dispose()
+  }
+})
+
 test('host bounds requests before transport and preserves operation details on reusable instances', async () => {
   expect(coreDocumentLimits).toEqual(documentLimits)
   const runtime = await createRuntime(moduleBytes('{"ok":"rendered"}'))
-  const renderer = runtime.createRenderer()
+  const renderer = runtime.createPlainTextRenderer()
   let reads = 0
   const document = Object.defineProperty({ children: [] }, 'source', {
     enumerable: true,

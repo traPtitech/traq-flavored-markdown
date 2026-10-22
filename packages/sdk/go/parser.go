@@ -56,27 +56,11 @@ func (p *Parser) ParseInlineValidated(ctx context.Context, source string) (*Vali
 	return p.parseValidated(ctx, source, 1)
 }
 func (p *Parser) parseValidated(ctx context.Context, source string, mode uint64) (*ValidatedDocument, error) {
-	raw, err := p.instance.Call(ctx, operationParse, source, mode)
-	if err != nil {
-		return nil, err
-	}
-	document, err := ast.DecodeValidatedDocument(raw, newPayload)
-	if err != nil {
-		p.instance.Close(context.Background())
-		return nil, &Error{Code: "transport_error", Message: "Wasm returned an invalid document: " + err.Error()}
-	}
-	return document, nil
+	return callDecoded(ctx, p.instance, operationParse, source, func(raw []byte) (*ValidatedDocument, error) {
+		return ast.DecodeValidatedDocument(raw, newPayload)
+	}, mode)
 }
 
 func (p *Parser) parse(ctx context.Context, source string, mode uint64) (*Document, error) {
-	raw, err := p.instance.Call(ctx, operationParse, source, mode)
-	if err != nil {
-		return nil, err
-	}
-	document, err := DecodeDocument(raw)
-	if err != nil {
-		p.instance.Close(context.Background())
-		return nil, &Error{Code: "transport_error", Message: "Wasm returned an invalid document: " + err.Error()}
-	}
-	return document, nil
+	return callDecoded(ctx, p.instance, operationParse, source, DecodeDocument, mode)
 }
