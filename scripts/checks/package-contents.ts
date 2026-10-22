@@ -4,6 +4,7 @@ import { $ } from 'bun'
 
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot, sdkRoot } from '../paths.ts'
+import { readNpmPack } from './npm-pack.ts'
 
 const tempRoot = (
   Bun.env.TEMP ??
@@ -30,7 +31,7 @@ try {
   const archives: string[] = []
   for (const repo of packageNames) {
     const cwd = packageRoot(repo)
-    const [packed] = JSON.parse(
+    const packed = readNpmPack(
       await capture(
         npm,
         [
@@ -41,8 +42,9 @@ try {
           temporaryDirectory
         ],
         cwd
-      )
-    ) as { filename: string; files: { path: string }[] }[]
+      ),
+      manifests[repo].name
+    )
     const archive = path.join(temporaryDirectory, packed.filename)
     archives.push(archive)
     const files = new Set(packed.files.map(file => file.path))
