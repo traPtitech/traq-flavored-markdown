@@ -2,6 +2,14 @@
   "version": 1,
   "outputs": [
     {
+      "owner": "core",
+      "path": "packages/core/go/ast/generated_limits.go"
+    },
+    {
+      "owner": "core",
+      "path": "packages/core/typescript/generated/limits.ts"
+    },
+    {
       "owner": "commonmark-plugin",
       "path": "packages/plugins/commonmark/go/generated_nodes.go"
     },
@@ -28,6 +36,10 @@
     {
       "owner": "sdk",
       "path": "packages/sdk/go/generated_artifact.go"
+    },
+    {
+      "owner": "sdk",
+      "path": "packages/sdk/go/generated_errors.go"
     },
     {
       "owner": "sdk",

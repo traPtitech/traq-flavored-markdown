@@ -41,6 +41,7 @@ fn main() -> markdown_contract_export::Result<()> {
             ("RendererOptions".into(), Direction::Request),
             ("Extraction".into(), Direction::Response),
             ("ProcessorOptions".into(), Direction::Request),
+            ("ProcessorConfiguration".into(), Direction::Request),
             ("ProcessingResult".into(), Direction::Response),
         ]),
         processing: BTreeMap::from([
@@ -61,11 +62,14 @@ fn main() -> markdown_contract_export::Result<()> {
                 schema::<ProcessorOptions>(Contract::Deserialize),
             ),
             (
+                "ProcessorConfiguration".into(),
+                schema::<abi::ProcessorConfiguration>(Contract::Deserialize),
+            ),
+            (
                 "ProcessingResult".into(),
                 schema::<ProcessingResult>(Contract::Serialize),
             ),
         ]),
-        parse_error: schema::<traq_markdown_grammar::ParseError>(Contract::Serialize),
         presets: traq_markdown_grammar::bindings::preset_exports(),
         limits: serde_json::from_value(limits::metadata())?,
         nodes: node_metadata::export()?.nodes,

@@ -5,7 +5,7 @@ import { expect, test } from 'bun:test'
 import ts from 'typescript'
 
 import { packageRoot } from '../paths.ts'
-import { withTempDirectory } from '../testing/temp-directory.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import type { RawSchema } from './schema.ts'
 import { emitTypeScriptValidators } from './typescript-validators.ts'
 

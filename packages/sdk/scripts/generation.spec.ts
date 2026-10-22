@@ -16,16 +16,8 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
   }
   const key = 'custom::BadgeData'
 
-  const parseError: RawSchema = {
-    title: 'ParseError',
-    type: 'object',
-    additionalProperties: false,
-    properties: { code: { type: 'string', const: 'internal_error' } },
-    required: ['code']
-  }
   const manifest = {
-    nodes: { [key]: { schema, group: 'trap' } },
-    parseError
+    nodes: { [key]: { schema, group: 'trap' } }
   }
   const generated = typescriptFiles(manifest)
   expect(generated.get('typescript/generated/nodes.ts')).toMatch(
@@ -34,14 +26,11 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
   expect(generated.get('typescript/generated/nodes.ts')).toMatch(
     /return validators\.get\(node\.kind\)/
   )
-  expect(generated.get('typescript/generated/nodes.ts')).toContain(
-    'export type ParseError ='
-  )
   expect(sdkGoNodes({ nodes: { [key]: { group: 'trap' } } })).toContain(
     'packages/plugins/traq/go'
   )
   expect(() =>
-    typescriptFiles({ nodes: { [key]: { group: 'custom' } }, parseError })
+    typescriptFiles({ nodes: { [key]: { group: 'custom' } } })
   ).toThrow('Unknown node contract group: custom')
   expect(() => sdkGoNodes({ nodes: { [key]: { group: 'custom' } } })).toThrow(
     'Unknown node contract group: custom'

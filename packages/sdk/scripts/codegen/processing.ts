@@ -1,7 +1,4 @@
-import {
-  emitGoDefinition,
-  goValidationRuntime
-} from '../../../../scripts/codegen/go.ts'
+import { emitGoDefinition, goFile } from '../../../../scripts/codegen/go.ts'
 import {
   type Direction,
   normalizeContracts
@@ -35,9 +32,10 @@ export function processingFiles(
     ],
     [
       'go/generated_processing.go',
-      '// Code generated from Rust processing contracts. DO NOT EDIT.\npackage markdown\nimport (\n"bytes"\n"encoding/json"\n"fmt"\n"unicode/utf8"\n)\n' +
-        goValidationRuntime +
+      goFile(
+        'markdown',
         [...contracts.definitions.values()].map(emitGoDefinition).join('\n')
+      )
     ]
   ])
 }

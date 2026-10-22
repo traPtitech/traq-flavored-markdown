@@ -1,3 +1,4 @@
+import { emitGoDefinition, goFile } from '../../../../scripts/codegen/go.ts'
 import { normalizeContracts } from '../../../../scripts/codegen/ir.ts'
 import type { ArtifactManifest } from '../../../../scripts/codegen/manifest.ts'
 import { emitContractValidators } from '../../../../scripts/codegen/typescript-validators.ts'
@@ -58,7 +59,6 @@ export function abiFiles(manifest: ArtifactManifest) {
       `const outputBytes = ${manifest.limits.outputBytes}`,
       `const memoryPages = ${manifest.limits.memoryBytes / 65536}`,
       `var documentLimits = ast.Limits{SourceBytes:${manifest.limits.document.sourceBytes},PayloadBytes:${manifest.limits.document.payloadBytes},Nodes:${manifest.limits.document.nodes},Depth:${manifest.limits.document.depth}}`,
-      `var wireErrorCodes = map[string]bool{${codes.values.map(code => `${JSON.stringify(code)}: true`).join(',')}}`,
       ...Object.entries(manifest.abi.operations).map(
         ([name, operation]) =>
           `var operation${name[0].toUpperCase() + name.slice(1)} = binding.Operation{Export:${JSON.stringify(operation.export)}, Input:${JSON.stringify(operation.input)}, Params:${strings(operation.params)}, Result:${JSON.stringify(operation.result)}, Configuration:${operation.configuration}}`
@@ -71,6 +71,28 @@ export function abiFiles(manifest: ArtifactManifest) {
       '}',
       ''
     ].join('\n')
+  )
+  files.set(
+    'go/generated_errors.go',
+    goFile(
+      'markdown',
+      [...contracts.definitions.values()].map(emitGoDefinition).join('\n') +
+        `
+func decodeWireError(raw json.RawMessage) (*binding.Error, error) {
+  var value WireError
+  if err := json.Unmarshal(raw, &value); err != nil { return nil, err }
+  result := &binding.Error{Code:string(value.Code), Message:value.Message}
+  if value.Offset != nil { result.Offset = *value.Offset }
+  if value.Resource != nil && *value.Resource != nil { result.Resource = **value.Resource }
+  if value.Path != nil && *value.Path != nil { result.Path = **value.Path }
+  if value.Phase != nil && *value.Phase != nil { result.Phase = string(**value.Phase) }
+  if value.Rule != nil && *value.Rule != nil { result.Rule = **value.Rule }
+  if value.PayloadType != nil && *value.PayloadType != nil { result.PayloadType = **value.PayloadType }
+  if value.Span != nil && *value.Span != nil { result.Span = &ast.Span{Start:(*value.Span).Start, End:(*value.Span).End} }
+  return result, nil
+}
+`
+    )
   )
   return files
 }

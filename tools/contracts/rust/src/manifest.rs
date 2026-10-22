@@ -30,6 +30,22 @@ pub struct DocumentLimits {
     pub depth: usize,
 }
 
+impl From<markdown_ast::ValidationLimits> for DocumentLimits {
+    fn from(limits: markdown_ast::ValidationLimits) -> Self {
+        Self {
+            source_bytes: limits.source_bytes,
+            payload_bytes: limits.payload_bytes,
+            nodes: limits.nodes,
+            depth: limits.depth,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct CoreContract {
+    pub limits: DocumentLimits,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ArtifactLimits {
@@ -175,7 +191,6 @@ pub struct ArtifactContract {
     pub abi: AbiContract,
     pub directions: BTreeMap<String, Direction>,
     pub processing: BTreeMap<String, Value>,
-    pub parse_error: Value,
     pub presets: Value,
     pub limits: ArtifactLimits,
     pub nodes: BTreeMap<String, NodeContract>,

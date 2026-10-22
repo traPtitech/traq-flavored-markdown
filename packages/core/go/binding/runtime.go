@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
 	"sync/atomic"
 	"unicode/utf8"
 
@@ -32,17 +33,20 @@ type Artifact struct {
 	OutputBytes int
 	MemoryPages uint32
 	Exports     map[string]Signature
-	ErrorCodes  map[string]bool
+	DecodeError func(json.RawMessage) (*Error, error)
 }
 
 // Error is shared by domain failures and host transport/lifecycle failures.
 type Error struct {
-	Code     string    `json:"code"`
-	Message  string    `json:"message"`
-	Resource string    `json:"resource,omitempty"`
-	Path     string    `json:"path,omitempty"`
-	Offset   *uint32   `json:"offset,omitempty"`
-	Span     *ast.Span `json:"span,omitempty"`
+	Code        string    `json:"code"`
+	Message     string    `json:"message"`
+	Resource    string    `json:"resource,omitempty"`
+	Path        string    `json:"path,omitempty"`
+	Offset      *uint32   `json:"offset,omitempty"`
+	Span        *ast.Span `json:"span,omitempty"`
+	Phase       string    `json:"phase,omitempty"`
+	Rule        string    `json:"rule,omitempty"`
+	PayloadType string    `json:"payload_type,omitempty"`
 }
 
 func (e *Error) Error() string            { return e.Code + ": " + e.Message }
@@ -197,7 +201,7 @@ func (p *Instance) call(ctx context.Context, operation Operation, input string, 
 	if !ok {
 		return nil, p.poison(failure("transport_error", "invalid Wasm output range"))
 	}
-	result, err := decodeReply(output, operation, p.artifact.ContractID, p.artifact.ErrorCodes)
+	result, err := decodeReply(output, operation, p.artifact.ContractID, p.artifact.DecodeError)
 	var typed *Error
 	if err != nil && (!errors.As(err, &typed) || typed.Code == "transport_error" || typed.Code == "contract_mismatch") {
 		return nil, p.poison(err)
@@ -221,9 +225,9 @@ func (p *Instance) invoke(ctx context.Context, name string, args ...uint64) (uin
 	}
 	return uint32(values[0]), nil
 }
-func decodeReply(output []byte, operation Operation, contractID string, errorCodes map[string]bool) (json.RawMessage, error) {
+func decodeReply(output []byte, operation Operation, contractID string, decodeError func(json.RawMessage) (*Error, error)) (json.RawMessage, error) {
 	malformed := func() (json.RawMessage, error) { return nil, failure("transport_error", "malformed Wasm reply") }
-	if ast.ValidateJSON(output) != nil {
+	if contract.ValidateJSON(output) != nil {
 		return malformed()
 	}
 	var reply map[string]json.RawMessage
@@ -231,43 +235,16 @@ func decodeReply(output []byte, operation Operation, contractID string, errorCod
 		return malformed()
 	}
 	if raw, ok := reply["error"]; ok {
-		var fields map[string]json.RawMessage
-		if json.Unmarshal(raw, &fields) != nil {
+		if decodeError == nil {
 			return malformed()
 		}
-		for name := range fields {
-			switch name {
-			case "code", "message", "resource", "path", "offset", "span":
-			default:
-				return malformed()
-			}
-		}
-		var err Error
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		decoder.DisallowUnknownFields()
-		if decoder.Decode(&err) != nil || err.Message == "" {
+		result, err := decodeError(raw)
+		if err != nil || result == nil || result.Message == "" {
 			return malformed()
 		}
-		if err.Span != nil {
-			var spanFields map[string]json.RawMessage
-			if json.Unmarshal(fields["span"], &spanFields) != nil || len(spanFields) != 2 || spanFields["start"] == nil || spanFields["end"] == nil {
-				return malformed()
-			}
-			var fields struct {
-				Span struct {
-					Start *uint32 `json:"start"`
-					End   *uint32 `json:"end"`
-				} `json:"span"`
-			}
-			if json.Unmarshal(raw, &fields) != nil || fields.Span.Start == nil || fields.Span.End == nil {
-				return malformed()
-			}
-		}
-		if errorCodes[err.Code] {
-			return nil, &err
-		}
-		return malformed()
+		return nil, result
 	}
+
 	raw, ok := reply["ok"]
 	if !ok {
 		return malformed()

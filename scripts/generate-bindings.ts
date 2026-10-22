@@ -8,7 +8,7 @@ import {
   nodeGroups
 } from './codegen/groups.ts'
 import { readManifest, runCommand } from './codegen/io.ts'
-import { parseNodeManifest } from './codegen/manifest.ts'
+import { parseCoreManifest, parseNodeManifest } from './codegen/manifest.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import {
   OutputManifest,
@@ -28,6 +28,47 @@ const runCargo = (command: string[], cwd = repositoryRoot) =>
     ...Bun.env,
     CARGO_TARGET_DIR: cargoTargetDirectory()
   })
+
+export async function generateCoreContracts(outputRoot = repositoryRoot) {
+  const input = path.join(cargoTargetDirectory(), 'core-contracts')
+  await runCargo([
+    'cargo',
+    'run',
+    '--locked',
+    '-p',
+    'markdown-contract-export',
+    '--bin',
+    'export-core-contracts',
+    '--',
+    input
+  ])
+  const { limits } = await readManifest(input, parseCoreManifest)
+  const plan = new OutputManifest()
+  plan.add(
+    'core',
+    'packages/core/typescript/generated/limits.ts',
+    '// Generated from Rust AST validation defaults. Do not edit.\n' +
+      'export const documentLimits = Object.freeze(' +
+      JSON.stringify(limits) +
+      ' as const)\n'
+  )
+  plan.add(
+    'core',
+    'packages/core/go/ast/generated_limits.go',
+    '// Code generated from Rust AST validation defaults. DO NOT EDIT.\npackage ast\n' +
+      'const (\nmaxSourceBytes = ' +
+      limits.sourceBytes +
+      '\nmaxJSONBytes = ' +
+      limits.payloadBytes +
+      '\nmaxDocumentNodes = ' +
+      limits.nodes +
+      '\nmaxDocumentDepth = ' +
+      limits.depth +
+      '\n)\n'
+  )
+  await applyOutputManifest(outputRoot, plan)
+  return plan
+}
 
 async function generateContractGroup(
   packageName: ContractPackage,
@@ -115,6 +156,7 @@ export async function generateBindings(
   outputRoot = repositoryRoot
 ) {
   if (!packageName) {
+    await generateCoreContracts(outputRoot)
     const { graph } = await readNpmPackageGraph()
     for (const name of graph.order)
       if (

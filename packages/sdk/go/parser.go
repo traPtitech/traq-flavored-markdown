@@ -21,7 +21,7 @@ func NewRuntime(ctx context.Context, wasm []byte) (*Runtime, error) {
 			OutputBytes: outputBytes,
 			MemoryPages: memoryPages,
 			Exports:     abiExports,
-			ErrorCodes:  wireErrorCodes,
+			DecodeError: decodeWireError,
 		},
 	)
 	if err != nil {

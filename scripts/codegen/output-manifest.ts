@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 
 import { type PackageName, repositoryRoot } from '../paths.ts'
-import { withTempDirectory } from '../testing/temp-directory.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 
 export const outputIndex = '.generated-outputs.json'
 export type Output = { owner: PackageName; path: string; source: string }

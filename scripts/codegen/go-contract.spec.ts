@@ -1,10 +1,30 @@
+import path from 'node:path'
+
 import { write } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { withTempDirectory } from '../testing/temp-directory.ts'
-import { goContract, goNodes, goValidationRuntime } from './go.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
+import { repositoryRoot } from '../paths.ts'
+import { goContract, goFile, goNodes } from './go.ts'
 import { runCommand } from './io.ts'
 import type { RawSchema } from './schema.ts'
+
+async function writeModule(directory: string) {
+  const core = path
+    .join(repositoryRoot, 'packages/core/go')
+    .replaceAll('\\', '/')
+  const manifest = await Bun.file(path.join(core, 'go.mod')).text()
+  const version = /^go (.+)$/m.exec(manifest)?.[1]
+  if (!version) throw new Error('Missing Go version')
+  await write(
+    path.join(directory, 'go.mod'),
+    'module example.com/contract\ngo ' +
+      version +
+      '\nrequire github.com/traPtitech/traq-flavored-markdown/packages/core/go v0.0.0\nreplace github.com/traPtitech/traq-flavored-markdown/packages/core/go => ' +
+      JSON.stringify(core) +
+      '\n'
+  )
+}
 
 test('string enums retain their values in named Go types', () => {
   expect(
@@ -64,11 +84,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
       goContract({ ...definition, title: name }, schema)
     )
     .join('\n')
-  const source =
-    'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
-    goValidationRuntime +
-    definitions +
-    goContract(schema)
+  const source = goFile('contract', definitions + goContract(schema))
   const cases = [
     ['{"kind":"user","nested":{"count":255},"entries":[]}', true],
     [
@@ -103,7 +119,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     }
     `
   await withTempDirectory('go-contract-', async directory => {
-    await write(`${directory}/go.mod`, 'module example.com/contract\ngo 1.23\n')
+    await writeModule(directory)
     await write(`${directory}/contract.go`, source)
     await write(`${directory}/contract_test.go`, testSource)
     await runCommand(['go', 'test', './...'], directory)
@@ -148,11 +164,11 @@ test('tagged Rust unions generate typed Go variants and strict round trips', asy
       }
     }
   }
-  const source =
-    'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
-    goValidationRuntime +
+  const source = goFile(
+    'contract',
     goContract({ ...schema.$defs!.StampKind, title: 'StampKind' }, schema) +
-    goContract(schema)
+      goContract(schema)
+  )
   expect(goNodes([['example::StampData', schema]], 'trap')).toContain(
     'type StampKindHexColor struct'
   )
@@ -176,7 +192,7 @@ func TestStampKind(t *testing.T) {
 }
 `
   await withTempDirectory('go-union-', async directory => {
-    await write(`${directory}/go.mod`, 'module example.com/contract\ngo 1.23\n')
+    await writeModule(directory)
     await write(`${directory}/contract.go`, source)
     await write(`${directory}/contract_test.go`, testSource)
     await runCommand(['go', 'test', './...'], directory)
@@ -208,12 +224,10 @@ test('request defaults preserve explicit zero and bounded fractional values', as
     required: ['percentage']
   }
   await withTempDirectory('go-defaults-', async directory => {
-    await write(`${directory}/go.mod`, 'module example.com/defaults\ngo 1.23\n')
+    await writeModule(directory)
     await write(
       `${directory}/contract.go`,
-      'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
-        goValidationRuntime +
-        goContract(schema)
+      goFile('contract', goContract(schema))
     )
     await write(
       `${directory}/contract_test.go`,
@@ -260,15 +274,10 @@ test('direct generated decoders reject duplicate keys and lossy Unicode repairs'
     String.raw`{"value":"\ufffd"}`
   ]
   await withTempDirectory('go-strict-json-', async directory => {
-    await write(
-      `${directory}/go.mod`,
-      'module example.com/strictjson\ngo 1.23\n'
-    )
+    await writeModule(directory)
     await write(
       `${directory}/contract.go`,
-      'package contract\nimport ("bytes"; "encoding/json"; "fmt"; "unicode/utf8")\n' +
-        goValidationRuntime +
-        goContract(schema)
+      goFile('contract', goContract(schema))
     )
     await write(
       `${directory}/contract_test.go`,

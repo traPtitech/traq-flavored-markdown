@@ -45,7 +45,6 @@ export type ArtifactMetadata = {
 export type ArtifactManifest = ArtifactMetadata &
   NodeManifest & {
     abi: Abi
-    parseError: RawSchema
     processing: Record<string, RawSchema>
     directions: Record<string, Direction>
   }
@@ -163,7 +162,6 @@ function presets(value: unknown, path: string): PresetTree {
 export function parseArtifactMetadata(value: unknown): ArtifactMetadata {
   const input = record(value, '$'),
     limits = record(input.limits, '$.limits')
-  const document = record(limits.document, '$.limits.document')
   const provenance = record(input.provenance, '$.provenance')
   return {
     contractId: string(input.contractId, '$.contractId'),
@@ -178,18 +176,7 @@ export function parseArtifactMetadata(value: unknown): ArtifactMetadata {
       inputBytes: integer(limits.inputBytes, '$.limits.inputBytes'),
       outputBytes: integer(limits.outputBytes, '$.limits.outputBytes'),
       memoryBytes: integer(limits.memoryBytes, '$.limits.memoryBytes'),
-      document: {
-        sourceBytes: integer(
-          document.sourceBytes,
-          '$.limits.document.sourceBytes'
-        ),
-        payloadBytes: integer(
-          document.payloadBytes,
-          '$.limits.document.payloadBytes'
-        ),
-        nodes: integer(document.nodes, '$.limits.document.nodes'),
-        depth: integer(document.depth, '$.limits.document.depth')
-      }
+      document: parseDocumentLimits(limits.document, '$.limits.document')
     }
   }
 }
@@ -226,11 +213,31 @@ export function parseArtifactManifest(value: unknown): ArtifactManifest {
         }
       })
     },
-    parseError: schema(input.parseError, '$.parseError'),
     processing: entries(input.processing, '$.processing', schema),
     directions: entries(input.directions, '$.directions', (value, path) => {
       if (value !== 'request' && value !== 'response') invalid(path)
       return value
     })
   }
+}
+
+export function parseDocumentLimits(
+  value: unknown,
+  path = '$.limits'
+): DocumentLimits {
+  const input = record(value, path)
+  const positive = (value: unknown, path: string) => {
+    const result = integer(value, path)
+    if (result === 0) invalid(path)
+    return result
+  }
+  return {
+    sourceBytes: positive(input.sourceBytes, path + '.sourceBytes'),
+    payloadBytes: positive(input.payloadBytes, path + '.payloadBytes'),
+    nodes: positive(input.nodes, path + '.nodes'),
+    depth: positive(input.depth, path + '.depth')
+  }
+}
+export function parseCoreManifest(value: unknown): { limits: DocumentLimits } {
+  return { limits: parseDocumentLimits(record(value, '$').limits) }
 }

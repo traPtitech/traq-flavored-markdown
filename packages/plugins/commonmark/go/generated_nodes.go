@@ -2,183 +2,23 @@
 package commonmark
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
-	"unicode/utf8"
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
 )
-
-func contractIsNull(raw json.RawMessage) bool {
-	return bytes.Equal(bytes.TrimSpace(raw), []byte("null"))
-}
-
-func contractObject(raw json.RawMessage) (map[string]json.RawMessage, error) {
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	token, err := decoder.Token()
-	if err != nil {
-		return nil, err
-	}
-	if token != json.Delim('{') {
-		return nil, fmt.Errorf("expected object")
-	}
-	object := make(map[string]json.RawMessage)
-	for decoder.More() {
-		token, err := decoder.Token()
-		if err != nil {
-			return nil, err
-		}
-		name, ok := token.(string)
-		if !ok {
-			return nil, fmt.Errorf("expected field name")
-		}
-		if _, exists := object[name]; exists {
-			return nil, fmt.Errorf("duplicate field %q", name)
-		}
-		var field json.RawMessage
-		if err := decoder.Decode(&field); err != nil {
-			return nil, err
-		}
-		object[name] = field
-	}
-	if _, err := decoder.Token(); err != nil {
-		return nil, err
-	}
-	if len(bytes.TrimSpace(raw[decoder.InputOffset():])) != 0 {
-		return nil, fmt.Errorf("trailing JSON data")
-	}
-	return object, nil
-}
-
-func contractFields(object map[string]json.RawMessage, names ...string) error {
-	for name := range object {
-		found := false
-		for _, allowed := range names {
-			if name == allowed {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("unknown field %q", name)
-		}
-	}
-	return nil
-}
-
-func contractDecode[T any](raw json.RawMessage, value *T) error {
-	if contractIsNull(raw) {
-		return fmt.Errorf("unexpected null")
-	}
-	if text, ok := any(value).(*string); ok {
-		return contractString(raw, text)
-	}
-	return json.Unmarshal(raw, value)
-}
-
-func contractHex4(raw []byte) uint16 {
-	var value uint16
-	for _, digit := range raw {
-		value <<= 4
-		switch {
-		case digit >= '0' && digit <= '9':
-			value |= uint16(digit - '0')
-		case digit >= 'a' && digit <= 'f':
-			value |= uint16(digit - 'a' + 10)
-		default:
-			value |= uint16(digit - 'A' + 10)
-		}
-	}
-	return value
-}
-
-// Check scalar strings only: nested objects and arrays retain one decoding pass.
-func contractString(raw json.RawMessage, value *string) error {
-	if !utf8.Valid(raw) {
-		return fmt.Errorf("invalid UTF-8")
-	}
-	if err := json.Unmarshal(raw, value); err != nil {
-		return err
-	}
-	raw = bytes.TrimSpace(raw)
-	for i := 1; i < len(raw)-1; i++ {
-		if raw[i] != '\\' {
-			continue
-		}
-		i++
-		if raw[i] != 'u' {
-			continue
-		}
-		unit := contractHex4(raw[i+1 : i+5])
-		i += 4
-		if unit >= 0xDC00 && unit <= 0xDFFF {
-			return fmt.Errorf("unpaired Unicode surrogate")
-		}
-		if unit >= 0xD800 && unit <= 0xDBFF {
-			if i+6 >= len(raw) || raw[i+1] != '\\' || raw[i+2] != 'u' {
-				return fmt.Errorf("unpaired Unicode surrogate")
-			}
-			low := contractHex4(raw[i+3 : i+7])
-			if low < 0xDC00 || low > 0xDFFF {
-				return fmt.Errorf("unpaired Unicode surrogate")
-			}
-			i += 6
-		}
-	}
-	return nil
-}
-
-func contractNullable[T any](raw json.RawMessage, value **T, decode func(json.RawMessage, *T) error) error {
-	if contractIsNull(raw) {
-		*value = nil
-		return nil
-	}
-	var decoded T
-	if err := decode(raw, &decoded); err != nil {
-		return err
-	}
-	*value = &decoded
-	return nil
-}
-
-func contractArray[T any](raw json.RawMessage, value *[]T, decode func(json.RawMessage, *T) error) error {
-	var items []json.RawMessage
-	if err := json.Unmarshal(raw, &items); err != nil {
-		return err
-	}
-	if items == nil {
-		return fmt.Errorf("expected array")
-	}
-	decoded := make([]T, len(items))
-	for index, item := range items {
-		if err := decode(item, &decoded[index]); err != nil {
-			return fmt.Errorf("item %d: %w", index, err)
-		}
-	}
-	*value = decoded
-	return nil
-}
-
-func contractEnum(value string, choices ...string) error {
-	for _, choice := range choices {
-		if value == choice {
-			return nil
-		}
-	}
-	return fmt.Errorf("invalid enum value %q", value)
-}
 
 type Blockquote struct {
 }
 
 func (value *Blockquote) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Blockquote
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = Blockquote(decoded)
@@ -192,31 +32,31 @@ type CodeBlock struct {
 }
 
 func (value *CodeBlock) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire CodeBlock
 	var decoded wire
-	if err := contractFields(object, "fenced", "info", "literal"); err != nil {
+	if err := contract.Fields(object, "fenced", "info", "literal"); err != nil {
 		return err
 	}
 	if raw, present := object["fenced"]; present {
-		if err := (contractDecode[bool])(raw, &decoded.Fenced); err != nil {
+		if err := (contract.Decode[bool])(raw, &decoded.Fenced); err != nil {
 			return fmt.Errorf("field %q: %w", "fenced", err)
 		}
 	} else {
 		return fmt.Errorf("missing required field %q", "fenced")
 	}
 	if raw, present := object["info"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Info); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Info); err != nil {
 			return fmt.Errorf("field %q: %w", "info", err)
 		}
 	} else {
 		return fmt.Errorf("missing required field %q", "info")
 	}
 	if raw, present := object["literal"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Literal); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Literal); err != nil {
 			return fmt.Errorf("field %q: %w", "literal", err)
 		}
 	} else {
@@ -230,13 +70,13 @@ type Emphasis struct {
 }
 
 func (value *Emphasis) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Emphasis
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = Emphasis(decoded)
@@ -247,13 +87,13 @@ type Hardbreak struct {
 }
 
 func (value *Hardbreak) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Hardbreak
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = Hardbreak(decoded)
@@ -265,18 +105,18 @@ type Heading struct {
 }
 
 func (value *Heading) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Heading
 	var decoded wire
-	if err := contractFields(object, "level"); err != nil {
+	if err := contract.Fields(object, "level"); err != nil {
 		return err
 	}
 	if raw, present := object["level"]; present {
 		if err := (func(raw json.RawMessage, value *uint8) error {
-			if err := contractDecode(raw, value); err != nil {
+			if err := contract.Decode(raw, value); err != nil {
 				return err
 			}
 			if *value < 1 || *value > 6 {
@@ -298,17 +138,17 @@ type HtmlBlock struct {
 }
 
 func (value *HtmlBlock) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire HtmlBlock
 	var decoded wire
-	if err := contractFields(object, "literal"); err != nil {
+	if err := contract.Fields(object, "literal"); err != nil {
 		return err
 	}
 	if raw, present := object["literal"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Literal); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Literal); err != nil {
 			return fmt.Errorf("field %q: %w", "literal", err)
 		}
 	} else {
@@ -323,17 +163,17 @@ type HtmlInline struct {
 }
 
 func (value *HtmlInline) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire HtmlInline
 	var decoded wire
-	if err := contractFields(object, "literal"); err != nil {
+	if err := contract.Fields(object, "literal"); err != nil {
 		return err
 	}
 	if raw, present := object["literal"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Literal); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Literal); err != nil {
 			return fmt.Errorf("field %q: %w", "literal", err)
 		}
 	} else {
@@ -350,24 +190,24 @@ type Image struct {
 }
 
 func (value *Image) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Image
 	var decoded wire
-	if err := contractFields(object, "destination", "label_source", "title"); err != nil {
+	if err := contract.Fields(object, "destination", "label_source", "title"); err != nil {
 		return err
 	}
 	if raw, present := object["destination"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Destination); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Destination); err != nil {
 			return fmt.Errorf("field %q: %w", "destination", err)
 		}
 	} else {
 		return fmt.Errorf("missing required field %q", "destination")
 	}
 	if raw, present := object["label_source"]; present {
-		if err := (contractDecode[string])(raw, &decoded.LabelSource); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.LabelSource); err != nil {
 			return fmt.Errorf("field %q: %w", "label_source", err)
 		}
 	} else {
@@ -375,7 +215,7 @@ func (value *Image) UnmarshalJSON(raw []byte) error {
 	}
 	if raw, present := object["title"]; present {
 		if err := (func(raw json.RawMessage, value **string) error {
-			return contractNullable(raw, value, contractDecode[string])
+			return contract.Nullable(raw, value, contract.Decode[string])
 		})(raw, &decoded.Title); err != nil {
 			return fmt.Errorf("field %q: %w", "title", err)
 		}
@@ -391,17 +231,17 @@ type InlineCode struct {
 }
 
 func (value *InlineCode) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire InlineCode
 	var decoded wire
-	if err := contractFields(object, "literal"); err != nil {
+	if err := contract.Fields(object, "literal"); err != nil {
 		return err
 	}
 	if raw, present := object["literal"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Literal); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Literal); err != nil {
 			return fmt.Errorf("field %q: %w", "literal", err)
 		}
 	} else {
@@ -418,24 +258,24 @@ type Link struct {
 }
 
 func (value *Link) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Link
 	var decoded wire
-	if err := contractFields(object, "destination", "form", "title"); err != nil {
+	if err := contract.Fields(object, "destination", "form", "title"); err != nil {
 		return err
 	}
 	if raw, present := object["destination"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Destination); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Destination); err != nil {
 			return fmt.Errorf("field %q: %w", "destination", err)
 		}
 	} else {
 		return fmt.Errorf("missing required field %q", "destination")
 	}
 	if raw, present := object["form"]; present {
-		if err := (contractDecode[LinkForm])(raw, &decoded.Form); err != nil {
+		if err := (contract.Decode[LinkForm])(raw, &decoded.Form); err != nil {
 			return fmt.Errorf("field %q: %w", "form", err)
 		}
 	} else {
@@ -443,7 +283,7 @@ func (value *Link) UnmarshalJSON(raw []byte) error {
 	}
 	if raw, present := object["title"]; present {
 		if err := (func(raw json.RawMessage, value **string) error {
-			return contractNullable(raw, value, contractDecode[string])
+			return contract.Nullable(raw, value, contract.Decode[string])
 		})(raw, &decoded.Title); err != nil {
 			return fmt.Errorf("field %q: %w", "title", err)
 		}
@@ -464,17 +304,17 @@ const (
 
 func (value *LinkForm) UnmarshalJSON(raw []byte) error {
 	var decoded string
-	if err := contractDecode(raw, &decoded); err != nil {
+	if err := contract.Decode(raw, &decoded); err != nil {
 		return err
 	}
-	if err := contractEnum(decoded, "explicit", "autolink", "linkify"); err != nil {
+	if err := contract.Enum(decoded, "explicit", "autolink", "linkify"); err != nil {
 		return err
 	}
 	*value = LinkForm(decoded)
 	return nil
 }
 func (value LinkForm) MarshalJSON() ([]byte, error) {
-	if err := contractEnum(string(value), "explicit", "autolink", "linkify"); err != nil {
+	if err := contract.Enum(string(value), "explicit", "autolink", "linkify"); err != nil {
 		return nil, err
 	}
 	return json.Marshal(string(value))
@@ -486,24 +326,24 @@ type List struct {
 }
 
 func (value *List) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire List
 	var decoded wire
-	if err := contractFields(object, "kind", "tight"); err != nil {
+	if err := contract.Fields(object, "kind", "tight"); err != nil {
 		return err
 	}
 	if raw, present := object["kind"]; present {
-		if err := (contractDecode[ListKind])(raw, &decoded.Kind); err != nil {
+		if err := (contract.Decode[ListKind])(raw, &decoded.Kind); err != nil {
 			return fmt.Errorf("field %q: %w", "kind", err)
 		}
 	} else {
 		return fmt.Errorf("missing required field %q", "kind")
 	}
 	if raw, present := object["tight"]; present {
-		if err := (contractDecode[bool])(raw, &decoded.Tight); err != nil {
+		if err := (contract.Decode[bool])(raw, &decoded.Tight); err != nil {
 			return fmt.Errorf("field %q: %w", "tight", err)
 		}
 	} else {
@@ -523,17 +363,17 @@ const (
 
 func (value *BulletMarker) UnmarshalJSON(raw []byte) error {
 	var decoded string
-	if err := contractDecode(raw, &decoded); err != nil {
+	if err := contract.Decode(raw, &decoded); err != nil {
 		return err
 	}
-	if err := contractEnum(decoded, "-", "+", "*"); err != nil {
+	if err := contract.Enum(decoded, "-", "+", "*"); err != nil {
 		return err
 	}
 	*value = BulletMarker(decoded)
 	return nil
 }
 func (value BulletMarker) MarshalJSON() ([]byte, error) {
-	if err := contractEnum(string(value), "-", "+", "*"); err != nil {
+	if err := contract.Enum(string(value), "-", "+", "*"); err != nil {
 		return nil, err
 	}
 	return json.Marshal(string(value))
@@ -552,22 +392,22 @@ type ListKindBullet struct {
 }
 
 func (value *ListKind) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	var tag string
-	if err := contractDecode(object["type"], &tag); err != nil {
+	if err := contract.Decode(object["type"], &tag); err != nil {
 		return err
 	}
 	switch tag {
 	case "ordered":
 		var decoded ListKindOrdered
-		if err := contractFields(object, "type", "delimiter", "start"); err != nil {
+		if err := contract.Fields(object, "type", "delimiter", "start"); err != nil {
 			return err
 		}
 		if raw, present := object["delimiter"]; present {
-			if err := (contractDecode[OrderedDelimiter])(raw, &decoded.Delimiter); err != nil {
+			if err := (contract.Decode[OrderedDelimiter])(raw, &decoded.Delimiter); err != nil {
 				return fmt.Errorf("field %q: %w", "delimiter", err)
 			}
 		} else {
@@ -575,7 +415,7 @@ func (value *ListKind) UnmarshalJSON(raw []byte) error {
 		}
 		if raw, present := object["start"]; present {
 			if err := (func(raw json.RawMessage, value *uint32) error {
-				if err := contractDecode(raw, value); err != nil {
+				if err := contract.Decode(raw, value); err != nil {
 					return err
 				}
 				if *value < 0 || *value > 999999999 {
@@ -592,11 +432,11 @@ func (value *ListKind) UnmarshalJSON(raw []byte) error {
 		return nil
 	case "bullet":
 		var decoded ListKindBullet
-		if err := contractFields(object, "type", "marker"); err != nil {
+		if err := contract.Fields(object, "type", "marker"); err != nil {
 			return err
 		}
 		if raw, present := object["marker"]; present {
-			if err := (contractDecode[BulletMarker])(raw, &decoded.Marker); err != nil {
+			if err := (contract.Decode[BulletMarker])(raw, &decoded.Marker); err != nil {
 				return fmt.Errorf("field %q: %w", "marker", err)
 			}
 		} else {
@@ -651,17 +491,17 @@ const (
 
 func (value *OrderedDelimiter) UnmarshalJSON(raw []byte) error {
 	var decoded string
-	if err := contractDecode(raw, &decoded); err != nil {
+	if err := contract.Decode(raw, &decoded); err != nil {
 		return err
 	}
-	if err := contractEnum(decoded, "period", "parenthesis"); err != nil {
+	if err := contract.Enum(decoded, "period", "parenthesis"); err != nil {
 		return err
 	}
 	*value = OrderedDelimiter(decoded)
 	return nil
 }
 func (value OrderedDelimiter) MarshalJSON() ([]byte, error) {
-	if err := contractEnum(string(value), "period", "parenthesis"); err != nil {
+	if err := contract.Enum(string(value), "period", "parenthesis"); err != nil {
 		return nil, err
 	}
 	return json.Marshal(string(value))
@@ -671,13 +511,13 @@ type ListItem struct {
 }
 
 func (value *ListItem) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire ListItem
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = ListItem(decoded)
@@ -688,13 +528,13 @@ type Paragraph struct {
 }
 
 func (value *Paragraph) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Paragraph
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = Paragraph(decoded)
@@ -705,13 +545,13 @@ type Softbreak struct {
 }
 
 func (value *Softbreak) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Softbreak
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = Softbreak(decoded)
@@ -722,13 +562,13 @@ type Strong struct {
 }
 
 func (value *Strong) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Strong
 	var decoded wire
-	if err := contractFields(object); err != nil {
+	if err := contract.Fields(object); err != nil {
 		return err
 	}
 	*value = Strong(decoded)
@@ -740,17 +580,17 @@ type Text struct {
 }
 
 func (value *Text) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire Text
 	var decoded wire
-	if err := contractFields(object, "value"); err != nil {
+	if err := contract.Fields(object, "value"); err != nil {
 		return err
 	}
 	if raw, present := object["value"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Value); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Value); err != nil {
 			return fmt.Errorf("field %q: %w", "value", err)
 		}
 	} else {
@@ -765,17 +605,17 @@ type ThematicBreak struct {
 }
 
 func (value *ThematicBreak) UnmarshalJSON(raw []byte) error {
-	object, err := contractObject(raw)
+	object, err := contract.Object(raw)
 	if err != nil {
 		return err
 	}
 	type wire ThematicBreak
 	var decoded wire
-	if err := contractFields(object, "marker"); err != nil {
+	if err := contract.Fields(object, "marker"); err != nil {
 		return err
 	}
 	if raw, present := object["marker"]; present {
-		if err := (contractDecode[string])(raw, &decoded.Marker); err != nil {
+		if err := (contract.Decode[string])(raw, &decoded.Marker); err != nil {
 			return fmt.Errorf("field %q: %w", "marker", err)
 		}
 	} else {

@@ -185,6 +185,15 @@ impl From<traq_markdown_grammar::ParseError> for Error {
 pub struct Configuration {
     pub contract_id: &'static str,
 }
+
+#[derive(serde::Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct ProcessorConfiguration {
+    pub preset: String,
+    #[serde(default)]
+    pub options: traq_markdown_processing::pipeline::ProcessorOptions,
+}
 pub const CONTRACT_ID: &str = match option_env!("MARKDOWN_CONTRACT_ID") {
     Some(value) => value,
     None => "development-unbound",
