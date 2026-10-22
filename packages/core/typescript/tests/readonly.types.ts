@@ -1,4 +1,5 @@
 import type { DocumentContext } from '../document.js'
+import { defineNode } from '../nodes.js'
 import type { Handler } from '../renderer/types.js'
 
 export function snapshotTypes(context: DocumentContext) {
@@ -6,9 +7,21 @@ export function snapshotTypes(context: DocumentContext) {
   context.document.children.push(context.document.children[0])
   // @ts-expect-error snapshots expose readonly spans
   context.document.children[0].span.start = 0
+  const definition = defineNode<{
+    kind: 'example'
+    data: { values: string[] }
+  }>('example', () => true)
+  const node = context.document.children[0]
+  if (definition.is(node)) {
+    // @ts-expect-error narrowing preserves readonly payloads
+    node.data.values.push('changed')
+  }
 }
 
-export const payloadTypes: Handler<{ kind: 'example'; data: { values: string[] } }> = node => {
+export const payloadTypes: Handler<{
+  kind: 'example'
+  data: { values: string[] }
+}> = node => {
   // @ts-expect-error handler payloads are deeply readonly
   node.data.values.push('changed')
   return ''
