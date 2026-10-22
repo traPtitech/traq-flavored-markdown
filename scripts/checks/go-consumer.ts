@@ -11,9 +11,6 @@ async function go(directory: string, args: string[], remote: boolean) {
     env: {
       ...Bun.env,
       GOWORK: 'off',
-      GOCACHE:
-        Bun.env.GOCACHE ??
-        path.join(repositoryRoot, 'target', 'go-consumer-cache'),
       ...(remote ? { GOPROXY: 'direct' } : {})
     },
     stdout: 'pipe',
