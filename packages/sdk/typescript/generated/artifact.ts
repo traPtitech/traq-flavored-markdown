@@ -1,6 +1,6 @@
 // Generated from the Rust ABI contract. Do not edit.
 export const contractId =
-  'c01dcf2ea189a2ccde547658b77203e0d4ade5cc2d2e0c923c047e522e6dfaf7'
+  'cd16a1e674f3f374396f71d1f4f6e195dbbeec5a6cf41ad89d16b4ea43b94856'
 export const sourceFingerprint = '586e0bfd6073df14'
 export const inputBytes = 1048576
 export const outputBytes = 1048576

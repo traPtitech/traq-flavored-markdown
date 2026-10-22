@@ -4,6 +4,9 @@ import path from 'path'
 import { $ } from 'bun'
 
 import { cargoTargetDirectory, repositoryRoot } from '../../../scripts/paths.ts'
+import { semanticContractId } from './contract-identity.ts'
+
+export { semanticContractId } from './contract-identity.ts'
 
 export const sdkTargetDirectory = cargoTargetDirectory
 export const nodeContractsDirectory = () =>
@@ -122,26 +125,4 @@ export async function exportNodeContracts() {
   manifest.contractId = semanticContractId(manifest)
   await Bun.write(file, JSON.stringify(manifest, null, 2) + '\n')
   return contracts
-}
-
-/** Semantic identity intentionally excludes build provenance and artifact bytes. */
-export function semanticContractId(manifest: Record<string, unknown>) {
-  const {
-    contractId: _contractId,
-    provenance: _provenance,
-    ...contract
-  } = manifest
-  const canonical = (value: unknown): unknown =>
-    Array.isArray(value)
-      ? value.map(canonical)
-      : value && typeof value === 'object'
-        ? Object.fromEntries(
-            Object.entries(value)
-              .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-              .map(([key, entry]) => [key, canonical(entry)])
-          )
-        : value
-  return new Bun.CryptoHasher('sha256')
-    .update(JSON.stringify(canonical(contract)))
-    .digest('hex')
 }
