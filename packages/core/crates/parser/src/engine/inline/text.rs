@@ -7,7 +7,7 @@ use super::{
 
 use crate::{
     ParseError,
-    engine::{Budget, Grammar, source::SourceView},
+    engine::{Budget, Grammar, ParsePhase, source::SourceView},
 };
 
 pub(super) fn process(
@@ -79,7 +79,9 @@ fn process_rule(
             after_decoded_text: special,
         };
 
-        let matches = (entry.data.implementation.parse)(&input, budget)?;
+        let position = source.span_for(token.start..token.start)?.start;
+        let matches = (entry.data.implementation.parse)(&input, budget)
+            .map_err(|error| error.at_rule(ParsePhase::Text, entry.name(), position))?;
         let mut begin = token.start;
 
         for found in matches {
@@ -89,7 +91,15 @@ fn process_rule(
                 || !source.text().is_char_boundary(found.start)
                 || !source.text().is_char_boundary(found.end)
             {
-                return Err(ParseError::InternalError);
+                return Err(ParseError::invalid_rule(
+                    ParsePhase::Text,
+                    entry.name(),
+                    position,
+                    format!(
+                        "text match {}..{} must follow {begin}, stay within {}, and use UTF-8 boundaries",
+                        found.start, found.end, token.end
+                    ),
+                ));
             }
 
             if found.start > begin {

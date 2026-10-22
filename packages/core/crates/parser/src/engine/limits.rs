@@ -1,12 +1,39 @@
 use markdown_ast::ValidationLimits;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ParsePhase {
+    Block,
+    Inline,
+    Text,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(tag = "code", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ParseError {
     InvalidUtf8,
-    ResourceLimit { resource: String },
+    ResourceLimit {
+        resource: String,
+    },
+    /// A plugin broke its parser-output contract. Position is an original
+    /// source byte offset, so diagnostics remain useful for normalized views.
+    InvalidRuleOutput {
+        phase: ParsePhase,
+        rule: Option<String>,
+        position: usize,
+        reason: String,
+    },
+    /// The final native tree failed a payload or source-structure contract.
+    InvalidDocument {
+        path: Vec<usize>,
+        start: Option<usize>,
+        end: Option<usize>,
+        payload_type: Option<String>,
+        reason: String,
+    },
     InternalError,
 }
 
@@ -14,6 +41,32 @@ impl ParseError {
     pub(crate) fn limit(resource: &str) -> Self {
         Self::ResourceLimit {
             resource: resource.into(),
+        }
+    }
+
+    pub(crate) fn invalid_rule(
+        phase: ParsePhase,
+        rule: Option<&str>,
+        position: usize,
+        reason: impl Into<String>,
+    ) -> Self {
+        Self::InvalidRuleOutput {
+            phase,
+            rule: rule.map(str::to_owned),
+            position,
+            reason: reason.into(),
+        }
+    }
+
+    pub(crate) fn at_rule(self, phase: ParsePhase, rule: Option<&str>, position: usize) -> Self {
+        match self {
+            Self::InternalError => Self::invalid_rule(
+                phase,
+                rule,
+                position,
+                "rule used an invalid source range or parser action",
+            ),
+            error => error,
         }
     }
 }

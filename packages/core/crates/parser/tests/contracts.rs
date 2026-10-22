@@ -87,11 +87,57 @@ fn invalid_plugin_results_never_return_partial_documents() {
             Ok(action.lock().unwrap().take())
         }));
 
-        assert_eq!(
+        assert!(matches!(
             parser(&plugin).parse_inline("日"),
-            Err(ParseError::InternalError)
-        );
+            Err(ParseError::InvalidRuleOutput { .. } | ParseError::InvalidDocument { .. })
+        ));
     }
+}
+
+#[test]
+fn malformed_rule_results_report_the_rule_phase_source_position_and_cause() {
+    use markdown_parser::engine::ParsePhase;
+    let mut implementation = plugin();
+    implementation.add(
+        InlineRule::new(b"!", |input, _| {
+            Ok(Some(InlineMatch::literal(input.position)))
+        })
+        .named("stuck"),
+    );
+    let error = parser(&implementation).parse_inline("日\r\n!").unwrap_err();
+    assert!(
+        matches!(error, ParseError::InvalidRuleOutput { phase: ParsePhase::Inline, rule: Some(ref name), position: 5, ref reason }
+        if name == "stuck" && reason.contains("must advance")),
+        "{error:?}"
+    );
+
+    let mut implementation = plugin();
+    implementation.add(
+        BlockRule::new(|input, _| Ok(Some(BlockMatch::ignore(input.start)))).named("empty-block"),
+    );
+    let error = parser(&implementation).parse("text").unwrap_err();
+    assert!(
+        matches!(error, ParseError::InvalidRuleOutput { phase: ParsePhase::Block, rule: Some(ref name), position: 0, ref reason }
+        if name == "empty-block" && reason.contains("must advance")),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn invalid_payload_diagnostics_keep_the_original_tree_location() {
+    let mut plugin = plugin();
+    plugin.add(
+        InlineRule::new(b"!", |input, _| {
+            Ok(Some(InlineMatch::leaf(input.position + 1, Invalid.into())))
+        })
+        .named("invalid-payload"),
+    );
+    let error = parser(&plugin).parse_inline("日!").unwrap_err();
+    assert!(
+        matches!(error, ParseError::InvalidDocument { ref path, start: Some(3), end: Some(4), payload_type: Some(ref payload), ref reason }
+        if path == &[1] && payload.ends_with("Invalid") && reason.contains("custom payload invariant")),
+        "{error:?}"
+    );
 }
 
 #[test]
@@ -175,10 +221,10 @@ fn source_helpers_reject_invalid_ranges() {
                 .map(Some),
         }));
 
-        assert_eq!(
+        assert!(matches!(
             parser(&plugin).parse("text"),
-            Err(ParseError::InternalError)
-        );
+            Err(ParseError::InvalidRuleOutput { .. })
+        ));
     }
 }
 
@@ -251,7 +297,10 @@ fn rejected_block_matches_do_not_commit_state() {
         }
     }));
 
-    assert_eq!(parser(&plugin).parse("x"), Err(ParseError::InternalError));
+    assert!(matches!(
+        parser(&plugin).parse("x"),
+        Err(ParseError::InvalidRuleOutput { .. })
+    ));
     assert_eq!(commits.load(Ordering::Relaxed), 0);
 }
 

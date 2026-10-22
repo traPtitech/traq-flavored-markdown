@@ -2,7 +2,7 @@ use super::{apply, delimiters, text, token::*, tree};
 
 use crate::{
     Node, NodeKind,
-    engine::{Budget, Grammar, ParseError, ParseState, source::SourceView},
+    engine::{Budget, Grammar, ParseError, ParsePhase, ParseState, source::SourceView},
 };
 
 use std::{any::Any, ops::Range};
@@ -100,9 +100,24 @@ pub(crate) fn parse(
     while state.position < source.text().len() {
         state.budget.spend(1)?;
         let (key, result) = find_match(&mut state, grammar, parse_state)?;
-        validate_match(source, state.position, &result)?;
+        let rule = key.map(|key| &grammar.data.inline[key]);
+        let position = source.span_for(state.position..state.position)?.start;
+        validate_match(source, state.position, &result).map_err(|reason| {
+            ParseError::invalid_rule(
+                ParsePhase::Inline,
+                rule.and_then(|rule| rule.name()),
+                position,
+                reason,
+            )
+        })?;
 
-        apply::matched(&mut state, key, result)?;
+        apply::matched(&mut state, key.unwrap_or(0), result).map_err(|error| {
+            error.at_rule(
+                ParsePhase::Inline,
+                rule.and_then(|rule| rule.name()),
+                position,
+            )
+        })?;
     }
 
     delimiters::balance(&mut state.tokens, &mut state.delimiters, state.budget)?;
@@ -115,7 +130,7 @@ fn find_match(
     state: &mut State<'_, '_>,
     grammar: &Grammar,
     parse_state: &ParseState,
-) -> Result<(usize, InlineMatch), ParseError> {
+) -> Result<(Option<usize>, InlineMatch), ParseError> {
     let candidates =
         &grammar.data.dispatch[state.source.text().as_bytes()[state.position] as usize];
 
@@ -138,8 +153,11 @@ fn find_match(
             },
         };
 
-        if let Some(result) = (rule.data.implementation.parse)(&input, state.budget)? {
-            return Ok((key, result));
+        let position = state.source.span_for(state.position..state.position)?.start;
+        if let Some(result) = (rule.data.implementation.parse)(&input, state.budget)
+            .map_err(|error| error.at_rule(ParsePhase::Inline, rule.name(), position))?
+        {
+            return Ok((Some(key), result));
         }
     }
 
@@ -150,19 +168,29 @@ fn find_match(
             .expect("position is within source")
             .len_utf8();
 
-    Ok((0, InlineMatch::literal(end)))
+    Ok((None, InlineMatch::literal(end)))
 }
 
 fn validate_match(
     source: &SourceView,
     position: usize,
     result: &InlineMatch,
-) -> Result<(), ParseError> {
-    if result.end <= position
-        || result.end > source.text().len()
-        || !source.text().is_char_boundary(result.end)
-    {
-        return Err(ParseError::InternalError);
+) -> Result<(), String> {
+    if result.end <= position {
+        return Err(format!(
+            "match end {} must advance beyond {position}",
+            result.end
+        ));
+    }
+    if result.end > source.text().len() {
+        return Err(format!(
+            "match end {} exceeds view length {}",
+            result.end,
+            source.text().len()
+        ));
+    }
+    if !source.text().is_char_boundary(result.end) {
+        return Err(format!("match end {} is not a UTF-8 boundary", result.end));
     }
 
     Ok(())

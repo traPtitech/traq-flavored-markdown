@@ -5,7 +5,7 @@ use super::{
 
 use crate::{
     Node, ParseError,
-    engine::{Budget, Grammar, ParseState, inline, source::SourceView},
+    engine::{Budget, Grammar, ParsePhase, ParseState, inline, source::SourceView},
 };
 
 use std::ops::Range;
@@ -72,7 +72,6 @@ fn tokenize(
         };
 
         let found = match_block(&input, budget)?;
-        validate_match(&found, position, LineIndex::new(lines.len()))?;
 
         for commit in found.commits {
             commit(state, budget)?;
@@ -104,7 +103,16 @@ fn match_block(
 ) -> Result<super::BlockMatch, ParseError> {
     for entry in &input.grammar.data.block {
         budget.spend(1)?;
-        if let Some(found) = (entry.data.implementation.parse)(input, budget)? {
+        let position = input
+            .source
+            .span_for(input.lines[input.start].start..input.lines[input.start].start)?
+            .start;
+        if let Some(found) = (entry.data.implementation.parse)(input, budget)
+            .map_err(|error| error.at_rule(ParsePhase::Block, entry.name(), position))?
+        {
+            validate_match(&found, input.start, input.lines.end()).map_err(|reason| {
+                ParseError::invalid_rule(ParsePhase::Block, entry.name(), position, reason)
+            })?;
             return Ok(found);
         }
     }
@@ -116,9 +124,12 @@ fn validate_match(
     found: &super::BlockMatch,
     start: LineIndex,
     line_count: LineIndex,
-) -> Result<(), ParseError> {
+) -> Result<(), String> {
     if found.end <= start || found.end > line_count {
-        return Err(ParseError::InternalError);
+        return Err(format!(
+            "block match must advance from {start:?} within {line_count:?}; got {:?}",
+            found.end
+        ));
     }
 
     Ok(())
