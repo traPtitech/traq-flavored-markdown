@@ -85,3 +85,29 @@ test('wire identity retains defaults, structural constraints, bounds and ABI par
     expect(semanticContractId(first)).not.toBe(semanticContractId(changed))
   }
 })
+
+test('renaming a contract root and its bounded storage type leaves wire identity unchanged', () => {
+  const request = {
+    title: 'Before',
+    type: 'integer',
+    format: 'uint8',
+    minimum: 0,
+    maximum: 255
+  }
+  const first = {
+    abi: {},
+    nodes: {},
+    processing: { Before: request },
+    directions: { Before: 'request' as const }
+  }
+  const second = {
+    abi: {},
+    nodes: {},
+    processing: { After: { ...request, title: 'After', format: 'uint16' } },
+    directions: { After: 'request' as const }
+  }
+  expect(semanticContractId(first)).toBe(semanticContractId(second))
+  expect(
+    semanticContractId({ ...second, directions: { After: 'response' } })
+  ).not.toBe(semanticContractId(first))
+})

@@ -26,6 +26,8 @@ const ordered = (values: unknown[]) =>
 function wireShape(value: Shape): unknown {
   const { name: _name, ...contract } = value
   switch (contract.kind) {
+    case 'integer':
+      return { kind: contract.kind, min: contract.min, max: contract.max }
     case 'nullable':
       return { kind: contract.kind, inner: wireShape(contract.inner) }
     case 'array':
@@ -62,10 +64,9 @@ export interface IdentityContract {
   abi: { error?: RawSchema; [key: string]: unknown }
   nodes: Record<string, { schema: RawSchema; structure?: unknown }>
   processing?: Record<string, RawSchema>
-  parseError?: RawSchema
   presets?: unknown
   limits?: unknown
-  directions?: unknown
+  directions?: Readonly<Record<string, 'request' | 'response'>>
 }
 
 /** Hash only validated wire semantics; provenance and bytes have separate identities. */
@@ -83,16 +84,14 @@ export function semanticContractId(manifest: IdentityContract) {
     ),
     processing:
       manifest.processing &&
-      Object.fromEntries(
-        Object.entries(manifest.processing).map(([name, schema]) => [
-          name,
-          wireSchema(schema)
-        ])
+      ordered(
+        Object.entries(manifest.processing).map(([name, schema]) => ({
+          direction: manifest.directions?.[name],
+          schema: wireSchema(schema)
+        }))
       ),
-    parseError: manifest.parseError && wireSchema(manifest.parseError),
     presets: manifest.presets,
-    limits: manifest.limits,
-    directions: manifest.directions
+    limits: manifest.limits
   }
   return new Bun.CryptoHasher('sha256')
     .update(JSON.stringify(canonical(contract)))
