@@ -6,7 +6,7 @@ use markdown_parser::{
     },
 };
 
-pub use markdown_trap_contracts::{EmbeddingData, EmbeddingKind, ReferenceData, ReferenceKind};
+pub use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> =
@@ -16,7 +16,7 @@ pub fn inline_rule() -> &'static InlineRule {
 
 pub fn plugin() -> &'static Plugin {
     static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_trap_contracts::preset().references);
+        let mut plugin = Plugin::new(&markdown_trap_contracts::declarations().references);
         plugin.add(inline_rule());
         plugin
     });
@@ -67,7 +67,7 @@ fn json_end(input: &InlineInput<'_>, budget: &mut Budget) -> Result<Option<usize
             b'"' => quote = true,
             b'{' | b'[' => {
                 stack.push(byte);
-                budget.depth(stack.len())?;
+                budget.nesting(stack.len())?;
             }
             b'}' | b']' => {
                 if stack.pop() != Some(if byte == b'}' { b'{' } else { b'[' }) {
@@ -90,7 +90,7 @@ fn reference_data(text: &str) -> Option<markdown_parser::NodeKind> {
     let id = value.get("id").and_then(|value| value.as_str())?;
 
     if let Some(kind) = embedding_kind(target) {
-        return Some(markdown_parser::NodeKind::new(EmbeddingData {
+        return Some(markdown_parser::NodeKind::new(Embedding {
             target: kind,
             id: id.into(),
             label: value
@@ -105,7 +105,7 @@ fn reference_data(text: &str) -> Option<markdown_parser::NodeKind> {
     let label = value.get("raw").and_then(|value| value.as_str())?;
     let target = reference_kind(target)?;
 
-    Some(markdown_parser::NodeKind::new(ReferenceData {
+    Some(markdown_parser::NodeKind::new(Reference {
         target,
         id: id.into(),
         label: label.into(),

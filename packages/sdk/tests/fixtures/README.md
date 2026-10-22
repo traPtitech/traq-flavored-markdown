@@ -29,3 +29,24 @@ it was not used to generate replacement expectations.
   [root fixture attribution](../../../../tests/fixtures/README.md). Other algorithm/fixture attribution is recorded in
   `THIRD_PARTY_NOTICES.md`. The origin for these expectations is
   `https://q.example.test`. Native Rust, Go and TypeScript all run this corpus.
+
+On 2026-10-04, the unreleased traQ V1 grammar adopted CommonMark image parsing.
+Reviewed AST changes cover CommonMark examples 517, 520, 531, 572, 574, 575,
+578, 579, 580, and 581, plus the synthetic `images` case. Images now retain
+their destination, title, label source, and children as image nodes; enclosing
+links follow the CommonMark bracket rules. The corresponding plain-text
+expectations (`public-517` through the listed examples, and `public-668`) render
+image labels through the existing image handler. Inputs and all unrelated
+expectations were retained. Empty quotes and URL presentation policy are tested
+separately by focused grammar and renderer tests.
+
+The same 2026-10-04 contract revision mechanically migrated list and table
+payloads from those frozen expectations. List marker spelling was read from the
+existing items and moved to the list's tagged `kind`; table alignment was read
+from the existing cells and moved to the table, with the first row becoming
+`generic.table_header_row`. Redundant item, row, and cell fields were removed.
+This changed 80 CommonMark records and two extension records: 106 lists, 157
+list items, one table, two rows, and four cells. The independently transformed
+expectations matched the revised parser in both modes, with no other AST
+differences and all 787 plain-text expectations unchanged. Sources, spans, and
+child order were preserved.

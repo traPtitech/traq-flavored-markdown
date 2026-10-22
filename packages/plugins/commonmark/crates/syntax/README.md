@@ -5,7 +5,9 @@ core and CommonMark node contracts, not on traQ grammar or distribution code.
 
 `Syntax::default()` provides the base rules, text provider, and `inline`/`block`
 rule references used to position extensions. Add HTML support with
-`html::plugin()`. `LinkOptions` configures link recognition and URL handling.
+`html::plugin()`. Links and images follow CommonMark syntax, including its
+restriction on nested links. Destinations receive URL encoding without protocol
+filtering; rendering hosts decide which links and images may be displayed.
 
 An application's `GrammarBuilder` determines the final rule order. Adding math
 or spoilers does not require changing the CommonMark implementation.

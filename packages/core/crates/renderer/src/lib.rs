@@ -2,13 +2,15 @@
 #![doc = include_str!("../README.md")]
 #![forbid(unsafe_code)]
 
+mod error;
 mod plugin;
 mod preset;
 mod rendering;
 
+pub use error::Error;
+pub use markdown_definitions::RegistrationHandle;
 pub use plugin::Plugin;
 pub use preset::{Preset, PresetBuilder};
-pub use rendering::{Context, Renderer};
+pub use rendering::{Context, Output, RenderLimits, Renderer};
 
-/// Retains the plain-text renderer's existing error codes.
-pub type Result<T> = std::result::Result<T, &'static str>;
+pub type Result<T> = std::result::Result<T, Error>;

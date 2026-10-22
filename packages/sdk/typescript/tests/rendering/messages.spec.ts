@@ -1,12 +1,12 @@
 import {
-  embeddingFromUrl,
-  endsWithEmbedding,
-  messageRenderers
+  endsWithResourceCard,
+  messageRenderers,
+  resourceCardFromUrl
 } from '@traq-flavored-markdown/sdk/renderer'
 import { expect, test } from 'bun:test'
 
 import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }
-import { classifyTraqLink } from '../../renderer/links.js'
+import { classifyTraqLink } from '../../messages/cards.js'
 import { commonParser, parser } from './setup.ts'
 
 const origin = 'https://q.example.test',
@@ -18,7 +18,7 @@ const file = origin + '/files/' + fileId,
 const view = messageRenderers({ origin })
 
 test('message renderers keep telephone links and show rejected autolinks with brackets', () => {
-  for (const renderer of Object.values(view)) {
+  for (const renderer of [view.standard, view.condensed]) {
     expect(
       renderer.render(parser.parse('[090-1234-5678](tel:+819012345678)'))
         .renderedText
@@ -39,12 +39,12 @@ test('URL meaning follows the shared Rust contract', () => {
     )
   }
   const uppercase = origin + '/files/ABCDEF00-0000-0000-0000-000000000001'
-  expect(embeddingFromUrl(uppercase, origin)).toEqual({
+  expect(resourceCardFromUrl(uppercase, origin)).toEqual({
     type: 'file',
     id: 'abcdef00-0000-0000-0000-000000000001'
   })
-  expect(embeddingFromUrl(file + '/extra', origin)).toBeUndefined()
-  expect(embeddingFromUrl(file + '/', origin)).toBeUndefined()
+  expect(resourceCardFromUrl(file + '/extra', origin)).toBeUndefined()
+  expect(resourceCardFromUrl(file + '/', origin)).toBeUndefined()
   expect(
     view.standard.render(parser.parse(file + '/extra')).renderedText
   ).toContain(file + '/extra')
@@ -54,19 +54,24 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
   const source = '本文\n' + file + '\n' + quote,
     document = parser.parse(source),
     snapshot = structuredClone(document)
-  expect(Object.keys(view).sort()).toEqual(['condensed', 'standard'])
-  for (const renderer of Object.values(view))
+  expect(Object.keys(view).sort()).toEqual([
+    'condensed',
+    'prepare',
+    'render',
+    'standard'
+  ])
+  for (const renderer of [view.standard, view.condensed])
     expect(Object.keys(renderer)).toEqual(['render'])
   const normal = view.standard.render(document),
     condensed = view.condensed.render(document)
   expect(normal.renderedText).toBe('<p>本文</p>\n')
   expect(condensed.renderedText).toBe('本文')
   expect(normal.rawText).toBe(source)
-  expect(normal.embeddings).toEqual([
+  expect(normal.cards).toEqual([
     { type: 'file', id: fileId },
     { type: 'message', id: messageId }
   ])
-  expect(condensed.embeddings).toEqual(normal.embeddings)
+  expect(condensed.cards).toEqual(normal.cards)
   expect(document).toEqual(snapshot)
   expect(view.standard.render(document).renderedText).toBe(normal.renderedText)
   expect(
@@ -88,7 +93,7 @@ test('card extraction respects Markdown context and preserves external URL candi
     '!!\n`' +
     quote +
     '`\nhttps://example.com\nhttps://example.com'
-  expect(view.standard.render(parser.parse(source)).embeddings).toEqual([
+  expect(view.standard.render(parser.parse(source)).cards).toEqual([
     { type: 'file', id: fileId },
     { type: 'message', id: messageId },
     { type: 'url', url: 'https://example.com' },
@@ -99,26 +104,26 @@ test('card extraction respects Markdown context and preserves external URL candi
     '`' + file + '`',
     '```\n' + file + '\n```'
   ])
-    expect(view.standard.render(parser.parse(source)).embeddings).toEqual([])
-  expect(embeddingFromUrl(origin + '/channels/test', origin)).toBeUndefined()
+    expect(view.standard.render(parser.parse(source)).cards).toEqual([])
+  expect(resourceCardFromUrl(origin + '/channels/test', origin)).toBeUndefined()
   expect(
-    embeddingFromUrl(origin + '/channels/test', origin + '/')
+    resourceCardFromUrl(origin + '/channels/test', origin + '/')
   ).toBeUndefined()
-  expect(embeddingFromUrl(origin + '/files/invalid', origin)).toBeUndefined()
-  expect(embeddingFromUrl('javascript:alert(1)', origin)).toBeUndefined()
-  expect(embeddingFromUrl('/files/' + fileId, origin)).toBeUndefined()
-  expect(embeddingFromUrl(file + '?download=1', origin)).toEqual({
+  expect(resourceCardFromUrl(origin + '/files/invalid', origin)).toBeUndefined()
+  expect(resourceCardFromUrl('javascript:alert(1)', origin)).toBeUndefined()
+  expect(resourceCardFromUrl('/files/' + fileId, origin)).toBeUndefined()
+  expect(resourceCardFromUrl(file + '?download=1', origin)).toEqual({
     type: 'file',
     id: fileId
   })
   expect(
-    embeddingFromUrl('https://other.test/files/' + fileId, origin)
+    resourceCardFromUrl('https://other.test/files/' + fileId, origin)
   ).toEqual({ type: 'url', url: 'https://other.test/files/' + fileId })
   for (const value of [
     'https://Q.EXAMPLE.TEST/files/' + fileId,
     'https://q.example.test:443/files/' + fileId
   ]) {
-    expect(embeddingFromUrl(value, origin)).toEqual({
+    expect(resourceCardFromUrl(value, origin)).toEqual({
       type: 'url',
       url: value
     })
@@ -126,7 +131,7 @@ test('card extraction respects Markdown context and preserves external URL candi
   expect(
     messageRenderers({ origin: origin + '///' }).standard.render(
       parser.parse(file)
-    ).embeddings
+    ).cards
   ).toEqual([{ type: 'file', id: fileId }])
 })
 
@@ -156,7 +161,7 @@ test('condensed preserves explicit quote links and their labels', () => {
     expect(result.renderedText).toBe(
       view.standard.render(document).renderedText.trim().slice(3, -4)
     )
-    expect(result.embeddings).toEqual([{ type: 'message', id: messageId }])
+    expect(result.cards).toEqual([{ type: 'message', id: messageId }])
   }
 })
 
@@ -220,20 +225,20 @@ test('condensed renders images as links and restricts math size commands', () =>
 })
 
 test('attachment spacing checks the complete AST instead of its final source line', () => {
-  expect(endsWithEmbedding(parser.parse('本文\n' + file), origin)).toBe(true)
-  expect(endsWithEmbedding(parser.parse('本文 ' + file), origin)).toBe(false)
-  expect(endsWithEmbedding(parser.parse('~~~\n' + file), origin)).toBe(false)
-  expect(endsWithEmbedding(parser.parse('!!' + file + '!!'), origin)).toBe(
+  expect(endsWithResourceCard(parser.parse('本文\n' + file), origin)).toBe(true)
+  expect(endsWithResourceCard(parser.parse('本文 ' + file), origin)).toBe(false)
+  expect(endsWithResourceCard(parser.parse('~~~\n' + file), origin)).toBe(false)
+  expect(endsWithResourceCard(parser.parse('!!' + file + '!!'), origin)).toBe(
     false
   )
   expect(
-    endsWithEmbedding(parser.parse('[' + file + '](' + file + ')'), origin)
+    endsWithResourceCard(parser.parse('[' + file + '](' + file + ')'), origin)
   ).toBe(false)
 })
 
 test('a card link attached to text remains in the rendered message', () => {
   const document = parser.parse('本文 ' + file)
-  expect(endsWithEmbedding(document, origin)).toBe(false)
+  expect(endsWithResourceCard(document, origin)).toBe(false)
   expect(view.standard.render(document).renderedText).toContain(file)
   expect(view.condensed.render(document).renderedText).toContain(
     '[[添付ファイル]]'

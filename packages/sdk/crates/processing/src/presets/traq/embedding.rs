@@ -1,7 +1,7 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
-use markdown_ast::{Document, Node, Span, ValidatedDocument, ValidationError};
+use markdown_ast::{Document, Node, Span, ValidatedDocument};
 use markdown_commonmark_contracts::{Image, Link, Text};
-use markdown_trap_contracts::{EmbeddingData, ReferenceData};
+use markdown_trap_contracts::{Embedding, Reference};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -16,7 +16,7 @@ pub enum LookupKind {
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
-pub struct EmbeddingCandidate {
+pub struct ReferenceEmbeddingCandidate {
     /// UTF-8 byte offsets into the original source, not rendered text.
     pub start: u32,
     pub end: u32,
@@ -28,60 +28,66 @@ pub struct EmbeddingCandidate {
 #[derive(Debug, Default, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct EmbeddingPlan {
+pub struct ReferenceEmbeddingPlan {
     /// Ordered lookup attempts. A successful attempt consumes its source range.
-    pub candidates: Vec<EmbeddingCandidate>,
+    pub candidates: Vec<ReferenceEmbeddingCandidate>,
 
     /// Original Markdown with recognized reference nodes restored to their labels.
     pub unembedded_text: String,
 }
 
-pub fn plan(document: &Document) -> Result<EmbeddingPlan, &'static str> {
-    plan_validated(ValidatedDocument::new(document).map_err(ValidationError::code)?)
+pub fn plan(document: &Document) -> crate::Result<ReferenceEmbeddingPlan> {
+    plan_validated(ValidatedDocument::new(document)?)
 }
 
 /// Reuse an immutable validation, including explicitly configured tree limits.
-pub fn plan_validated(document: ValidatedDocument<'_>) -> Result<EmbeddingPlan, &'static str> {
-    let document = document.document();
-    let mut result = EmbeddingPlan::default();
-    let mut edits = Vec::new();
-    let mut pending: Vec<_> = document
-        .children
-        .iter()
-        .rev()
-        .map(|node| (node, true))
-        .collect();
+pub fn plan_validated(document: ValidatedDocument<'_>) -> crate::Result<ReferenceEmbeddingPlan> {
+    let mut collector = Collector::default();
+    crate::collectors::collect(document, &mut collector)?;
+    collector.finish(&document.document().source)
+}
 
-    while let Some((node, allow_embedding)) = pending.pop() {
-        let allow_children = observe(
-            node,
-            &document.source,
-            allow_embedding,
-            &mut result,
-            &mut edits,
-        );
-
-        pending.extend(
-            node.children
-                .iter()
-                .rev()
-                .map(|child| (child, allow_children)),
-        );
+#[derive(Default)]
+pub(crate) struct Collector<'a> {
+    plan: ReferenceEmbeddingPlan,
+    edits: Vec<(Span, &'a str)>,
+}
+impl Collector<'_> {
+    pub(crate) fn finish(self, source: &str) -> crate::Result<ReferenceEmbeddingPlan> {
+        finish(source, self.plan, self.edits)
     }
-
-    finish(&document.source, result, edits)
+}
+impl<'a> crate::collectors::Collector<'a> for Collector<'a> {
+    type Scope = bool;
+    fn initial(&self) -> bool {
+        true
+    }
+    fn observe(
+        &mut self,
+        node: &'a Node,
+        source: &'a str,
+        allow_embedding: &bool,
+    ) -> crate::Result<bool> {
+        Ok(observe(
+            node,
+            source,
+            *allow_embedding,
+            &mut self.plan,
+            &mut self.edits,
+        ))
+    }
 }
 
 pub(crate) fn observe<'a>(
     node: &'a Node,
     source: &str,
     allow_embedding: bool,
-    result: &mut EmbeddingPlan,
+    result: &mut ReferenceEmbeddingPlan,
     edits: &mut Vec<(Span, &'a str)>,
 ) -> bool {
-    if let Some(reference) = node.get::<ReferenceData>() {
+    if let Some(reference) = node.get::<Reference>() {
         edits.push((node.span, reference.label.as_str()));
-    } else if let Some(embedding) = node.get::<EmbeddingData>() {
+    } else if let Some(embedding) = node.get::<Embedding>() {
         edits.push((node.span, embedding.label.as_str()));
     } else if allow_embedding && node.get::<Text>().is_some() {
         collect(
@@ -98,15 +104,15 @@ pub(crate) fn observe<'a>(
 
 pub(crate) fn finish(
     source: &str,
-    mut result: EmbeddingPlan,
+    mut result: ReferenceEmbeddingPlan,
     edits: Vec<(Span, &str)>,
-) -> Result<EmbeddingPlan, &'static str> {
+) -> crate::Result<ReferenceEmbeddingPlan> {
     result.unembedded_text = crate::edits::apply(source, edits)?;
     result.candidates.sort_by_key(|candidate| candidate.start);
     Ok(result)
 }
 
-fn collect(source: &str, start: usize, end: usize, result: &mut Vec<EmbeddingCandidate>) {
+fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmbeddingCandidate>) {
     let text = &source[start..end];
     let mut escaped = false;
 
@@ -217,9 +223,9 @@ fn push(
     name_start: usize,
     end: usize,
     kind: LookupKind,
-    result: &mut Vec<EmbeddingCandidate>,
+    result: &mut Vec<ReferenceEmbeddingCandidate>,
 ) {
-    result.push(EmbeddingCandidate {
+    result.push(ReferenceEmbeddingCandidate {
         start: start as u32,
         end: end as u32,
         raw: source[start..end].into(),

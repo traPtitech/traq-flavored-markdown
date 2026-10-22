@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import { readGoPackageGraph } from '../package-graph.ts'
 import { repositoryRoot } from '../paths.ts'
+import { goVersion } from '../release/version.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
 
 async function go(directory: string, args: string[], remote: boolean) {
@@ -29,10 +30,7 @@ async function go(directory: string, args: string[], remote: boolean) {
 }
 
 export async function checkGoConsumer(version: string, remote = false) {
-  if (!/^v(?:0|1)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(version))
-    throw new Error(
-      'usage: bun scripts/checks/go-consumer.ts v<version> [--remote]'
-    )
+  goVersion(version)
   const { published } = await readGoPackageGraph()
   const sdk = published.find(module => module.owner === 'sdk')!.path
   await withTempDirectory('markdown-go-consumer-', async directory => {

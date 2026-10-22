@@ -17,21 +17,15 @@ pub struct Rules {
     pub newline: InlineRule,
 }
 
-pub(crate) fn rules(options: links::LinkOptions) -> Rules {
+pub(crate) fn rules() -> Rules {
     Rules {
         escape: InlineRule::new(b"\\", basic::escape).named("escape"),
         code: InlineRule::new(b"`", basic::code).named("code"),
         emphasis: InlineRule::new(b"*_", emphasis::emphasis).named("emphasis"),
 
-        link: InlineRule::new(b"[!]", move |input, budget| {
-            links::link(input, budget, options)
-        })
-        .named("link"),
+        link: InlineRule::new(b"[!]", links::link).named("link"),
 
-        autolink: InlineRule::new(b"<", move |input, budget| {
-            links::autolink(input, budget, options)
-        })
-        .named("autolink"),
+        autolink: InlineRule::new(b"<", links::autolink).named("autolink"),
 
         entity: InlineRule::new(b"&", basic::entity).named("entity"),
         newline: InlineRule::new(b"\n", basic::newline).named("newline"),

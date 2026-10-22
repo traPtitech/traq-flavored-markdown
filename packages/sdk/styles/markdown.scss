@@ -146,6 +146,7 @@ $link-highlight-background-color: #faffad !default;
   }
   h5 {
     font-size: 0.875em;
+    // Retained legacy text-rasterization adjustment; changing it needs a browser visual comparison.
     transform: rotate(0.03deg);
   }
   h6 {
@@ -315,12 +316,5 @@ $link-highlight-background-color: #faffad !default;
     @include code-base;
     display: inline;
     padding: 2px 6px;
-  }
-
-  .message-emoji {
-    &.large,
-    &.ex-large {
-      font-size: 24px;
-    }
   }
 }

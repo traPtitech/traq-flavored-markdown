@@ -27,15 +27,15 @@ test('bundled Wasm check accepts different bytes with the same contract and ABI'
   ).resolves.toBeUndefined()
 })
 
-test('bundled Wasm check rejects a stale build ID', async () => {
+test('bundled Wasm check rejects a stale contract ID', async () => {
   const wasm = await Bun.file(path.join(sdkRoot, 'go', 'parser.wasm')).bytes()
-  const buildId = (await readWasmMetadata(wasm)).buildId
+  const contractId = (await readWasmMetadata(wasm)).contractId
   const stale = new Uint8Array(wasm)
-  const index = Buffer.from(stale).indexOf(buildId)
+  const index = Buffer.from(stale).indexOf(contractId)
   expect(index).toBeGreaterThanOrEqual(0)
-  stale.set(new TextEncoder().encode('0'.repeat(buildId.length)), index)
+  stale.set(new TextEncoder().encode('0'.repeat(contractId.length)), index)
 
-  expect((await readWasmMetadata(stale)).buildId).not.toBe(buildId)
+  expect((await readWasmMetadata(stale)).contractId).not.toBe(contractId)
   await expect(assertBundledWasmMatches(wasm, stale)).rejects.toThrow(
     'Bundled Go Wasm contract is out of date'
   )

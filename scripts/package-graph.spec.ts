@@ -20,6 +20,7 @@ test('dependency order and ownership follow the manifest graph', async () => {
   expect(graph.order).toEqual([
     'core',
     'commonmark-plugin',
+    'extensions-plugin',
     'traq-plugin',
     'sdk'
   ])
@@ -27,7 +28,7 @@ test('dependency order and ownership follow the manifest graph', async () => {
   expect(graph.allows('core', 'sdk')).toBe(false)
   const go = await readGoPackageGraph()
   expect(go.published.map(module => module.owner)).toEqual(graph.order)
-  expect(() => validateGoOwnership(go, graph)).not.toThrow()
+  expect(() => validateGoOwnership(go)).not.toThrow()
 })
 
 test('peer graph catches cycles, undeclared transitive peers, and runtime coupling', async () => {
@@ -73,6 +74,7 @@ test('Go manifest graph rejects cycles and upward dependencies', async () => {
     const directories = [
       'packages/core/go',
       'packages/plugins/commonmark/go',
+      'packages/plugins/extensions/go',
       'packages/plugins/traq/go',
       'packages/sdk/go',
       'packages/sdk/examples/go'
@@ -80,10 +82,12 @@ test('Go manifest graph rejects cycles and upward dependencies', async () => {
     const dependencies: Record<string, string[]> = {
       'packages/core/go': [],
       'packages/plugins/commonmark/go': ['packages/core/go'],
+      'packages/plugins/extensions/go': ['packages/core/go'],
       'packages/plugins/traq/go': ['packages/core/go'],
       'packages/sdk/go': [
         'packages/core/go',
         'packages/plugins/commonmark/go',
+        'packages/plugins/extensions/go',
         'packages/plugins/traq/go'
       ],
       'packages/sdk/examples/go': ['packages/sdk/go']
@@ -104,9 +108,8 @@ test('Go manifest graph rejects cycles and upward dependencies', async () => {
       }
     }
     await write()
-    const npm = (await readNpmPackageGraph()).graph
     const normal = await readGoPackageGraph(root)
-    expect(() => validateGoOwnership(normal, npm)).not.toThrow()
+    expect(() => validateGoOwnership(normal)).not.toThrow()
     dependencies['packages/plugins/commonmark/go'].push(
       'packages/plugins/traq/go'
     )

@@ -48,8 +48,9 @@
     "dist/index.d.ts",
     "dist/browser.js",
     "dist/browser.d.ts",
-    "dist/embedding.js",
-    "dist/embedding.d.ts",
+    "dist/messages",
+    "dist/profiles",
+    "dist/runtime",
     "dist/generated",
     "dist/parser.wasm",
     "dist/contract.json",
@@ -77,12 +78,14 @@
     "@traq-flavored-markdown/core": "workspace:*",
     "@traq-flavored-markdown/traq-plugin": "workspace:*",
     "markdown-it": "15.0.2",
-    "sass": "1.104.1"
+    "sass": "1.104.1",
+    "@traq-flavored-markdown/extensions-plugin": "workspace:*"
   },
   "peerDependencies": {
     "@traq-flavored-markdown/commonmark-plugin": "0.1.7",
     "@traq-flavored-markdown/core": "0.1.7",
-    "@traq-flavored-markdown/traq-plugin": "0.1.7"
+    "@traq-flavored-markdown/traq-plugin": "0.1.7",
+    "@traq-flavored-markdown/extensions-plugin": "0.1.7"
   },
   "engines": {
     "node": ">=24"

@@ -1,4 +1,4 @@
-use crate::{Plugin, Result, plugin::Handler};
+use crate::{Plugin, RegistrationHandle, Result, plugin::Handler};
 use markdown_definitions::handlers::HandlerRegistry;
 use std::{any::TypeId, collections::HashMap, sync::Arc};
 
@@ -20,13 +20,23 @@ impl PresetBuilder {
 
     /// Check the whole plugin before changing the builder.
     pub fn add(&mut self, plugin: &Plugin) -> Result<&mut Self> {
-        self.registry.add(&plugin.handlers)?;
+        self.register(plugin)?;
         Ok(self)
     }
 
-    /// Remove the registered implementation snapshot, as in GrammarBuilder.
-    pub fn remove(&mut self, plugin: &Plugin) -> Result<&mut Self> {
-        self.registry.remove(&plugin.handlers)?;
+    pub fn register(&mut self, plugin: &Plugin) -> Result<RegistrationHandle> {
+        self.registry.add(&plugin.handlers).map_err(Into::into)
+    }
+
+    /// Find a preset's registration by its shared declaration. Snapshot edits do
+    /// not change declaration identity or the returned registration handle.
+    pub fn registration(&self, plugin: &Plugin) -> Option<RegistrationHandle> {
+        self.registry.registration(&plugin.handlers)
+    }
+
+    /// Remove the registration even after its original implementation was edited.
+    pub fn remove(&mut self, handle: &RegistrationHandle) -> Result<&mut Self> {
+        self.registry.remove(handle)?;
         Ok(self)
     }
 

@@ -98,8 +98,8 @@ fn bounded_input_and_output_accept_the_boundary() {
             codec
                 .decode(deep_json(depth).as_bytes())
                 .unwrap_err()
-                .to_string()
-                .contains("depth limit")
+                .resource()
+                == Some("depth")
         );
     }
 
@@ -118,13 +118,7 @@ fn bounded_input_and_output_accept_the_boundary() {
         },
     )];
 
-    assert!(
-        codec
-            .encode(&document)
-            .unwrap_err()
-            .to_string()
-            .contains("json byte limit")
-    );
+    assert!(codec.encode(&document).unwrap_err().resource() == Some("json_bytes"));
 }
 
 #[test]
@@ -253,14 +247,52 @@ fn payload_limit_is_enforced_by_both_codec_directions() {
         codec
             .encode_with_limits(&document, limits)
             .unwrap_err()
-            .to_string()
-            .contains("payload byte limit")
+            .resource()
+            == Some("payload_bytes")
     );
     assert!(
         codec
             .decode_with_limits(&bytes, limits)
             .unwrap_err()
-            .to_string()
-            .contains("payload byte limit")
+            .resource()
+            == Some("payload_bytes")
     );
+}
+
+#[test]
+fn decode_failures_keep_field_contract_span_and_nested_path() {
+    use markdown_codec::ErrorKind;
+    let codec = codec();
+    let mut json = serde_json::json!({
+        "source": "é",
+        "children": [{"kind": Paragraph::type_key(), "data": {}, "span": {"start":0,"end":2}, "children": [
+            {"kind": Text::type_key(), "data":{"value":"é"}, "span":{"start":1,"end":2}}
+        ]}]
+    });
+    let error = codec
+        .decode(&serde_json::to_vec(&json).unwrap())
+        .unwrap_err();
+    assert!(matches!(error.kind, ErrorKind::InvalidSpan { .. }));
+    assert_eq!(error.path, [0, 0]);
+    assert_eq!(error.span, Some(Span { start: 1, end: 2 }));
+    json["children"][0]["children"][0]["span"]["start"] = 0.into();
+    json["children"][0]["children"][0]["kind"] = "missing.payload".into();
+    let error = codec
+        .decode(&serde_json::to_vec(&json).unwrap())
+        .unwrap_err();
+    assert!(
+        matches!(error.kind, ErrorKind::UnknownContract { ref name } if name == "missing.payload")
+    );
+    assert_eq!(error.path, [0, 0]);
+    json["children"][0]["children"][0]["kind"] = Text::type_key().into();
+    json["children"][0]["children"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("data");
+    let error = codec
+        .decode(&serde_json::to_vec(&json).unwrap())
+        .unwrap_err();
+    assert!(matches!(error.kind, ErrorKind::MissingField { ref name } if name == "data"));
+    assert_eq!(error.path, [0, 0]);
+    assert_eq!(error.span, Some(Span { start: 0, end: 2 }));
 }

@@ -2,13 +2,11 @@ use std::sync::LazyLock;
 
 static CONTRACT: LazyLock<String> = LazyLock::new(|| {
     serde_json::json!({
-        "buildId": env!("MARKDOWN_BUILD_ID"),
+        "contractId": crate::abi::CONTRACT_ID,
+        "provenance": { "sourceFingerprint": env!("MARKDOWN_SOURCE_FINGERPRINT") },
+        "abiVersion": 1,
         "presets": traq_markdown_grammar::bindings::preset_exports(),
-        "limits": {
-            "inputBytes": super::limits::MAX_INPUT,
-            "outputBytes": super::limits::MAX_OUTPUT,
-            "memoryBytes": super::limits::MEMORY_BYTES
-        }
+        "limits": super::limits::metadata(),
     })
     .to_string()
 });

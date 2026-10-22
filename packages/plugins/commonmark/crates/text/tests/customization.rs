@@ -15,7 +15,13 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
     builder.add(&markdown_commonmark_text::plugin()).unwrap();
     assert!(builder.add(&markdown_commonmark_text::plugin()).is_err());
     // Factory calls require no caller clone and return the same default snapshot.
-    builder.remove(&markdown_commonmark_text::plugin()).unwrap();
+    builder
+        .remove(
+            &builder
+                .registration(&markdown_commonmark_text::plugin())
+                .unwrap(),
+        )
+        .unwrap();
 
     let default = renderer(&markdown_commonmark_text::plugin());
     let configured = renderer(&markdown_commonmark_text::plugin_with_options(
@@ -26,7 +32,7 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
 
     let mut custom = markdown_commonmark_text::plugin();
     custom
-        .replace::<Link>(|link, _, _| Ok(link.destination.clone()))
+        .replace::<Link>(|link, _, _, output| output.push(&link.destination))
         .unwrap();
 
     let document = Document {
@@ -48,19 +54,32 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
     };
 
     assert_eq!(
-        renderer(&custom).render(&document).unwrap(),
+        renderer(&custom)
+            .render(&document)
+            .map_err(|error| error.code())
+            .unwrap(),
         "https://example.test"
     );
 
-    assert_eq!(default.render(&document).unwrap(), "label");
     assert_eq!(
-        configured.render(&document).unwrap(),
+        default
+            .render(&document)
+            .map_err(|error| error.code())
+            .unwrap(),
+        "label"
+    );
+    assert_eq!(
+        configured
+            .render(&document)
+            .map_err(|error| error.code())
+            .unwrap(),
         "[label](https://example.test)"
     );
 
     assert_eq!(
         renderer(&markdown_commonmark_text::plugin())
             .render(&document)
+            .map_err(|error| error.code())
             .unwrap(),
         "label"
     );

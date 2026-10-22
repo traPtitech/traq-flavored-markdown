@@ -43,7 +43,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
   const embed = (source: string) =>
     embedReferences(
       source,
-      process(source).embedding,
+      process(source).referenceEmbedding,
       (kind: string, name: string) =>
         (identities as Record<string, Record<string, string>>)[kind]?.[name]
     )
@@ -72,11 +72,11 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     expect(embed('日本語😀 **@a**')).toBe(`日本語😀 **${reference}**`)
 
     const escaped = embed('@a"b')
-    expect(process(escaped).embedding.unembeddedText).toBe('@a"b')
+    expect(process(escaped).referenceEmbedding.unembeddedText).toBe('@a"b')
 
     const linkedReference = '[label ' + reference + '](https://example.com)'
     expect(
-      process(linkedReference).embedding.unembeddedText,
+      process(linkedReference).referenceEmbedding.unembeddedText,
       '[label @a](https://example.com)'
     ).toBe('[label @a](https://example.com)')
 
@@ -85,7 +85,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
       '$$\n' + reference + '\n$$'
     ]) {
       expect(
-        process(protectedSource).embedding.unembeddedText,
+        process(protectedSource).referenceEmbedding.unembeddedText,
         protectedSource
       ).toBe(protectedSource)
     }
@@ -93,7 +93,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     const source = `日本語😀 ${reference} \`${reference}\` !!${reference}!!`
     const output = process(source)
     expect(
-      output.embedding.unembeddedText,
+      output.referenceEmbedding.unembeddedText,
       `日本語😀 @a \`${reference}\` !!@a!!`
     ).toBe(`日本語😀 @a \`${reference}\` !!@a!!`)
     expect(mentionsUser(output.references, userId, [])).toBe(true)
@@ -116,7 +116,11 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     expect(mentionsUser(process('').references, userId, [groupId])).toBe(false)
 
     expect(() =>
-      embedReferences('different', process('@a').embedding, () => userId)
+      embedReferences(
+        'different',
+        process('@a').referenceEmbedding,
+        () => userId
+      )
     ).toThrow(/does not match source/)
   } finally {
     runtime.dispose()

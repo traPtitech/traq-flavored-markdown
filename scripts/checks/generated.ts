@@ -3,8 +3,9 @@ import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'path'
 
+import { outputIndex, readOutputIndex } from '../codegen/output-manifest.ts'
 import { generateBindings } from '../generate-bindings.ts'
-import { packageRoot, repositoryRoot } from '../paths.ts'
+import { repositoryRoot } from '../paths.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
 
 export type GeneratedTargets = {
@@ -12,27 +13,13 @@ export type GeneratedTargets = {
   files: string[]
 }
 
-const generatedTargets: GeneratedTargets = {
-  directories: [
-    path.join(packageRoot('commonmark-plugin'), 'typescript', 'generated'),
-    path.join(packageRoot('traq-plugin'), 'typescript', 'generated'),
-    path.join(packageRoot('sdk'), 'typescript', 'generated')
-  ].map(file => path.relative(repositoryRoot, file)),
+const indexedTargets = async (root: string): Promise<GeneratedTargets> => ({
+  directories: [],
   files: [
-    path.join(packageRoot('commonmark-plugin'), 'go', 'generated_nodes.go'),
-    path.join(
-      packageRoot('commonmark-plugin'),
-      'go',
-      'generic',
-      'generated_nodes.go'
-    ),
-    path.join(packageRoot('traq-plugin'), 'go', 'generated_nodes.go'),
-    path.join(packageRoot('sdk'), 'go', 'generated_artifact.go'),
-    path.join(packageRoot('sdk'), 'go', 'generated_nodes.go'),
-    path.join(packageRoot('sdk'), 'go', 'generated_presets.go'),
-    path.join(packageRoot('sdk'), 'go', 'generated_processing.go')
-  ].map(file => path.relative(repositoryRoot, file))
-}
+    outputIndex,
+    ...(await readOutputIndex(root)).outputs.map(output => output.path)
+  ]
+})
 
 const hasDirectory = async (directory: string) => {
   try {
@@ -89,13 +76,19 @@ export const generatedChanges = (
 export async function checkGenerated(
   generate: (outputRoot: string) => Promise<void> = outputRoot =>
     generateBindings(undefined, undefined, outputRoot),
-  targets: GeneratedTargets = generatedTargets,
+  targets?: GeneratedTargets,
   sourceRoot = repositoryRoot
 ) {
-  const source = await snapshot(sourceRoot, targets)
+  const source = await snapshot(
+    sourceRoot,
+    targets ?? (await indexedTargets(sourceRoot))
+  )
   await withTempDirectory('generated-check-', async outputRoot => {
     await generate(outputRoot)
-    const expected = await snapshot(outputRoot, targets)
+    const expected = await snapshot(
+      outputRoot,
+      targets ?? (await indexedTargets(outputRoot))
+    )
     const changes = generatedChanges(source, expected)
     if (changes.length)
       throw new Error(`Generated files are out of date:\n${changes.join('\n')}`)

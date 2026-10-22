@@ -1,0 +1,10 @@
+@each $name, $rotation in (rotate: 1turn, rotate-inv: -1turn) {
+  @keyframes tfm-stamp-#{$name} {
+    0% {
+      transform: rotate(0);
+    }
+    100% {
+      transform: rotate($rotation);
+    }
+  }
+}

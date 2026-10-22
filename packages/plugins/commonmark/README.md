@@ -1,20 +1,19 @@
 # CommonMark plugin
 
-This package provides CommonMark 0.31.2 and reusable Markdown extensions. It
-owns their grammar, node contracts, and plain-text rendering, while the SDK
+This package provides CommonMark 0.31.2. It
+owns its grammar, node contracts, and plain-text rendering, while the SDK
 chooses which plugins form the traQ presets.
 
-| Crate                           | Purpose                                         |
-| ------------------------------- | ----------------------------------------------- |
-| `markdown-commonmark-contracts` | Typed CommonMark nodes                          |
-| `markdown-commonmark`           | CommonMark syntax                               |
-| `markdown-commonmark-text`      | CommonMark plain-text rendering                 |
-| `markdown-generic-contracts`    | Nodes for math, tables, strikethrough, and mark |
-| `markdown-generic-syntax`       | Reusable extension syntax                       |
-| `markdown-generic-text`         | Reusable extension plain-text rendering         |
+| Crate                           | Purpose                         |
+| ------------------------------- | ------------------------------- |
+| `markdown-commonmark-contracts` | Typed CommonMark nodes          |
+| `markdown-commonmark`           | CommonMark syntax               |
+| `markdown-commonmark-text`      | CommonMark plain-text rendering |
 
 The crates can be used independently. Contract and syntax crates live together,
 but a consumer that only reads nodes does not need a parser implementation.
+Tables, math, mark, strikethrough, and linkify belong to the separate
+[extensions owner](../extensions/README.md).
 
 ## Boundaries
 
@@ -44,6 +43,10 @@ these defaults with `validateLink` and `validateImage`.
 A custom `highlight` callback returns `{ kind: 'content', html }` for HTML to
 place inside `<code>`, `{ kind: 'block', html }` for a complete `<pre>` block, or
 `undefined` to use escaped source.
+An empty `html` string is an explicit result. The optional
+`@traq-flavored-markdown/commonmark-plugin/highlight` adapter exposes
+`createHighlighter({ preClass, caption, autoLanguages })`; importing node
+contracts does not load that adapter.
 
 Attribution and licensing for the 652 CommonMark examples are in the
 [shared fixtures](../../../tests/fixtures/README.md).

@@ -45,11 +45,14 @@ fn crate_sources(root: &Path, hash: &mut DefaultHasher) {
 }
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=MARKDOWN_CONTRACT_ID");
     let mut hash = DefaultHasher::new();
     for path in [
         "src",
         "../grammar/src",
         "../grammar/Cargo.toml",
+        "../features/src",
+        "../features/Cargo.toml",
         "../processing/src",
         "../processing/Cargo.toml",
         "build.rs",
@@ -58,15 +61,20 @@ fn main() {
         "../../../../Cargo.lock",
         "../../../../rust-toolchain.toml",
         "../../../../.cargo/config.toml",
+        "../../../../scripts/codegen/structure.rs",
     ] {
         input(Path::new(path), &mut hash);
     }
     for root in [
         "../../../core/crates",
         "../../../plugins/commonmark/crates",
+        "../../../plugins/extensions/crates",
         "../../../plugins/traq/crates",
     ] {
         crate_sources(Path::new(root), &mut hash);
     }
-    println!("cargo:rustc-env=MARKDOWN_BUILD_ID={:016x}", hash.finish());
+    println!(
+        "cargo:rustc-env=MARKDOWN_SOURCE_FINGERPRINT={:016x}",
+        hash.finish()
+    );
 }

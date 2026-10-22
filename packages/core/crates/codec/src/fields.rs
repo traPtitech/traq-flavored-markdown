@@ -24,9 +24,10 @@ impl<'de> Deserialize<'de> for Fields<'de> {
                 let mut fields = BTreeMap::new();
 
                 while let Some((key, value)) = map.next_entry::<String, &'de RawValue>()? {
-                    if fields.insert(key, value).is_some() {
-                        return Err(M::Error::custom("duplicate field"));
+                    if fields.contains_key(&key) {
+                        return Err(M::Error::custom(format!("duplicate field {key:?}")));
                     }
+                    fields.insert(key, value);
                 }
 
                 Ok(Fields(fields))
@@ -38,19 +39,19 @@ impl<'de> Deserialize<'de> for Fields<'de> {
 }
 
 impl<'a> Fields<'a> {
-    pub fn take(&mut self, name: &str) -> serde_json::Result<&'a RawValue> {
-        self.0.remove(name).ok_or_else(|| error("missing field"))
+    pub fn take(&mut self, name: &str) -> crate::Result<&'a RawValue> {
+        self.0
+            .remove(name)
+            .ok_or_else(|| crate::Error::new(crate::ErrorKind::MissingField { name: name.into() }))
     }
 
-    pub fn end(self) -> serde_json::Result<()> {
+    pub fn end(self) -> crate::Result<()> {
         if self.0.is_empty() {
             Ok(())
         } else {
-            Err(error("unknown envelope field"))
+            Err(crate::Error::new(crate::ErrorKind::UnknownFields {
+                names: self.0.into_keys().collect(),
+            }))
         }
     }
-}
-
-pub(crate) fn error(message: &'static str) -> serde_json::Error {
-    serde::de::Error::custom(message)
 }

@@ -45,26 +45,47 @@ fn replacement_changes_only_the_selected_type_in_the_new_snapshot() {
     let mut plugin = Plugin::new(&Declaration::new("configured"));
 
     plugin
-        .on::<Text>(move |_, _, _| Ok((*old_config).clone()))
+        .on::<Text>(move |_, _, _, output| output.push(&old_config))
         .unwrap();
-    plugin.on::<Other>(|_, _, _| Ok("other".into())).unwrap();
+    plugin
+        .on::<Other>(|_, _, _, output| output.push("other"))
+        .unwrap();
 
     let old = renderer(&plugin);
     let config = Arc::new("new".to_owned());
     let weak = Arc::downgrade(&config);
 
     plugin
-        .replace::<Text>(move |_, _, _| Ok((*config).clone()))
+        .replace::<Text>(move |_, _, _, output| output.push(&config))
         .unwrap();
 
-    assert!(plugin.on::<Text>(|_, _, _| Ok("duplicate".into())).is_err());
+    assert!(
+        plugin
+            .on::<Text>(|_, _, _, output| output.push("duplicate"))
+            .is_err()
+    );
 
     let new = renderer(&plugin);
     drop(plugin);
 
-    assert_eq!(old.render(&document(Text)).unwrap(), "old");
-    assert_eq!(new.render(&document(Text)).unwrap(), "new");
-    assert_eq!(new.render(&document(Other)).unwrap(), "other");
+    assert_eq!(
+        old.render(&document(Text))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "old"
+    );
+    assert_eq!(
+        new.render(&document(Text))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "new"
+    );
+    assert_eq!(
+        new.render(&document(Other))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "other"
+    );
     assert!(old_weak.upgrade().is_some());
     assert!(weak.upgrade().is_some());
     drop(old);
@@ -77,16 +98,33 @@ fn replacement_changes_only_the_selected_type_in_the_new_snapshot() {
 #[test]
 fn missing_replacement_is_atomic_and_does_not_register_a_handler() {
     let mut plugin = Plugin::new(&Declaration::new("text"));
-    plugin.on::<Text>(|_, _, _| Ok("unchanged".into())).unwrap();
+    plugin
+        .on::<Text>(|_, _, _, output| output.push("unchanged"))
+        .unwrap();
     let mut builder = PresetBuilder::new();
     builder.add(&plugin).unwrap();
     assert_eq!(
-        plugin.replace::<Other>(|_, _, _| Ok("unexpected".into())),
+        plugin
+            .replace::<Other>(|_, _, _, output| output.push("unexpected"))
+            .map_err(|error| error.code()),
         Err("missing_handler")
     );
     // Failure must not fork the registered implementation snapshot.
-    builder.remove(&plugin).unwrap();
+    builder
+        .remove(&builder.registration(&plugin).unwrap())
+        .unwrap();
     let renderer = renderer(&plugin);
-    assert_eq!(renderer.render(&document(Other)), Err("unsupported_node"));
-    assert_eq!(renderer.render(&document(Text)).unwrap(), "unchanged");
+    assert_eq!(
+        renderer
+            .render(&document(Other))
+            .map_err(|error| error.code()),
+        Err("unsupported_node")
+    );
+    assert_eq!(
+        renderer
+            .render(&document(Text))
+            .map_err(|error| error.code())
+            .unwrap(),
+        "unchanged"
+    );
 }

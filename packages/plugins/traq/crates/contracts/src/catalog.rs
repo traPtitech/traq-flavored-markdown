@@ -7,11 +7,11 @@ macro_rules! node_catalog {
     ($consumer:ident) => {
         $consumer! {
             "trap";
-            $crate::StampData => "traq.stamp",
-            $crate::ReferenceData => "traq.reference",
-            $crate::EmbeddingData => "traq.embedding",
-            $crate::SpoilerData => "traq.spoiler",
-            $crate::BlankLineData => "traq.blank_line",
+            $crate::Stamp => "traq.stamp",
+            $crate::Reference => "traq.reference",
+            $crate::Embedding => "traq.embedding",
+            $crate::Spoiler => "traq.spoiler",
+            $crate::BlankLine => "traq.blank_line",
         }
     };
 }

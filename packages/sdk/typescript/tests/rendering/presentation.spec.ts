@@ -2,7 +2,7 @@ import * as rendering from '@traq-flavored-markdown/sdk/renderer'
 import { renderer } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
-import { commonParser, parser } from './setup.ts'
+import { parser } from './setup.ts'
 
 test('traQ presentation combines tables, marks, spoilers, math, and highlighted code', () => {
   const view = renderer(rendering.htmlPreset())
@@ -29,16 +29,17 @@ test('traQ presentation combines tables, marks, spoilers, math, and highlighted 
   )
 })
 
-test('stamp stores are isolated and unrecognized effects preserve escaped source', () => {
+test('stamp resolvers are isolated and unrecognized effects preserve escaped source', () => {
   const make = (origin: string) =>
     renderer(
       rendering.htmlPreset({
-        store: {
-          getStampByName: name =>
-            name === 'wave' ? { name, fileId: 'stamp' } : undefined,
-          getUserByName: name =>
-            name === 'alice' ? { iconFileId: 'icon' } : undefined,
-          generateStampHref: id => origin + '/' + id
+        stamps: {
+          resolve: ({ type, name }) =>
+            type === 'normal' && name === 'wave'
+              ? { url: origin + '/stamp' }
+              : type === 'user' && name === 'alice'
+                ? { url: origin + '/icon' }
+                : undefined
         }
       })
     )
@@ -56,18 +57,16 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
   expect(first.render(parser.parseInline(':missing:'))).toBe(':missing:')
   const unsafe = renderer(
     rendering.htmlPreset({
-      store: {
-        getStampByName: () => ({ name: 'wave', fileId: 'id' }),
-        generateStampHref: () => 'javascript:alert(1)'
+      stamps: {
+        resolve: () => ({ url: 'javascript:alert(1)' })
       }
     })
   )
   expect(unsafe.render(parser.parseInline(':wave:'))).toBe(':wave:')
   const nonImage = renderer(
     rendering.htmlPreset({
-      store: {
-        getStampByName: () => ({ name: 'wave', fileId: 'id' }),
-        generateStampHref: () => 'tel:+819012345678'
+      stamps: {
+        resolve: () => ({ url: 'tel:+819012345678' })
       }
     })
   )
@@ -77,12 +76,11 @@ test('stamp stores are isolated and unrecognized effects preserve escaped source
 test('stamp presentation uses parsed kinds and effects without matching color substrings', () => {
   const view = renderer(
     rendering.htmlPreset({
-      store: {
-        getStampByName: name =>
+      stamps: {
+        resolve: ({ name }) =>
           ['foo0x123456', '0x1234567', 'wave'].includes(name)
-            ? { name, fileId: name }
-            : undefined,
-        generateStampHref: id => `https://stamps.example/${id}`
+            ? { url: `https://stamps.example/${name}` }
+            : undefined
       }
     })
   )
@@ -110,15 +108,13 @@ test('stamp presentation uses parsed kinds and effects without matching color su
 })
 
 test('reference highlighting and link/image policies belong to each renderer', () => {
-  const common = commonParser()
   const view = renderer(
     rendering.htmlPreset({
-      store: {
-        getMe: () => ({ id: 'me' }),
-        getUserGroup: () => ({ members: [{ id: 'me' }] }),
-        generateUserHref: id => '#user-' + id,
-        generateUserGroupHref: id => '#group-' + id,
-        generateChannelHref: id => '#channel-' + id
+      references: {
+        resolve: ({ type, id }) => ({
+          href: '#' + type + '-' + id,
+          highlight: type === 'group' || (type === 'user' && id === 'me')
+        })
       }
     })
   )
@@ -129,19 +125,19 @@ test('reference highlighting and link/image policies belong to each renderer', (
   expect(html).toMatch(/message-group-link-highlight/)
   expect(html).toMatch(/href="#channel-c"/)
   expect(
-    view.render(common.parseInline('![x](https://unlisted.example/x.png)'))
+    view.render(parser.parseInline('![x](https://unlisted.example/x.png)'))
   ).not.toMatch(/<img/)
   expect(
-    view.render(common.parseInline('![x](https://trap.jp/x.png)'))
+    view.render(parser.parseInline('![x](https://trap.jp/x.png)'))
   ).toMatch(/<img/)
   const custom = renderer(
     rendering.htmlPreset({
-      validateImage: () => true,
-      validateLink: () => false
+      images: { validate: () => true },
+      links: { validate: () => false }
     })
   )
   expect(
-    custom.render(common.parseInline('![x](https://unlisted.example/x.png)'))
+    custom.render(parser.parseInline('![x](https://unlisted.example/x.png)'))
   ).toMatch(/<img/)
   expect(
     custom.render(parser.parseInline('[x](https://example.com)')),
@@ -152,9 +148,8 @@ test('reference highlighting and link/image policies belong to each renderer', (
 test('reference rendering rejects script links and escapes labels', () => {
   const view = renderer(
     rendering.htmlPreset({
-      store: {
-        generateUserHref: id => `javascript:openUserModal(${id})`,
-        generateUserGroupHref: id => `javascript:openGroupModal(${id})`
+      references: {
+        resolve: ({ id }) => ({ href: `javascript:openModal(${id})` })
       }
     })
   )
@@ -174,12 +169,10 @@ test('reference rendering rejects script links and escapes labels', () => {
   }
 })
 
-test('table handlers reject forged row and cell payloads', () => {
+test('table handlers reject forged alignment metadata', () => {
   const view = renderer(rendering.htmlPreset())
   const document = parser.parse('| a |\n| - |\n| b |')
-  const cell = document.children![0]!.children![0]!.children![0]! as {
-    data: { alignment: string }
-  }
-  cell.data.alignment = 'left;position:fixed'
-  expect(() => view.render(document)).toThrow(/Invalid table cell/)
+  const table = document.children[0]
+  table.data = { alignments: ['left;position:fixed'] } as never
+  expect(() => view.render(document)).toThrow(/Invalid render payload/)
 })

@@ -1,0 +1,32 @@
+@use 'sass:math';
+
+@each $name, $axis in (stretch: X, stretch-v: Y) {
+  @keyframes tfm-stamp-#{$name} {
+    0% {
+      transform: scale#{$axis }(1);
+    }
+    20% {
+      transform: scale#{$axis }(1.75);
+    }
+    $start: 22;
+    $end: 50;
+    @for $i from 0 through math.div($end - $start, 2) {
+      $scale: 1.65;
+      @if $i % 2 != 0 {
+        $scale: 1.85;
+      }
+      #{$start + $i * 2}% {
+        transform: scale#{$axis }($scale);
+      }
+    }
+    52% {
+      transform: scale#{$axis }(1.75);
+    }
+    62% {
+      transform: scale#{$axis }(0.8);
+    }
+    68% {
+      transform: scale#{$axis }(1);
+    }
+  }
+}

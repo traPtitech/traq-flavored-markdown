@@ -1,4 +1,4 @@
-use crate::{Plugin, Result, plugin::Handler};
+use crate::{Plugin, RegistrationHandle, Result, plugin::Handler};
 use markdown_definitions::handlers::HandlerRegistry;
 use std::{any::TypeId, collections::HashMap, sync::Arc};
 
@@ -18,13 +18,21 @@ impl<R> PresetBuilder<R> {
 
     /// Check the whole plugin before changing the builder.
     pub fn add(&mut self, plugin: &Plugin<R>) -> Result<&mut Self> {
-        self.registry.add(&plugin.handlers)?;
+        self.register(plugin)?;
         Ok(self)
     }
 
-    /// Remove the registered implementation snapshot, as in GrammarBuilder.
-    pub fn remove(&mut self, plugin: &Plugin<R>) -> Result<&mut Self> {
-        self.registry.remove(&plugin.handlers)?;
+    pub fn register(&mut self, plugin: &Plugin<R>) -> Result<RegistrationHandle> {
+        self.registry.add(&plugin.handlers).map_err(Into::into)
+    }
+
+    pub fn registration(&self, plugin: &Plugin<R>) -> Option<RegistrationHandle> {
+        self.registry.registration(&plugin.handlers)
+    }
+
+    /// Remove the registration independently of later implementation edits.
+    pub fn remove(&mut self, handle: &RegistrationHandle) -> Result<&mut Self> {
+        self.registry.remove(handle)?;
         Ok(self)
     }
 

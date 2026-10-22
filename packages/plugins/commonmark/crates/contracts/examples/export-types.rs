@@ -1,5 +1,16 @@
+#[path = "../../../../../../scripts/codegen/structure.rs"]
+mod structure;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let directory = std::env::args().nth(1).ok_or("Pass the output directory")?;
+    use markdown_ast::NodeData;
+    let mut type_names = std::collections::HashMap::new();
+    macro_rules! identities {
+        ($group:literal; $($payload:ty => $kind:literal),+ $(,)?) => {
+            $(type_names.insert(std::any::TypeId::of::<$payload>(), $kind);)+
+        };
+    }
+    markdown_commonmark_contracts::node_catalog!(identities);
     let mut nodes = serde_json::Map::new();
 
     macro_rules! register {
@@ -11,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .into_root_schema_for::<$payload>();
                 if nodes.insert(
                     $kind.into(),
-                    serde_json::json!({"group": $group, "schema": schema}),
+                    serde_json::json!({"group": $group, "schema": schema, "structure": structure::structure(<$payload>::structure(), &type_names)?}),
                 ).is_some() {
                     return Err("duplicate node wire kind".into());
                 }

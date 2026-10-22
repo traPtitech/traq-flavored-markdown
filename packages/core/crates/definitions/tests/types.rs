@@ -47,13 +47,13 @@ fn keys_follow_types_and_distinguish_arguments() {
 fn names_are_required_labels_and_identity_is_shared_only_by_cloning() {
     let group = Plugin::group("CommonMark / Markdown");
     let nested = group.group("HTML @ syntax");
-    let plugin = nested.new("Core");
+    let plugin = nested.plugin("Core");
 
     assert_eq!(group.name(), "CommonMark / Markdown");
     assert_eq!(nested.name(), "HTML @ syntax");
     assert_eq!(plugin.name(), "Core");
     assert_eq!(plugin, plugin.clone());
-    assert_ne!(plugin, nested.new("Core"));
+    assert_ne!(plugin, nested.plugin("Core"));
     assert_ne!(group, Plugin::group(group.name()));
     assert_eq!(plugin.namespace(), Some(&nested));
     assert_eq!(nested.parent(), Some(&group));

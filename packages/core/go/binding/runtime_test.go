@@ -13,7 +13,7 @@ func TestCanceledWaitDoesNotTakeInstance(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 
-	go func() { _, err := instance.Call(ctx, "parse", "waiting"); done <- err }()
+	go func() { _, err := instance.Call(ctx, Operation{Export: "parse"}, "waiting"); done <- err }()
 	cancel()
 
 	if err := <-done; !errors.Is(err, context.Canceled) {
@@ -25,12 +25,28 @@ func TestCanceledWaitDoesNotTakeInstance(t *testing.T) {
 	}
 }
 
-func TestRendererConfigurationChecksBuildIdentity(t *testing.T) {
-	if _, err := decodeReply([]byte(`{"configured":"another-build"}`), "configure_renderer", "expected-build"); err == nil {
+func TestRendererConfigurationChecksContractIdentity(t *testing.T) {
+	operation := Operation{Export: "configure_renderer", Configuration: true}
+	if _, err := decodeReply([]byte(`{"ok":{"contractId":"another-contract"}}`), operation, "expected-contract", nil); err == nil {
 		t.Fatal("accepted a renderer from another build")
 	}
 
-	if _, err := decodeReply([]byte(`{"configured":"expected-build"}`), "configure_renderer", "expected-build"); err != nil {
+	if _, err := decodeReply([]byte(`{"ok":{"contractId":"expected-contract"}}`), operation, "expected-contract", nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRepliesHaveOneTypedOutcome(t *testing.T) {
+	for _, raw := range []string{`{}`, `null`, `{"ok":null}`, `{"result":1}`, `{"ok":"x","error":{"code":"invalid_request","message":"bad"}}`, `{"error":"bad"}`, `{"error":{"code":"unknown","message":"bad"}}`, `{"ok":"\ud800"}`} {
+		_, err := decodeReply([]byte(raw), Operation{}, "id", nil)
+		var typed *Error
+		if !errors.As(err, &typed) || typed.Code != "transport_error" {
+			t.Fatalf("%s: %v", raw, err)
+		}
+	}
+	_, err := decodeReply([]byte(`{"error":{"code":"invalid_document","message":"bad span","path":"$.children[0]","span":{"start":0,"end":1}}}`), Operation{}, "id", map[string]bool{"invalid_document": true})
+	var typed *Error
+	if !errors.As(err, &typed) || typed.Code != "invalid_document" || typed.Path != "$.children[0]" || typed.Span == nil {
 		t.Fatal(err)
 	}
 }

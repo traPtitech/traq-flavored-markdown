@@ -1,4 +1,4 @@
-use crate::Node;
+use crate::{ChildStructure, Node, NodeStructure};
 use std::{
     any::{Any, TypeId},
     fmt::Debug,
@@ -17,16 +17,54 @@ pub enum NodeRole {
 /// A concrete payload, defined and validated by its owning contract package.
 pub trait NodeData: Any + Clone + PartialEq + Debug + Send + Sync {
     /// Declare the role used by other plugins' parent-node validation.
-    fn role(&self) -> NodeRole;
+    fn role(&self) -> NodeRole {
+        Self::structure().role
+    }
 
     /// Count bytes owned by this payload, including all dynamic string fields.
     /// Every payload implementation must account for its own heap content.
     fn payload_bytes(&self) -> usize;
 
-    /// Checks this payload and its immediate children, not their descendants.
-    /// Tree traversal, source positions, and resource limits belong to the caller.
-    fn validate(&self, _children: &[Node]) -> bool {
-        true
+    /// Structural metadata is shared with distribution exporters. Custom opaque
+    /// payloads may opt into unrestricted children.
+    fn structure() -> &'static NodeStructure {
+        static STRUCTURE: NodeStructure = NodeStructure {
+            role: NodeRole::Opaque,
+            children: ChildStructure::Any,
+        };
+        &STRUCTURE
+    }
+
+    /// Width metadata used by the declarative table child contract.
+    fn column_count(&self) -> Option<usize> {
+        None
+    }
+
+    /// Checks only this payload and its immediate children. Tree locations and
+    /// limits are attached by document validation.
+    fn validate(&self, children: &[Node]) -> Result<(), PayloadError> {
+        Self::structure().validate(children, self.column_count())
+    }
+}
+
+/// A payload-owned invariant, preserved with tree location by document validation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PayloadError {
+    pub expected: &'static str,
+    pub actual: Option<String>,
+}
+
+impl PayloadError {
+    pub fn new(expected: &'static str) -> Self {
+        Self {
+            expected,
+            actual: None,
+        }
+    }
+
+    pub fn actual(mut self, value: impl Into<String>) -> Self {
+        self.actual = Some(value.into());
+        self
     }
 }
 
@@ -35,7 +73,8 @@ trait Payload: Debug + Send + Sync {
     fn any_mut(&mut self) -> &mut dyn Any;
     fn copy(&self) -> Box<dyn Payload>;
     fn equals(&self, other: &dyn Payload) -> bool;
-    fn validate(&self, children: &[Node]) -> bool;
+    fn validate(&self, children: &[Node]) -> Result<(), PayloadError>;
+    fn type_name(&self) -> &'static str;
     fn role(&self) -> NodeRole;
     fn payload_bytes(&self) -> usize;
 }
@@ -57,8 +96,12 @@ impl<T: NodeData> Payload for T {
         other.any().downcast_ref::<T>() == Some(self)
     }
 
-    fn validate(&self, children: &[Node]) -> bool {
+    fn validate(&self, children: &[Node]) -> Result<(), PayloadError> {
         NodeData::validate(self, children)
+    }
+
+    fn type_name(&self) -> &'static str {
+        std::any::type_name::<T>()
     }
 
     fn role(&self) -> NodeRole {
@@ -92,8 +135,12 @@ impl NodeKind {
         self.0.any().type_id()
     }
 
-    pub fn validate(&self, children: &[Node]) -> bool {
+    pub fn validate(&self, children: &[Node]) -> Result<(), PayloadError> {
         self.0.validate(children)
+    }
+
+    pub fn data_type_name(&self) -> &'static str {
+        self.0.type_name()
     }
 
     pub fn role(&self) -> NodeRole {

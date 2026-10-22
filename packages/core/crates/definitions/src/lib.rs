@@ -7,6 +7,7 @@ extern crate self as markdown_definitions;
 mod names;
 mod namespace;
 mod node_type;
+mod registration;
 
 pub mod handlers;
 
@@ -14,3 +15,4 @@ pub use markdown_definitions_derive::NodeType;
 pub use names::{NameCollision, validate_names};
 pub use namespace::{Plugin, PluginGroup};
 pub use node_type::NodeType;
+pub use registration::{RegistrationError, RegistrationErrorKind, RegistrationHandle};

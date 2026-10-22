@@ -1,24 +1,33 @@
-export interface Store {
-  getMe?(): Readonly<{ id: string }> | undefined
+import type {
+  Reference,
+  StampKind
+} from '@traq-flavored-markdown/traq-plugin/nodes'
 
-  getUserGroup?(
-    id: string
-  ): Readonly<{ members: readonly Readonly<{ id: string }>[] }> | undefined
-
-  getStampByName?(
-    name: string
-  ): Readonly<{ name: string; fileId: string }> | undefined
-
-  getUserByName?(name: string): Readonly<{ iconFileId: string }> | undefined
-
-  generateUserHref?(id: string): string
-  generateUserGroupHref?(id: string): string
-  generateChannelHref?(id: string): string
-  generateStampHref?(fileId: string): string
+export interface ResolvedReference {
+  href?: string
+  label?: string
+  highlight?: boolean
 }
 
+export type ReferenceResolver = (
+  reference: Readonly<Reference>
+) => Readonly<ResolvedReference> | undefined
+
+export interface ResolvedStamp {
+  url: string
+  title?: string
+}
+
+export type NamedStamp = Extract<StampKind, { type: 'normal' | 'user' }>
+export type StampResolver = (
+  stamp: Readonly<NamedStamp>
+) => Readonly<ResolvedStamp> | undefined
+
+/** Ports supply display data; application state and routing stay with the caller. */
 export interface Options {
-  store?: Readonly<Store>
-  baseUrl?: string
+  resolveReference?: ReferenceResolver
+  resolveStamp?: StampResolver
   validateLink?(destination: string): boolean
+  validateStampImage?(destination: string): boolean
+  xhtmlOut?: boolean
 }

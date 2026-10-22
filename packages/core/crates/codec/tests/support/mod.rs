@@ -31,8 +31,13 @@ impl NodeData for Text {
     fn payload_bytes(&self) -> usize {
         self.value.len()
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        children.is_empty()
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = children.is_empty();
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 
@@ -49,7 +54,12 @@ impl NodeData for Heading {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _children: &[Node]) -> bool {
-        (1..=6).contains(&self.level)
+    fn validate(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = (1..=6).contains(&self.level);
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }

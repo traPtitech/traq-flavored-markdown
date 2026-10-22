@@ -19,12 +19,14 @@ type record struct {
 	Source string `json:"source"`
 }
 type difference struct {
-	Index  int    `json:"index"`
-	Mode   string `json:"mode"`
-	Source string `json:"source"`
-	Before string `json:"before"`
-	After  string `json:"after"`
-	Error  bool   `json:"error,omitempty"`
+	Index      int    `json:"index"`
+	Mode       string `json:"mode"`
+	Source     string `json:"source"`
+	Before     string `json:"before"`
+	After      string `json:"after"`
+	BeforeType string `json:"beforeType"`
+	AfterType  string `json:"afterType"`
+	Error      bool   `json:"error,omitempty"`
 }
 type timing struct {
 	Calls   int     `json:"calls"`
@@ -151,7 +153,14 @@ func main() {
 		}
 		if a != b || ae != be {
 			different++
-			must(encoder.Encode(difference{count, "plainText", r.Source, a, b, ae || be}))
+			beforeType, afterType := "text", "text"
+			if ae {
+				beforeType = "error"
+			}
+			if be {
+				afterType = "error"
+			}
+			must(encoder.Encode(difference{count, "plainText", r.Source, a, b, beforeType, afterType, ae || be}))
 		}
 		count++
 		if count%100000 == 0 {

@@ -28,6 +28,12 @@ export type LiteralShape = { kind: 'literal'; value: string; name?: string }
 export type UnionShape = { kind: 'union'; variants: Shape[]; name?: string }
 export type StringShape = { kind: 'string'; name?: string }
 export type BooleanShape = { kind: 'boolean'; name?: string }
+export type NumberShape = {
+  kind: 'number'
+  min: number
+  max: number
+  name?: string
+}
 export type IntegerShape = {
   kind: 'integer'
   format: string
@@ -35,12 +41,19 @@ export type IntegerShape = {
   max: number
   name?: string
 }
-export type ArrayShape = { kind: 'array'; items: Shape; name?: string }
+export type ArrayShape = {
+  kind: 'array'
+  items: Shape
+  name?: string
+  minItems?: number
+  maxItems?: number
+}
 export type FieldShape = {
   name: string
   required: boolean
   shape: Shape
   description?: string
+  default?: unknown
 }
 export type ObjectShape = {
   kind: 'object'
@@ -56,6 +69,7 @@ export type Shape =
   | StringShape
   | BooleanShape
   | IntegerShape
+  | NumberShape
   | ArrayShape
   | ObjectShape
 
@@ -97,11 +111,13 @@ export function shape(
   }
 
   if (schema.anyOf || Array.isArray(schema.type)) {
-    keys(schema, schema.anyOf ? ['anyOf'] : ['type'])
+    if (schema.anyOf) keys(schema, ['anyOf'])
     const variants: RawSchema[] =
       schema.anyOf ??
       (Array.isArray(schema.type)
-        ? schema.type.map((type: string) => ({ type }))
+        ? schema.type.map((type: string) =>
+            type === 'null' ? { type } : { ...schema, type }
+          )
         : [])
     const real = variants.filter(s => s.type !== 'null')
     if (variants.length !== 2 || real.length !== 1)
@@ -143,27 +159,70 @@ export function shape(
       throw new Error('Unsupported integer representation or constraints')
     const ranges: Record<string, [number, number]> = {
       uint8: [0, 255],
+      uint16: [0, 65535],
       uint32: [0, 0xffffffff]
     }
     const range = ranges[schema.format]
     if (
       !range ||
-      schema.minimum !== range[0] ||
-      (schema.maximum ?? range[1]) !== range[1]
+      !Number.isSafeInteger(schema.minimum ?? range[0]) ||
+      !Number.isSafeInteger(schema.maximum ?? range[1]) ||
+      Number(schema.minimum ?? range[0]) < range[0] ||
+      Number(schema.maximum ?? range[1]) > range[1] ||
+      Number(schema.minimum ?? range[0]) > Number(schema.maximum ?? range[1])
     )
       throw new Error('Unsupported integer representation or constraints')
     return {
       kind: 'integer',
       format: schema.format,
-      min: range[0],
-      max: range[1]
+      min: Number(schema.minimum ?? range[0]),
+      max: Number(schema.maximum ?? range[1])
     }
   }
 
+  if (schema.type === 'number') {
+    keys(schema, ['type', 'format', 'minimum', 'maximum'])
+    const min = schema.minimum ?? -Number.MAX_VALUE,
+      max = schema.maximum ?? Number.MAX_VALUE
+    if (
+      (schema.format !== undefined &&
+        schema.format !== 'double' &&
+        schema.format !== 'float') ||
+      typeof min !== 'number' ||
+      typeof max !== 'number' ||
+      !Number.isFinite(min) ||
+      !Number.isFinite(max) ||
+      min > max
+    )
+      throw new Error('Unsupported number representation or constraints')
+    return { kind: 'number', min, max }
+  }
+
   if (schema.type === 'array') {
-    keys(schema, ['type', 'items'])
+    keys(schema, ['type', 'items', 'minItems', 'maxItems'])
     if (!schema.items) throw new Error('Array schema missing items')
-    return { kind: 'array', items: shape(schema.items, root, references) }
+    for (const bound of [schema.minItems, schema.maxItems])
+      if (
+        bound !== undefined &&
+        (!Number.isSafeInteger(bound) || Number(bound) < 0)
+      )
+        throw new Error('Invalid array bound')
+    if (
+      schema.minItems !== undefined &&
+      schema.maxItems !== undefined &&
+      Number(schema.minItems) > Number(schema.maxItems)
+    )
+      throw new Error('Invalid array bounds')
+    return {
+      kind: 'array',
+      items: shape(schema.items, root, references),
+      ...(schema.minItems !== undefined
+        ? { minItems: Number(schema.minItems) }
+        : {}),
+      ...(schema.maxItems !== undefined
+        ? { maxItems: Number(schema.maxItems) }
+        : {})
+    }
   }
 
   if (schema.type === 'object') {
@@ -180,6 +239,7 @@ export function shape(
         name,
         required: required.includes(name),
         description: s.description,
+        ...(Object.hasOwn(s, 'default') ? { default: s.default } : {}),
         shape: shape(s as RawSchema, root, references)
       }))
     }

@@ -20,10 +20,37 @@ The credential file contains `TRAQ_API_BASE_URL` and `BOT_ACCESS_TOKEN`. Alterna
 
 Each UTF-8 JSONL row has a `source` string containing the original message. Collection also writes pseudonymous `id` and `channel` fields and a manifest. Message contents remain private data: output stays under the ignored `.private/corpora/` directory, and logs omit message bodies and credentials. Existing JSONL corpora with a `source` field can be compared without collection.
 
-Comparison defaults to 100,000 messages and the local `origin/master` refs of both application checkouts. Fetch those refs first if needed. Use `--max`, `--traq-ref`, `--sui-ref`, and `--out` to change them. Both renderers use the same deterministic store, KaTeX version, and highlight.js version to avoid store data and presentation dependency versions obscuring parser differences. The baseline pins both libraries to the versions installed in the current renderer. Comparison verifies the resolved versions before processing messages and records them with the selected revisions.
+Comparison defaults to 1,000,000 messages and the local `origin/master` refs of both application checkouts. Fetch those refs first if needed. Use `--max`, `--traq-ref`, `--sui-ref`, and `--out` to change them. Both renderers use equivalent deterministic reference and stamp data, KaTeX version, and highlight.js version to avoid store data and presentation dependency versions obscuring parser differences. The baseline pins both libraries to the versions installed in the current renderer. Comparison verifies the resolved versions before processing messages and records them with the selected revisions.
 
 The result directory contains raw JSONL differences for full rendering, inline rendering, plain-text rendering, and embeddings, plus summaries and one self-contained report:
 
 - `differences.html`: searchable, paginated rich rendering, raw HTML diff, whitespace-only difference filter, and timing statistics. The viewer code, CSS, and comparison data are embedded, so it can be opened directly as an offline file.
 
 External images are shown as placeholders and links are inert. The report does not fetch external message resources. Open it in a recent Chrome or Edge, as the viewer uses browser APIs for compressed embedded data. Timing measures parsing plus rendering/processing with warmup and alternating order; it excludes corpus I/O and is only a local reference, especially on systems with coarse clocks. A successful comparison reports differences without treating them as test failures; inspect the summaries for parser errors and review behavior changes separately.
+
+## Reusing the pipeline
+
+The CLI adapters only parse arguments, open files, and assemble services:
+
+- `collection/client.ts` owns bounded GET retries; `sampling.ts` accepts an API
+  port and yields messages in deterministic order; `sink.ts` creates outputs
+  exclusively. Credential loading stays in the CLI/collection boundary.
+- `comparison/runner.ts` accepts asynchronous source streams, named before/after
+  adapters, a clock, and difference/progress sinks. The frontend adapter resolves
+  references and stamps without a browser or production store. Initialization,
+  warmups, alternating measurement, and file I/O remain separate.
+- `shared/protocol.ts` validates source rows, typed difference rows, and the
+  `run.json` manifest containing revisions, modes, limits, and warmups. Go emits
+  the same typed JSONL result protocol for plain text.
+- `report/aggregate.ts` streams differences into compressed pages and injects
+  them into an already-built viewer. Build the viewer with `bun run build:corpus`;
+  the public report command performs this artifact prerequisite explicitly.
+- `viewer/data/repository.ts` validates loaded chunks and owns bounded caches;
+  `useReportQuery` owns cancellation and loading/error states. React components
+  receive the repository after bootstrap instead of reading/removing embedded
+  data during initialization.
+
+`bun run test:corpus` checks these ports with synthetic inputs and in-memory
+adapters. It requires no Vite build, credentials, application checkout, or
+production corpus. The offline report embeds its data once; switching filters
+or pages reuses the repository cache.

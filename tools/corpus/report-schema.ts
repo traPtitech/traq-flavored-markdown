@@ -1,5 +1,6 @@
 export const modes = ['render', 'inline', 'plainText'] as const
 export type Mode = (typeof modes)[number]
+export type OutputKind = 'html' | 'text' | 'error'
 
 export const pageSize = 50
 
@@ -15,6 +16,8 @@ export type DifferenceRow = {
   source: string
   before: string
   after: string
+  beforeType: OutputKind
+  afterType: OutputKind
   error?: boolean
 }
 
@@ -64,9 +67,22 @@ export function parseDifferenceRow(value: unknown): DifferenceRow {
     typeof row.source !== 'string' ||
     typeof row.before !== 'string' ||
     typeof row.after !== 'string' ||
-    (row.error !== undefined && typeof row.error !== 'boolean')
+    (row.error !== undefined && typeof row.error !== 'boolean') ||
+    (row.beforeType !== undefined &&
+      !['html', 'text', 'error'].includes(row.beforeType as string)) ||
+    (row.afterType !== undefined &&
+      !['html', 'text', 'error'].includes(row.afterType as string))
   ) {
     throw new Error('Invalid difference row')
   }
-  return row as DifferenceRow
+  const defaultType = row.error
+    ? 'error'
+    : row.mode === 'plainText'
+      ? 'text'
+      : 'html'
+  return {
+    ...row,
+    beforeType: row.beforeType ?? defaultType,
+    afterType: row.afterType ?? defaultType
+  } as DifferenceRow
 }

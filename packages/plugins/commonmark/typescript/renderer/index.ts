@@ -1,6 +1,6 @@
 import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
-import { Plugin } from '@traq-flavored-markdown/core/renderer'
+import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
+import { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
 import { renderer } from '@traq-flavored-markdown/core/renderer'
 
@@ -14,7 +14,7 @@ import {
 
 export type { HighlightResult, Options } from './options.js'
 
-const declaration = Declaration.group('commonmark').new('core')
+const declaration = Declaration.group('commonmark').plugin('core')
 const allowAll = () => true
 
 export { names as nodes }
@@ -27,9 +27,10 @@ export function plugin({
   rawHtml = 'passthrough',
   xhtmlOut = true,
   highlight,
+  isBlockSpacing = () => false,
   linkAttributes = {}
 }: Options = {}) {
-  let result = new Plugin(declaration)
+  let result = new RenderPlugin(declaration)
 
   result = registerInlineHandlers(result, {
     validateLink,
@@ -40,21 +41,32 @@ export function plugin({
     linkAttributes
   })
 
-  result = registerBlockHandlers(result, { highlight, rawHtml, xhtmlOut })
+  result = registerBlockHandlers(result, {
+    highlight,
+    rawHtml,
+    xhtmlOut,
+    isBlockSpacing
+  })
 
   return result
 }
 
 /** Compose a standalone HTML preset with safe display defaults. */
-export function htmlPreset(options?: Options) {
+export function htmlPreset({
+  validateLink = defaultPolicy,
+  validateImage = defaultImagePolicy,
+  rawHtml = 'escape',
+  xhtmlOut = false,
+  ...options
+}: Options = {}) {
   return new PresetBuilder()
     .add(
       plugin({
-        validateLink: defaultPolicy,
-        validateImage: defaultImagePolicy,
-        rawHtml: 'escape',
-        xhtmlOut: false,
-        ...options
+        ...options,
+        validateLink,
+        validateImage,
+        rawHtml,
+        xhtmlOut
       })
     )
     .build()

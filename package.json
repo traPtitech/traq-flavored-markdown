@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "build:typescript": "bun run scripts/build/typescript.ts",
     "build:corpus": "bun run --cwd tools/corpus build",
     "check": "bun run format:check && bun run lint:check && bun run check:architecture && bun run scripts/build.ts --check-generated && bun run build:corpus && bun run typecheck && bun run test && bun run lint:rust && bun run check:package && bun run check:go-consumer",
     "check:architecture": "bun run scripts/checks/architecture.ts",
@@ -40,10 +41,15 @@
     "release": "bun run scripts/release.ts",
     "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go",
     "test:corpus": "bun run --cwd tools/corpus test",
-    "test:go": "go -C packages/core/go test -count=1 ./... && go -C packages/plugins/commonmark/go test -count=1 ./... && go -C packages/plugins/traq/go test -count=1 ./... && go -C packages/sdk/go test -count=1 ./... && go -C packages/sdk/examples/go test -count=1 ./...",
+    "test:go": "bun run scripts/testing/go.ts",
     "test:rust": "cargo test --locked --workspace --all-features",
-    "test:typescript": "bun test ./packages/core/typescript/tests ./packages/sdk/typescript/tests ./scripts ./packages/sdk/scripts",
-    "typecheck": "bun run scripts/tsc.ts -p tsconfig.json && bun run --cwd packages/core typecheck && bun run --cwd packages/plugins/commonmark typecheck && bun run --cwd packages/plugins/traq typecheck && bun run --cwd packages/sdk typecheck && bun run --cwd tools/corpus typecheck"
+    "test:typescript": "bun run scripts/testing/run.ts",
+    "test:unit": "bun run scripts/testing/run.ts unit",
+    "test:assembly": "bun run scripts/testing/run.ts assembly",
+    "test:codegen": "bun run scripts/testing/run.ts codegen",
+    "test:workspace": "bun run scripts/testing/run.ts workspace",
+    "test:wasm": "bun run scripts/testing/run.ts wasm",
+    "typecheck": "bun run scripts/typecheck.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

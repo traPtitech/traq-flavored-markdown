@@ -3,12 +3,21 @@
 #![forbid(unsafe_code)]
 
 mod data;
+mod source;
+pub use source::{SourceEdit, SourceError, SourceText};
+mod structure;
+pub use structure::{ChildStructure, NodeStructure, PayloadType};
 mod node;
 mod validation;
+mod walk;
 
-pub use data::{NodeData, NodeKind, NodeRole};
+pub use data::{NodeData, NodeKind, NodeRole, PayloadError};
 pub use node::Node;
-pub use validation::{ValidatedDocument, ValidationError, ValidationLimits};
+pub use validation::{
+    ValidatedDocument, ValidatedDocumentBuf, ValidationError, ValidationErrorKind,
+    ValidationLimits, ValidationStats,
+};
+pub use walk::{Visit, Walk};
 
 /// A half-open UTF-8 byte range in the original source.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -14,7 +14,9 @@ pub fn block_rule() -> &'static BlockRule {
     static RULE: std::sync::LazyLock<BlockRule> = std::sync::LazyLock::new(|| {
         BlockRule::new(block::parse)
             .named("html")
-            .interrupts(|probe| block::start(probe.line).is_some_and(|kind| kind != 7))
+            .interrupts(|probe| {
+                block::start(probe.line).is_some_and(block::HtmlBlockKind::interrupts)
+            })
     });
     &RULE
 }
@@ -42,7 +44,7 @@ pub fn inline_rule() -> &'static InlineRule {
 
 pub fn plugin() -> &'static Plugin {
     static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_commonmark_contracts::preset().html);
+        let mut plugin = Plugin::new(&markdown_commonmark_contracts::declarations().html);
         plugin.add(block_rule());
         plugin.add(inline_rule());
         plugin

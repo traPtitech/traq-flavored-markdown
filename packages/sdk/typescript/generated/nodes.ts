@@ -1,6 +1,6 @@
 // Generated from Rust contracts. Do not edit.
-import * as generic from '@traq-flavored-markdown/commonmark-plugin/generic/nodes'
 import * as commonmark from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import * as generic from '@traq-flavored-markdown/extensions-plugin/nodes'
 import * as trap from '@traq-flavored-markdown/traq-plugin/nodes'
 import type {
   Document as AstDocument,
@@ -21,11 +21,17 @@ export const names = Object.freeze({
   ...generic.names,
   ...trap.names
 })
-const validators = new Map<string, (data: unknown) => boolean>([
-  ...commonmark.nodes,
-  ...generic.nodes,
-  ...trap.nodes
-])
+export const definitions = Object.freeze({
+  ...commonmark.definitions,
+  ...generic.definitions,
+  ...trap.definitions
+})
+const validators = new Map<string, (data: unknown) => boolean>(
+  Object.values(definitions).map(definition => [
+    definition.kind,
+    definition.validateData
+  ])
+)
 export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
   validators
 )

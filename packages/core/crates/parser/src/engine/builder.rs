@@ -1,9 +1,11 @@
 use super::{BuildError, Contribution, Grammar, Plugin, rule::Rule};
+use markdown_definitions::RegistrationHandle;
 
 #[derive(Clone, Default)]
 pub struct GrammarBuilder {
     pub(crate) plugins: Vec<Plugin>,
     pub(crate) rules: Vec<(Plugin, Contribution)>,
+    handles: Vec<RegistrationHandle>,
 }
 
 impl GrammarBuilder {
@@ -12,6 +14,11 @@ impl GrammarBuilder {
     }
 
     pub fn add(&mut self, plugin: &Plugin) -> Result<&mut Self, BuildError> {
+        self.register(plugin)?;
+        Ok(self)
+    }
+
+    pub fn register(&mut self, plugin: &Plugin) -> Result<RegistrationHandle, BuildError> {
         if self.plugins.iter().any(|p| p.same(plugin)) {
             return Err(BuildError::Duplicate {
                 element: plugin.description(),
@@ -30,6 +37,8 @@ impl GrammarBuilder {
         }
 
         self.plugins.push(plugin.clone());
+        let handle = RegistrationHandle::new(&plugin.declaration);
+        self.handles.push(handle.clone());
 
         self.rules.extend(
             plugin
@@ -40,18 +49,27 @@ impl GrammarBuilder {
                 .map(|rule| (plugin.clone(), rule)),
         );
 
-        Ok(self)
+        Ok(handle)
     }
 
-    pub fn remove(&mut self, plugin: &Plugin) -> Result<&mut Self, BuildError> {
-        if !self.plugins.iter().any(|p| p.same(plugin)) {
-            return Err(BuildError::Missing {
-                element: plugin.description(),
-            });
-        }
+    pub fn registration(&self, plugin: &Plugin) -> Option<RegistrationHandle> {
+        self.plugins
+            .iter()
+            .position(|existing| existing.declaration == plugin.declaration)
+            .map(|index| self.handles[index].clone())
+    }
 
-        self.plugins.retain(|p| !p.same(plugin));
-        self.rules.retain(|(owner, _)| !owner.same(plugin));
+    pub fn remove(&mut self, handle: &RegistrationHandle) -> Result<&mut Self, BuildError> {
+        let index = self
+            .handles
+            .iter()
+            .position(|existing| existing == handle)
+            .ok_or_else(|| BuildError::Missing {
+                element: handle.plugin().name().into(),
+            })?;
+        self.handles.remove(index);
+        let plugin = self.plugins.remove(index);
+        self.rules.retain(|(owner, _)| !owner.same(&plugin));
 
         Ok(self)
     }
@@ -98,7 +116,50 @@ impl GrammarBuilder {
 
         Ok(self)
     }
-    pub(crate) fn describe(&self) -> String {
+    pub fn plugins(&self) -> &[Plugin] {
+        &self.plugins
+    }
+
+    pub fn rules(&self) -> impl Iterator<Item = &Contribution> {
+        self.rules.iter().map(|(_, rule)| rule)
+    }
+
+    pub fn validate_definition(&self) -> Result<(), BuildError> {
+        self.validate().map(|_| ())
+    }
+
+    /// Install an exact order for registered rules. Validation is atomic and
+    /// rejects omissions, duplicates, and rules from other implementation snapshots.
+    pub fn reorder(&mut self, order: &[Contribution]) -> Result<&mut Self, BuildError> {
+        if order.len() != self.rules.len() {
+            return Err(BuildError::Missing {
+                element: "complete registered rule order".into(),
+            });
+        }
+        let mut indices = Vec::with_capacity(order.len());
+        for rule in order {
+            let index = self
+                .rules
+                .iter()
+                .position(|(_, existing)| existing.same(rule))
+                .ok_or_else(|| BuildError::Missing {
+                    element: rule.description(),
+                })?;
+            if indices.contains(&index) {
+                return Err(BuildError::Duplicate {
+                    element: rule.description(),
+                });
+            }
+            indices.push(index);
+        }
+        self.rules = indices
+            .into_iter()
+            .map(|index| self.rules[index].clone())
+            .collect();
+        Ok(self)
+    }
+
+    pub fn describe(&self) -> String {
         let mut lines = vec![];
 
         for plugin in &self.plugins {
@@ -141,13 +202,31 @@ impl GrammarBuilder {
             });
         }
 
+        if self
+            .plugins
+            .iter()
+            .map(|plugin| plugin.definition.block_policies.len())
+            .sum::<usize>()
+            > 1
+        {
+            return Err(BuildError::Duplicate {
+                element: "block sequence policy".into(),
+            });
+        }
         Ok(make_text)
     }
 
     pub fn build(self) -> Result<Grammar, BuildError> {
         let make_text = self.validate()?;
 
+        let block_policy = self
+            .plugins
+            .iter()
+            .flat_map(|plugin| &plugin.definition.block_policies)
+            .next()
+            .cloned();
         let mut grammar = super::registry::Compilation {
+            block_policy,
             definition: self,
             inline: vec![],
             block: vec![],

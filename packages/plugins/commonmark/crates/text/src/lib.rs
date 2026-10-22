@@ -6,7 +6,7 @@ pub mod html;
 mod rules;
 use markdown_ast::Node;
 use markdown_commonmark_contracts::{Link, LinkForm};
-use markdown_renderer::{Context, Plugin, Result};
+use markdown_renderer::{Context, Output, Plugin, Result};
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -17,14 +17,25 @@ pub enum ExplicitLinkStyle {
 }
 
 impl ExplicitLinkStyle {
-    pub fn render(self, link: &Link, nodes: &[Node], context: &Context<'_>) -> Result<String> {
-        let label = context.children(nodes)?;
-        Ok(match (link.form, self) {
-            (LinkForm::Explicit, Self::LabelAndDestination) => {
-                format!("[{label}]({})", link.destination)
-            }
-            _ => label,
-        })
+    pub fn render(
+        self,
+        link: &Link,
+        nodes: &[Node],
+        context: &Context<'_>,
+        output: &mut Output<'_>,
+    ) -> Result<()> {
+        if matches!(
+            (link.form, self),
+            (LinkForm::Explicit, Self::LabelAndDestination)
+        ) {
+            output.push("[")?;
+            context.children(nodes, output)?;
+            output.push("](")?;
+            output.push(&link.destination)?;
+            output.push(")")
+        } else {
+            context.children(nodes, output)
+        }
     }
 }
 
@@ -45,7 +56,7 @@ pub fn plugin_with_options(options: Options) -> Plugin {
 }
 
 fn build(options: Options) -> Result<Plugin> {
-    let mut plugin = Plugin::new(&markdown_commonmark_contracts::preset().plugin);
+    let mut plugin = Plugin::new(&markdown_commonmark_contracts::declarations().plugin);
     rules::register(&mut plugin, options)?;
     Ok(plugin)
 }

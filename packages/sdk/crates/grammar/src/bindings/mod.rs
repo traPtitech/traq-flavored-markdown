@@ -1,5 +1,8 @@
 //! Named native grammars and SDK metadata owned by this distribution.
-pub use markdown_parser::bindings::*;
+mod catalog;
+mod composition;
+pub use catalog::{Catalog, PresetSpec, RuleSpec};
+pub use composition::{Composition, GroupSpec, PluginSpec};
 
 mod presets;
 pub(crate) use presets::PRESETS;

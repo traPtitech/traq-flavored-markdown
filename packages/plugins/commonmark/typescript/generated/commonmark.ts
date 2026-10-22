@@ -1,4 +1,5 @@
 // Generated from Rust node payload types. Do not edit.
+import { defineNode } from '@traq-flavored-markdown/core'
 import {
   boolean,
   fields,
@@ -40,13 +41,22 @@ export type Link = {
 }
 export type LinkForm = 'explicit' | 'autolink' | 'linkify'
 export type List = {
-  ordered: boolean
-  start: number
+  kind: ListKind
   tight: boolean
 }
-export type ListItem = {
-  marker: string
-}
+export type BulletMarker = '-' | '+' | '*'
+export type ListKind =
+  | {
+      delimiter: OrderedDelimiter
+      start: number
+      type: 'ordered'
+    }
+  | {
+      marker: BulletMarker
+      type: 'bullet'
+    }
+export type OrderedDelimiter = 'period' | 'parenthesis'
+export type ListItem = Record<string, never>
 export type Paragraph = Record<string, never>
 export type Softbreak = Record<string, never>
 export type Strong = Record<string, never>
@@ -75,6 +85,116 @@ export type NodeKind =
   | { kind: 'commonmark.text'; data: Text }
   | { kind: 'commonmark.thematic_break'; data: ThematicBreak }
 
+function validateBlockquote(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateCodeBlock(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(value, { fenced: boolean, info: string, literal: string }, {}))(
+    value
+  )
+}
+function validateEmphasis(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateHardbreak(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateHeading(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      {
+        level: (value: unknown) =>
+          typeof value === 'number' &&
+          Number.isInteger(value) &&
+          value >= 1 &&
+          value <= 6
+      },
+      {}
+    ))(value)
+}
+function validateHtmlBlock(value: unknown): boolean {
+  return ((value: unknown) => fields(value, { literal: string }, {}))(value)
+}
+function validateHtmlInline(value: unknown): boolean {
+  return ((value: unknown) => fields(value, { literal: string }, {}))(value)
+}
+function validateImage(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      { destination: string, label_source: string, title: nullable(string) },
+      {}
+    ))(value)
+}
+function validateInlineCode(value: unknown): boolean {
+  return ((value: unknown) => fields(value, { literal: string }, {}))(value)
+}
+function validateLink(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      { destination: string, form: validateLinkForm, title: nullable(string) },
+      {}
+    ))(value)
+}
+function validateLinkForm(value: unknown): boolean {
+  return oneOf('explicit', 'autolink', 'linkify')(value)
+}
+function validateList(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(value, { kind: validateListKind, tight: boolean }, {}))(value)
+}
+function validateBulletMarker(value: unknown): boolean {
+  return oneOf('-', '+', '*')(value)
+}
+function validateListKind(value: unknown): boolean {
+  return ((value: unknown) =>
+    [
+      (value: unknown) =>
+        fields(
+          value,
+          {
+            delimiter: validateOrderedDelimiter,
+            start: (value: unknown) =>
+              typeof value === 'number' &&
+              Number.isInteger(value) &&
+              value >= 0 &&
+              value <= 999999999,
+            type: oneOf('ordered')
+          },
+          {}
+        ),
+      (value: unknown) =>
+        fields(
+          value,
+          { marker: validateBulletMarker, type: oneOf('bullet') },
+          {}
+        )
+    ].filter(check => check(value)).length === 1)(value)
+}
+function validateOrderedDelimiter(value: unknown): boolean {
+  return oneOf('period', 'parenthesis')(value)
+}
+function validateListItem(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateParagraph(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateSoftbreak(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateStrong(value: unknown): boolean {
+  return ((value: unknown) => fields(value, {}, {}))(value)
+}
+function validateText(value: unknown): boolean {
+  return ((value: unknown) => fields(value, { value: string }, {}))(value)
+}
+function validateThematicBreak(value: unknown): boolean {
+  return ((value: unknown) => fields(value, { marker: string }, {}))(value)
+}
 export const names = Object.freeze({
   Blockquote: 'commonmark.blockquote',
   CodeBlock: 'commonmark.code_block',
@@ -95,96 +215,146 @@ export const names = Object.freeze({
   ThematicBreak: 'commonmark.thematic_break'
 } as const)
 const validators = new Map<string, (data: unknown) => boolean>([
-  ['commonmark.blockquote', (value: unknown) => fields(value, {}, {})],
-  [
-    'commonmark.code_block',
-    (value: unknown) =>
-      fields(value, { fenced: boolean, info: string, literal: string }, {})
-  ],
-  ['commonmark.emphasis', (value: unknown) => fields(value, {}, {})],
-  ['commonmark.hardbreak', (value: unknown) => fields(value, {}, {})],
-  [
-    'commonmark.heading',
-    (value: unknown) =>
-      fields(
-        value,
-        {
-          level: (value: unknown) =>
-            typeof value === 'number' &&
-            Number.isInteger(value) &&
-            value >= 0 &&
-            value <= 255
-        },
-        {}
-      )
-  ],
-  [
-    'commonmark.html_block',
-    (value: unknown) => fields(value, { literal: string }, {})
-  ],
-  [
-    'commonmark.html_inline',
-    (value: unknown) => fields(value, { literal: string }, {})
-  ],
-  [
-    'commonmark.image',
-    (value: unknown) =>
-      fields(
-        value,
-        { destination: string, label_source: string, title: nullable(string) },
-        {}
-      )
-  ],
-  [
-    'commonmark.inline_code',
-    (value: unknown) => fields(value, { literal: string }, {})
-  ],
-  [
-    'commonmark.link',
-    (value: unknown) =>
-      fields(
-        value,
-        {
-          destination: string,
-          form: oneOf('explicit', 'autolink', 'linkify'),
-          title: nullable(string)
-        },
-        {}
-      )
-  ],
-  [
-    'commonmark.list',
-    (value: unknown) =>
-      fields(
-        value,
-        {
-          ordered: boolean,
-          start: (value: unknown) =>
-            typeof value === 'number' &&
-            Number.isInteger(value) &&
-            value >= 0 &&
-            value <= 4294967295,
-          tight: boolean
-        },
-        {}
-      )
-  ],
-  [
-    'commonmark.list_item',
-    (value: unknown) => fields(value, { marker: string }, {})
-  ],
-  ['commonmark.paragraph', (value: unknown) => fields(value, {}, {})],
-  ['commonmark.softbreak', (value: unknown) => fields(value, {}, {})],
-  ['commonmark.strong', (value: unknown) => fields(value, {}, {})],
-  ['commonmark.text', (value: unknown) => fields(value, { value: string }, {})],
-  [
-    'commonmark.thematic_break',
-    (value: unknown) => fields(value, { marker: string }, {})
-  ]
+  ['commonmark.blockquote', validateBlockquote],
+  ['commonmark.code_block', validateCodeBlock],
+  ['commonmark.emphasis', validateEmphasis],
+  ['commonmark.hardbreak', validateHardbreak],
+  ['commonmark.heading', validateHeading],
+  ['commonmark.html_block', validateHtmlBlock],
+  ['commonmark.html_inline', validateHtmlInline],
+  ['commonmark.image', validateImage],
+  ['commonmark.inline_code', validateInlineCode],
+  ['commonmark.link', validateLink],
+  ['commonmark.list', validateList],
+  ['commonmark.list_item', validateListItem],
+  ['commonmark.paragraph', validateParagraph],
+  ['commonmark.softbreak', validateSoftbreak],
+  ['commonmark.strong', validateStrong],
+  ['commonmark.text', validateText],
+  ['commonmark.thematic_break', validateThematicBreak]
 ])
 export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
   validators
 )
+export const definitions = Object.freeze({
+  Blockquote: defineNode<Extract<NodeKind, { kind: typeof names.Blockquote }>>(
+    names.Blockquote,
+    validators.get(names.Blockquote)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['block'] },
+      role: 'block'
+    }
+  ),
+  CodeBlock: defineNode<Extract<NodeKind, { kind: typeof names.CodeBlock }>>(
+    names.CodeBlock,
+    validators.get(names.CodeBlock)!,
+    { children: { kind: 'leaf' }, role: 'block' }
+  ),
+  Emphasis: defineNode<Extract<NodeKind, { kind: typeof names.Emphasis }>>(
+    names.Emphasis,
+    validators.get(names.Emphasis)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
+      role: 'inline'
+    }
+  ),
+  Hardbreak: defineNode<Extract<NodeKind, { kind: typeof names.Hardbreak }>>(
+    names.Hardbreak,
+    validators.get(names.Hardbreak)!,
+    { children: { kind: 'leaf' }, role: 'inline' }
+  ),
+  Heading: defineNode<Extract<NodeKind, { kind: typeof names.Heading }>>(
+    names.Heading,
+    validators.get(names.Heading)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
+      role: 'block'
+    }
+  ),
+  HtmlBlock: defineNode<Extract<NodeKind, { kind: typeof names.HtmlBlock }>>(
+    names.HtmlBlock,
+    validators.get(names.HtmlBlock)!,
+    { children: { kind: 'leaf' }, role: 'block' }
+  ),
+  HtmlInline: defineNode<Extract<NodeKind, { kind: typeof names.HtmlInline }>>(
+    names.HtmlInline,
+    validators.get(names.HtmlInline)!,
+    { children: { kind: 'leaf' }, role: 'inline' }
+  ),
+  Image: defineNode<Extract<NodeKind, { kind: typeof names.Image }>>(
+    names.Image,
+    validators.get(names.Image)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
+      role: 'inline'
+    }
+  ),
+  InlineCode: defineNode<Extract<NodeKind, { kind: typeof names.InlineCode }>>(
+    names.InlineCode,
+    validators.get(names.InlineCode)!,
+    { children: { kind: 'leaf' }, role: 'inline' }
+  ),
+  Link: defineNode<Extract<NodeKind, { kind: typeof names.Link }>>(
+    names.Link,
+    validators.get(names.Link)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
+      role: 'inline'
+    }
+  ),
+  List: defineNode<Extract<NodeKind, { kind: typeof names.List }>>(
+    names.List,
+    validators.get(names.List)!,
+    {
+      children: {
+        kind: 'types',
+        nonempty: true,
+        types: ['commonmark.list_item']
+      },
+      role: 'block'
+    }
+  ),
+  ListItem: defineNode<Extract<NodeKind, { kind: typeof names.ListItem }>>(
+    names.ListItem,
+    validators.get(names.ListItem)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['block'] },
+      role: 'structural'
+    }
+  ),
+  Paragraph: defineNode<Extract<NodeKind, { kind: typeof names.Paragraph }>>(
+    names.Paragraph,
+    validators.get(names.Paragraph)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
+      role: 'block'
+    }
+  ),
+  Softbreak: defineNode<Extract<NodeKind, { kind: typeof names.Softbreak }>>(
+    names.Softbreak,
+    validators.get(names.Softbreak)!,
+    { children: { kind: 'leaf' }, role: 'inline' }
+  ),
+  Strong: defineNode<Extract<NodeKind, { kind: typeof names.Strong }>>(
+    names.Strong,
+    validators.get(names.Strong)!,
+    {
+      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
+      role: 'inline'
+    }
+  ),
+  Text: defineNode<Extract<NodeKind, { kind: typeof names.Text }>>(
+    names.Text,
+    validators.get(names.Text)!,
+    { children: { kind: 'leaf' }, role: 'inline' }
+  ),
+  ThematicBreak: defineNode<
+    Extract<NodeKind, { kind: typeof names.ThematicBreak }>
+  >(names.ThematicBreak, validators.get(names.ThematicBreak)!, {
+    children: { kind: 'leaf' },
+    role: 'block'
+  })
+})
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T

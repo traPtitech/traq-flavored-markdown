@@ -1,9 +1,6 @@
 //! Bounded document framing; the caller supplies payload decoding.
-use crate::{
-    CodecLimits,
-    fields::{Fields, error},
-};
-use markdown_ast::{Document, Node, NodeKind, Span};
+use crate::{CodecLimits, Error as CodecError, ErrorKind, Result as CodecResult, fields::Fields};
+use markdown_ast::{Document, Node, NodeKind, Span, ValidatedDocumentBuf};
 
 use serde::{
     Deserialize, Deserializer,
@@ -23,8 +20,8 @@ struct Position {
 pub(crate) fn decode(
     json: &[u8],
     limits: CodecLimits,
-    decode_kind: &dyn Fn(&str, Fields<'_>) -> serde_json::Result<NodeKind>,
-) -> serde_json::Result<Document> {
+    decode_kind: &dyn Fn(&str, Fields<'_>) -> CodecResult<NodeKind>,
+) -> CodecResult<ValidatedDocumentBuf> {
     check_json_limit(json, limits)?;
 
     let mut fields: Fields<'_> = serde_json::from_slice(json)?;
@@ -44,36 +41,43 @@ pub(crate) fn decode(
         limits,
         count: 0,
         payload_bytes: 0,
+        path: vec![],
+        error: None,
     };
 
     let children = state.children(Some(children), parent, 1)?;
-    Ok(Document { source, children })
+    Ok(ValidatedDocumentBuf::with_limits(
+        Document { source, children },
+        limits.document,
+    )?)
 }
 
-fn check_json_limit(json: &[u8], limits: CodecLimits) -> serde_json::Result<()> {
+fn check_json_limit(json: &[u8], limits: CodecLimits) -> CodecResult<()> {
     if json.len() > limits.json_bytes {
-        return Err(error("json byte limit"));
+        return Err(limit("json_bytes", limits.json_bytes));
     }
 
     Ok(())
 }
 
-fn decode_source(fields: &mut Fields<'_>, limits: CodecLimits) -> serde_json::Result<String> {
+fn decode_source(fields: &mut Fields<'_>, limits: CodecLimits) -> CodecResult<String> {
     let source: String = Deserialize::deserialize(fields.take("source")?)?;
 
     if source.len() > limits.document.source_bytes {
-        return Err(error("source byte limit"));
+        return Err(limit("source_bytes", limits.document.source_bytes));
     }
 
     Ok(source)
 }
 
 struct State<'a> {
-    decode_kind: &'a dyn Fn(&str, Fields<'_>) -> serde_json::Result<NodeKind>,
+    decode_kind: &'a dyn Fn(&str, Fields<'_>) -> CodecResult<NodeKind>,
     source: &'a str,
     limits: CodecLimits,
     count: usize,
     payload_bytes: usize,
+    path: Vec<usize>,
+    error: Option<CodecError>,
 }
 impl State<'_> {
     fn node(
@@ -82,7 +86,7 @@ impl State<'_> {
         parent: Span,
         previous_end: usize,
         depth: usize,
-    ) -> serde_json::Result<Node> {
+    ) -> CodecResult<Node> {
         self.check_limits(depth)?;
         self.count += 1;
 
@@ -91,29 +95,29 @@ impl State<'_> {
 
         let kind: String = Deserialize::deserialize(fields.take("kind")?)?;
         let raw_children = fields.0.remove("children");
-        let kind = (self.decode_kind)(&kind, fields)?;
+        let kind =
+            (self.decode_kind)(&kind, fields).map_err(|error| error.at(&self.path, Some(span)))?;
 
         self.payload_bytes = self
             .payload_bytes
             .checked_add(kind.payload_bytes())
             .filter(|bytes| *bytes <= self.limits.document.payload_bytes)
-            .ok_or_else(|| error("payload byte limit"))?;
+            .ok_or_else(|| {
+                limit("payload_bytes", self.limits.document.payload_bytes)
+                    .at(&self.path, Some(span))
+            })?;
 
         let children = self.children(raw_children, span, depth + 1)?;
-        if !kind.validate(&children) {
-            return Err(error("invalid node shape"));
-        }
-
         Ok(Node::new(span, kind, children))
     }
 
-    fn check_limits(&self, depth: usize) -> serde_json::Result<()> {
+    fn check_limits(&self, depth: usize) -> CodecResult<()> {
         if self.count >= self.limits.document.nodes {
-            return Err(error("node limit"));
+            return Err(limit("nodes", self.limits.document.nodes).at(&self.path, None));
         }
 
         if depth > self.limits.document.depth {
-            return Err(error("depth limit"));
+            return Err(limit("depth", self.limits.document.depth).at(&self.path, None));
         }
 
         Ok(())
@@ -124,7 +128,7 @@ impl State<'_> {
         fields: &mut Fields<'_>,
         parent: Span,
         previous_end: usize,
-    ) -> serde_json::Result<Span> {
+    ) -> CodecResult<Span> {
         let position: Position = Deserialize::deserialize(fields.take("span")?)?;
 
         let span = Span {
@@ -133,7 +137,11 @@ impl State<'_> {
         };
 
         if !span.valid_child_of(parent, previous_end, self.source) {
-            return Err(error("invalid span"));
+            return Err(CodecError::new(ErrorKind::InvalidSpan {
+                parent,
+                previous_end,
+            })
+            .at(&self.path, Some(span)));
         }
 
         Ok(span)
@@ -144,14 +152,19 @@ impl State<'_> {
         raw: Option<&RawValue>,
         parent: Span,
         depth: usize,
-    ) -> serde_json::Result<Vec<Node>> {
+    ) -> CodecResult<Vec<Node>> {
         match raw {
             Some(raw) => Children {
                 state: self,
                 parent,
                 depth,
             }
-            .deserialize(raw),
+            .deserialize(raw)
+            .map_err(|error| {
+                self.error
+                    .take()
+                    .unwrap_or_else(|| CodecError::from(error).at(&self.path, None))
+            }),
             None => Ok(vec![]),
         }
     }
@@ -184,14 +197,25 @@ impl<'de> Visitor<'de> for Children<'_, '_> {
         let mut previous_end = self.parent.start;
 
         while let Some(raw) = sequence.next_element::<&RawValue>()? {
-            let node = self
-                .state
-                .node(raw, self.parent, previous_end, self.depth)
-                .map_err(S::Error::custom)?;
+            self.state.path.push(nodes.len());
+            let node = match self.state.node(raw, self.parent, previous_end, self.depth) {
+                Ok(node) => node,
+                Err(error) => {
+                    let error = error.at(&self.state.path, None);
+                    let message = error.to_string();
+                    self.state.error = Some(error);
+                    return Err(S::Error::custom(message));
+                }
+            };
+            self.state.path.pop();
             previous_end = node.span.end;
             nodes.push(node);
         }
 
         Ok(nodes)
     }
+}
+
+fn limit(resource: &'static str, limit: usize) -> CodecError {
+    CodecError::new(ErrorKind::ResourceLimit { resource, limit })
 }

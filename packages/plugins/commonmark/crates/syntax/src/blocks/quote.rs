@@ -1,10 +1,11 @@
+use super::Interrupt;
 use super::{markers::*, paragraph::paragraph_start};
 
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
         Budget,
-        block::{BlockInput, BlockMatch, DraftNode, Interrupt},
+        block::{BlockInput, BlockMatch, DraftNode},
     },
 };
 
@@ -25,7 +26,7 @@ pub fn parse(
     let mut lazy_lines = vec![];
     let mut lazy = false;
 
-    while end < lines.len() {
+    while end < lines.end() {
         let next = input.line(end);
         let indent = next.len() - next.trim_start_matches(' ').len();
 

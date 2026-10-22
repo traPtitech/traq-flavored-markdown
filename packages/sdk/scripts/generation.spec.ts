@@ -104,7 +104,5 @@ test('Rust processing options and nested results generate without host changes',
   output.$defs = {
     Details: object('Details', { other: { type: 'boolean' } })
   }
-  expect(() => processingFiles(schemas)).toThrow(
-    /Conflicting TypeScript contract/
-  )
+  expect(() => processingFiles(schemas)).toThrow(/Conflicting contract/)
 })

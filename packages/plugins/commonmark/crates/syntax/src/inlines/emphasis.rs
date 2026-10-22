@@ -2,7 +2,7 @@ use markdown_parser::{
     NodeKind, ParseError,
     engine::{
         Budget,
-        inline::{InlineAction, InlineInput, InlineMatch, Pairing},
+        inline::{DelimiterPolicy, InlineAction, InlineInput, InlineMatch, Pairing},
     },
 };
 
@@ -54,9 +54,7 @@ pub fn paired(
     input: &InlineInput<'_>,
     budget: &mut Budget,
     width: usize,
-    rule_of_three: bool,
-    combine: bool,
-    make: fn(bool) -> NodeKind,
+    policy: DelimiterPolicy,
 ) -> Result<Option<InlineMatch>, ParseError> {
     let source = &input.source.text();
     let pos = input.position;
@@ -79,9 +77,7 @@ pub fn paired(
         run_length: length,
         open,
         close,
-        rule_of_three,
-        combine_pairs: combine,
-        make,
+        policy,
     };
     Ok(Some(InlineMatch {
         end: pos + length / width * width,
@@ -93,11 +89,19 @@ pub(super) fn emphasis(
     input: &InlineInput<'_>,
     budget: &mut Budget,
 ) -> Result<Option<InlineMatch>, ParseError> {
-    paired(input, budget, 1, true, true, |strong| {
-        if strong {
-            NodeKind::new(markdown_commonmark_contracts::Strong {})
-        } else {
-            NodeKind::new(markdown_commonmark_contracts::Emphasis {})
-        }
-    })
+    paired(
+        input,
+        budget,
+        1,
+        DelimiterPolicy {
+            accepts: |opening, closing| {
+                !((opening.close || closing.open)
+                    && (opening.length + closing.length).is_multiple_of(3)
+                    && (!opening.length.is_multiple_of(3) || !closing.length.is_multiple_of(3)))
+            },
+            cache_class: |run| (usize::from(run.open) * 3 + run.length % 3) as u8,
+            single: || NodeKind::new(markdown_commonmark_contracts::Emphasis {}),
+            combined: Some(|| NodeKind::new(markdown_commonmark_contracts::Strong {})),
+        },
+    )
 }

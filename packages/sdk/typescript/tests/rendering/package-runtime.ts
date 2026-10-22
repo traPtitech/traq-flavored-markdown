@@ -55,8 +55,8 @@ try {
     'Packed condensed renderer changed the message text'
   )
   check(
-    messages.standard.render(message).embeddings[0].type === 'file',
-    'Packed standard renderer did not extract the file embedding'
+    messages.standard.render(message).cards[0].type === 'file',
+    'Packed standard renderer did not extract the file card'
   )
   const custom = renderer(new PresetBuilder().add(plugin()).build())
   check(

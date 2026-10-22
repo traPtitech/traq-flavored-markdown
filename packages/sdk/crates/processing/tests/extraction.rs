@@ -95,12 +95,21 @@ fn source_edit_consumers_require_a_canonical_ast() {
     let mut crossing = original.clone();
     crossing.children.last_mut().unwrap().span.start = original.children[0].span.end - 1;
     for document in [reordered, duplicated, crossing] {
-        assert_eq!(embedding::plan(&document).unwrap_err(), "invalid_node");
         assert_eq!(
-            message::Extractor::new("").extract(&document).unwrap_err(),
+            embedding::plan(&document).unwrap_err().code(),
             "invalid_node"
         );
-        assert_eq!(extractor.extract(&document).unwrap_err(), "invalid_node");
+        assert_eq!(
+            message::Extractor::new("")
+                .extract(&document)
+                .unwrap_err()
+                .code(),
+            "invalid_node"
+        );
+        assert_eq!(
+            extractor.extract(&document).unwrap_err().code(),
+            "invalid_node"
+        );
     }
     assert_eq!(
         extractor.extract(&original).unwrap().message_text,
@@ -133,9 +142,16 @@ fn aggregate_extraction_validates_each_node_once() {
         fn payload_bytes(&self) -> usize {
             0
         }
-        fn validate(&self, _: &[Node]) -> bool {
-            self.0.fetch_add(1, Ordering::Relaxed);
-            true
+        fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+            let valid = {
+                self.0.fetch_add(1, Ordering::Relaxed);
+                true
+            };
+            if valid {
+                Ok(())
+            } else {
+                Err(markdown_ast::PayloadError::new("custom payload invariant"))
+            }
         }
     }
     let calls = Arc::new(AtomicUsize::new(0));
@@ -186,7 +202,7 @@ fn aggregate_analysis_matches_the_standalone_policies() {
             "{source}"
         );
         assert_eq!(
-            result.message_text, standalone_message.plain_text,
+            result.message_text, standalone_message.source_text,
             "{source}"
         );
         assert_eq!(
@@ -195,7 +211,7 @@ fn aggregate_analysis_matches_the_standalone_policies() {
         );
         assert_eq!(result.citations, standalone_message.citations, "{source}");
         assert_eq!(
-            result.embedding,
+            result.reference_embedding,
             embedding::plan(&document).unwrap(),
             "{source}"
         );
@@ -221,7 +237,10 @@ fn custom_parser_limits_flow_through_validated_consumers() {
     let document = parser.parse(&source).unwrap();
     assert!(matches!(
         ValidatedDocument::new(&document),
-        Err(ValidationError::SourceBytes)
+        Err(ValidationError {
+            kind: markdown_ast::ValidationErrorKind::SourceBytes,
+            ..
+        })
     ));
     let validated = ValidatedDocument::with_limits(&document, document_limits).unwrap();
 
@@ -236,7 +255,7 @@ fn custom_parser_limits_flow_through_validated_consumers() {
         message::Extractor::new("")
             .extract_validated(validated)
             .unwrap()
-            .plain_text,
+            .source_text,
         source
     );
     assert_eq!(
@@ -250,14 +269,14 @@ fn custom_parser_limits_flow_through_validated_consumers() {
 #[test]
 fn native_reference_payload_is_bounded_before_extraction() {
     use markdown_ast::{Node, Span, ValidationLimits};
-    use markdown_trap_contracts::{ReferenceData, ReferenceKind};
+    use markdown_trap_contracts::{Reference, ReferenceKind};
     use traq_markdown_processing::presets::traq::{embedding, message};
 
     let document = Document {
         source: String::new(),
         children: vec![Node::leaf(
             Span { start: 0, end: 0 },
-            ReferenceData {
+            Reference {
                 target: ReferenceKind::User,
                 id: String::new(),
                 label: "x".repeat(ValidationLimits::default().payload_bytes + 1),
@@ -266,10 +285,19 @@ fn native_reference_payload_is_bounded_before_extraction() {
     };
 
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
-    assert_eq!(extractor.extract(&document).unwrap_err(), "resource_limit");
     assert_eq!(
-        message::Extractor::new("").extract(&document).unwrap_err(),
+        extractor.extract(&document).unwrap_err().code(),
         "resource_limit"
     );
-    assert_eq!(embedding::plan(&document).unwrap_err(), "resource_limit");
+    assert_eq!(
+        message::Extractor::new("")
+            .extract(&document)
+            .unwrap_err()
+            .code(),
+        "resource_limit"
+    );
+    assert_eq!(
+        embedding::plan(&document).unwrap_err().code(),
+        "resource_limit"
+    );
 }

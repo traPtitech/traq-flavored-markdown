@@ -1,7 +1,7 @@
 # traP reference extraction
 
 `references::plugin()` returns a `Plugin<References>` that collects
-`ReferenceData`. It uses the declaration shared by `markdown-trap-contracts`
+`Reference`. It uses the declaration shared by `markdown-trap-contracts`
 and delegates traversal to `markdown-extractor`; it has no parser, renderer, or
 codec dependency.
 

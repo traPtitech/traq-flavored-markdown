@@ -1,19 +1,21 @@
-import * as generic from '@traq-flavored-markdown/commonmark-plugin/generic/renderer'
 import * as commonNodes from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import * as common from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import * as html from '@traq-flavored-markdown/core/renderer'
+import * as generic from '@traq-flavored-markdown/extensions-plugin/renderer'
 import * as traq from '@traq-flavored-markdown/sdk/renderer'
 import * as trapNodes from '@traq-flavored-markdown/traq-plugin/nodes'
 import * as trap from '@traq-flavored-markdown/traq-plugin/renderer'
-import { createHighlightFunc } from '@traq-flavored-markdown/commonmark-plugin/highlight'
-import { Plugin as Declaration } from '@traq-flavored-markdown/core/definitions'
-import type { Plugin } from '@traq-flavored-markdown/core/renderer'
+import { createHighlighter } from '@traq-flavored-markdown/commonmark-plugin/highlight'
+import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
+import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
+import { definitions as extensionDefinitions } from '@traq-flavored-markdown/extensions-plugin/nodes'
 import { expect, test } from 'bun:test'
 import MarkdownIt from 'markdown-it'
 
 import { commonParser, parser } from './setup.ts'
 
-const build = (plugin: Plugin) => new html.PresetBuilder().add(plugin).build()
+const build = (plugin: RenderPlugin) =>
+  new html.PresetBuilder().add(plugin).build()
 
 test('rendering returns HTML and exposes no parser or token adapter', () => {
   const view = common.html()
@@ -31,7 +33,7 @@ test('rendering returns HTML and exposes no parser or token adapter', () => {
       .renderer(common.specHtmlPreset())
       .render(parser.parseInline('**bold**'))
   ).toBe('<strong>bold</strong>')
-  expect(Object.keys(view).sort()).toEqual(['render'])
+  expect(Object.keys(view).sort()).toEqual(['createSession', 'render'])
   expect((html as Record<string, unknown>).installParser).toBeUndefined()
   expect((html as Record<string, unknown>).traqMarkdownIt).toBeUndefined()
 })
@@ -39,12 +41,13 @@ test('rendering returns HTML and exposes no parser or token adapter', () => {
 test('replacement preserves defaults and earlier presets', () => {
   const document = parser.parse('**bold** [link](https://example.com)')
   const plugin = common.plugin()
-  const builder = new html.PresetBuilder().add(plugin)
+  const builder = new html.PresetBuilder()
+  const registration = builder.register(plugin)
   const before = html.renderer(builder.build())
   const updated = plugin.replace(common.nodes.Link, (node, ctx) =>
-    ctx.render(node.children)
+    ctx.renderChildren()
   )
-  builder.remove(plugin)
+  builder.remove(registration)
   const custom = html.renderer(build(updated))
   expect(custom.render(document)).toMatch(/<strong>bold<\/strong>/)
   expect(custom.render(document)).not.toMatch(/<a /)
@@ -60,9 +63,9 @@ test('replacement preserves defaults and earlier presets', () => {
 })
 
 test('renderer declarations customize Rust-produced nodes', () => {
-  const declaration = Declaration.group('custom').new('math')
-  const presentation = new html.Plugin(declaration).on(
-    'generic.inline_math',
+  const declaration = Declaration.group('custom').plugin('math')
+  const presentation = new html.RenderPlugin(declaration).on(
+    extensionDefinitions.InlineMath,
     (node, ctx) => ctx.fallback(node)
   )
   const view = html.renderer(
@@ -72,8 +75,8 @@ test('renderer declarations customize Rust-produced nodes', () => {
 })
 
 test('SDK html creates a renderer and accepts third-party plugins', () => {
-  const annotation = new html.Plugin(
-    Declaration.group('external').new('annotations')
+  const annotation = new html.RenderPlugin(
+    Declaration.group('external').plugin('annotations')
   ).on(
     'external::annotation',
     (_node, context) => '<mark>' + context.escape('<annotation>') + '</mark>'
@@ -85,13 +88,13 @@ test('SDK html creates a renderer and accepts third-party plugins', () => {
         ...plugins,
         common: plugins.common.replace(
           commonNodes.names.Strong,
-          (node, context) => '<b>' + context.render(node.children) + '</b>'
+          (node, context) => '<b>' + context.renderChildren() + '</b>'
         )
       }
     }
   }
   const view = traq.html(options)
-  expect(Object.keys(view)).toEqual(['render'])
+  expect(Object.keys(view)).toEqual(['createSession', 'render'])
   expect(view.render(parser.parseInline('**bold**'))).toBe('<b>bold</b>')
 
   const document = {
@@ -120,27 +123,28 @@ test('SDK html creates a renderer and accepts third-party plugins', () => {
 
 test('composition validates selected names without changing earlier presets', () => {
   const group = Declaration.group('custom')
-  const first = new html.Plugin(group.new('one')).on('a', () => '')
-  const builder = new html.PresetBuilder().add(first)
+  const first = new html.RenderPlugin(group.plugin('one')).on('a', () => '')
+  const builder = new html.PresetBuilder()
+  const registration = builder.register(first)
   const preset = builder.build()
   expect(() => builder.add(first)).toThrow(/Duplicate plugin/)
   expect(() =>
-    builder.add(new html.Plugin(group.new('two')).on('a', () => ''))
+    builder.add(new html.RenderPlugin(group.plugin('two')).on('a', () => ''))
   ).toThrow(/Duplicate handler/)
-  builder.remove(first)
+  builder.remove(registration)
   expect(() => html.renderer(preset)).not.toThrow()
-  expect(() => builder.remove(first)).toThrow(/Missing plugin/)
-  builder.add(first).add(new html.Plugin(group.new('one')))
+  expect(() => builder.remove(registration)).toThrow(/Missing registration/)
+  builder.add(first).add(new html.RenderPlugin(group.plugin('one')))
   expect(() => builder.build()).toThrow(/Duplicate name/)
   const other = Declaration.group('custom')
   expect(() =>
     new html.PresetBuilder()
       .add(first)
-      .add(new html.Plugin(other.new('different')))
+      .add(new html.RenderPlugin(other.plugin('different')))
       .build()
   ).toThrow(/Duplicate name/)
   expect(() => html.renderer({} as never)).toThrow(/Expected renderer Preset/)
-  expect(() => new html.Plugin('name' as never)).toThrow(/declaration/)
+  expect(() => new html.RenderPlugin('name' as never)).toThrow(/declaration/)
 })
 
 test('custom HTML handlers receive escaped text helpers and rendered children', () => {
@@ -151,7 +155,7 @@ test('custom HTML handlers receive escaped text helpers and rendered children', 
       '<b title="' +
       context.escape('"<&') +
       '">' +
-      context.render(node.children) +
+      context.renderChildren() +
       '</b>'
   )
   const view = html.renderer(build(customized))
@@ -290,14 +294,18 @@ test('direct HTML rendering escapes attributes, image text, and fence info', () 
   expect(view.render(parser.parse('```a\\+b&quot;\n<&\n```'))).toBe(
     '<pre><code class="language-a+b&quot;">&lt;&amp;\n</code></pre>\n'
   )
-  const extended = html.renderer(traq.htmlPreset({ validateImage: () => true }))
+  const extended = html.renderer(
+    traq.htmlPreset({ images: { validate: () => true } })
+  )
   expect(extended.render(parser.parseInline('![日本語](/image)'))).toBe(
     '<img src="/image" alt="日本語">'
   )
 })
 
 test('highlighting escapes a custom pre class attribute', () => {
-  expect(createHighlightFunc('code" data-x="value')('<&', 'text')).toEqual({
+  expect(
+    createHighlighter({ preClass: 'code" data-x="value' })('<&', 'text')
+  ).toEqual({
     kind: 'block',
     html: '<pre class="code&quot; data-x=&quot;value"><code class="lang-text">&lt;&amp;</code></pre>'
   })

@@ -37,8 +37,13 @@ impl NodeData for Invalid {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> bool {
-        false
+    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = false;
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 
@@ -59,17 +64,19 @@ fn leaf<T: NodeData>(value: T) -> Node {
 
 fn renderer(calls: Arc<AtomicUsize>) -> Renderer {
     let mut plugin = Plugin::new(&Declaration::new("validation"));
-    plugin.on::<Text>(|v, _, _| Ok(v.0.clone())).unwrap();
+    plugin
+        .on::<Text>(|v, _, _, output| output.push(&v.0))
+        .unwrap();
 
     plugin
-        .on::<Hidden>(move |_, _, _| {
+        .on::<Hidden>(move |_, _, _, output| {
             calls.fetch_add(1, Ordering::Relaxed);
-            Ok("hidden".into())
+            output.push("hidden")
         })
         .unwrap();
 
     plugin
-        .on::<Invalid>(|_, _, _| Ok("invalid".into()))
+        .on::<Invalid>(|_, _, _, output| output.push("invalid"))
         .unwrap();
 
     let mut builder = PresetBuilder::new();
@@ -95,7 +102,10 @@ fn suppressed_descendants_are_checked_before_running_any_handler() {
             children: vec![Node::new(Span { start: 0, end: 2 }, Hidden, vec![child])],
         };
 
-        assert_eq!(renderer.render(&doc), Err(expected));
+        assert_eq!(
+            renderer.render(&doc).map_err(|error| error.code()),
+            Err(expected)
+        );
     }
 
     assert_eq!(calls.load(Ordering::Relaxed), 0);
@@ -110,15 +120,38 @@ fn resource_boundaries_and_per_render_budgets_are_preserved() {
         children: vec![leaf(Text("x".repeat(1_048_576)))],
     };
 
-    assert_eq!(renderer.render(&doc).unwrap().len(), 1_048_576);
-    assert_eq!(renderer.render(&doc).unwrap().len(), 1_048_576);
+    assert_eq!(
+        renderer
+            .render(&doc)
+            .map_err(|error| error.code())
+            .unwrap()
+            .len(),
+        1_048_576
+    );
+    assert_eq!(
+        renderer
+            .render(&doc)
+            .map_err(|error| error.code())
+            .unwrap()
+            .len(),
+        1_048_576
+    );
     doc.children[0] = leaf(Text("x".repeat(1_048_577)));
-    assert_eq!(renderer.render(&doc), Err("resource_limit"));
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    );
 
     doc.children = vec![leaf(Text(String::new())); 16_384];
-    assert_eq!(renderer.render(&doc).unwrap(), "");
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()).unwrap(),
+        ""
+    );
     doc.children.push(leaf(Text(String::new())));
-    assert_eq!(renderer.render(&doc), Err("resource_limit"));
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    );
 
     let mut node = leaf(Text(String::new()));
     for _ in 1..64 {
@@ -126,24 +159,36 @@ fn resource_boundaries_and_per_render_budgets_are_preserved() {
     }
 
     doc.children = vec![node];
-    assert_eq!(renderer.render(&doc).unwrap(), "hidden");
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()).unwrap(),
+        "hidden"
+    );
 
     doc.children = vec![Node::new(Span { start: 0, end: 0 }, Hidden, doc.children)];
-    assert_eq!(renderer.render(&doc), Err("resource_limit"));
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    );
 
     doc.children.clear();
     doc.source = "x".repeat(65_536);
-    assert_eq!(renderer.render(&doc).unwrap(), "");
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()).unwrap(),
+        ""
+    );
 
     doc.source.push('x');
-    assert_eq!(renderer.render(&doc), Err("resource_limit"));
+    assert_eq!(
+        renderer.render(&doc).map_err(|error| error.code()),
+        Err("resource_limit")
+    );
 }
 
 #[test]
 fn oversized_native_payload_is_rejected_before_a_handler_clones_it() {
     let mut plugin = Plugin::new(&Declaration::new("payload boundary"));
     plugin
-        .on::<Text>(|_, _, _| panic!("handler must not run"))
+        .on::<Text>(|_, _, _, _| panic!("handler must not run"))
         .unwrap();
     let mut builder = PresetBuilder::new();
     builder.add(&plugin).unwrap();
@@ -155,5 +200,52 @@ fn oversized_native_payload_is_rejected_before_a_handler_clones_it() {
         ))],
     };
 
-    assert_eq!(renderer.render(&document), Err("resource_limit"));
+    assert_eq!(
+        renderer.render(&document).map_err(|error| error.code()),
+        Err("resource_limit")
+    );
+}
+
+#[test]
+fn writer_charges_each_byte_once_through_deep_wrappers_and_bounds_captures() {
+    use markdown_renderer::{Error, RenderLimits};
+    let mut plugin = Plugin::new(&Declaration::new("streaming"));
+    plugin
+        .on::<Text>(|text, _, _, output| output.push(&text.0))
+        .unwrap();
+    plugin
+        .on::<Hidden>(|_, nodes, context, output| context.children(nodes, output))
+        .unwrap();
+    let mut builder = PresetBuilder::new();
+    builder.add(&plugin).unwrap();
+    let mut root = leaf(Text("hello".into()));
+    for _ in 1..64 {
+        root = Node::new(Span { start: 0, end: 0 }, Hidden, vec![root]);
+    }
+    let document = Document {
+        source: String::new(),
+        children: vec![root],
+    };
+    let limits = RenderLimits {
+        output_bytes: 5,
+        work_bytes: 5,
+    };
+    let renderer = Renderer::new(&builder.build().unwrap()).with_limits(limits);
+    assert_eq!(renderer.render(&document).unwrap(), "hello");
+
+    plugin
+        .replace::<Hidden>(|_, nodes, context, output| {
+            output.push(&context.capture_children(nodes)?)
+        })
+        .unwrap();
+    let mut builder = PresetBuilder::new();
+    builder.add(&plugin).unwrap();
+    let captured = Renderer::new(&builder.build().unwrap()).with_limits(limits);
+    assert!(matches!(
+        captured.render(&document),
+        Err(Error::ResourceLimit {
+            resource: "work_bytes",
+            limit: 5
+        })
+    ));
 }

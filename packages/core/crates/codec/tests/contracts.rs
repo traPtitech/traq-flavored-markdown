@@ -17,8 +17,13 @@ impl NodeData for Score {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> bool {
-        children.is_empty()
+    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        let valid = children.is_empty();
+        if valid {
+            Ok(())
+        } else {
+            Err(markdown_ast::PayloadError::new("custom payload invariant"))
+        }
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
@@ -89,7 +94,7 @@ fn first(codec: &mut Codec) -> Document {
     }
 }
 
-fn second(codec: &mut Codec) -> Result<(), &'static str> {
+fn second(codec: &mut Codec) -> markdown_codec::Result<()> {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
     #[node_type(key = "test.collision")]
     struct Collision {

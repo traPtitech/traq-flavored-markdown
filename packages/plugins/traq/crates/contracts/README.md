@@ -1,11 +1,11 @@
 # markdown-trap-contracts
 
-Defines the five traQ payload types—`ReferenceData`, `StampData`,
-`EmbeddingData`, `SpoilerData`, and `BlankLineData`—plus their supporting types.
+Defines the five traQ payload types—`Reference`, `Stamp`,
+`Embedding`, `Spoiler`, and `BlankLine`—plus their supporting types.
 It does not depend on parser, renderer, or codec implementations.
 
 `preset()` returns shared declarations for reference, stamp, spoiler, and
-compatibility plugins. Parser, renderer, and extractor implementations use those
+spacing plugins. Parser, renderer, and extractor implementations use those
 same declaration instances, while grammar and rendering presets choose their
 actual implementations separately.
 

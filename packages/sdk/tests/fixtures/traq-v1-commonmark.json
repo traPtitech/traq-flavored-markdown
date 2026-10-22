@@ -177,8 +177,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -188,9 +190,7 @@
                     "end": 14,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -306,8 +306,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -317,9 +319,7 @@
                     "end": 13,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -486,8 +486,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -497,9 +499,7 @@
                     "end": 7,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.code_block",
@@ -628,8 +628,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -639,9 +641,7 @@
                     "end": 24,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -670,8 +670,10 @@
                         "start": 10
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -681,9 +683,7 @@
                             "end": 24,
                             "start": 10
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -712,8 +712,10 @@
                                 "start": 18
                               },
                               "data": {
-                                "ordered": false,
-                                "start": 1,
+                                "kind": {
+                                  "type": "bullet",
+                                  "marker": "-"
+                                },
                                 "tight": true
                               },
                               "children": [
@@ -723,9 +725,7 @@
                                     "end": 24,
                                     "start": 18
                                   },
-                                  "data": {
-                                    "marker": "-"
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "kind": "commonmark.paragraph",
@@ -3207,8 +3207,10 @@
                 "start": 11
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": true
               },
               "children": [
@@ -3218,9 +3220,7 @@
                     "end": 17,
                     "start": 11
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -3487,8 +3487,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -3498,9 +3500,7 @@
                     "end": 7,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -3530,9 +3530,7 @@
                     "end": 14,
                     "start": 7
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -4674,8 +4672,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -4685,9 +4685,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -4730,8 +4728,10 @@
                 "start": 10
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -4741,9 +4741,7 @@
                     "end": 16,
                     "start": 10
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -5087,8 +5085,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": true
               },
               "children": [
@@ -5098,9 +5098,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -5143,8 +5141,10 @@
                 "start": 12
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": true
               },
               "children": [
@@ -5154,9 +5154,7 @@
                     "end": 18,
                     "start": 12
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -5262,8 +5260,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -5273,9 +5273,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -5305,9 +5303,7 @@
                     "end": 14,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.thematic_break",
@@ -9107,8 +9103,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -9118,9 +9116,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -9680,8 +9676,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -9691,9 +9689,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -10767,8 +10763,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -10778,9 +10776,7 @@
                     "end": 17,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -10896,8 +10892,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -10907,9 +10906,7 @@
                     "end": 19,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -10938,8 +10935,10 @@
                         "start": 13
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -10949,9 +10948,7 @@
                             "end": 19,
                             "start": 13
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -18642,8 +18639,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -18653,9 +18652,7 @@
                     "end": 8,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -18685,9 +18682,7 @@
                     "end": 14,
                     "start": 8
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -26759,8 +26754,10 @@
                     "start": 2
                   },
                   "data": {
-                    "ordered": false,
-                    "start": 1,
+                    "kind": {
+                      "type": "bullet",
+                      "marker": "-"
+                    },
                     "tight": true
                   },
                   "children": [
@@ -26770,9 +26767,7 @@
                         "end": 8,
                         "start": 2
                       },
-                      "data": {
-                        "marker": "-"
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "commonmark.paragraph",
@@ -26807,8 +26802,10 @@
                 "start": 8
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -26818,9 +26815,7 @@
                     "end": 14,
                     "start": 8
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -28994,8 +28989,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -29005,9 +29003,7 @@
                     "end": 81,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -29207,8 +29203,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -29218,9 +29216,7 @@
                     "end": 7,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -29336,8 +29332,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -29347,9 +29345,7 @@
                     "end": 13,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -29465,8 +29461,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -29476,9 +29474,7 @@
                     "end": 11,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -29586,8 +29582,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -29597,9 +29595,7 @@
                     "end": 21,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -29731,8 +29727,11 @@
                         "start": 7
                       },
                       "data": {
-                        "ordered": true,
-                        "start": 1,
+                        "kind": {
+                          "type": "ordered",
+                          "start": 1,
+                          "delimiter": "period"
+                        },
                         "tight": false
                       },
                       "children": [
@@ -29742,9 +29741,7 @@
                             "end": 29,
                             "start": 7
                           },
-                          "data": {
-                            "marker": "1."
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -29890,8 +29887,10 @@
                         "start": 2
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -29901,9 +29900,7 @@
                             "end": 18,
                             "start": 2
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -30136,8 +30133,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -30147,9 +30146,7 @@
                     "end": 14,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -30281,8 +30278,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -30292,9 +30292,7 @@
                     "end": 53,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -30504,8 +30502,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -30515,9 +30515,7 @@
                     "end": 29,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -30659,8 +30657,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 123456789,
+                "kind": {
+                  "type": "ordered",
+                  "start": 123456789,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -30670,9 +30671,7 @@
                     "end": 14,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "123456789."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -30799,8 +30798,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 0,
+                "kind": {
+                  "type": "ordered",
+                  "start": 0,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -30810,9 +30812,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "0."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -30882,8 +30882,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 3,
+                "kind": {
+                  "type": "ordered",
+                  "start": 3,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -30893,9 +30896,7 @@
                     "end": 8,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "003."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -31022,8 +31023,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -31033,9 +31036,7 @@
                     "end": 17,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -31143,8 +31144,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 10,
+                "kind": {
+                  "type": "ordered",
+                  "start": 10,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -31154,9 +31158,7 @@
                     "end": 27,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "10."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -31397,8 +31399,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -31408,9 +31413,7 @@
                     "end": 53,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.code_block",
@@ -31556,8 +31559,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -31567,9 +31573,7 @@
                     "end": 54,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.code_block",
@@ -31818,8 +31822,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -31829,9 +31835,7 @@
                     "end": 10,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -31947,8 +31951,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -31958,9 +31964,7 @@
                     "end": 15,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -32076,8 +32080,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -32087,9 +32093,7 @@
                     "end": 8,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32127,9 +32131,7 @@
                     "end": 28,
                     "start": 8
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32159,9 +32161,7 @@
                     "end": 40,
                     "start": 28
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32321,8 +32321,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -32332,9 +32334,7 @@
                     "end": 11,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32430,8 +32430,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -32441,9 +32443,7 @@
                     "end": 3,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  }
+                  "data": {}
                 }
               ]
             },
@@ -32537,8 +32537,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -32548,9 +32550,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -32580,9 +32580,7 @@
                     "end": 8,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32600,9 +32598,7 @@
                     "end": 14,
                     "start": 8
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -32708,8 +32704,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -32719,9 +32717,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -32751,9 +32747,7 @@
                     "end": 11,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32771,9 +32765,7 @@
                     "end": 17,
                     "start": 11
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -32879,8 +32871,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -32890,9 +32885,7 @@
                     "end": 7,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -32922,9 +32915,7 @@
                     "end": 10,
                     "start": 7
                   },
-                  "data": {
-                    "marker": "2."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "traq.blank_line",
@@ -32942,9 +32933,7 @@
                     "end": 17,
                     "start": 10
                   },
-                  "data": {
-                    "marker": "3."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -33050,8 +33039,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": true
               },
               "children": [
@@ -33061,9 +33052,7 @@
                     "end": 2,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "*"
-                  }
+                  "data": {}
                 }
               ]
             }
@@ -33286,8 +33275,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -33297,9 +33289,7 @@
                     "end": 85,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -33499,8 +33489,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -33510,9 +33503,7 @@
                     "end": 89,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -33712,8 +33703,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -33723,9 +33717,7 @@
                     "end": 93,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -34044,8 +34036,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -34055,9 +34050,7 @@
                     "end": 83,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -34257,8 +34250,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -34268,9 +34264,7 @@
                     "end": 38,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -34384,8 +34378,11 @@
                     "start": 2
                   },
                   "data": {
-                    "ordered": true,
-                    "start": 1,
+                    "kind": {
+                      "type": "ordered",
+                      "start": 1,
+                      "delimiter": "period"
+                    },
                     "tight": true
                   },
                   "children": [
@@ -34395,9 +34392,7 @@
                         "end": 34,
                         "start": 2
                       },
-                      "data": {
-                        "marker": "1."
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "commonmark.blockquote",
@@ -34523,8 +34518,11 @@
                     "start": 2
                   },
                   "data": {
-                    "ordered": true,
-                    "start": 1,
+                    "kind": {
+                      "type": "ordered",
+                      "start": 1,
+                      "delimiter": "period"
+                    },
                     "tight": true
                   },
                   "children": [
@@ -34534,9 +34532,7 @@
                         "end": 36,
                         "start": 2
                       },
-                      "data": {
-                        "marker": "1."
-                      },
+                      "data": {},
                       "children": [
                         {
                           "kind": "commonmark.blockquote",
@@ -34654,8 +34650,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -34665,9 +34663,7 @@
                     "end": 36,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -34696,8 +34692,10 @@
                         "start": 8
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -34707,9 +34705,7 @@
                             "end": 36,
                             "start": 8
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -34738,8 +34734,10 @@
                                 "start": 18
                               },
                               "data": {
-                                "ordered": false,
-                                "start": 1,
+                                "kind": {
+                                  "type": "bullet",
+                                  "marker": "-"
+                                },
                                 "tight": true
                               },
                               "children": [
@@ -34749,9 +34747,7 @@
                                     "end": 36,
                                     "start": 18
                                   },
-                                  "data": {
-                                    "marker": "-"
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "kind": "commonmark.paragraph",
@@ -34780,8 +34776,10 @@
                                         "start": 30
                                       },
                                       "data": {
-                                        "ordered": false,
-                                        "start": 1,
+                                        "kind": {
+                                          "type": "bullet",
+                                          "marker": "-"
+                                        },
                                         "tight": true
                                       },
                                       "children": [
@@ -34791,9 +34789,7 @@
                                             "end": 36,
                                             "start": 30
                                           },
-                                          "data": {
-                                            "marker": "-"
-                                          },
+                                          "data": {},
                                           "children": [
                                             {
                                               "kind": "commonmark.paragraph",
@@ -34929,8 +34925,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -34940,9 +34938,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -34972,9 +34968,7 @@
                     "end": 13,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35004,9 +34998,7 @@
                     "end": 21,
                     "start": 13
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35036,9 +35028,7 @@
                     "end": 30,
                     "start": 21
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35162,8 +35152,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 10,
+                "kind": {
+                  "type": "ordered",
+                  "start": 10,
+                  "delimiter": "parenthesis"
+                },
                 "tight": true
               },
               "children": [
@@ -35173,9 +35166,7 @@
                     "end": 18,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "10)"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35204,8 +35195,10 @@
                         "start": 12
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -35215,9 +35208,7 @@
                             "end": 18,
                             "start": 12
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -35309,8 +35300,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 10,
+                "kind": {
+                  "type": "ordered",
+                  "start": 10,
+                  "delimiter": "parenthesis"
+                },
                 "tight": true
               },
               "children": [
@@ -35320,9 +35314,7 @@
                     "end": 8,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "10)"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35355,8 +35347,10 @@
                 "start": 8
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -35366,9 +35360,7 @@
                     "end": 17,
                     "start": 8
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35456,8 +35448,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -35467,9 +35461,7 @@
                     "end": 8,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.list",
@@ -35478,8 +35470,10 @@
                         "start": 2
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -35489,9 +35483,7 @@
                             "end": 8,
                             "start": 2
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -35565,8 +35557,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -35576,9 +35571,7 @@
                     "end": 12,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.list",
@@ -35587,8 +35580,10 @@
                         "start": 3
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -35598,9 +35593,7 @@
                             "end": 12,
                             "start": 3
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.list",
@@ -35609,8 +35602,11 @@
                                 "start": 5
                               },
                               "data": {
-                                "ordered": true,
-                                "start": 2,
+                                "kind": {
+                                  "type": "ordered",
+                                  "start": 2,
+                                  "delimiter": "period"
+                                },
                                 "tight": true
                               },
                               "children": [
@@ -35620,9 +35616,7 @@
                                     "end": 12,
                                     "start": 5
                                   },
-                                  "data": {
-                                    "marker": "2."
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "kind": "commonmark.paragraph",
@@ -35700,8 +35694,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -35711,9 +35707,7 @@
                     "end": 8,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.heading",
@@ -35745,9 +35739,7 @@
                     "end": 26,
                     "start": 8
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.heading",
@@ -35893,8 +35885,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -35904,9 +35898,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35936,9 +35928,7 @@
                     "end": 12,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -35971,8 +35961,10 @@
                 "start": 12
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "+"
+                },
                 "tight": true
               },
               "children": [
@@ -35982,9 +35974,7 @@
                     "end": 18,
                     "start": 12
                   },
-                  "data": {
-                    "marker": "+"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36090,8 +36080,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -36101,9 +36094,7 @@
                     "end": 7,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36133,9 +36124,7 @@
                     "end": 14,
                     "start": 7
                   },
-                  "data": {
-                    "marker": "2."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36168,8 +36157,11 @@
                 "start": 14
               },
               "data": {
-                "ordered": true,
-                "start": 3,
+                "kind": {
+                  "type": "ordered",
+                  "start": 3,
+                  "delimiter": "parenthesis"
+                },
                 "tight": true
               },
               "children": [
@@ -36179,9 +36171,7 @@
                     "end": 21,
                     "start": 14
                   },
-                  "data": {
-                    "marker": "3)"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36307,8 +36297,10 @@
                 "start": 4
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -36318,9 +36310,7 @@
                     "end": 10,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36350,9 +36340,7 @@
                     "end": 16,
                     "start": 10
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36571,8 +36559,11 @@
                 "start": 37
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": true
               },
               "children": [
@@ -36582,9 +36573,7 @@
                     "end": 67,
                     "start": 37
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36672,8 +36661,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -36683,9 +36674,7 @@
                     "end": 7,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36715,9 +36704,7 @@
                     "end": 15,
                     "start": 7
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36755,9 +36742,7 @@
                     "end": 21,
                     "start": 15
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36887,8 +36872,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -36898,9 +36885,7 @@
                     "end": 36,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -36929,8 +36914,10 @@
                         "start": 8
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -36940,9 +36927,7 @@
                             "end": 36,
                             "start": 8
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -36971,8 +36956,10 @@
                                 "start": 18
                               },
                               "data": {
-                                "ordered": false,
-                                "start": 1,
+                                "kind": {
+                                  "type": "bullet",
+                                  "marker": "-"
+                                },
                                 "tight": false
                               },
                               "children": [
@@ -36982,9 +36969,7 @@
                                     "end": 36,
                                     "start": 18
                                   },
-                                  "data": {
-                                    "marker": "-"
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "kind": "commonmark.paragraph",
@@ -37160,8 +37145,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -37171,9 +37158,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37203,9 +37188,7 @@
                     "end": 13,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37258,8 +37241,10 @@
                 "start": 23
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -37269,9 +37254,7 @@
                     "end": 29,
                     "start": 23
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37301,9 +37284,7 @@
                     "end": 35,
                     "start": 29
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37461,8 +37442,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -37472,9 +37455,7 @@
                     "end": 22,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37524,9 +37505,7 @@
                     "end": 31,
                     "start": 22
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37732,8 +37711,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -37743,9 +37724,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37775,9 +37754,7 @@
                     "end": 9,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37807,9 +37784,7 @@
                     "end": 15,
                     "start": 9
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37839,9 +37814,7 @@
                     "end": 22,
                     "start": 15
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37871,9 +37844,7 @@
                     "end": 28,
                     "start": 22
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37903,9 +37874,7 @@
                     "end": 33,
                     "start": 28
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -37935,9 +37904,7 @@
                     "end": 37,
                     "start": 33
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38115,8 +38082,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -38126,9 +38096,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38158,9 +38126,7 @@
                     "end": 14,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "2."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38190,9 +38156,7 @@
                     "end": 22,
                     "start": 14
                   },
-                  "data": {
-                    "marker": "3."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38314,8 +38278,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -38325,9 +38291,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38357,9 +38321,7 @@
                     "end": 9,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38389,9 +38351,7 @@
                     "end": 15,
                     "start": 9
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38421,9 +38381,7 @@
                     "end": 30,
                     "start": 15
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38583,8 +38541,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -38594,9 +38555,7 @@
                     "end": 6,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38626,9 +38585,7 @@
                     "end": 14,
                     "start": 6
                   },
-                  "data": {
-                    "marker": "2."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38762,8 +38719,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -38773,9 +38732,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38805,9 +38762,7 @@
                     "end": 9,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38837,9 +38792,7 @@
                     "end": 13,
                     "start": 9
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38953,8 +38906,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": false
               },
               "children": [
@@ -38964,9 +38919,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -38996,9 +38949,7 @@
                     "end": 7,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "*"
-                  }
+                  "data": {}
                 },
                 {
                   "kind": "commonmark.list_item",
@@ -39006,9 +38957,7 @@
                     "end": 11,
                     "start": 7
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39122,8 +39071,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -39133,9 +39084,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39165,9 +39114,7 @@
                     "end": 13,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39217,9 +39164,7 @@
                     "end": 17,
                     "start": 13
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39351,8 +39296,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -39362,9 +39309,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39394,9 +39339,7 @@
                     "end": 23,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39426,9 +39369,7 @@
                     "end": 27,
                     "start": 23
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39560,8 +39501,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -39571,9 +39514,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39603,9 +39544,7 @@
                     "end": 22,
                     "start": 4
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.code_block",
@@ -39627,9 +39566,7 @@
                     "end": 26,
                     "start": 22
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39745,8 +39682,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -39756,9 +39695,7 @@
                     "end": 17,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39787,8 +39724,10 @@
                         "start": 6
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": false
                       },
                       "children": [
@@ -39798,9 +39737,7 @@
                             "end": 17,
                             "start": 6
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -39854,9 +39791,7 @@
                     "end": 21,
                     "start": 17
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -39988,8 +39923,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": true
               },
               "children": [
@@ -39999,9 +39936,7 @@
                     "end": 14,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40061,9 +39996,7 @@
                     "end": 18,
                     "start": 14
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40187,8 +40120,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -40198,9 +40133,7 @@
                     "end": 26,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40272,9 +40205,7 @@
                     "end": 30,
                     "start": 26
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40398,8 +40329,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -40409,9 +40342,7 @@
                     "end": 4,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40481,8 +40412,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": true
               },
               "children": [
@@ -40492,9 +40425,7 @@
                     "end": 10,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40523,8 +40454,10 @@
                         "start": 6
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -40534,9 +40467,7 @@
                             "end": 10,
                             "start": 6
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -40628,8 +40559,11 @@
                 "start": 0
               },
               "data": {
-                "ordered": true,
-                "start": 1,
+                "kind": {
+                  "type": "ordered",
+                  "start": 1,
+                  "delimiter": "period"
+                },
                 "tight": false
               },
               "children": [
@@ -40639,9 +40573,7 @@
                     "end": 29,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "1."
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.code_block",
@@ -40759,8 +40691,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "*"
+                },
                 "tight": false
               },
               "children": [
@@ -40770,9 +40704,7 @@
                     "end": 21,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "*"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40801,8 +40733,10 @@
                         "start": 8
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "*"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -40812,9 +40746,7 @@
                             "end": 17,
                             "start": 8
                           },
-                          "data": {
-                            "marker": "*"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -40952,8 +40884,10 @@
                 "start": 0
               },
               "data": {
-                "ordered": false,
-                "start": 1,
+                "kind": {
+                  "type": "bullet",
+                  "marker": "-"
+                },
                 "tight": false
               },
               "children": [
@@ -40963,9 +40897,7 @@
                     "end": 17,
                     "start": 0
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -40994,8 +40926,10 @@
                         "start": 6
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -41005,9 +40939,7 @@
                             "end": 12,
                             "start": 6
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -41037,9 +40969,7 @@
                             "end": 17,
                             "start": 12
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -41073,9 +41003,7 @@
                     "end": 33,
                     "start": 17
                   },
-                  "data": {
-                    "marker": "-"
-                  },
+                  "data": {},
                   "children": [
                     {
                       "kind": "commonmark.paragraph",
@@ -41104,8 +41032,10 @@
                         "start": 23
                       },
                       "data": {
-                        "ordered": false,
-                        "start": 1,
+                        "kind": {
+                          "type": "bullet",
+                          "marker": "-"
+                        },
                         "tight": true
                       },
                       "children": [
@@ -41115,9 +41045,7 @@
                             "end": 29,
                             "start": 23
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -41147,9 +41075,7 @@
                             "end": 33,
                             "start": 29
                           },
-                          "data": {
-                            "marker": "-"
-                          },
+                          "data": {},
                           "children": [
                             {
                               "kind": "commonmark.paragraph",
@@ -58809,48 +58735,42 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.link",
                   "span": {
-                    "end": 2,
+                    "end": 25,
                     "start": 0
                   },
                   "data": {
-                    "value": "[!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 18,
-                    "start": 2
-                  },
-                  "data": {
-                    "destination": "moon.jpg",
-                    "form": "explicit",
-                    "title": null
+                    "destination": "/uri",
+                    "title": null,
+                    "form": "explicit"
                   },
                   "children": [
                     {
-                      "kind": "commonmark.text",
+                      "kind": "commonmark.image",
                       "span": {
-                        "end": 7,
-                        "start": 3
+                        "start": 1,
+                        "end": 18
                       },
                       "data": {
-                        "value": "moon"
-                      }
+                        "destination": "moon.jpg",
+                        "title": null,
+                        "label_source": "moon"
+                      },
+                      "children": [
+                        {
+                          "kind": "commonmark.text",
+                          "span": {
+                            "start": 3,
+                            "end": 7
+                          },
+                          "data": {
+                            "value": "moon"
+                          }
+                        }
+                      ]
                     }
                   ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 25,
-                    "start": 18
-                  },
-                  "data": {
-                    "value": "](/uri)"
-                  }
                 }
               ]
             }
@@ -58862,48 +58782,42 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.link",
               "span": {
-                "end": 2,
+                "end": 25,
                 "start": 0
               },
               "data": {
-                "value": "[!"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 18,
-                "start": 2
-              },
-              "data": {
-                "destination": "moon.jpg",
-                "form": "explicit",
-                "title": null
+                "destination": "/uri",
+                "title": null,
+                "form": "explicit"
               },
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 7,
-                    "start": 3
+                    "start": 1,
+                    "end": 18
                   },
                   "data": {
-                    "value": "moon"
-                  }
+                    "destination": "moon.jpg",
+                    "title": null,
+                    "label_source": "moon"
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "start": 3,
+                        "end": 7
+                      },
+                      "data": {
+                        "value": "moon"
+                      }
+                    }
+                  ]
                 }
               ]
-            },
-            {
-              "kind": "commonmark.text",
-              "span": {
-                "end": 25,
-                "start": 18
-              },
-              "data": {
-                "value": "](/uri)"
-              }
             },
             {
               "kind": "commonmark.softbreak",
@@ -59244,48 +59158,62 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 3,
+                    "end": 28,
                     "start": 0
                   },
                   "data": {
-                    "value": "![["
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 14,
-                    "start": 3
-                  },
-                  "data": {
-                    "destination": "uri1",
-                    "form": "explicit",
-                    "title": null
+                    "destination": "uri3",
+                    "title": null,
+                    "label_source": "[[foo](uri1)](uri2)"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 7,
-                        "start": 4
+                        "start": 2,
+                        "end": 3
                       },
                       "data": {
-                        "value": "foo"
+                        "value": "["
+                      }
+                    },
+                    {
+                      "kind": "commonmark.link",
+                      "span": {
+                        "start": 3,
+                        "end": 14
+                      },
+                      "data": {
+                        "destination": "uri1",
+                        "title": null,
+                        "form": "explicit"
+                      },
+                      "children": [
+                        {
+                          "kind": "commonmark.text",
+                          "span": {
+                            "start": 4,
+                            "end": 7
+                          },
+                          "data": {
+                            "value": "foo"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "start": 14,
+                        "end": 21
+                      },
+                      "data": {
+                        "value": "](uri2)"
                       }
                     }
                   ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 28,
-                    "start": 14
-                  },
-                  "data": {
-                    "value": "](uri2)](uri3)"
-                  }
                 }
               ]
             }
@@ -59297,48 +59225,62 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 3,
+                "end": 28,
                 "start": 0
               },
               "data": {
-                "value": "![["
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 14,
-                "start": 3
-              },
-              "data": {
-                "destination": "uri1",
-                "form": "explicit",
-                "title": null
+                "destination": "uri3",
+                "title": null,
+                "label_source": "[[foo](uri1)](uri2)"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 7,
-                    "start": 4
+                    "start": 2,
+                    "end": 3
                   },
                   "data": {
-                    "value": "foo"
+                    "value": "["
+                  }
+                },
+                {
+                  "kind": "commonmark.link",
+                  "span": {
+                    "start": 3,
+                    "end": 14
+                  },
+                  "data": {
+                    "destination": "uri1",
+                    "title": null,
+                    "form": "explicit"
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "start": 4,
+                        "end": 7
+                      },
+                      "data": {
+                        "value": "foo"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "start": 14,
+                    "end": 21
+                  },
+                  "data": {
+                    "value": "](uri2)"
                   }
                 }
               ]
-            },
-            {
-              "kind": "commonmark.text",
-              "span": {
-                "end": 28,
-                "start": 14
-              },
-              "data": {
-                "value": "](uri2)](uri3)"
-              }
             },
             {
               "kind": "commonmark.softbreak",
@@ -60461,70 +60403,40 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 2,
-                    "start": 0
-                  },
-                  "data": {
-                    "value": "[!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 18,
-                    "start": 2
-                  },
-                  "data": {
-                    "destination": "moon.jpg",
-                    "form": "explicit",
-                    "title": null
-                  },
-                  "children": [
-                    {
-                      "kind": "commonmark.text",
-                      "span": {
-                        "end": 7,
-                        "start": 3
-                      },
-                      "data": {
-                        "value": "moon"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 19,
-                    "start": 18
-                  },
-                  "data": {
-                    "value": "]"
-                  }
-                },
-                {
                   "kind": "commonmark.link",
                   "span": {
                     "end": 24,
-                    "start": 19
+                    "start": 0
                   },
                   "data": {
                     "destination": "/uri",
-                    "form": "explicit",
-                    "title": null
+                    "title": null,
+                    "form": "explicit"
                   },
                   "children": [
                     {
-                      "kind": "commonmark.text",
+                      "kind": "commonmark.image",
                       "span": {
-                        "end": 23,
-                        "start": 20
+                        "start": 1,
+                        "end": 18
                       },
                       "data": {
-                        "value": "ref"
-                      }
+                        "destination": "moon.jpg",
+                        "title": null,
+                        "label_source": "moon"
+                      },
+                      "children": [
+                        {
+                          "kind": "commonmark.text",
+                          "span": {
+                            "start": 3,
+                            "end": 7
+                          },
+                          "data": {
+                            "value": "moon"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -60540,23 +60452,23 @@
             {
               "kind": "commonmark.text",
               "span": {
-                "end": 2,
+                "end": 1,
                 "start": 0
               },
               "data": {
-                "value": "[!"
+                "value": "["
               }
             },
             {
-              "kind": "commonmark.link",
+              "kind": "commonmark.image",
               "span": {
                 "end": 18,
-                "start": 2
+                "start": 1
               },
               "data": {
                 "destination": "moon.jpg",
-                "form": "explicit",
-                "title": null
+                "title": null,
+                "label_source": "moon"
               },
               "children": [
                 {
@@ -65430,32 +65342,22 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 1,
+                    "end": 20,
                     "start": 0
                   },
                   "data": {
-                    "value": "!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 20,
-                    "start": 1
-                  },
-                  "data": {
                     "destination": "/url",
-                    "form": "explicit",
-                    "title": "title"
+                    "title": "title",
+                    "label_source": "foo"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 5,
-                        "start": 2
+                        "start": 2,
+                        "end": 5
                       },
                       "data": {
                         "value": "foo"
@@ -65473,32 +65375,22 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 1,
+                "end": 20,
                 "start": 0
               },
               "data": {
-                "value": "!"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 20,
-                "start": 1
-              },
-              "data": {
                 "destination": "/url",
-                "form": "explicit",
-                "title": "title"
+                "title": "title",
+                "label_source": "foo"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 5,
-                    "start": 2
+                    "start": 2,
+                    "end": 5
                   },
                   "data": {
                     "value": "foo"
@@ -65712,48 +65604,52 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 7,
+                    "end": 26,
                     "start": 0
                   },
                   "data": {
-                    "value": "![foo !"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 18,
-                    "start": 7
-                  },
-                  "data": {
-                    "destination": "/url",
-                    "form": "explicit",
-                    "title": null
+                    "destination": "/url2",
+                    "title": null,
+                    "label_source": "foo ![bar](/url)"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 11,
-                        "start": 8
+                        "start": 2,
+                        "end": 6
                       },
                       "data": {
-                        "value": "bar"
+                        "value": "foo "
                       }
+                    },
+                    {
+                      "kind": "commonmark.image",
+                      "span": {
+                        "start": 6,
+                        "end": 18
+                      },
+                      "data": {
+                        "destination": "/url",
+                        "title": null,
+                        "label_source": "bar"
+                      },
+                      "children": [
+                        {
+                          "kind": "commonmark.text",
+                          "span": {
+                            "start": 8,
+                            "end": 11
+                          },
+                          "data": {
+                            "value": "bar"
+                          }
+                        }
+                      ]
                     }
                   ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 26,
-                    "start": 18
-                  },
-                  "data": {
-                    "value": "](/url2)"
-                  }
                 }
               ]
             }
@@ -65765,48 +65661,52 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 7,
+                "end": 26,
                 "start": 0
               },
               "data": {
-                "value": "![foo !"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 18,
-                "start": 7
-              },
-              "data": {
-                "destination": "/url",
-                "form": "explicit",
-                "title": null
+                "destination": "/url2",
+                "title": null,
+                "label_source": "foo ![bar](/url)"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 11,
-                    "start": 8
+                    "start": 2,
+                    "end": 6
                   },
                   "data": {
-                    "value": "bar"
+                    "value": "foo "
                   }
+                },
+                {
+                  "kind": "commonmark.image",
+                  "span": {
+                    "start": 6,
+                    "end": 18
+                  },
+                  "data": {
+                    "destination": "/url",
+                    "title": null,
+                    "label_source": "bar"
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "start": 8,
+                        "end": 11
+                      },
+                      "data": {
+                        "value": "bar"
+                      }
+                    }
+                  ]
                 }
               ]
-            },
-            {
-              "kind": "commonmark.text",
-              "span": {
-                "end": 26,
-                "start": 18
-              },
-              "data": {
-                "value": "](/url2)"
-              }
             },
             {
               "kind": "commonmark.softbreak",
@@ -65837,48 +65737,52 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 6,
+                    "end": 25,
                     "start": 0
                   },
                   "data": {
-                    "value": "![foo "
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 17,
-                    "start": 6
-                  },
-                  "data": {
-                    "destination": "/url",
-                    "form": "explicit",
-                    "title": null
+                    "destination": "/url2",
+                    "title": null,
+                    "label_source": "foo [bar](/url)"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 10,
-                        "start": 7
+                        "start": 2,
+                        "end": 6
                       },
                       "data": {
-                        "value": "bar"
+                        "value": "foo "
                       }
+                    },
+                    {
+                      "kind": "commonmark.link",
+                      "span": {
+                        "start": 6,
+                        "end": 17
+                      },
+                      "data": {
+                        "destination": "/url",
+                        "title": null,
+                        "form": "explicit"
+                      },
+                      "children": [
+                        {
+                          "kind": "commonmark.text",
+                          "span": {
+                            "start": 7,
+                            "end": 10
+                          },
+                          "data": {
+                            "value": "bar"
+                          }
+                        }
+                      ]
                     }
                   ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 25,
-                    "start": 17
-                  },
-                  "data": {
-                    "value": "](/url2)"
-                  }
                 }
               ]
             }
@@ -65890,48 +65794,52 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 6,
+                "end": 25,
                 "start": 0
               },
               "data": {
-                "value": "![foo "
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 17,
-                "start": 6
-              },
-              "data": {
-                "destination": "/url",
-                "form": "explicit",
-                "title": null
+                "destination": "/url2",
+                "title": null,
+                "label_source": "foo [bar](/url)"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 10,
-                    "start": 7
+                    "start": 2,
+                    "end": 6
                   },
                   "data": {
-                    "value": "bar"
+                    "value": "foo "
                   }
+                },
+                {
+                  "kind": "commonmark.link",
+                  "span": {
+                    "start": 6,
+                    "end": 17
+                  },
+                  "data": {
+                    "destination": "/url",
+                    "title": null,
+                    "form": "explicit"
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "start": 7,
+                        "end": 10
+                      },
+                      "data": {
+                        "value": "bar"
+                      }
+                    }
+                  ]
                 }
               ]
-            },
-            {
-              "kind": "commonmark.text",
-              "span": {
-                "end": 25,
-                "start": 17
-              },
-              "data": {
-                "value": "](/url2)"
-              }
             },
             {
               "kind": "commonmark.softbreak",
@@ -66286,32 +66194,22 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 1,
+                    "end": 17,
                     "start": 0
                   },
                   "data": {
-                    "value": "!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 17,
-                    "start": 1
-                  },
-                  "data": {
                     "destination": "train.jpg",
-                    "form": "explicit",
-                    "title": null
+                    "title": null,
+                    "label_source": "foo"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 5,
-                        "start": 2
+                        "start": 2,
+                        "end": 5
                       },
                       "data": {
                         "value": "foo"
@@ -66329,32 +66227,22 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 1,
+                "end": 17,
                 "start": 0
               },
               "data": {
-                "value": "!"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 17,
-                "start": 1
-              },
-              "data": {
                 "destination": "train.jpg",
-                "form": "explicit",
-                "title": null
+                "title": null,
+                "label_source": "foo"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 5,
-                    "start": 2
+                    "start": 2,
+                    "end": 5
                   },
                   "data": {
                     "value": "foo"
@@ -66393,23 +66281,23 @@
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 4,
+                    "end": 3,
                     "start": 0
                   },
                   "data": {
-                    "value": "My !"
+                    "value": "My "
                   }
                 },
                 {
-                  "kind": "commonmark.link",
+                  "kind": "commonmark.image",
                   "span": {
                     "end": 45,
-                    "start": 4
+                    "start": 3
                   },
                   "data": {
                     "destination": "/path/to/train.jpg",
-                    "form": "explicit",
-                    "title": "title"
+                    "title": "title",
+                    "label_source": "foo bar"
                   },
                   "children": [
                     {
@@ -66436,23 +66324,23 @@
             {
               "kind": "commonmark.text",
               "span": {
-                "end": 4,
+                "end": 3,
                 "start": 0
               },
               "data": {
-                "value": "My !"
+                "value": "My "
               }
             },
             {
-              "kind": "commonmark.link",
+              "kind": "commonmark.image",
               "span": {
                 "end": 45,
-                "start": 4
+                "start": 3
               },
               "data": {
                 "destination": "/path/to/train.jpg",
-                "form": "explicit",
-                "title": "title"
+                "title": "title",
+                "label_source": "foo bar"
               },
               "children": [
                 {
@@ -66496,32 +66384,22 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 1,
+                    "end": 13,
                     "start": 0
                   },
                   "data": {
-                    "value": "!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 13,
-                    "start": 1
-                  },
-                  "data": {
                     "destination": "url",
-                    "form": "explicit",
-                    "title": null
+                    "title": null,
+                    "label_source": "foo"
                   },
                   "children": [
                     {
                       "kind": "commonmark.text",
                       "span": {
-                        "end": 5,
-                        "start": 2
+                        "start": 2,
+                        "end": 5
                       },
                       "data": {
                         "value": "foo"
@@ -66539,32 +66417,22 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 1,
+                "end": 13,
                 "start": 0
               },
               "data": {
-                "value": "!"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 13,
-                "start": 1
-              },
-              "data": {
                 "destination": "url",
-                "form": "explicit",
-                "title": null
+                "title": null,
+                "label_source": "foo"
               },
               "children": [
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 5,
-                    "start": 2
+                    "start": 2,
+                    "end": 5
                   },
                   "data": {
                     "value": "foo"
@@ -66601,25 +66469,15 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.image",
                   "span": {
-                    "end": 1,
+                    "end": 9,
                     "start": 0
                   },
                   "data": {
-                    "value": "!"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 9,
-                    "start": 1
-                  },
-                  "data": {
                     "destination": "/url",
-                    "form": "explicit",
-                    "title": null
+                    "title": null,
+                    "label_source": ""
                   }
                 }
               ]
@@ -66632,25 +66490,15 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.image",
               "span": {
-                "end": 1,
+                "end": 9,
                 "start": 0
               },
               "data": {
-                "value": "!"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 9,
-                "start": 1
-              },
-              "data": {
                 "destination": "/url",
-                "form": "explicit",
-                "title": null
+                "title": null,
+                "label_source": ""
               }
             },
             {

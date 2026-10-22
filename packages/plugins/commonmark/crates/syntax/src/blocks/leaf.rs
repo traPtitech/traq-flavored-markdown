@@ -1,4 +1,5 @@
 use super::markers::*;
+use markdown_parser::engine::block::LineIndex;
 
 use markdown_parser::{
     NodeKind, ParseError,
@@ -28,7 +29,7 @@ pub(super) fn fenced(
     let literal = fenced_literal(input, end, indent);
 
     // Include the closing fence in the node span when one was found.
-    if end < lines.len() {
+    if end < lines.end() {
         end += 1;
     }
 
@@ -45,10 +46,10 @@ pub(super) fn fenced(
     )))
 }
 
-fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> usize {
+fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> LineIndex {
     let mut end = input.start + 1;
 
-    while end < input.lines.len() {
+    while end < input.lines.end() {
         if fence(input.line(end))
             .is_some_and(|(m, n, info)| m == marker && n >= count && info.is_empty())
         {
@@ -60,7 +61,7 @@ fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> usize {
     end
 }
 
-fn fenced_literal(input: &BlockInput<'_>, end: usize, indent: usize) -> String {
+fn fenced_literal(input: &BlockInput<'_>, end: LineIndex, indent: usize) -> String {
     let source = input.source;
 
     input.lines[input.start + 1..end]
@@ -99,7 +100,7 @@ pub(super) fn indented(
     )))
 }
 
-fn indented_content(input: &BlockInput<'_>) -> (usize, String) {
+fn indented_content(input: &BlockInput<'_>) -> (LineIndex, String) {
     let source = input.source;
     let lines = input.lines;
 
@@ -108,11 +109,13 @@ fn indented_content(input: &BlockInput<'_>) -> (usize, String) {
 
     // A blank line belongs to an indented block only when another indented
     // line follows it.
-    while end < lines.len() {
+    while end < lines.end() {
         let raw = &source.text()[lines[end].clone()];
 
         if blank(input.line(end)) {
-            let next = (end + 1..lines.len()).find(|i| !blank(input.line(*i)));
+            let next = lines
+                .indices(end + 1..lines.end())
+                .find(|i| !blank(input.line(*i)));
 
             if next.is_some_and(|i| input.line(i).starts_with("    ")) {
                 let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());

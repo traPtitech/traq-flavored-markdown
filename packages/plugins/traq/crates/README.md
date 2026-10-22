@@ -3,7 +3,7 @@
 | Directory                          | Package                    | Purpose                                                 |
 | ---------------------------------- | -------------------------- | ------------------------------------------------------- |
 | `contracts`                        | `markdown-trap-contracts`  | Nodes for references, stamps, spoilers, and blank lines |
-| `syntax`                           | `markdown-trap-syntax`     | traP syntax and compatibility rules                     |
+| `syntax`                           | `markdown-trap-syntax`     | traP syntax and source-preserving blank lines           |
 | [text](text/README.md)             | `markdown-trap-text`       | Plain-text rendering for traP nodes                     |
 | [extraction](extraction/README.md) | `markdown-trap-extraction` | Reference extraction                                    |
 

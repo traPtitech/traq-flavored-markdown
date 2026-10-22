@@ -28,11 +28,15 @@ try {
     'Packed parser did not load the traQ preset'
   )
   const extractor = runtime.createExtractor({ origin: '' })
+  check(
+    runtime.createRenderer().render(parser.parse('**hello**')) === 'hello',
+    'Packed native text renderer failed'
+  )
   deepStrictEqual(
     extractor.extract(parser.parse('**hello**')),
     {
       messageText: '**hello**',
-      embedding: { candidates: [], unembeddedText: '**hello**' },
+      referenceEmbedding: { candidates: [], unembeddedText: '**hello**' },
       attachments: [],
       citations: [],
       references: {

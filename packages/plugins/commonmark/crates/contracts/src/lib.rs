@@ -5,5 +5,5 @@ mod catalog;
 mod declarations;
 mod nodes;
 
-pub use declarations::{Contracts, preset};
+pub use declarations::{PluginDeclarations, declarations};
 pub use nodes::*;

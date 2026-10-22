@@ -1,57 +1,49 @@
 use crate::Options;
 use markdown_ast::Node;
 use markdown_commonmark_contracts::*;
-use markdown_renderer::{Context, Plugin, Result};
+use markdown_renderer::{Context, Output, Plugin, Result};
 
-fn children<T>(_: &T, nodes: &[Node], ctx: &Context<'_>) -> Result<String> {
-    ctx.children(nodes)
-}
-
-fn block<T>(_: &T, nodes: &[Node], ctx: &Context<'_>) -> Result<String> {
-    let mut output = ctx.children(nodes)?;
-    ctx.append(&mut output, "\n")?;
-    Ok(output)
+fn block<T>(_: &T, nodes: &[Node], ctx: &Context<'_>, output: &mut Output<'_>) -> Result<()> {
+    ctx.children(nodes, output)?;
+    output.push("\n")
 }
 
 pub(crate) fn register(renderer: &mut Plugin, options: Options) -> Result<()> {
-    renderer.on::<Text>(|v, _, _| Ok(v.value.clone()))?;
+    renderer.on::<Text>(|v, _, _, output| output.push(&v.value))?;
     renderer.on::<Paragraph>(block)?;
     renderer.on::<Heading>(block)?;
     renderer.on::<Blockquote>(block)?;
-    renderer.on::<Emphasis>(children)?;
-    renderer.on::<Strong>(children)?;
-    renderer.on::<Image>(children)?;
-    renderer.on::<ListItem>(children)?;
-    renderer.on::<Softbreak>(|_, _, _| Ok("\n".into()))?;
-    renderer.on::<Hardbreak>(|_, _, _| Ok("\n".into()))?;
-    renderer.on::<ThematicBreak>(|_, _, _| Ok("\n".into()))?;
+    renderer.transparent::<Emphasis>()?;
+    renderer.transparent::<Strong>()?;
+    renderer.transparent::<Image>()?;
+    renderer.transparent::<ListItem>()?;
+    renderer.on::<Softbreak>(|_, _, _, output| output.push("\n"))?;
+    renderer.on::<Hardbreak>(|_, _, _, output| output.push("\n"))?;
+    renderer.on::<ThematicBreak>(|_, _, _, output| output.push("\n"))?;
 
-    renderer.on::<InlineCode>(|v, _, _| Ok(v.literal.clone()))?;
+    renderer.on::<InlineCode>(|v, _, _, output| output.push(&v.literal))?;
 
-    renderer.on::<CodeBlock>(|v, _, ctx| {
-        let mut text = v.literal.clone();
-        ctx.append(&mut text, "\n")?;
-        Ok(text)
+    renderer.on::<CodeBlock>(|v, _, _, output| {
+        output.push(&v.literal)?;
+        output.push("\n")
     })?;
 
-    renderer.on::<Link>(move |link, nodes, context| {
-        options.explicit_links.render(link, nodes, context)
+    renderer.on::<Link>(move |link, nodes, context, output| {
+        options.explicit_links.render(link, nodes, context, output)
     })?;
 
-    renderer.on::<List>(|list, nodes, ctx| {
-        let mut output = String::new();
+    renderer.on::<List>(|list, nodes, ctx, output| {
         for (index, node) in nodes.iter().enumerate() {
-            let marker = if list.ordered {
-                format!("{}.", u64::from(list.start) + index as u64)
-            } else {
-                "•".into()
+            let marker = match list.kind {
+                ListKind::Ordered { start, .. } => format!("{}.", u64::from(start) + index as u64),
+                ListKind::Bullet { .. } => "•".into(),
             };
-            let text = ctx.children(std::slice::from_ref(node))?;
-            ctx.append(&mut output, &marker)?;
-            ctx.append(&mut output, " ")?;
-            ctx.append(&mut output, text.trim())?;
-            ctx.append(&mut output, "\n")?;
+            let text = ctx.capture_children(std::slice::from_ref(node))?;
+            output.push(&marker)?;
+            output.push(" ")?;
+            output.push(text.trim())?;
+            output.push("\n")?;
         }
-        Ok(output)
+        Ok(())
     })
 }

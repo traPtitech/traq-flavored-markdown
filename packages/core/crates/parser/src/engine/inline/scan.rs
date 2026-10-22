@@ -18,7 +18,7 @@ pub struct InlineInput<'a> {
 
 impl InlineInput<'_> {
     pub fn tail(&self) -> &str {
-        &self.source.text[self.position..]
+        &self.source.text()[self.position..]
     }
 
     pub fn state<T: Any>(&self) -> Option<&T> {
@@ -34,7 +34,7 @@ pub struct TextInput<'a> {
 
 impl TextInput<'_> {
     pub fn text(&self) -> &str {
-        &self.source.text[self.range.clone()]
+        &self.source.text()[self.range.clone()]
     }
 }
 
@@ -63,7 +63,7 @@ impl State<'_, '_> {
     }
 
     pub fn literal(&mut self, end: usize) -> Result<(), ParseError> {
-        let value = &self.source.text[self.position..end];
+        let value = &self.source.text()[self.position..end];
 
         if let Some(Token {
             end: previous_end,
@@ -97,7 +97,7 @@ pub(crate) fn parse(
         brackets: vec![],
     };
 
-    while state.position < source.text.len() {
+    while state.position < source.text().len() {
         state.budget.spend(1)?;
         let (key, result) = find_match(&mut state, grammar, parse_state)?;
         validate_match(source, state.position, &result)?;
@@ -116,9 +116,11 @@ fn find_match(
     grammar: &Grammar,
     parse_state: &ParseState,
 ) -> Result<(usize, InlineMatch), ParseError> {
-    let candidates = &grammar.data.dispatch[state.source.text.as_bytes()[state.position] as usize];
+    let candidates =
+        &grammar.data.dispatch[state.source.text().as_bytes()[state.position] as usize];
 
     for &key in candidates {
+        state.budget.spend(1)?;
         let rule = &grammar.data.inline[key];
 
         let input = InlineInput {
@@ -142,7 +144,7 @@ fn find_match(
     }
 
     let end = state.position
-        + state.source.text[state.position..]
+        + state.source.text()[state.position..]
             .chars()
             .next()
             .expect("position is within source")
@@ -157,8 +159,8 @@ fn validate_match(
     result: &InlineMatch,
 ) -> Result<(), ParseError> {
     if result.end <= position
-        || result.end > source.text.len()
-        || !source.text.is_char_boundary(result.end)
+        || result.end > source.text().len()
+        || !source.text().is_char_boundary(result.end)
     {
         return Err(ParseError::InternalError);
     }

@@ -1,44 +1,45 @@
 mod input;
+mod lines;
+pub use lines::{LineIndex, Lines};
 mod rule;
 pub use rule::BlockRule;
 mod draft;
 mod scan;
 
 use super::{Budget, Grammar, ParseError, ParseState, source::SourceView};
-pub use draft::{DraftContent, DraftNode};
+pub use draft::{DraftContent, DraftNode, ResolvedBlock, ResolvedContent};
 pub(crate) use scan::parse;
-use std::ops::Range;
 
 pub struct BlockBatch {
-    pub nodes: Vec<DraftNode>,
-    pub loose: bool,
+    pub nodes: Vec<ResolvedBlock>,
+    pub metadata: ParseState,
 }
 
 type Commit = Box<dyn FnOnce(&mut ParseState, &mut Budget) -> Result<(), ParseError>>;
 
 pub struct BlockMatch {
-    pub end: usize,
+    pub end: LineIndex,
     pub nodes: Vec<DraftNode>,
     pub(crate) commits: Vec<Commit>,
-    pub consume_separator: bool,
+    pub following: Following,
 }
 
 impl BlockMatch {
-    pub fn node(end: usize, node: DraftNode) -> Self {
+    pub fn node(end: LineIndex, node: DraftNode) -> Self {
         Self {
             end,
             nodes: vec![node],
             commits: vec![],
-            consume_separator: true,
+            following: Following::Policy,
         }
     }
 
-    pub fn ignore(end: usize) -> Self {
+    pub fn ignore(end: LineIndex) -> Self {
         Self {
             end,
             nodes: vec![],
             commits: vec![],
-            consume_separator: false,
+            following: Following::Preserve,
         }
     }
 
@@ -53,48 +54,62 @@ impl BlockMatch {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Interrupt {
-    Paragraph,
-    LazyContinuation,
-    Reference,
-    BlockBody,
+pub enum Following {
+    Policy,
+    Preserve,
+}
+
+/// Syntax-owned behavior between accepted blocks. State is local to each
+/// block sequence, so nested containers cannot affect siblings.
+pub trait BlockPolicy: Send + Sync {
+    fn after_match(
+        &self,
+        input: &BlockInput<'_>,
+        end: LineIndex,
+        metadata: &mut ParseState,
+    ) -> Result<LineIndex, ParseError>;
 }
 
 pub struct BlockProbe<'a> {
     pub line: &'a str,
     pub next: Option<&'a str>,
-    pub context: Interrupt,
+    context: &'a dyn std::any::Any,
+}
+impl BlockProbe<'_> {
+    pub fn context<T: 'static>(&self) -> Option<&T> {
+        self.context.downcast_ref()
+    }
 }
 
 pub struct BlockInput<'a> {
     pub source: &'a SourceView,
-    pub lines: &'a [Range<usize>],
-    pub start: usize,
+    pub lines: Lines<'a>,
+    pub start: LineIndex,
     pub(crate) grammar: &'a Grammar,
 }
 
 impl BlockInput<'_> {
-    pub fn line(&self, index: usize) -> &str {
-        self.source.text[self.lines[index].clone()].trim_end_matches('\n')
+    pub fn line(&self, index: LineIndex) -> &str {
+        self.source.text()[self.lines[index].clone()].trim_end_matches('\n')
     }
 
     pub fn current(&self) -> &str {
         self.line(self.start)
     }
 
-    pub fn interrupts(&self, index: usize, context: Interrupt) -> bool {
+    pub fn interrupts<T: 'static>(&self, index: LineIndex, context: T) -> bool {
         self.interrupts_text(
             self.line(index),
-            (index + 1 < self.lines.len()).then(|| self.line(index + 1)),
+            (index + 1 < self.lines.end()).then(|| self.line(index + 1)),
             context,
         )
     }
 
-    pub fn interrupts_text(&self, line: &str, next: Option<&str>, context: Interrupt) -> bool {
+    pub fn interrupts_text<T: 'static>(&self, line: &str, next: Option<&str>, context: T) -> bool {
         let probe = BlockProbe {
             line,
             next,
-            context,
+            context: &context,
         };
 
         self.grammar.data.block.iter().any(|entry| {

@@ -8,7 +8,11 @@ use serde_json::Value;
 fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
     let metadata = crate::node_metadata::export().unwrap();
 
-    assert_eq!(metadata.as_object().unwrap().len(), 29);
+    let payloads: usize = traq_markdown_features::all()
+        .iter()
+        .map(|feature| feature.payloads.len())
+        .sum();
+    assert_eq!(metadata.as_object().unwrap().len(), payloads);
     let commonmark = traq_markdown_grammar::presets::commonmark::parser();
     let traq = traq_markdown_grammar::presets::traq::v1::parser();
     let mut count = 0;

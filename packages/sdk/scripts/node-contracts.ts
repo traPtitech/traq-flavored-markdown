@@ -82,8 +82,17 @@ export function assertNoHostPaths(bytes: Uint8Array) {
 }
 
 export async function buildWasm() {
+  const manifest = await Bun.file(
+    path.join(nodeContractsDirectory(), 'contracts.json')
+  ).json()
+  if (
+    typeof manifest.contractId !== 'string' ||
+    manifest.contractId !== semanticContractId(manifest)
+  )
+    throw new Error('Export current node contracts before building Wasm')
   await cargo({
-    CARGO_ENCODED_RUSTFLAGS: await wasmRustFlags()
+    CARGO_ENCODED_RUSTFLAGS: await wasmRustFlags(),
+    MARKDOWN_CONTRACT_ID: manifest.contractId
   })`cargo build --locked --release --target wasm32-unknown-unknown -p traq-markdown-wasm`
   const wasm = path.join(
     sdkTargetDirectory(),
@@ -92,11 +101,47 @@ export async function buildWasm() {
     'traq_markdown_wasm.wasm'
   )
   assertNoHostPaths(await Bun.file(wasm).bytes())
+  const { readWasmMetadata } = await import('./wasm-contract.ts')
+  const metadata = await readWasmMetadata(await Bun.file(wasm).bytes())
+  if (
+    metadata.contractId !== manifest.contractId ||
+    metadata.provenance.sourceFingerprint !==
+      manifest.provenance?.sourceFingerprint
+  )
+    throw new Error(
+      'Rust sources changed since contract export; regenerate bindings before assembling Wasm'
+    )
   return wasm
 }
 
 export async function exportNodeContracts() {
   const contracts = nodeContractsDirectory()
   await cargo()`cargo run --locked --release -p traq-markdown-wasm --features contracts --bin export-node-contracts -- ${contracts}`
+  const file = path.join(contracts, 'contracts.json')
+  const manifest = await Bun.file(file).json()
+  manifest.contractId = semanticContractId(manifest)
+  await Bun.write(file, JSON.stringify(manifest, null, 2) + '\n')
   return contracts
+}
+
+/** Semantic identity intentionally excludes build provenance and artifact bytes. */
+export function semanticContractId(manifest: Record<string, unknown>) {
+  const {
+    contractId: _contractId,
+    provenance: _provenance,
+    ...contract
+  } = manifest
+  const canonical = (value: unknown): unknown =>
+    Array.isArray(value)
+      ? value.map(canonical)
+      : value && typeof value === 'object'
+        ? Object.fromEntries(
+            Object.entries(value)
+              .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+              .map(([key, entry]) => [key, canonical(entry)])
+          )
+        : value
+  return new Bun.CryptoHasher('sha256')
+    .update(JSON.stringify(canonical(contract)))
+    .digest('hex')
 }

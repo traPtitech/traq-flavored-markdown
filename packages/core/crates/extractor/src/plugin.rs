@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use markdown_ast::{Node, NodeData};
 use markdown_definitions::Plugin as Declaration;
 use markdown_definitions::handlers::Handlers;
@@ -29,8 +29,15 @@ impl<R> Plugin<R> {
         &mut self,
         handler: impl Fn(&T, &mut R) -> Result<()> + Send + Sync + 'static,
     ) -> Result<()> {
-        self.handlers.on::<T>(Arc::new(move |node, result| {
-            handler(node.get::<T>().ok_or("invalid_payload")?, result)
-        }))
+        self.handlers
+            .on::<T>(Arc::new(move |node, result| {
+                handler(
+                    node.get::<T>().ok_or(Error::InvalidPayload {
+                        expected: std::any::type_name::<T>(),
+                    })?,
+                    result,
+                )
+            }))
+            .map_err(Into::into)
     }
 }

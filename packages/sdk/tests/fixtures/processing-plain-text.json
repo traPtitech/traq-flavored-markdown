@@ -2882,7 +2882,7 @@
   {
     "name": "public-517",
     "source": "[![moon](moon.jpg)](/uri)\n",
-    "plainText": "[![moon](moon.jpg)](/uri)"
+    "plainText": "[moon](/uri)"
   },
   {
     "name": "public-518",
@@ -2897,7 +2897,7 @@
   {
     "name": "public-520",
     "source": "![[[foo](uri1)](uri2)](uri3)\n",
-    "plainText": "![[[foo](uri1)](uri2)](uri3)"
+    "plainText": "[[foo](uri1)](uri2)"
   },
   {
     "name": "public-521",
@@ -2952,7 +2952,7 @@
   {
     "name": "public-531",
     "source": "[![moon](moon.jpg)][ref]\n\n[ref]: /uri\n",
-    "plainText": "[![moon](moon.jpg)][ref](/uri)"
+    "plainText": "[moon](/uri)"
   },
   {
     "name": "public-532",
@@ -3157,7 +3157,7 @@
   {
     "name": "public-572",
     "source": "![foo](/url \"title\")\n",
-    "plainText": "![foo](/url)"
+    "plainText": "foo"
   },
   {
     "name": "public-573",
@@ -3167,12 +3167,12 @@
   {
     "name": "public-574",
     "source": "![foo ![bar](/url)](/url2)\n",
-    "plainText": "![foo ![bar](/url)](/url2)"
+    "plainText": "foo bar"
   },
   {
     "name": "public-575",
     "source": "![foo [bar](/url)](/url2)\n",
-    "plainText": "![foo [bar](/url)](/url2)"
+    "plainText": "foo [bar](/url)"
   },
   {
     "name": "public-576",
@@ -3187,22 +3187,22 @@
   {
     "name": "public-578",
     "source": "![foo](train.jpg)\n",
-    "plainText": "![foo](train.jpg)"
+    "plainText": "foo"
   },
   {
     "name": "public-579",
     "source": "My ![foo bar](/path/to/train.jpg  \"title\"   )\n",
-    "plainText": "My ![foo bar](/path/to/train.jpg)"
+    "plainText": "My foo bar"
   },
   {
     "name": "public-580",
     "source": "![foo](<url>)\n",
-    "plainText": "![foo](url)"
+    "plainText": "foo"
   },
   {
     "name": "public-581",
     "source": "![](/url)\n",
-    "plainText": "![](/url)"
+    "plainText": ""
   },
   {
     "name": "public-582",
@@ -3637,7 +3637,7 @@
   {
     "name": "public-668",
     "source": "![alt](https://example.com/image.png)",
-    "plainText": "![alt](https://example.com/image.png)"
+    "plainText": "alt"
   },
   {
     "name": "public-669",

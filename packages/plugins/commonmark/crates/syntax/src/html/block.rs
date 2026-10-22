@@ -1,4 +1,5 @@
 use super::tags;
+use markdown_parser::engine::block::LineIndex;
 
 use markdown_parser::{
     NodeKind, ParseError,
@@ -11,7 +12,26 @@ use markdown_parser::{
 use regex::Regex;
 use std::sync::LazyLock;
 
-pub(super) fn start(line: &str) -> Option<u8> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum HtmlBlockKind {
+    RawText,
+    Comment,
+    ProcessingInstruction,
+    Declaration,
+    Cdata,
+    BlockTag,
+    CompleteTag,
+}
+impl HtmlBlockKind {
+    pub fn interrupts(self) -> bool {
+        self != Self::CompleteTag
+    }
+    fn blank_terminated(self) -> bool {
+        matches!(self, Self::BlockTag | Self::CompleteTag)
+    }
+}
+
+pub(super) fn start(line: &str) -> Option<HtmlBlockKind> {
     let text = line.trim_start_matches(' ');
 
     if line.len() - text.len() > 3 || !text.starts_with('<') {
@@ -29,37 +49,39 @@ pub(super) fn start(line: &str) -> Option<u8> {
     });
 
     if RAW.is_match(text) {
-        Some(1)
+        Some(HtmlBlockKind::RawText)
     } else if text.starts_with("<!--") {
-        Some(2)
+        Some(HtmlBlockKind::Comment)
     } else if text.starts_with("<?") {
-        Some(3)
+        Some(HtmlBlockKind::ProcessingInstruction)
     } else if text.starts_with("<!") && text.as_bytes().get(2).is_some_and(u8::is_ascii_uppercase) {
-        Some(4)
+        Some(HtmlBlockKind::Declaration)
     } else if text.starts_with("<![CDATA[") {
-        Some(5)
+        Some(HtmlBlockKind::Cdata)
     } else if BLOCK.is_match(text) {
-        Some(6)
+        Some(HtmlBlockKind::BlockTag)
     } else if tags::complete_tag(text) {
-        Some(7)
+        Some(HtmlBlockKind::CompleteTag)
     } else {
         None
     }
 }
 
-fn closes(kind: u8, line: &str) -> bool {
+fn closes(kind: HtmlBlockKind, line: &str) -> bool {
     match kind {
-        1 => {
+        HtmlBlockKind::RawText => {
             static END: LazyLock<Regex> =
                 LazyLock::new(|| Regex::new(r"(?i)</(?:script|pre|style|textarea)>").unwrap());
             END.is_match(line)
         }
 
-        2 => line.contains("-->"),
-        3 => line.contains("?>"),
-        4 => line.contains('>'),
-        5 => line.contains("]]>"),
-        _ => line.bytes().all(|b| matches!(b, b' ' | b'\t')),
+        HtmlBlockKind::Comment => line.contains("-->"),
+        HtmlBlockKind::ProcessingInstruction => line.contains("?>"),
+        HtmlBlockKind::Declaration => line.contains('>'),
+        HtmlBlockKind::Cdata => line.contains("]]>"),
+        HtmlBlockKind::BlockTag | HtmlBlockKind::CompleteTag => {
+            line.bytes().all(|b| matches!(b, b' ' | b'\t'))
+        }
     }
 }
 
@@ -85,16 +107,20 @@ pub(super) fn parse(
     )))
 }
 
-fn block_end(input: &BlockInput<'_>, kind: u8, budget: &mut Budget) -> Result<usize, ParseError> {
+fn block_end(
+    input: &BlockInput<'_>,
+    kind: HtmlBlockKind,
+    budget: &mut Budget,
+) -> Result<LineIndex, ParseError> {
     let mut end = input.start + 1;
 
     if !closes(kind, input.current()) {
-        while end < input.lines.len() {
+        while end < input.lines.end() {
             let line = input.line(end);
             budget.spend(line.len())?;
 
             if closes(kind, line) {
-                if kind < 6 {
+                if !kind.blank_terminated() {
                     end += 1;
                 }
                 break;

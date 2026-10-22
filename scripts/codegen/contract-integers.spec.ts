@@ -7,8 +7,8 @@ import ts from 'typescript'
 import { packageRoot } from '../paths.ts'
 import { withTempDirectory } from '../testing/temp-directory.ts'
 import { goPayload } from './go.ts'
-import { javascript } from './javascript.ts'
 import { type IntegerShape, shape } from './schema.ts'
+import { emitTypeScriptValidators } from './typescript-validators.ts'
 
 const validationModule = pathToFileURL(
   path.join(packageRoot('core'), 'typescript', 'validation.ts')
@@ -26,9 +26,11 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       properties: { value: { type: 'integer', format, minimum: 0, maximum } },
       required: ['value']
     }
-    const generated = javascript(
+    const generated = emitTypeScriptValidators(
       [['example::Numeric', schema]],
-      validationModule
+      validationModule,
+      pathToFileURL(path.join(packageRoot('core'), 'typescript', 'nodes.ts'))
+        .href
     )
     const compiled = ts.transpileModule(generated, {
       compilerOptions: {
@@ -58,9 +60,9 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       expect(goPayload('example::Numeric', schema)).toMatch(
         new RegExp('Value ' + format)
       )
-      expect(() => shape({ ...schema.properties.value, maximum: 6 })).toThrow(
-        /Unsupported integer/
-      )
+      expect(
+        (shape({ ...schema.properties.value, maximum: 6 }) as IntegerShape).max
+      ).toBe(6)
       expect(() =>
         shape({ ...schema.properties.value, multipleOf: 2 })
       ).toThrow(/Unsupported schema keyword/)
@@ -86,9 +88,10 @@ test('generated payload validators check array items', async () => {
     },
     required: ['animations']
   }
-  const source = javascript(
+  const source = emitTypeScriptValidators(
     [['example::EffectsData', schema]],
-    validationModule
+    validationModule,
+    pathToFileURL(path.join(packageRoot('core'), 'typescript', 'nodes.ts')).href
   )
   const compiled = ts.transpileModule(source, {
     compilerOptions: {

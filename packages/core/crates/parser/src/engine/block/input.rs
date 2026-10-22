@@ -1,11 +1,11 @@
-use super::{BlockInput, BlockMatch, DraftContent, DraftNode};
+use super::{BlockInput, BlockMatch, DraftContent, DraftNode, LineIndex};
 use crate::{NodeKind, ParseError, Span, engine::source::SourceView};
 use std::ops::Range;
 
 impl BlockInput<'_> {
     /// Map a consumed line interval to the original UTF-8 source, including its newline.
-    pub fn span_until(&self, end: usize) -> Result<Span, ParseError> {
-        if self.start >= end || end > self.lines.len() {
+    pub fn span_until(&self, end: LineIndex) -> Result<Span, ParseError> {
+        if self.start >= end || end > self.lines.end() {
             return Err(ParseError::InternalError);
         }
 
@@ -14,8 +14,8 @@ impl BlockInput<'_> {
     }
 
     /// Select body lines, including an empty body at any valid line boundary.
-    pub fn body(&self, lines: Range<usize>) -> Result<SourceView, ParseError> {
-        if lines.start > lines.end || lines.end > self.lines.len() {
+    pub fn body(&self, lines: Range<LineIndex>) -> Result<SourceView, ParseError> {
+        if lines.start > lines.end || lines.end > self.lines.end() {
             return Err(ParseError::InternalError);
         }
 
@@ -33,7 +33,7 @@ impl BlockInput<'_> {
 
     pub fn matched(
         &self,
-        end: usize,
+        end: LineIndex,
         kind: NodeKind,
         content: DraftContent,
     ) -> Result<BlockMatch, ParseError> {
@@ -43,15 +43,15 @@ impl BlockInput<'_> {
         ))
     }
 
-    pub fn leaf(&self, end: usize, kind: NodeKind) -> Result<BlockMatch, ParseError> {
+    pub fn leaf(&self, end: LineIndex, kind: NodeKind) -> Result<BlockMatch, ParseError> {
         self.matched(end, kind, DraftContent::Leaf)
     }
 
     pub fn blocks(
         &self,
-        end: usize,
+        end: LineIndex,
         kind: NodeKind,
-        body: Range<usize>,
+        body: Range<LineIndex>,
     ) -> Result<BlockMatch, ParseError> {
         self.matched(end, kind, DraftContent::Blocks(self.body(body)?))
     }

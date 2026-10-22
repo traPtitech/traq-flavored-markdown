@@ -24,6 +24,7 @@ name = "export-node-contracts"
 required-features = ["contracts"]
 
 [dependencies]
+traq-markdown-features.workspace = true
 traq-markdown-processing = { path = "../processing" }
 markdown-parser.workspace = true
 traq-markdown-grammar = { path = "../grammar" }

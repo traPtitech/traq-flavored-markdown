@@ -13,7 +13,6 @@ pub(super) fn close(
     state: &mut State<'_, '_>,
     end: usize,
     kind: NodeKind,
-    prefix: usize,
     inhibit: bool,
 ) -> Result<(), ParseError> {
     let bracket = state.brackets.pop().ok_or(ParseError::InternalError)?;
@@ -33,23 +32,7 @@ pub(super) fn close(
     )?;
 
     let opening = state.tokens.pop().ok_or(ParseError::InternalError)?;
-    let mut start = opening.start;
-
-    if prefix > 0 {
-        if prefix >= opening.end - start || !state.source.text.is_char_boundary(start + prefix) {
-            return Err(ParseError::InternalError);
-        }
-
-        state.push(
-            start,
-            start + prefix,
-            TokenKind::Text(state.source.text[start..start + prefix].into()),
-        )?;
-
-        start += prefix;
-    }
-
-    state.push(start, end, TokenKind::Atom(kind, children))?;
+    state.push(opening.start, end, TokenKind::Atom(kind, children))?;
 
     if inhibit {
         self::inhibit(state);

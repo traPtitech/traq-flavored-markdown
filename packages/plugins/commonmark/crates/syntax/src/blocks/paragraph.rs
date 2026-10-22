@@ -1,14 +1,16 @@
+use super::Interrupt;
 use super::markers::*;
+use markdown_parser::engine::block::LineIndex;
 
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
         Budget,
-        block::{BlockInput, BlockMatch, DraftNode, Interrupt},
+        block::{BlockInput, BlockMatch, DraftNode},
     },
 };
 
-fn setext(input: &BlockInput<'_>, line: usize) -> Result<Option<u8>, ParseError> {
+fn setext(input: &BlockInput<'_>, line: LineIndex) -> Result<Option<u8>, ParseError> {
     if super::super::context::is_lazy(
         input.source,
         input
@@ -47,7 +49,7 @@ pub(super) fn parse(
     let first = input.start;
     let mut end = first + 1;
 
-    while end < lines.len()
+    while end < lines.end()
         && setext(input, end)?.is_none()
         && !input.interrupts(end, Interrupt::Paragraph)
     {
@@ -60,7 +62,7 @@ pub(super) fn parse(
     let view = source.join(&[start..finish.max(start)])?;
 
     // A setext underline is consumed as part of the paragraph's heading.
-    let kind = if let Some(level) = if end < lines.len() {
+    let kind = if let Some(level) = if end < lines.end() {
         setext(input, end)?
     } else {
         None

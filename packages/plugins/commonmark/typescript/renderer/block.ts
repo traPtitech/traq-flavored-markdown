@@ -1,14 +1,11 @@
+import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import {
   isKnownNode,
   names
 } from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import {
-  attributes,
-  checked,
-  escapeHtml
-} from '@traq-flavored-markdown/core/html'
+import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { Node } from '@traq-flavored-markdown/core/renderer'
-import type { Plugin } from '@traq-flavored-markdown/core/renderer'
+import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { decodeHTMLStrict } from 'entities'
 
 import type { Options } from './options.js'
@@ -19,7 +16,9 @@ function tightList(node?: Node) {
   )
 }
 
-type BlockOptions = Required<Pick<Options, 'rawHtml' | 'xhtmlOut'>> &
+type BlockOptions = Required<
+  Pick<Options, 'rawHtml' | 'xhtmlOut' | 'isBlockSpacing'>
+> &
   Pick<Options, 'highlight'>
 
 function codeLanguage(info: string) {
@@ -33,136 +32,104 @@ function codeLanguage(info: string) {
 }
 
 export function registerBlockHandlers(
-  result: Plugin,
-  { highlight, rawHtml, xhtmlOut }: BlockOptions
+  result: RenderPlugin,
+  { highlight, rawHtml, xhtmlOut, isBlockSpacing }: BlockOptions
 ) {
-  result = result.on(
-    names.Paragraph,
-    checked(names.Paragraph, isKnownNode, (n, ctx) => {
-      const content = ctx.render(n.children)
+  result = result.on(definitions.Paragraph, (n, ctx) => {
+    const content = ctx.renderChildren()
 
-      return ctx.ancestors.at(-1)?.kind === names.ListItem &&
-        tightList(ctx.ancestors.at(-2))
-        ? content
-        : '<p>' + content + '</p>\n'
-    })
+    return ctx.ancestors.at(-1)?.kind === names.ListItem &&
+      tightList(ctx.ancestors.at(-2))
+      ? content
+      : '<p>' + content + '</p>\n'
+  })
+
+  result = result.on(
+    definitions.Heading,
+    (n, ctx) =>
+      '<h' +
+      n.data.level +
+      '>' +
+      ctx.renderChildren() +
+      '</h' +
+      n.data.level +
+      '>\n'
   )
 
   result = result.on(
-    names.Heading,
-    checked(
-      names.Heading,
-      isKnownNode,
-      (n, ctx) =>
-        '<h' +
-        n.data.level +
-        '>' +
-        ctx.render(n.children) +
-        '</h' +
-        n.data.level +
-        '>\n'
-    )
+    definitions.Blockquote,
+    (n, ctx) => '<blockquote>' + '\n' + ctx.renderChildren() + '</blockquote>\n'
   )
 
-  result = result.on(
-    names.Blockquote,
-    checked(
-      names.Blockquote,
-      isKnownNode,
-      (n, ctx) =>
-        '<blockquote>' + '\n' + ctx.render(n.children) + '</blockquote>\n'
-    )
-  )
-
-  result = result.on(
-    names.List,
-    checked(names.List, isKnownNode, (n, ctx) => {
-      const tag = n.data.ordered ? 'ol' : 'ul'
-      const attrs =
-        n.data.ordered && n.data.start !== 1
-          ? attributes([['start', String(n.data.start)]])
-          : ''
-
-      return (
-        '<' + tag + attrs + '>\n' + ctx.render(n.children) + '</' + tag + '>\n'
-      )
-    })
-  )
-
-  result = result.on(
-    names.ListItem,
-    checked(names.ListItem, isKnownNode, (n, ctx) => {
-      const children = n.children ?? []
-      const tight = tightList(ctx.ancestors.at(-1))
-      const content = children
-        .map((child, i) => {
-          const rendered = ctx.render([child])
-
-          // A line break following a tight paragraph needs no leading whitespace.
-          const separator =
-            tight &&
-            i > 0 &&
-            children[i - 1].kind === names.Paragraph &&
-            child.kind !== names.CodeBlock &&
-            !rendered.startsWith(xhtmlOut ? '<br />' : '<br>')
-              ? '\n'
-              : ''
-
-          return separator + rendered
-        })
-        .join('')
-
-      return (
-        '<li>' +
-        (children.length && !(tight && children[0].kind === names.Paragraph)
-          ? '\n'
-          : '') +
-        content +
-        '</li>\n'
-      )
-    })
-  )
-
-  result = result.on(
-    names.CodeBlock,
-    checked(names.CodeBlock, isKnownNode, n => {
-      const language = n.data.fenced ? codeLanguage(n.data.info ?? '') : ''
-      const highlighted = n.data.fenced
-        ? highlight?.(n.data.literal, language)
-        : undefined
-      if (
-        highlighted !== undefined &&
-        (!highlighted ||
-          typeof highlighted.html !== 'string' ||
-          (highlighted.kind !== 'content' && highlighted.kind !== 'block'))
-      )
-        throw new TypeError('Invalid highlight result')
-
-      if (highlighted?.html && highlighted.kind === 'block')
-        return highlighted.html + '\n'
-
-      const attrs = language
-        ? attributes([['class', 'language-' + language]])
+  result = result.on(definitions.List, (n, ctx) => {
+    const kind = n.data.kind
+    const tag = kind.type === 'ordered' ? 'ol' : 'ul'
+    const attrs =
+      kind.type === 'ordered' && kind.start !== 1
+        ? attributes([['start', String(kind.start)]])
         : ''
-      const content = highlighted?.html || escapeHtml(n.data.literal)
-      return '<pre><code' + attrs + '>' + content + '</code></pre>\n'
+
+    return '<' + tag + attrs + '>\n' + ctx.renderChildren() + '</' + tag + '>\n'
+  })
+
+  result = result.on(definitions.ListItem, (n, ctx) => {
+    const tight = tightList(ctx.ancestors.at(-1))
+    const content = ctx.renderChildren(children => {
+      const lead =
+        children.length && !(tight && children[0].node.kind === names.Paragraph)
+          ? '\n'
+          : ''
+      return (
+        lead +
+        children
+          .map(({ node, html }, index) => {
+            // A spacing node following a tight paragraph needs no extra whitespace.
+            const separator =
+              tight &&
+              index > 0 &&
+              children[index - 1].node.kind === names.Paragraph &&
+              node.kind !== names.CodeBlock &&
+              !isBlockSpacing(node)
+                ? '\n'
+                : ''
+            return separator + html
+          })
+          .join('')
+      )
     })
+    return '<li>' + content + '</li>\n'
+  })
+
+  result = result.on(definitions.CodeBlock, n => {
+    const language = n.data.fenced ? codeLanguage(n.data.info ?? '') : ''
+    const highlighted = n.data.fenced
+      ? highlight?.(n.data.literal, language)
+      : undefined
+    if (
+      highlighted !== undefined &&
+      (!highlighted ||
+        typeof highlighted.html !== 'string' ||
+        (highlighted.kind !== 'content' && highlighted.kind !== 'block'))
+    )
+      throw new TypeError('Invalid highlight result')
+
+    if (highlighted?.kind === 'block') return highlighted.html + '\n'
+
+    const attrs = language
+      ? attributes([['class', 'language-' + language]])
+      : ''
+    const content = highlighted?.html ?? escapeHtml(n.data.literal)
+    return '<pre><code' + attrs + '>' + content + '</code></pre>\n'
+  })
+
+  result = result.on(definitions.ThematicBreak, () =>
+    xhtmlOut ? '<hr />\n' : '<hr>\n'
   )
 
-  result = result.on(
-    names.ThematicBreak,
-    checked(names.ThematicBreak, isKnownNode, () =>
-      xhtmlOut ? '<hr />\n' : '<hr>\n'
-    )
-  )
-
-  result = result.on(
-    names.HtmlBlock,
-    checked(names.HtmlBlock, isKnownNode, n =>
-      rawHtml === 'escape'
-        ? '<p>' + escapeHtml(n.data.literal) + '</p>\n'
-        : n.data.literal
-    )
+  result = result.on(definitions.HtmlBlock, n =>
+    rawHtml === 'escape'
+      ? '<p>' + escapeHtml(n.data.literal) + '</p>\n'
+      : n.data.literal
   )
 
   return result

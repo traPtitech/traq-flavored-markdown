@@ -1,7 +1,7 @@
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { buildId } from '../../dist/generated/artifact.js'
+import { contractId } from '../../dist/generated/artifact.js'
 import { names } from '../../dist/generated/nodes.js'
 import type { Parser } from '../../dist/index.js'
 import { createRuntime, isKnownNode, presets } from '../../dist/index.js'
@@ -25,14 +25,18 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
     ['x'.repeat(65537), 'resource_limit']
   ]) {
     const error = captureError(() => core.parse(source))
-    if (code === 'invalid_utf8') expect(error).toBeInstanceOf(TypeError)
+    if (code === 'invalid_utf8') expect(error).toMatchObject({ code })
     else
       expect(error).toMatchObject({
-        cause: { code: 'resource_limit', resource: 'input_bytes' }
+        code: 'resource_limit',
+        resource: 'source_bytes',
+        operation: 'parse'
       })
   }
   // @ts-expect-error This verifies the runtime boundary for non-string input.
-  expect(() => core.parse(2)).toThrow(TypeError)
+  expect(captureError(() => core.parse(2))).toMatchObject({
+    code: 'invalid_request'
+  })
   expect(core.parseInline('**x**').children[0].kind).toBe(names.Strong)
   expect(core.parse('\ufefftext🦀').source).toBe('\ufefftext🦀')
   const hostile = [
@@ -46,10 +50,14 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
     '> '.repeat(60) + '\t'.repeat(60000),
     '- > '.repeat(30) + '\t'.repeat(60000)
   ]
-  const depthError = captureError(() =>
+  const nestingError = captureError(() =>
     core.parse('!!'.repeat(100) + 'deep' + '!!'.repeat(100))
   )
-  expect(depthError).toMatchObject({ cause: { resource: 'depth' } })
+  expect(nestingError).toMatchObject({
+    code: 'resource_limit',
+    resource: 'nesting',
+    operation: 'parse'
+  })
   for (const source of hostile) {
     try {
       expect(core.parse(source).source).toBe(source)
@@ -151,12 +159,12 @@ test('raw ABI validates UTF-8, preset and mode; linear memory is bounded', async
     )
   }
   expect(call('configure', 'traq.bad').error).toBeTruthy()
-  expect(call('configure', 'traq.v1').configured).toBe(buildId)
-  expect(call('parse', new Uint8Array([255])).error).toEqual({
+  expect(call('configure', 'traq.v1').ok.contractId).toBe(contractId)
+  expect(call('parse', new Uint8Array([255])).error).toMatchObject({
     code: 'invalid_utf8'
   })
   expect(call('parse', 'x', 99).error).toBeTruthy()
-  expect(call('parse', 'ok').document.source).toBe('ok')
+  expect(call('parse', 'ok').ok.source).toBe('ok')
   const pages = wasm.memory.buffer.byteLength / 65536
   expect(wasm.memory.grow(512 - pages)).toBe(pages)
   expect(() => wasm.memory.grow(1)).toThrow(RangeError)
@@ -208,8 +216,8 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
                 ? parser.parse(source)
                 : parser.parseInline(source)
             )
-            expect((error as { cause?: unknown })?.cause).toEqual(
-              (expected as { Err: unknown }).Err
+            expect((error as { cause?: unknown })?.cause).toMatchObject(
+              (expected as { Err: object }).Err
             )
           }
         }
@@ -236,9 +244,9 @@ test('Wasm input views respect their byte range and are copied before async work
   }
 })
 
-test('a valid parser Wasm from a different Rust build is rejected', async () => {
+test('a valid parser Wasm with a different semantic contract is rejected', async () => {
   const other = bytes.slice()
-  const id = new TextEncoder().encode(buildId)
+  const id = new TextEncoder().encode(contractId)
   const indexOfBytes = (source: Uint8Array, target: Uint8Array, start = 0) => {
     for (
       let position = start;

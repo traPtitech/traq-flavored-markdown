@@ -1,10 +1,14 @@
-import { javascript } from './javascript.ts'
 import type { RawSchema } from './schema.ts'
 import { quoted as q } from './schema.ts'
+import type { NodeStructure } from './structure.ts'
+import { emitTypeScriptValidators } from './typescript-validators.ts'
 import { typescriptDeclarations } from './typescript.ts'
 
 type Manifest = {
-  nodes: Record<string, { group: string; schema: RawSchema }>
+  nodes: Record<
+    string,
+    { group: string; schema: RawSchema; structure?: NodeStructure }
+  >
 }
 
 export function nodeFiles(manifest: Manifest) {
@@ -26,7 +30,17 @@ export function nodeFiles(manifest: Manifest) {
           .map(([key, s]) => ` | { kind: ${q(key)}; data: ${s.title} }`)
           .join('\n') +
         ';\n' +
-        javascript(entries, '@traq-flavored-markdown/core/validation')
+        emitTypeScriptValidators(
+          entries,
+          '@traq-flavored-markdown/core/validation',
+          '@traq-flavored-markdown/core',
+          Object.fromEntries(
+            Object.entries(manifest.nodes).map(([key, node]) => [
+              key,
+              node.structure
+            ])
+          )
+        )
     )
   }
   return files

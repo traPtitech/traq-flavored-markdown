@@ -17,7 +17,7 @@ and Windows; the remaining checks run on Ubuntu.
 | Published API or packaging | `bun run check:package`                                              |
 | Parser compatibility       | Fixture tests and, where appropriate, corpus comparison              |
 
-`check:package` packs all four public packages into a temporary consumer and
+`check:package` packs all five public packages into a temporary consumer and
 verifies public declarations, AST parsing, HTML, CSS, and the Wasm digest. It
 removes temporary files and archives after the run.
 
@@ -31,11 +31,32 @@ Go tags without local replacements.
 
 ## Generated sources
 
-`bun run check:generated` regenerates bindings and rejects a changed working
-tree. The full check performs the same check and compares the tracked Go Wasm's
-source build ID, contract, and ABI with the newly built SDK artifact. Generated TypeScript and Go files, including
+`bun run check:generated` generates into an isolated directory and compares all
+managed output paths and contents with the checkout. The full check performs
+the same check and compares the tracked Go Wasm's source fingerprint, semantic
+contract, and ABI with the newly built SDK artifact. Generated TypeScript and Go files, including
 `packages/sdk/go/parser.wasm`, are committed outputs: review their diffs, but do
 not edit them by hand.
+
+## Resource-specific suites
+
+`bun run test:typescript` executes the following suites serially. Each can also
+be selected directly while iterating; the suite classifier is in
+`scripts/testing/suites.ts`.
+
+| Command                  | Required resources                                                              |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `bun run test:unit`      | Built TypeScript and local fixtures; no Wasm or Go compiler                     |
+| `bun run test:assembly`  | Exported contracts, built packages, and Sass                                    |
+| `bun run test:codegen`   | Go compiler for temporary generated modules                                     |
+| `bun run test:workspace` | Go module commands and temporary workspaces                                     |
+| `bun run test:wasm`      | Fresh SDK Wasm and built SDK                                                    |
+| `bun run test:corpus`    | Synthetic streams and injected adapters; no credentials or application checkout |
+
+For the shortest independent loop, run `bun run build:typescript` and then
+`bun run test:unit`. CI runs that loop in a separate job that does not install
+Rust or Go. Compiler, workspace, and Wasm suites have explicit process budgets
+and are not mixed into the pure runner.
 
 ## Fixtures and corpus
 

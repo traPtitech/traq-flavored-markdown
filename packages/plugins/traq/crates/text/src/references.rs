@@ -1,5 +1,5 @@
 use markdown_renderer::{Plugin, Result};
-use markdown_trap_contracts::{EmbeddingData, ReferenceData};
+use markdown_trap_contracts::{Embedding, Reference};
 
 use std::sync::LazyLock;
 
@@ -10,12 +10,12 @@ pub fn plugin() -> Plugin {
 }
 
 fn build() -> Result<Plugin> {
-    let mut references = Plugin::new(&markdown_trap_contracts::preset().references);
+    let mut references = Plugin::new(&markdown_trap_contracts::declarations().references);
 
-    references.on::<ReferenceData>(|v, _, _| Ok(v.label.clone()))?;
+    references.on::<Reference>(|v, _, _, output| output.push(&v.label))?;
 
     // Attachment presentation is selected by the product preset.
-    references.on::<EmbeddingData>(|v, _, _| Ok(v.literal.clone()))?;
+    references.on::<Embedding>(|v, _, _, output| output.push(&v.literal))?;
 
     Ok(references)
 }

@@ -31,7 +31,7 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     plugin.add(&rule);
 
     let mut builder = GrammarBuilder::new();
-    builder.add(&plugin).unwrap();
+    let registration = builder.register(&plugin).unwrap();
 
     let original = builder.clone().build().unwrap();
     let mut duplicate = Plugin::new(&Declaration::new("duplicate"));
@@ -53,7 +53,10 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
         )))
     }));
 
-    assert!(builder.remove(&plugin).is_err());
+    assert_eq!(builder.registration(&plugin), Some(registration.clone()));
+    let mut removable = builder.clone();
+    removable.remove(&registration).unwrap();
+    assert!(removable.remove(&registration).is_err());
 
     let parser = Parser::new(&builder.build().unwrap());
 
@@ -88,8 +91,8 @@ fn rule_names_are_checked_per_plugin_and_phase() {
 fn shared_name_checks_keep_parser_diagnostics_and_rule_error_priority() {
     let root = Declaration::group("generic");
     let nested = root.group("nested");
-    let first = Plugin::new(&nested.new("same"));
-    let mut second = Plugin::new(&nested.new("same"));
+    let first = Plugin::new(&nested.plugin("same"));
+    let mut second = Plugin::new(&nested.plugin("same"));
 
     for rule_collision in [false, true] {
         if rule_collision {

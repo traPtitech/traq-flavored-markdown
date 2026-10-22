@@ -109,13 +109,15 @@ func TestASTConsumers(t *testing.T) {
 		check := func(document *Document) {
 			t.Helper()
 			result, err := extractor.Extract(ctx, document)
-			if err != nil || result.MessageText != "@alice @alice" || result.Embedding.UnembeddedText != "@alice @alice" {
+			if err != nil || result.MessageText != "@alice @alice" || result.ReferenceEmbedding.UnembeddedText != "@alice @alice" {
 				t.Fatalf("source edits: %+v %v", result, err)
 			}
 		}
 		checkInvalid := func(document *Document) {
 			t.Helper()
-			if _, err := extractor.Extract(ctx, document); err == nil || !strings.Contains(err.Error(), "invalid span") {
+			_, err := extractor.Extract(ctx, document)
+			var failure *Error
+			if !errors.As(err, &failure) || failure.Code != "invalid_document" || failure.Path == "" {
 				t.Fatalf("expected invalid span for malformed siblings, got %v", err)
 			}
 		}

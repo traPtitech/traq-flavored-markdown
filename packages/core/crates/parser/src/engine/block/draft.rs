@@ -1,4 +1,4 @@
-use super::BlockBatch;
+use crate::engine::ParseState;
 use crate::{NodeKind, Span, engine::source::SourceView};
 
 /// A block body remains here until all reference definitions have been collected.
@@ -7,8 +7,7 @@ pub struct DraftNode {
     pub span: Span,
     pub kind: NodeKind,
     pub content: DraftContent,
-    pub(crate) loose: bool,
-    pub finish: Option<fn(&mut DraftNode)>,
+    pub finish: Option<fn(&mut ResolvedBlock)>,
 }
 
 pub enum DraftContent {
@@ -24,7 +23,6 @@ impl DraftNode {
             span,
             kind,
             content,
-            loose: false,
             finish: None,
         }
     }
@@ -44,20 +42,27 @@ impl DraftNode {
     pub fn blocks(span: Span, kind: NodeKind, source: SourceView) -> Self {
         Self::new(span, kind, DraftContent::Blocks(source))
     }
+}
 
-    pub fn children(&self) -> &[DraftNode] {
+/// Block children are fully resolved before inline rules can observe definitions.
+pub struct ResolvedBlock {
+    pub span: Span,
+    pub kind: NodeKind,
+    pub content: ResolvedContent,
+    pub metadata: ParseState,
+}
+
+pub enum ResolvedContent {
+    Leaf,
+    Inline(SourceView),
+    Nodes(Vec<ResolvedBlock>),
+}
+
+impl ResolvedBlock {
+    pub fn children(&self) -> &[ResolvedBlock] {
         match &self.content {
-            DraftContent::Nodes(nodes) => nodes,
+            ResolvedContent::Nodes(children) => children,
             _ => &[],
         }
-    }
-
-    pub fn is_loose(&self) -> bool {
-        self.loose
-    }
-
-    pub(crate) fn resolve_blocks(&mut self, batch: BlockBatch) {
-        self.loose = batch.loose;
-        self.content = DraftContent::Nodes(batch.nodes);
     }
 }

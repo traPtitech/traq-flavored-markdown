@@ -8,13 +8,12 @@ pub fn plugin() -> Plugin {
 }
 
 fn build() -> Result<Plugin> {
-    let mut renderer = Plugin::new(&markdown_commonmark_contracts::preset().html);
-    renderer.on::<HtmlInline>(|v, _, _| Ok(v.literal.clone()))?;
+    let mut renderer = Plugin::new(&markdown_commonmark_contracts::declarations().html);
+    renderer.on::<HtmlInline>(|v, _, _, output| output.push(&v.literal))?;
 
-    renderer.on::<HtmlBlock>(|v, _, ctx| {
-        let mut text = v.literal.clone();
-        ctx.append(&mut text, "\n")?;
-        Ok(text)
+    renderer.on::<HtmlBlock>(|v, _, _, output| {
+        output.push(&v.literal)?;
+        output.push("\n")
     })?;
 
     Ok(renderer)

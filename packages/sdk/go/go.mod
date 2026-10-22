@@ -6,6 +6,7 @@ require (
 	github.com/tetratelabs/wazero v1.12.0 // indirect
 	github.com/traPtitech/traq-flavored-markdown/packages/core/go v0.1.7
 	github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go v0.1.7
+	github.com/traPtitech/traq-flavored-markdown/packages/plugins/extensions/go v0.1.7
 	github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go v0.1.7
 )
 

@@ -1,13 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 
-import {
-  type DifferenceRow,
-  type Mode,
-  type ReportMetadata,
-  type ReportPayload,
-  modes
-} from '../report-schema.ts'
+import { type Mode, type ReportMetadata, modes } from '../report-schema.ts'
 import DiffTable from './DiffTable.tsx'
+import { type ReportRepository } from './data/repository.ts'
+import { useReportQuery } from './hooks/useReportQuery.ts'
 
 const labels: Record<Mode, string> = {
   render: 'traQ_S-UI · 通常',
@@ -15,209 +11,24 @@ const labels: Record<Mode, string> = {
   plainText: 'traQ · プレーンテキスト'
 }
 
-const getInitialData = <T,>(id: string): T | null => {
-  try {
-    const el = document.getElementById(id)
-    if (el?.textContent) {
-      const data = JSON.parse(el.textContent)
-      el.remove()
-      return data
-    }
-  } catch (_e) {}
-  return null
-}
-
-export default function App() {
-  const [meta] = useState<ReportMetadata | null>(() =>
-    getInitialData('metadata')
-  )
-  const [payload] = useState<ReportPayload | null>(() =>
-    getInitialData('payload')
-  )
-  const loadingError = !meta || !payload
-
+export default function App({
+  repository
+}: {
+  repository: ReportRepository | null
+}) {
   const [mode, setMode] = useState<Mode>('render')
   const [outputView, setOutputView] = useState<'rendered' | 'raw'>('rendered')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [searchDraft, setSearchDraft] = useState('')
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
-
-  const filterKey = JSON.stringify([
+  const state = useReportQuery(repository, {
     mode,
-    search.trim().toLowerCase(),
-    ignoreWhitespace
-  ])
-  const [filter, setFilter] = useState<{
-    key: string
-    hits: [number, number][] | null
-  } | null>(null)
-  const [filterProgress, setFilterProgress] = useState<{
-    key: string
-    done: number
-    total: number
-  } | null>(null)
-  const [rowResult, setRowResult] = useState<{
-    key: string
-    rows: DifferenceRow[]
-  } | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
-
-  const num = (n: number | string) => Number(n).toLocaleString('ja-JP')
-
-  const chunkCache = useRef(new Map<string, Promise<DifferenceRow[]>>())
-  const loadChunk = useCallback(
-    async (m: Mode, index: number) => {
-      const key = `${m}:${index}`
-      const cached = chunkCache.current.get(key)
-      if (cached) return cached
-      const encoded = payload?.[m][index]
-      if (!encoded) throw new Error(`Missing ${m} chunk ${index}`)
-      const task = (async () => {
-        const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0))
-        const text = await new Response(
-          new Blob([bytes])
-            .stream()
-            .pipeThrough(new DecompressionStream('gzip'))
-        ).text()
-        return JSON.parse(text) as DifferenceRow[]
-      })()
-      chunkCache.current.set(key, task)
-      if (chunkCache.current.size > 10) {
-        chunkCache.current.delete(chunkCache.current.keys().next().value!)
-      }
-      try {
-        return await task
-      } catch (error) {
-        chunkCache.current.delete(key)
-        throw error
-      }
-    },
-    [payload]
-  )
-
-  useEffect(() => {
-    if (!meta || !payload) return
-    let active = true
-
-    const applyFilters = async () => {
-      setLoadError(null)
-      setPage(1)
-      const query = search.trim().toLowerCase()
-      if (!query && !ignoreWhitespace) {
-        setFilter({ key: filterKey, hits: null })
-        return
-      }
-
-      try {
-        const flags = meta.filters[mode]
-        const found: [number, number][] = []
-        for (let chunk = 0; chunk < payload[mode].length; chunk++) {
-          const chunkRows = query ? await loadChunk(mode, chunk) : null
-          if (!active) return
-
-          const length = Math.min(
-            meta.pageSize,
-            meta.counts[mode] - chunk * meta.pageSize
-          )
-          for (let index = 0; index < length; index++) {
-            if (
-              ignoreWhitespace &&
-              flags[chunk * meta.pageSize + index] === '1'
-            )
-              continue
-            if (
-              !query ||
-              chunkRows![index].source.toLowerCase().includes(query)
-            ) {
-              found.push([chunk, index])
-            }
-          }
-          if (query && active) {
-            setFilterProgress({
-              key: filterKey,
-              done: chunk + 1,
-              total: payload[mode].length
-            })
-          }
-        }
-        if (active) {
-          setFilter({
-            key: filterKey,
-            hits: found.length === meta.counts[mode] ? null : found
-          })
-        }
-      } catch (error) {
-        if (active) setLoadError(String(error))
-      }
-    }
-
-    void applyFilters()
-    return () => {
-      active = false
-    }
-  }, [mode, search, ignoreWhitespace, meta, payload, filterKey, loadChunk])
-
-  const filterReady = filter?.key === filterKey
-  const hits = filterReady ? filter.hits : null
-  const totalHits = filterReady
-    ? hits === null
-      ? (meta?.counts[mode] ?? 0)
-      : hits.length
-    : (meta?.counts[mode] ?? 0)
-  const totalPages = Math.max(1, Math.ceil(totalHits / (meta?.pageSize ?? 1)))
-  const rowKey = `${filterKey}:${page}`
-
-  useEffect(() => {
-    if (!meta || !payload || !filterReady) return
-    let active = true
-
-    const loadRows = async () => {
-      const validPage = Math.min(Math.max(1, page), totalPages)
-      if (page !== validPage) {
-        setPage(validPage)
-        return
-      }
-
-      try {
-        let newRows: DifferenceRow[] = []
-        if (totalHits > 0) {
-          if (hits === null) {
-            newRows = await loadChunk(mode, validPage - 1)
-          } else {
-            for (const [chunk, index] of hits.slice(
-              (validPage - 1) * meta.pageSize,
-              validPage * meta.pageSize
-            )) {
-              const chunkRows = await loadChunk(mode, chunk)
-              newRows.push(chunkRows[index])
-            }
-          }
-        }
-        if (active) setRowResult({ key: rowKey, rows: newRows })
-      } catch (error) {
-        if (active) setLoadError(String(error))
-      }
-    }
-
-    void loadRows()
-    return () => {
-      active = false
-    }
-  }, [
-    mode,
-    page,
-    hits,
-    meta,
-    payload,
-    filterReady,
-    rowKey,
-    totalPages,
-    totalHits,
-    loadChunk
-  ])
-
-  if (loadingError) {
+    search,
+    ignoreWhitespace,
+    page
+  })
+  if (!repository)
     return (
       <main style={{ padding: 20 }}>
         <p id="status">
@@ -226,18 +37,21 @@ export default function App() {
         </p>
       </main>
     )
-  }
-
-  if (!meta) return <div style={{ padding: 20 }}>Loading...</div>
-
-  const rows = rowResult?.key === rowKey && filterReady ? rowResult.rows : []
-  const loading = !loadError && (!filterReady || rowResult?.key !== rowKey)
+  const meta = repository.metadata
+  const num = (value: number | string) => Number(value).toLocaleString('ja-JP')
+  const ready = state.status === 'ready' ? state.result : undefined
+  const rows = ready?.rows ?? []
+  const totalHits = ready?.totalHits ?? meta.counts[mode]
+  const totalPages = ready?.totalPages ?? 1
+  const loading = state.status === 'loading' || state.status === 'idle'
   const statusText =
-    loadError ??
-    (!filterReady && filterProgress?.key === filterKey
-      ? `検索 ${num(filterProgress.done)} / ${num(filterProgress.total)}`
-      : `${num(totalHits)} 件${hits === null ? '' : ` / 全 ${num(meta.counts[mode])} 件`}`)
-
+    state.status === 'failed'
+      ? state.message
+      : state.status === 'loading' && state.progress
+        ? '検索 ' + num(state.progress.done) + ' / ' + num(state.progress.total)
+        : num(totalHits) +
+          ' 件' +
+          (ready?.filtered ? ' / 全 ' + num(meta.counts[mode]) + ' 件' : '')
   return (
     <>
       <header className="top">
@@ -264,8 +78,9 @@ export default function App() {
               ms。モジュール読込は除きます。
             </p>
             <p>
-              S-UI は同一の固定 Store を使用。traQ は master の Parse と Rust
-              PlainTextRenderer が返すプレーンテキストを比較。参考値です。
+              S-UI は同一の固定参照・スタンプデータを使用。traQ は master の
+              Parse と Rust PlainTextRenderer
+              が返すプレーンテキストを比較。参考値です。
             </p>
           </div>
         </details>
@@ -305,6 +120,7 @@ export default function App() {
               onSubmit={e => {
                 e.preventDefault()
                 setSearch(searchDraft)
+                setPage(1)
               }}
             >
               <input
@@ -338,7 +154,7 @@ export default function App() {
                 type="number"
                 min="1"
                 max={totalPages}
-                value={page}
+                value={ready?.page ?? page}
                 onChange={e => setPage(Number(e.target.value) || 1)}
               />
               {' / '}
@@ -363,7 +179,10 @@ export default function App() {
               type="checkbox"
               id="ignore-whitespace"
               checked={ignoreWhitespace}
-              onChange={e => setIgnoreWhitespace(e.target.checked)}
+              onChange={e => {
+                setIgnoreWhitespace(e.target.checked)
+                setPage(1)
+              }}
             />
             ホワイトスペースのみを除外
           </label>

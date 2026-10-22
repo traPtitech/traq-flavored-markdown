@@ -47,7 +47,7 @@ impl From<&TextRule> for Contribution {
 }
 
 impl Contribution {
-    pub(crate) fn name(&self) -> Option<&str> {
+    pub fn name(&self) -> Option<&str> {
         match self {
             Self::Inline(r) => r.name(),
             Self::Block(r) => r.name(),
@@ -55,7 +55,7 @@ impl Contribution {
         }
     }
 
-    pub(crate) fn phase(&self) -> &'static str {
+    pub fn phase(&self) -> &'static str {
         match self {
             Self::Inline(_) => "inline",
             Self::Block(_) => "block",
@@ -63,7 +63,7 @@ impl Contribution {
         }
     }
 
-    pub(crate) fn same(&self, other: &Self) -> bool {
+    pub fn same(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Inline(a), Self::Inline(b)) => a.same(b),
             (Self::Block(a), Self::Block(b)) => a.same(b),
