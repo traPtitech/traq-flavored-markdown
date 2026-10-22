@@ -10,6 +10,12 @@ export const withTempDirectory = async <T>(
   try {
     return await run(directory)
   } finally {
-    await rm(directory, { recursive: true, force: true })
+    // Windows may retain process working-directory handles briefly after exit.
+    await rm(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 100
+    })
   }
 }

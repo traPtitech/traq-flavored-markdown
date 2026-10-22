@@ -8,7 +8,7 @@ export const suites = {
       'packages/plugins/*/typescript/tests/**/*.spec.ts',
       'packages/sdk/typescript/tests/unit/**/*.spec.ts',
       'packages/sdk/scripts/{contract-identity,generation}.spec.ts',
-      'scripts/{build,checks,testing,workspace,release}/**/*.spec.ts',
+      'scripts/{build,checks,infrastructure,testing,workspace,release}/**/*.spec.ts',
       'scripts/release.spec.ts',
       'scripts/codegen/{generation,ir,manifest,output-manifest}.spec.ts'
     ]

@@ -3,8 +3,8 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { repositoryRoot } from '../paths.ts'
-import { withTempDirectory } from '../testing/temp-directory.ts'
 
 test('build modules load before workspace packages have been built', async () => {
   await withTempDirectory('build-bootstrap-', async root => {

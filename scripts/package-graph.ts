@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import { captureProcess } from './infrastructure/process.ts'
 import {
   type PackageName,
   packageNames,
@@ -173,19 +174,14 @@ const goDirectory = (name: PackageName) =>
     .replaceAll('\\', '/')
 
 async function readGoMod(root: string, directory: string): Promise<GoMod> {
-  const process = Bun.spawn(['go', 'mod', 'edit', '-json'], {
-    cwd: path.join(root, directory),
-    env: { ...Bun.env, GOWORK: 'off' },
-    stdout: 'pipe',
-    stderr: 'pipe'
-  })
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(process.stdout).text(),
-    new Response(process.stderr).text(),
-    process.exited
-  ])
-  if (exitCode !== 0)
-    throw new Error(`${directory}: go mod edit -json: ${stderr.trim()}`)
+  const stdout = await captureProcess(
+    'go',
+    ['mod', 'edit', '-json'],
+    path.join(root, directory),
+    {
+      env: { ...Bun.env, GOWORK: 'off' }
+    }
+  )
   return JSON.parse(stdout) as GoMod
 }
 

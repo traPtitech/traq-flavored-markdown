@@ -2,11 +2,11 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
-import { withTempDirectory } from '../testing/temp-directory.ts'
-import { capturePackageCommand } from './package-command.ts'
+import { captureProcess } from './process.ts'
+import { withTempDirectory } from './temp-directory.ts'
 
 test('package commands preserve JSON stdout and drain both output pipes', async () => {
-  const output = await capturePackageCommand(
+  const output = await captureProcess(
     Bun.argv[0],
     [
       '-e',
@@ -20,7 +20,7 @@ test('package commands preserve JSON stdout and drain both output pipes', async 
 })
 
 test('failed package commands report the command, cwd and captured diagnostics', async () => {
-  const result = capturePackageCommand(
+  const result = captureProcess(
     Bun.argv[0],
     [
       '-e',
@@ -43,7 +43,7 @@ test('stalled package commands time out and terminate their process', async () =
     const pidFile = path.join(directory, 'child.pid')
 
     await expect(
-      capturePackageCommand(
+      captureProcess(
         Bun.argv[0],
         [
           '-e',
@@ -51,7 +51,7 @@ test('stalled package commands time out and terminate their process', async () =
           pidFile
         ],
         directory,
-        1000
+        { timeoutMs: 1000 }
       )
     ).rejects.toThrow('timed out after 1000ms')
 
@@ -80,7 +80,7 @@ test.skipIf(process.platform !== 'win32')(
       )
 
       await expect(
-        capturePackageCommand(shim, [pidFile], directory, 1000)
+        captureProcess(shim, [pidFile], directory, { timeoutMs: 1000 })
       ).rejects.toThrow('timed out after 1000ms')
 
       const pid = Number(await Bun.file(pidFile).text())
@@ -89,3 +89,18 @@ test.skipIf(process.platform !== 'win32')(
     })
   }
 )
+
+test('process environment and progress reporting are explicit inputs', async () => {
+  const progress: string[] = []
+  const output = await captureProcess(
+    Bun.argv[0],
+    ['-e', 'console.log(process.env.PROCESS_TEST_VALUE)'],
+    import.meta.dir,
+    {
+      env: { ...Bun.env, PROCESS_TEST_VALUE: 'injected' },
+      log: message => progress.push(message)
+    }
+  )
+  expect(output.trim()).toBe('injected')
+  expect(progress).toHaveLength(2)
+})

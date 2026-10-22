@@ -1,20 +1,36 @@
-/** Capture machine-readable stdout while reporting progress and bounding each check. */
-export async function capturePackageCommand(
+export type ProcessOptions = {
+  env?: NodeJS.ProcessEnv
+  timeoutMs?: number
+  output?: 'capture' | 'inherit'
+  log?: (message: string) => void
+}
+
+/** Drain both pipes, preserve stdout as data, and bound the complete process tree. */
+export async function captureProcess(
   command: string,
   args: string[],
   cwd: string,
-  timeoutMs = 120_000
+  {
+    env,
+    timeoutMs = 120_000,
+    output: outputMode = 'capture',
+    log
+  }: ProcessOptions = {}
 ) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+    throw new Error('Process timeout must be a positive number')
   const label = JSON.stringify([command, ...args])
-  console.log(`[check:package] Starting ${label} in ${cwd}`)
+  log?.(`Starting ${label} in ${cwd}`)
 
   const started = performance.now()
 
   const child = Bun.spawn([command, ...args], {
     cwd,
-    stdin: 'ignore',
+    env,
+    stdin: outputMode === 'inherit' ? 'inherit' : 'ignore',
     stdout: 'pipe',
     stderr: 'pipe',
+    detached: process.platform !== 'win32',
     windowsHide: true
   })
 
@@ -27,6 +43,8 @@ export async function capturePackageCommand(
       const { done, value } = await readers[index].read()
       if (done) break
       output[index] += decoder.decode(value, { stream: true })
+      if (outputMode === 'inherit')
+        await (index === 0 ? Bun.stdout : Bun.stderr).write(value)
     }
     output[index] += decoder.decode()
   }
@@ -54,6 +72,13 @@ export async function capturePackageCommand(
                 killSignal: 'SIGKILL'
               }
             ).exited
+          else {
+            try {
+              process.kill(-child.pid, 'SIGKILL')
+            } catch (error) {
+              if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+            }
+          }
         } finally {
           if (child.exitCode === null) child.kill('SIGKILL')
           await Promise.allSettled([
@@ -70,8 +95,8 @@ export async function capturePackageCommand(
     const [, , exitCode] = await Promise.race([completed, deadline])
     if (exitCode !== 0) throw failure(`exited with code ${exitCode}`)
 
-    console.log(
-      `[check:package] Finished ${label} in ${((performance.now() - started) / 1000).toFixed(2)}s`
+    log?.(
+      `Finished ${label} in ${((performance.now() - started) / 1000).toFixed(2)}s`
     )
 
     return output[0]
@@ -79,4 +104,13 @@ export async function capturePackageCommand(
     clearTimeout(timer)
     await stop
   }
+}
+
+export async function runProcess(
+  command: string,
+  args: string[],
+  cwd: string,
+  options: Omit<ProcessOptions, 'output'> = {}
+) {
+  await captureProcess(command, args, cwd, { ...options, output: 'inherit' })
 }

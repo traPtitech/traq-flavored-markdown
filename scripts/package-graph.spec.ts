@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
+import { withTempDirectory } from './infrastructure/temp-directory.ts'
 import {
   dependencyGraph,
   npmPackageGraph,
@@ -10,7 +11,6 @@ import {
   readNpmPackageGraph,
   validateGoOwnership
 } from './package-graph.ts'
-import { withTempDirectory } from './testing/temp-directory.ts'
 
 const repository = 'github.com/traPtitech/traq-flavored-markdown'
 const modulePath = (directory: string) => `${repository}/${directory}`

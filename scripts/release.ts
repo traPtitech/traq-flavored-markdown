@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import { captureProcess, runProcess } from './infrastructure/process.ts'
 import { npmPackageGraph } from './package-graph.ts'
 import {
   type PackageName,
@@ -147,30 +148,10 @@ const readWorkspace = async (): Promise<Workspace> => ({
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
-const run = async (args: string[]) => {
-  const subprocess = Bun.spawn(args, {
-    cwd: repositoryRoot,
-    stdin: 'inherit',
-    stdout: 'inherit',
-    stderr: 'inherit'
-  })
-  if ((await subprocess.exited) !== 0) throw new Error(`${args[0]} failed`)
-}
-
-async function capture(args: string[]) {
-  const process = Bun.spawn(args, {
-    cwd: repositoryRoot,
-    stdout: 'pipe',
-    stderr: 'pipe'
-  })
-  const [stdout, stderr, code] = await Promise.all([
-    new Response(process.stdout).text(),
-    new Response(process.stderr).text(),
-    process.exited
-  ])
-  if (code) throw new Error(`${args[0]} failed: ${stderr}`)
-  return stdout.trim()
-}
+const run = (args: string[]) =>
+  runProcess(args[0], args.slice(1), repositoryRoot)
+const capture = async (args: string[]) =>
+  (await captureProcess(args[0], args.slice(1), repositoryRoot)).trim()
 
 const releasePorts: ReleasePorts = {
   async npmVersion(name, version) {

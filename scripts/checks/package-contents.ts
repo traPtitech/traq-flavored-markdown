@@ -1,21 +1,15 @@
 import path from 'path'
 
-import { $ } from 'bun'
-
+import { captureProcess } from '../infrastructure/process.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot, sdkRoot } from '../paths.ts'
 import { readNpmPack } from './npm-pack.ts'
-import { capturePackageCommand as capture } from './package-command.ts'
 
-const tempRoot = (
-  Bun.env.TEMP ??
-  Bun.env.TMP ??
-  Bun.env.TMPDIR ??
-  '/tmp'
-).replace(/[\\/]+$/, '')
-const temporaryDirectory = `${tempRoot}/markdown-packages-${Bun.randomUUIDv7()}`
-if (!temporaryDirectory.startsWith(`${tempRoot}/`))
-  throw new Error('Invalid temporary path')
+const capture = (command: string, args: string[], cwd: string) =>
+  captureProcess(command, args, cwd, {
+    log: message => console.log(`[check:package] ${message}`)
+  })
 const bun = Bun.argv[0]
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const archiveName = (archive: string) =>
@@ -24,8 +18,7 @@ const archiveName = (archive: string) =>
   )
 const { graph, manifests } = await readNpmPackageGraph()
 const packageNames = graph.order
-await $`mkdir -p ${temporaryDirectory}`
-try {
+await withTempDirectory('markdown-packages-', async temporaryDirectory => {
   const archives: string[] = []
   for (const repo of packageNames) {
     const cwd = packageRoot(repo)
@@ -165,6 +158,4 @@ try {
   console.log(
     `${packageNames.length} packed packages: SDK, renderer, declarations, CSS and Wasm integration passed`
   )
-} finally {
-  await $`rm -rf ${temporaryDirectory}`
-}
+})

@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import { captureProcess } from './infrastructure/process.ts'
 import {
   type GoModule,
   type GoPackageGraph,
@@ -85,19 +86,9 @@ export function validateGoWork(
 }
 
 async function go(cwd: string, args: string[], workspaceOff = false) {
-  const process = Bun.spawn(['go', ...args], {
-    cwd,
-    env: { ...Bun.env, ...(workspaceOff ? { GOWORK: 'off' } : {}) },
-    stdout: 'pipe',
-    stderr: 'pipe'
+  return captureProcess('go', args, cwd, {
+    env: { ...Bun.env, ...(workspaceOff ? { GOWORK: 'off' } : {}) }
   })
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(process.stdout).text(),
-    new Response(process.stderr).text(),
-    process.exited
-  ])
-  if (exitCode !== 0) throw new Error(`go ${args.join(' ')}: ${stderr.trim()}`)
-  return stdout
 }
 
 const readWork = async (root: string) =>

@@ -1,29 +1,19 @@
 import path from 'node:path'
 
+import { captureProcess } from '../infrastructure/process.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { readGoPackageGraph } from '../package-graph.ts'
 import { repositoryRoot } from '../paths.ts'
 import { goVersion } from '../release/version.ts'
-import { withTempDirectory } from '../testing/temp-directory.ts'
 
 async function go(directory: string, args: string[], remote: boolean) {
-  const process = Bun.spawn(['go', ...args], {
-    cwd: directory,
+  return captureProcess('go', args, directory, {
     env: {
       ...Bun.env,
       GOWORK: 'off',
       ...(remote ? { GOPROXY: 'direct' } : {})
-    },
-    stdout: 'pipe',
-    stderr: 'pipe'
+    }
   })
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(process.stdout).text(),
-    new Response(process.stderr).text(),
-    process.exited
-  ])
-  if (exitCode !== 0)
-    throw new Error(`go ${args.join(' ')} failed:\n${stdout}${stderr}`)
-  return stdout
 }
 
 export async function checkGoConsumer(version: string, remote = false) {

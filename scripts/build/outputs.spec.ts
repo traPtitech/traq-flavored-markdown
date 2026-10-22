@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
-import { withTempDirectory } from '../testing/temp-directory.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { cleanBuildOutput } from './outputs.ts'
 
 test('TypeScript cleanup retires moved modules while retaining assembly artifacts', async () => {

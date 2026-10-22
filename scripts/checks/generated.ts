@@ -5,8 +5,8 @@ import path from 'path'
 
 import { outputIndex, readOutputIndex } from '../codegen/output-manifest.ts'
 import { generateBindings } from '../generate-bindings.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { repositoryRoot } from '../paths.ts'
-import { withTempDirectory } from '../testing/temp-directory.ts'
 
 export type GeneratedTargets = {
   directories: string[]

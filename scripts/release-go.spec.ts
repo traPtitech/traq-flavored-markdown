@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
+import { withTempDirectory } from './infrastructure/temp-directory.ts'
 import { readGoPackageGraph } from './package-graph.ts'
 import { repositoryRoot } from './paths.ts'
 import {
@@ -11,7 +12,6 @@ import {
   validateGoMod,
   validateGoWork
 } from './release-go.ts'
-import { withTempDirectory } from './testing/temp-directory.ts'
 
 const repository = 'github.com/traPtitech/traq-flavored-markdown'
 const core = `${repository}/packages/core/go`
