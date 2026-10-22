@@ -1,10 +1,7 @@
 import { nodeGroup } from '../../../../scripts/codegen/groups.ts'
-import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
-import { typescriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
 
 export function typescriptFiles(manifest: {
   nodes: Record<string, { group: string }>
-  parseError: RawSchema
 }) {
   const files = new Map<string, string>()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
@@ -12,7 +9,7 @@ export function typescriptFiles(manifest: {
   files.set(
     'typescript/generated/nodes.ts',
     '// Generated from Rust contracts. Do not edit.\n' +
-      "import type { Node as AstNode, Document as AstDocument } from '@traq-flavored-markdown/core';\n" +
+      "import type { Node as AstNode, Document as AstDocument, DeepReadonly } from '@traq-flavored-markdown/core';\n" +
       owners
         .map(
           g =>
@@ -28,8 +25,7 @@ export function typescriptFiles(manifest: {
       `export const definitions = Object.freeze({${owners.map(g => `...${g}.definitions`).join(',')}});\n` +
       'const validators = new Map<string,(data:unknown)=>boolean>(Object.values(definitions).map(definition => [definition.kind, definition.validateData]));\n' +
       'export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map(validators);\n' +
-      'export function isKnownNode(node:Node<true>):node is Node<true> & NodeKind {return validators.get(node.kind)?.(node.data) ?? false;}\n' +
-      [...typescriptDeclarations([manifest.parseError]).values()].join('\n')
+      'export function isKnownNode<T extends {kind: string; data:unknown}>(node:T):node is T & DeepReadonly<NodeKind> {return validators.get(node.kind)?.(node.data) ?? false;}\n'
   )
   return files
 }

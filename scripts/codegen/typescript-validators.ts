@@ -84,7 +84,7 @@ export function emitTypeScriptValidators(
 
   return (
     '// Generated from Rust node payload types. Do not edit.\n' +
-    `import { defineNode } from ${q(definitionImport)}\n` +
+    `import { defineNode, type DeepReadonly } from ${q(definitionImport)}\n` +
     emitContractValidators(module, fieldsImport) +
     'export const names = Object.freeze(' +
     q(
@@ -110,7 +110,7 @@ export function emitTypeScriptValidators(
       .join(',\n') +
     '\n})\n' +
     '// Check this payload only; children can still contain unknown nodes.\n' +
-    'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & NodeKind {\n' +
+    'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & DeepReadonly<NodeKind> {\n' +
     '  return validators.get(node.kind)?.(node.data) ?? false\n' +
     '}\n'
   )

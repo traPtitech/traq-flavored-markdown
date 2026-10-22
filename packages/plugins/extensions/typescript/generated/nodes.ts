@@ -1,5 +1,5 @@
 // Generated from Rust node payload types. Do not edit.
-import { defineNode } from '@traq-flavored-markdown/core'
+import { type DeepReadonly, defineNode } from '@traq-flavored-markdown/core'
 import {
   boolean,
   fields,
@@ -160,6 +160,6 @@ export const definitions = Object.freeze({
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T
-): node is T & NodeKind {
+): node is T & DeepReadonly<NodeKind> {
   return validators.get(node.kind)?.(node.data) ?? false
 }

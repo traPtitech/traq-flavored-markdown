@@ -1,4 +1,4 @@
-import type { ReadonlyNode as Node } from './ast.js'
+import type { DeepReadonly, ReadonlyNode as Node } from './ast.js'
 
 export type NodeKind = { kind: string; data: unknown }
 
@@ -107,7 +107,7 @@ export interface NodeDefinition<K extends NodeKind = NodeKind> {
   readonly kind: K['kind']
   readonly validateData: (data: unknown) => boolean
   readonly structure: NodeStructure
-  is<T extends NodeKind>(node: T): node is T & K
+  is<T extends NodeKind>(node: T): node is T & DeepReadonly<K>
 }
 
 export function defineNode<K extends NodeKind>(
@@ -121,7 +121,7 @@ export function defineNode<K extends NodeKind>(
     kind,
     validateData,
     structure: snapshotStructure(structure),
-    is<T extends NodeKind>(node: T): node is T & K {
+    is<T extends NodeKind>(node: T): node is T & DeepReadonly<K> {
       return node.kind === kind && validateData(node.data)
     }
   })
@@ -130,7 +130,7 @@ export function defineNode<K extends NodeKind>(
 }
 
 export type DefinedNode<D extends NodeDefinition> =
-  D extends NodeDefinition<infer K> ? Node & K : never
+  D extends NodeDefinition<infer K> ? Node & DeepReadonly<K> : never
 
 /** Evaluate the same child constraints used by native and generated consumers. */
 export function validateStructure(

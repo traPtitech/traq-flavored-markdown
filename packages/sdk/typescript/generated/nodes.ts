@@ -4,7 +4,8 @@ import * as generic from '@traq-flavored-markdown/extensions-plugin/nodes'
 import * as trap from '@traq-flavored-markdown/traq-plugin/nodes'
 import type {
   Document as AstDocument,
-  Node as AstNode
+  Node as AstNode,
+  DeepReadonly
 } from '@traq-flavored-markdown/core'
 
 export type NodeKind = commonmark.NodeKind | generic.NodeKind | trap.NodeKind
@@ -35,17 +36,8 @@ const validators = new Map<string, (data: unknown) => boolean>(
 export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
   validators
 )
-export function isKnownNode(node: Node<true>): node is Node<true> & NodeKind {
+export function isKnownNode<T extends { kind: string; data: unknown }>(
+  node: T
+): node is T & DeepReadonly<NodeKind> {
   return validators.get(node.kind)?.(node.data) ?? false
 }
-export type ParseError =
-  | {
-      code: 'invalid_utf8'
-    }
-  | {
-      code: 'resource_limit'
-      resource: string
-    }
-  | {
-      code: 'internal_error'
-    }
