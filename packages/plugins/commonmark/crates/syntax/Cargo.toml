@@ -14,4 +14,4 @@ idna = "=1.1.0"
 regex = "=1.13.1"
 
 [dev-dependencies]
-serde_json = "=1.0.151"
+serde_json = "=1.0.154"

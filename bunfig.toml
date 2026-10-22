@@ -3,5 +3,23 @@
 exact = true
 ignoreScripts = true
 minimumReleaseAge = 604800
-minimumReleaseAgeExcludes = ["qs"]
+# These packages have reviewed exact pins; keep the age gate for other packages.
+minimumReleaseAgeExcludes = [
+  "@typescript-eslint/eslint-plugin",
+  "@typescript-eslint/parser",
+  "@typescript-eslint/project-service",
+  "@typescript-eslint/scope-manager",
+  "@typescript-eslint/tsconfig-utils",
+  "@typescript-eslint/type-utils",
+  "@typescript-eslint/types",
+  "@typescript-eslint/typescript-estree",
+  "@typescript-eslint/utils",
+  "@typescript-eslint/visitor-keys",
+  "argparse",
+  "eslint",
+  "markdown-it",
+  "sass",
+  "vite-plugin-singlefile",
+  "vite"
+]
 saveTextLockfile = true

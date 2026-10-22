@@ -111,7 +111,7 @@ export default [
       'react-hooks': reactHooksPlugin
     },
     settings: {
-      react: { version: '19.2.8' }
+      react: { version: '19.3.1' }
     },
     rules: {
       ...reactPlugin.configs.recommended.rules,

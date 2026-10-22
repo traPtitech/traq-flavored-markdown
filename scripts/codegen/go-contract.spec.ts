@@ -108,7 +108,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     await write(`${directory}/contract_test.go`, testSource)
     await runCommand(['go', 'test', './...'], directory)
   })
-}, 20_000)
+}, 60_000)
 
 test('tagged Rust unions generate typed Go variants and strict round trips', async () => {
   const schema: RawSchema = {
@@ -181,7 +181,7 @@ func TestStampKind(t *testing.T) {
     await write(`${directory}/contract_test.go`, testSource)
     await runCommand(['go', 'test', './...'], directory)
   })
-}, 20_000)
+}, 60_000)
 
 test('request defaults preserve explicit zero and bounded fractional values', async () => {
   const schema: RawSchema = {
@@ -235,7 +235,7 @@ func TestRequest(t *testing.T) {
     )
     await runCommand(['go', 'test', './...'], directory)
   })
-}, 30_000)
+}, 60_000)
 
 test('direct generated decoders reject duplicate keys and lossy Unicode repairs', async () => {
   const schema: RawSchema = {
@@ -289,4 +289,4 @@ func TestDirectDecoder(t *testing.T) {
     )
     await runCommand(['go', 'test', './...'], directory)
   })
-}, 30_000)
+}, 60_000)

@@ -1,0 +1,11 @@
+Source: mdurl 0.3.1 from crates.io (upstream commit 0a7536e3ffc7f5688d3b06ab647ebcfbc511d1cb).
+License: MIT; see LICENSE and the notices retained in individual source files.
+
+The upstream tests are unchanged. Cargo.toml updates the idna requirement to
+1.1.0 to remove RUSTSEC-2024-0421 from the dependency graph. Two Cow return
+types explicitly spell their inferred lifetimes for current Rust compilers;
+there are no changes to URL parsing, formatting, or encoding logic.
+The latest published upstream mdurl release still requires idna <0.4.
+A Cargo patch selects this copy while preserving mdurl's permissive URL
+parsing and encoding behavior. Replace it with an upstream release when
+upstream supports a fixed idna version.

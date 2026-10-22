@@ -24,6 +24,10 @@ members = [
   "packages/sdk/examples/rust"
 ]
 resolver = "3"
+exclude = ["vendor/mdurl"]
+
+[patch.crates-io]
+mdurl = { path = "vendor/mdurl" }
 
 [workspace.package]
 version = "0.1.0"

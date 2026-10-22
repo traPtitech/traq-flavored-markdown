@@ -42,7 +42,7 @@
     "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go",
     "test:corpus": "bun run --cwd tools/corpus test",
     "test:go": "bun run scripts/testing/go.ts",
-    "test:rust": "cargo test --locked --workspace --all-features",
+    "test:rust": "cargo test --locked -p mdurl && cargo test --locked --workspace --all-features",
     "test:typescript": "bun run scripts/testing/run.ts",
     "test:unit": "bun run scripts/testing/run.ts unit",
     "test:assembly": "bun run scripts/testing/run.ts assembly",
@@ -55,21 +55,24 @@
     "@eslint/js": "10.0.1",
     "@stylistic/eslint-plugin": "5.10.0",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
-    "@types/bun": "1.4.2",
-    "@typescript-eslint/eslint-plugin": "8.71.2",
-    "@typescript-eslint/parser": "8.71.2",
+    "@types/bun": "1.4.3",
+    "@typescript-eslint/eslint-plugin": "8.72.0",
+    "@typescript-eslint/parser": "8.72.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "eslint": "10.12.0",
+    "eslint": "10.13.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-unused-imports": "4.4.1",
-    "globals": "17.12.0",
+    "globals": "17.13.0",
     "husky": "9.1.7",
     "jiti": "2.7.0",
-    "lint-staged": "17.5.1",
+    "lint-staged": "17.6.0",
     "prettier": "3.9.10",
-    "typescript": "6.0.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
-  "packageManager": "bun@1.3.14"
+  "packageManager": "bun@1.4.3",
+  "overrides": {
+    "eslint": "10.13.0"
+  }
 }

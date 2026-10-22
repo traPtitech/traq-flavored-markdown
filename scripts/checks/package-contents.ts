@@ -112,7 +112,12 @@ try {
     ],
     temporaryDirectory
   )
-  const tsc = Bun.fileURLToPath(import.meta.resolve('typescript/bin/tsc'))
+  const tsc = path.join(
+    path.dirname(
+      Bun.fileURLToPath(import.meta.resolve('@typescript/native/package.json'))
+    ),
+    'bin/tsc'
+  )
   for (const [source, name] of [
     ['typescript/tests/package-consumer', 'sdk'],
     ['typescript/tests/rendering', 'renderer']

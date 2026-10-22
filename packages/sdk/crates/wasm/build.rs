@@ -59,6 +59,8 @@ fn main() {
         "Cargo.toml",
         "../../../../Cargo.toml",
         "../../../../Cargo.lock",
+        "../../../../vendor/mdurl/Cargo.toml",
+        "../../../../vendor/mdurl/src",
         "../../../../rust-toolchain.toml",
         "../../../../.cargo/config.toml",
         "../../../../scripts/codegen/structure.rs",
