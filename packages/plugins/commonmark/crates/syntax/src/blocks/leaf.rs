@@ -22,7 +22,8 @@ pub(super) fn fenced(
     let first = input.start;
 
     let info_end = lines[first].start + input.current().trim_end().len();
-    let info = source.literal(info_end - info.len()..info_end).into_owned();
+    let info =
+        super::super::inlines::entities::unescape(&source.literal(info_end - info.len()..info_end));
     let indent = input.current().len() - input.current().trim_start_matches(' ').len();
 
     let mut end = closing_fence(input, marker, count);

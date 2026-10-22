@@ -158,6 +158,7 @@ impl NodeData for ListItem {
 #[serde(deny_unknown_fields)]
 pub struct CodeBlock {
     pub fenced: bool,
+    /// Decoded CommonMark info string. Authored notation remains in the source span.
     pub info: String,
     pub literal: String,
 }

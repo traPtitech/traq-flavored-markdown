@@ -95,8 +95,8 @@ fn render_node(node: &Node, tight: bool) -> String {
 
         format!("<li>{content}</li>\n")
     } else if let Some(code) = node.get::<CodeBlock>() {
-        let info = markdown_commonmark::inlines::entities::unescape(&code.info);
-        let class = info
+        let class = code
+            .info
             .split_whitespace()
             .next()
             .map(|language| format!(" class=\"language-{}\"", escape(language)))
