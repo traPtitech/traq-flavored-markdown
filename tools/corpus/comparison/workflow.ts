@@ -2,8 +2,12 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { readGoPackageGraph } from '../../../scripts/package-graph.ts'
-import { packageRoot, repositoryRoot, sdkRoot } from '../../../scripts/paths.ts'
+import { readGoPackageGraph } from '../../../tools/workspace/package-graph.ts'
+import {
+  packageRoot,
+  repositoryRoot,
+  sdkRoot
+} from '../../../tools/workspace/paths.ts'
 import { resolveRepositoryPath } from '../scripts/args.ts'
 import { GitRepo } from '../scripts/git.ts'
 import {

@@ -1,0 +1,161 @@
+import path from 'path'
+
+import { captureProcess } from '../infrastructure/process.ts'
+import { withTempDirectory } from '../infrastructure/temp-directory.ts'
+import { readNpmPackageGraph } from '../package-graph.ts'
+import { packageRoot, sdkRoot } from '../paths.ts'
+import { readNpmPack } from './npm-pack.ts'
+
+const capture = (command: string, args: string[], cwd: string) =>
+  captureProcess(command, args, cwd, {
+    log: message => console.log(`[check:package] ${message}`)
+  })
+const bun = Bun.argv[0]
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const archiveName = (archive: string) =>
+  archive.slice(
+    Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
+  )
+const { graph, manifests } = await readNpmPackageGraph()
+const packageNames = graph.order
+await withTempDirectory('markdown-packages-', async temporaryDirectory => {
+  const archives: string[] = []
+  for (const repo of packageNames) {
+    const cwd = packageRoot(repo)
+    const packed = readNpmPack(
+      await capture(
+        npm,
+        [
+          'pack',
+          '--json',
+          '--ignore-scripts',
+          '--pack-destination',
+          temporaryDirectory
+        ],
+        cwd
+      ),
+      manifests[repo].name
+    )
+    const archive = path.join(temporaryDirectory, packed.filename)
+    archives.push(archive)
+    const files = new Set(packed.files.map(file => file.path))
+    const manifest = await Bun.file(path.join(cwd, 'package.json')).json()
+    const exported = (value: unknown): string[] =>
+      typeof value === 'string'
+        ? value.includes('*')
+          ? []
+          : [value.replace(/^\.\//, '')]
+        : value && typeof value === 'object'
+          ? Object.values(value).flatMap(exported)
+          : []
+    for (const name of [
+      'LICENSE',
+      ...exported(manifest.exports),
+      ...(repo === 'sdk' ? ['dist/browser.js', 'dist/browser.d.ts'] : []),
+      'dist/renderer/index.js',
+      'dist/renderer/index.d.ts'
+    ])
+      if (!files.has(name)) throw Error(repo + ': missing ' + name)
+    if (repo === 'sdk')
+      for (const directory of ['messages', 'profiles', 'runtime']) {
+        if (
+          ![...files].some(
+            file =>
+              file.startsWith(`dist/${directory}/`) && file.endsWith('.js')
+          ) ||
+          ![...files].some(
+            file =>
+              file.startsWith(`dist/${directory}/`) && file.endsWith('.d.ts')
+          )
+        )
+          throw Error(
+            `sdk: missing implementation/declarations in ${directory}`
+          )
+      }
+    for (const name of files)
+      if (/^(?:typescript|crates|go|tests|node_modules)\//.test(name))
+        throw Error(repo + ': shipped source ' + name)
+    if (repo !== 'sdk' && [...files].some(n => n.endsWith('.wasm')))
+      throw Error('Unexpected Wasm in ' + repo)
+  }
+  const packageDependencies = Object.fromEntries(
+    packageNames.map((name, index) => [
+      manifests[name].name,
+      `file:./${archiveName(archives[index])}`
+    ])
+  )
+  await Bun.write(
+    `${temporaryDirectory}/package.json`,
+    JSON.stringify({
+      private: true,
+      type: 'module',
+      dependencies: packageDependencies,
+      overrides: packageDependencies
+    })
+  )
+  await capture(
+    npm,
+    [
+      'install',
+      '--ignore-scripts',
+      '--no-save',
+      '--no-audit',
+      '--no-fund',
+      '--registry=https://registry.npmjs.org'
+    ],
+    temporaryDirectory
+  )
+  const tsc = path.join(
+    path.dirname(
+      Bun.fileURLToPath(import.meta.resolve('@typescript/native/package.json'))
+    ),
+    'bin/tsc'
+  )
+  for (const [source, name] of [
+    ['typescript/tests/package-consumer', 'sdk'],
+    ['typescript/tests/rendering', 'renderer']
+  ]) {
+    await Bun.write(
+      `${temporaryDirectory}/${name}.ts`,
+      Bun.file(path.join(sdkRoot, source, 'types.ts'))
+    )
+    await capture(
+      bun,
+      [
+        tsc,
+        '--noEmit',
+        '--strict',
+        '--target',
+        'ES2022',
+        '--module',
+        'NodeNext',
+        '--moduleResolution',
+        'NodeNext',
+        name + '.ts'
+      ],
+      temporaryDirectory
+    )
+    await Bun.write(
+      `${temporaryDirectory}/${name}.ts`,
+      Bun.file(
+        path.join(
+          sdkRoot,
+          source,
+          name === 'sdk' ? 'runtime.ts' : 'package-runtime.ts'
+        )
+      )
+    )
+    const contract = await Bun.file(
+      path.join(sdkRoot, 'dist', 'contract.json')
+    ).json()
+    await Bun.stdout.write(
+      await capture(bun, [name + '.ts', contract.sha256], temporaryDirectory)
+    )
+    await Bun.stdout.write(
+      await capture('node', [name + '.ts', contract.sha256], temporaryDirectory)
+    )
+  }
+  console.log(
+    `${packageNames.length} packed packages: SDK, renderer, declarations, CSS and Wasm integration passed`
+  )
+})

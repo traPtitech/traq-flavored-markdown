@@ -1,4 +1,4 @@
-import { nodeGroup } from '../../../../scripts/codegen/groups.ts'
+import { nodeGroup } from '../../../../tools/contracts/typescript/groups.ts'
 
 export function typescriptFiles(manifest: {
   nodes: Record<string, { group: string }>
@@ -7,7 +7,7 @@ export function typescriptFiles(manifest: {
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
   for (const group of owners) nodeGroup(group)
   files.set(
-    'typescript/generated/nodes.ts',
+    'typescript/src/generated/nodes.ts',
     '// Generated from Rust contracts. Do not edit.\n' +
       "import type { Node as AstNode, Document as AstDocument, DeepReadonly } from '@traq-flavored-markdown/core';\n" +
       owners

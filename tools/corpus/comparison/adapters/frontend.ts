@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import { sdkRoot } from '../../../../scripts/paths.ts'
+import { sdkRoot } from '../../../../tools/workspace/paths.ts'
 import type { ComparisonPlan } from '../../shared/comparison.ts'
 import type { Profile } from '../runner.ts'
 

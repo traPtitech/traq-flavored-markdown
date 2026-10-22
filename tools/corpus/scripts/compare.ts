@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import { repositoryRoot } from '../../../scripts/paths.ts'
+import { repositoryRoot } from '../../../tools/workspace/paths.ts'
 import { runComparison } from '../comparison/workflow.ts'
 import { defaultWarmups } from '../shared/comparison.ts'
 import { parseArgs } from './args.ts'

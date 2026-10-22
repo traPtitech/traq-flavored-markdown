@@ -2,7 +2,7 @@ import {
   type RawSchema,
   type Shape,
   shape
-} from '../../../scripts/codegen/schema.ts'
+} from '../../../tools/contracts/typescript/schema.ts'
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical)

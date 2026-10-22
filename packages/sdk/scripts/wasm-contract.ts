@@ -3,15 +3,15 @@ import path from 'path'
 import {
   type ArtifactMetadata,
   parseArtifactMetadata
-} from '../../../scripts/codegen/manifest.ts'
-import { sdkRoot } from '../../../scripts/paths.ts'
+} from '../../../tools/contracts/typescript/manifest.ts'
+import { sdkRoot } from '../../../tools/workspace/paths.ts'
 
 export async function readWasmMetadata(
   bytes: Uint8Array
 ): Promise<ArtifactMetadata> {
   // The workspace graph generates the ABI and builds core before assembling
   // Wasm. Loading its validators at startup would require core/dist too early.
-  const { abiExports } = await import('../typescript/generated/abi.ts')
+  const { abiExports } = await import('../typescript/src/generated/abi.ts')
   const requiredExports = {
     memory: 'memory',
     ...Object.fromEntries(

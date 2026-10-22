@@ -1,14 +1,17 @@
-import { emitGoDefinition, goFile } from '../../../../scripts/codegen/go.ts'
-import { normalizeContracts } from '../../../../scripts/codegen/ir.ts'
-import type { ArtifactManifest } from '../../../../scripts/codegen/manifest.ts'
-import { emitContractValidators } from '../../../../scripts/codegen/typescript-validators.ts'
-import { emitTypeScriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
+import {
+  emitGoDefinition,
+  goFile
+} from '../../../../tools/contracts/typescript/go.ts'
+import { normalizeContracts } from '../../../../tools/contracts/typescript/ir.ts'
+import type { ArtifactManifest } from '../../../../tools/contracts/typescript/manifest.ts'
+import { emitContractValidators } from '../../../../tools/contracts/typescript/typescript-validators.ts'
+import { emitTypeScriptDeclarations } from '../../../../tools/contracts/typescript/typescript.ts'
 
 export type {
   Abi,
   Operation,
   ArtifactManifest
-} from '../../../../scripts/codegen/manifest.ts'
+} from '../../../../tools/contracts/typescript/manifest.ts'
 
 export function abiFiles(manifest: ArtifactManifest) {
   const error = { ...manifest.abi.error, title: 'WireError' }
@@ -18,7 +21,7 @@ export function abiFiles(manifest: ArtifactManifest) {
     throw new Error('ABI must define ErrorCode as a string enum')
   const files = new Map<string, string>()
   files.set(
-    'typescript/generated/abi.ts',
+    'typescript/src/generated/abi.ts',
     [
       '// Generated from the Rust ABI contract. Do not edit.',
       [...emitTypeScriptDeclarations(contracts).values()].join('\n'),
@@ -33,7 +36,7 @@ export function abiFiles(manifest: ArtifactManifest) {
     ].join('\n')
   )
   files.set(
-    'typescript/generated/artifact.ts',
+    'typescript/src/generated/artifact.ts',
     [
       '// Generated from the Rust ABI contract. Do not edit.',
       `export const contractId = ${JSON.stringify(manifest.contractId)}`,

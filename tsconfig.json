@@ -4,6 +4,8 @@
     "eslint.config.ts",
     "prettier.config.ts",
     "scripts/**/*.ts",
+    "tools/workspace/**/*.ts",
+    "tools/contracts/**/*.ts",
     "packages/**/scripts/**/*.ts"
   ]
 }

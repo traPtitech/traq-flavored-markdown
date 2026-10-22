@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import type { RawSchema } from '../../../scripts/codegen/schema.ts'
+import type { RawSchema } from '../../../tools/contracts/typescript/schema.ts'
 import { goNodes as sdkGoNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
 import { presetFiles } from './codegen/presets.ts'
@@ -20,10 +20,10 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
     nodes: { [key]: { schema, group: 'trap' } }
   }
   const generated = typescriptFiles(manifest)
-  expect(generated.get('typescript/generated/nodes.ts')).toMatch(
+  expect(generated.get('typescript/src/generated/nodes.ts')).toMatch(
     /trap.NodeKind/
   )
-  expect(generated.get('typescript/generated/nodes.ts')).toMatch(
+  expect(generated.get('typescript/src/generated/nodes.ts')).toMatch(
     /return validators\.get\(node\.kind\)/
   )
   expect(sdkGoNodes({ nodes: { [key]: { group: 'trap' } } })).toContain(
@@ -36,13 +36,13 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
     'Unknown node contract group: custom'
   )
   const presets = presetFiles({ commonmark: 0, custom: { compact: 1 } })
-  expect(presets.get('typescript/generated/presets.ts')).toMatch(
+  expect(presets.get('typescript/src/generated/presets.ts')).toMatch(
     /"custom.compact"/
   )
-  expect(presets.get('typescript/generated/presets.ts')).toMatch(
+  expect(presets.get('typescript/src/generated/presets.ts')).toMatch(
     /Object\.freeze\(\{ "compact": "custom.compact" \} as const\)/
   )
-  expect(presets.get('typescript/generated/presets.ts')).toContain(
+  expect(presets.get('typescript/src/generated/presets.ts')).toContain(
     'export function isPreset(value: string): value is Preset'
   )
   expect(presets.get('go/generated_presets.go')).toMatch(
@@ -86,7 +86,7 @@ test('Rust processing options and nested results generate without host changes',
   expect(go).toMatch(/Labels \[\]string/)
   expect(go).toContain('func (value *Extraction) UnmarshalJSON')
   expect(go!.match(/type Details struct/g)).toHaveLength(1)
-  const ts = files.get('typescript/generated/processing.ts')
+  const ts = files.get('typescript/src/generated/processing.ts')
   expect(ts).toMatch(/"compact": boolean/)
   expect(ts).toMatch(/"batches": Array<Details>/)
   expect(ts!.match(/export type Details/g)).toHaveLength(1)

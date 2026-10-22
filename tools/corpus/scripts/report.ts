@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
-import { corpusRoot } from '../../../scripts/paths.ts'
+import { corpusRoot } from '../../../tools/workspace/paths.ts'
 import { type ReportMetadata, modes } from '../report-schema.ts'
 import { aggregateDifferences, reportDocument } from '../report/aggregate.ts'
 import { parseComparisonPlan } from '../shared/comparison.ts'

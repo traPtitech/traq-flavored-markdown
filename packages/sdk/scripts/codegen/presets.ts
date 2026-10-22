@@ -1,6 +1,6 @@
-import type { PresetTree } from '../../../../scripts/codegen/manifest.ts'
+import type { PresetTree } from '../../../../tools/contracts/typescript/manifest.ts'
 
-export type { PresetTree } from '../../../../scripts/codegen/manifest.ts'
+export type { PresetTree } from '../../../../tools/contracts/typescript/manifest.ts'
 
 const q = JSON.stringify
 
@@ -32,7 +32,7 @@ export function presetFiles(tree: PresetTree): Map<string, string> {
     ] ?? part[0].toUpperCase() + part.slice(1)
   return new Map([
     [
-      'typescript/generated/presets.ts',
+      'typescript/src/generated/presets.ts',
       '// Generated from Rust preset exports. Do not edit.\n' +
         'export type Preset = ' +
         paths.map(p => q(p.join('.'))).join(' | ') +

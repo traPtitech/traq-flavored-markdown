@@ -3,7 +3,10 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { cargoTargetDirectory, repositoryRoot } from '../../../scripts/paths.ts'
+import {
+  cargoTargetDirectory,
+  repositoryRoot
+} from '../../../tools/workspace/paths.ts'
 import { semanticContractId } from './contract-identity.ts'
 
 export { semanticContractId } from './contract-identity.ts'
@@ -31,10 +34,12 @@ async function wasmRustFlags() {
     )
   }
 
-  const configFile = Bun.file(path.join(repositoryRoot, '.cargo', 'config.toml'))
-  const config = (await configFile.exists()
-    ? Bun.TOML.parse(await configFile.text())
-    : {}) as { target?: Record<string, { rustflags?: unknown }> }
+  const configFile = Bun.file(
+    path.join(repositoryRoot, '.cargo', 'config.toml')
+  )
+  const config = (
+    (await configFile.exists()) ? Bun.TOML.parse(await configFile.text()) : {}
+  ) as { target?: Record<string, { rustflags?: unknown }> }
   const targetFlags = config.target?.['wasm32-unknown-unknown']?.rustflags ?? []
   if (
     !Array.isArray(targetFlags) ||

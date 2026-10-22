@@ -2,7 +2,7 @@ import path from 'path'
 
 import { expect, test } from 'bun:test'
 
-import { sdkRoot } from '../../../scripts/paths.ts'
+import { sdkRoot } from '../../../tools/workspace/paths.ts'
 import { assertNoHostPaths } from './node-contracts.ts'
 import { assertBundledWasmMatches, readWasmMetadata } from './wasm-contract.ts'
 

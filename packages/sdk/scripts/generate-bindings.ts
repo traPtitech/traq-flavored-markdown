@@ -1,15 +1,18 @@
 import path from 'path'
 
-import { readManifest } from '../../../scripts/codegen/io.ts'
+import { readManifest } from '../../../tools/contracts/typescript/io.ts'
 import {
   type ArtifactManifest,
   parseArtifactManifest
-} from '../../../scripts/codegen/manifest.ts'
+} from '../../../tools/contracts/typescript/manifest.ts'
 import {
   OutputManifest,
   applyOutputManifest
-} from '../../../scripts/codegen/output-manifest.ts'
-import { packageOutputRoot, repositoryRoot } from '../../../scripts/paths.ts'
+} from '../../../tools/contracts/typescript/output-manifest.ts'
+import {
+  packageOutputRoot,
+  repositoryRoot
+} from '../../../tools/workspace/paths.ts'
 import { abiFiles } from './codegen/abi.ts'
 import { goNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
