@@ -100,32 +100,33 @@ pub struct StampEffects {
     pub size: StampSize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(rename_all = "kebab-case")]
-pub enum StampAnimation {
-    Rotate,
-    RotateInv,
-    Wiggle,
-    Parrot,
-    Zoom,
-    Inversion,
-    Turn,
-    TurnV,
-    Happa,
-    Pyon,
-    Flashy,
-    Pull,
-    Atsumori,
-    Stretch,
-    StretchV,
-    Conga,
-    CongaInv,
-    Rainbow,
-    Ascension,
-    Shake,
-    Party,
-    Attract,
+macro_rules! animations {
+    ($($variant:ident => $name:literal),+ $(,)?) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+        #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+        pub enum StampAnimation {
+            $(#[serde(rename = $name)] $variant),+
+        }
+        impl StampAnimation {
+            /// Canonical contract name; input-only aliases belong to syntax.
+            pub fn from_name(name: &str) -> Option<Self> {
+                match name { $($name => Some(Self::$variant),)+ _ => None }
+            }
+            pub fn name(self) -> &'static str {
+                match self { $(Self::$variant => $name),+ }
+            }
+        }
+    };
+}
+
+animations! {
+    Rotate => "rotate", RotateInv => "rotate-inv", Wiggle => "wiggle",
+    Parrot => "parrot", Zoom => "zoom", Inversion => "inversion",
+    Turn => "turn", TurnV => "turn-v", Happa => "happa", Pyon => "pyon",
+    Flashy => "flashy", Pull => "pull", Atsumori => "atsumori",
+    Stretch => "stretch", StretchV => "stretch-v", Conga => "conga",
+    CongaInv => "conga-inv", Rainbow => "rainbow", Ascension => "ascension",
+    Shake => "shake", Party => "party", Attract => "attract",
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
