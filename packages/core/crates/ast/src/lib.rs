@@ -3,6 +3,8 @@
 #![forbid(unsafe_code)]
 
 mod data;
+mod fields;
+pub use fields::PayloadFields;
 mod source;
 pub use source::{SourceEdit, SourceError, SourceText};
 mod structure;

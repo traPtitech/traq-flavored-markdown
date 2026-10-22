@@ -4,12 +4,14 @@ use std::{
     sync::Arc,
 };
 
+type ArityAccessor = dyn Fn(&dyn Any) -> usize + Send + Sync;
+
 /// A payload field whose length constrains each child's number of children.
 /// The native accessor and exported field name describe the same relationship.
 #[derive(Clone)]
 pub struct ChildArity {
     pub field: &'static str,
-    length: Arc<dyn Fn(&dyn Any) -> usize + Send + Sync>,
+    length: Arc<ArityAccessor>,
 }
 impl ChildArity {
     pub fn new<T: NodeData>(field: &'static str, length: fn(&T) -> usize) -> Self {
