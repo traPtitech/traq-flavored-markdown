@@ -27,7 +27,6 @@ export function embedReferences(
       if (kind !== 'user' && kind !== 'group' && kind !== 'channel')
         throw new TypeError('Invalid lookup kind')
       new SourceText(name)
-      new SourceText(kind)
     } catch {
       throw new TypeError('Embedding plan does not match source')
     }

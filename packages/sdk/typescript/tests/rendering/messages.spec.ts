@@ -20,15 +20,14 @@ const view = messageRenderers({ origin })
 test('message renderers keep telephone links and show rejected autolinks with brackets', () => {
   for (const renderer of [view.standard, view.condensed]) {
     expect(
-      renderer.render(parser.parse('[090-1234-5678](tel:+819012345678)'))
-        .renderedText
+      renderer.render(parser.parse('[090-1234-5678](tel:+819012345678)')).html
     ).toContain('href="tel:+819012345678"')
-    expect(renderer.render(parser.parse('<hoge:hoge>')).renderedText).toContain(
+    expect(renderer.render(parser.parse('<hoge:hoge>')).html).toContain(
       '&lt;hoge:hoge&gt;'
     )
-    expect(
-      renderer.render(parser.parse('a <em>b</em>')).renderedText
-    ).toContain('a &lt;em&gt;b&lt;/em&gt;')
+    expect(renderer.render(parser.parse('a <em>b</em>')).html).toContain(
+      'a &lt;em&gt;b&lt;/em&gt;'
+    )
   }
 })
 
@@ -45,9 +44,9 @@ test('URL meaning follows the shared Rust contract', () => {
   })
   expect(resourceCardFromUrl(file + '/extra', origin)).toBeUndefined()
   expect(resourceCardFromUrl(file + '/', origin)).toBeUndefined()
-  expect(
-    view.standard.render(parser.parse(file + '/extra')).renderedText
-  ).toContain(file + '/extra')
+  expect(view.standard.render(parser.parse(file + '/extra')).html).toContain(
+    file + '/extra'
+  )
 })
 
 test('message rendering extracts cards, trims trailing bare links, and keeps the AST reusable', () => {
@@ -64,8 +63,8 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
     expect(Object.keys(renderer)).toEqual(['render'])
   const normal = view.standard.render(document),
     condensed = view.condensed.render(document)
-  expect(normal.renderedText).toBe('<p>本文</p>\n')
-  expect(condensed.renderedText).toBe('本文')
+  expect(normal.html).toBe('<p>本文</p>\n')
+  expect(condensed.html).toBe('本文')
   expect(normal.rawText).toBe(source)
   expect(normal.cards).toEqual([
     { type: 'file', id: fileId },
@@ -73,11 +72,11 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
   ])
   expect(condensed.cards).toEqual(normal.cards)
   expect(document).toEqual(snapshot)
-  expect(view.standard.render(document).renderedText).toBe(normal.renderedText)
+  expect(view.standard.render(document).html).toBe(normal.html)
   expect(
     view.standard
       .render(parser.parse(file + '\n\n' + quote))
-      .renderedText.includes(file)
+      .html.includes(file)
   ).toBe(true)
 })
 
@@ -137,14 +136,14 @@ test('card extraction respects Markdown context and preserves external URL candi
 
 test('condensed labels retained card links without removing explicit labels from message content', () => {
   const document = parser.parse('[資料](' + file + ') ' + quote + ' 続き')
-  expect(view.standard.render(document).renderedText).toMatch(/>資料<\/a>/)
-  const text = view.condensed.render(document).renderedText
+  expect(view.standard.render(document).html).toMatch(/>資料<\/a>/)
+  const text = view.condensed.render(document).html
   expect(text).toMatch(/>\[\[添付ファイル\]\]<\/a>/)
   expect(text).toMatch(/>\[\[引用メッセージ\]\]<\/a> 続き/)
-  expect(view.condensed.render(parser.parse(file)).renderedText).toBe('')
-  expect(
-    view.standard.render(parser.parse('<' + file + '>')).renderedText
-  ).toMatch(/<a /)
+  expect(view.condensed.render(parser.parse(file)).html).toBe('')
+  expect(view.standard.render(parser.parse('<' + file + '>')).html).toMatch(
+    /<a /
+  )
 })
 
 test('condensed preserves explicit quote links and their labels', () => {
@@ -156,10 +155,10 @@ test('condensed preserves explicit quote links and their labels', () => {
   ]) {
     const document = parser.parse(source),
       result = view.condensed.render(document)
-    expect(result.renderedText).toMatch(/<a /)
-    expect(result.renderedText).not.toMatch(/\[\[引用メッセージ\]\]/)
-    expect(result.renderedText).toBe(
-      view.standard.render(document).renderedText.trim().slice(3, -4)
+    expect(result.html).toMatch(/<a /)
+    expect(result.html).not.toMatch(/\[\[引用メッセージ\]\]/)
+    expect(result.html).toBe(
+      view.standard.render(document).html.trim().slice(3, -4)
     )
     expect(result.cards).toEqual([{ type: 'message', id: messageId }])
   }
@@ -170,7 +169,7 @@ test('traQ condensed flattens full-document block structure and break nodes', ()
     view.condensed.render({
       source: '<unknown>',
       children: [{ kind: 'custom', span: { start: 0, end: 9 }, data: {} }]
-    }).renderedText
+    }).html
   ).toBe('&lt;unknown&gt;')
   for (const [source, expected] of [
     ['a\nb', 'a b'],
@@ -182,15 +181,11 @@ test('traQ condensed flattens full-document block structure and break nodes', ()
     ['| a | b |\n| - | - |\n| c | d |', '| a | b | | c | d |'],
     ['```\na\nb\n```', '<code>a\nb\n</code>']
   ])
-    expect(view.condensed.render(parser.parse(source)).renderedText).toBe(
-      expected
-    )
-  expect(view.standard.render(parser.parse('a\nb')).renderedText).toMatch(
+    expect(view.condensed.render(parser.parse(source)).html).toBe(expected)
+  expect(view.standard.render(parser.parse('a\nb')).html).toMatch(/<br>/)
+  expect(view.condensed.render(parser.parse('a\n\n\n\nb')).html).not.toMatch(
     /<br>/
   )
-  expect(
-    view.condensed.render(parser.parse('a\n\n\n\nb')).renderedText
-  ).not.toMatch(/<br>/)
 })
 
 test('condensed numbers ordered list items from the list start', () => {
@@ -202,24 +197,22 @@ test('condensed numbers ordered list items from the list start', () => {
       '1. outer 1. inner 2. next 2. last'
     ]
   ])
-    expect(view.condensed.render(parser.parse(source)).renderedText).toBe(
-      expected
-    )
+    expect(view.condensed.render(parser.parse(source)).html).toBe(expected)
 })
 
 test('condensed renders images as links and restricts math size commands', () => {
   const images = commonParser()
   expect(
     view.condensed.render(images.parse('![alt](https://example.test/a.png)'))
-      .renderedText
+      .html
   ).toBe('<a href="https://example.test/a.png" data-is-image>alt</a>')
-  expect(
-    view.condensed.render(parser.parse('$\\Huge x$')).renderedText
-  ).not.toMatch(/size11|katex-display/)
-  expect(view.condensed.render(parser.parse('$$x$$')).renderedText).not.toMatch(
+  expect(view.condensed.render(parser.parse('$\\Huge x$')).html).not.toMatch(
+    /size11|katex-display/
+  )
+  expect(view.condensed.render(parser.parse('$$x$$')).html).not.toMatch(
     /katex-block|katex-display/
   )
-  expect(view.standard.render(parser.parse('$$x$$')).renderedText).toMatch(
+  expect(view.standard.render(parser.parse('$$x$$')).html).toMatch(
     /katex-block/
   )
 })
@@ -239,8 +232,6 @@ test('attachment spacing checks the complete AST instead of its final source lin
 test('a card link attached to text remains in the rendered message', () => {
   const document = parser.parse('本文 ' + file)
   expect(endsWithResourceCard(document, origin)).toBe(false)
-  expect(view.standard.render(document).renderedText).toContain(file)
-  expect(view.condensed.render(document).renderedText).toContain(
-    '[[添付ファイル]]'
-  )
+  expect(view.standard.render(document).html).toContain(file)
+  expect(view.condensed.render(document).html).toContain('[[添付ファイル]]')
 })

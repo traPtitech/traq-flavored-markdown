@@ -117,7 +117,7 @@ test('SDK html creates a renderer and accepts third-party plugins', () => {
         origin: 'https://q.example.test',
         plugins: [annotation]
       })
-      .standard.render(document).renderedText
+      .standard.render(document).html
   ).toBe('<mark>&lt;annotation&gt;</mark>')
 })
 

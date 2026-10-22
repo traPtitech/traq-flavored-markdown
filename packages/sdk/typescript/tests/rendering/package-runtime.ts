@@ -51,7 +51,7 @@ try {
     'hello\nhttps://q.example.test/files/00000000-0000-0000-0000-000000000001'
   )
   check(
-    messages.condensed.render(message).renderedText === 'hello',
+    messages.condensed.render(message).html === 'hello',
     'Packed condensed renderer changed the message text'
   )
   check(

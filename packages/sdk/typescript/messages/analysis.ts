@@ -10,6 +10,7 @@ import { names as trap } from '@traq-flavored-markdown/traq-plugin/nodes'
 import { definitions } from '../generated/nodes.js'
 import { resourceCardFromUrl } from './cards.js'
 import type { ResourceCard } from './cards.js'
+import { resourceLabels } from './labels.js'
 
 const builtinNodes = Object.values(definitions)
 
@@ -102,15 +103,17 @@ export function analyzeMessage(
       const card = resourceCardFromUrl(node.data.destination, origin)
       if (card) {
         links.set(node, card)
-        if (card.type === 'url' || !ids.has(card.id)) {
+        const identity =
+          card.type === 'url' ? undefined : `${card.type}:${card.id}`
+        if (identity === undefined || !ids.has(identity)) {
           cards.push(card)
-          if (card.type !== 'url') ids.add(card.id)
+          if (identity !== undefined) ids.add(identity)
         }
 
         if (card.type === 'file') {
-          childText.set(node, '[[添付ファイル]]')
+          childText.set(node, resourceLabels.file)
         } else if (card.type === 'message' && node.data.form === 'linkify') {
-          childText.set(node, '[[引用メッセージ]]')
+          childText.set(node, resourceLabels.message)
         }
       }
     }

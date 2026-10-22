@@ -21,10 +21,10 @@ test('empty quote visibility belongs to traQ presentation without synthetic AST 
     '<blockquote>\n<br>\n</blockquote>\n'
   )
   const view = traq.messageRenderers({ origin: 'https://q.example.test' })
-  expect(view.standard.render(document).renderedText).toBe(
+  expect(view.standard.render(document).html).toBe(
     '<blockquote>\n<br>\n</blockquote>\n'
   )
-  expect(view.condensed.render(document).renderedText).toBe('> ')
+  expect(view.condensed.render(document).html).toBe('> ')
   expect(
     traq
       .html({
@@ -173,7 +173,7 @@ test('additional blank lines retain source ranges and trailing-card presentation
   const origin = 'https://q.example.test'
   const file = origin + '/files/00000000-0000-0000-0000-000000000001'
   const view = traq.messageRenderers({ origin })
-  expect(
-    view.standard.render(parser.parse('a\n' + file + '\n\n\n')).renderedText
-  ).toBe('<p>a</p>\n')
+  expect(view.standard.render(parser.parse('a\n' + file + '\n\n\n')).html).toBe(
+    '<p>a</p>\n'
+  )
 })

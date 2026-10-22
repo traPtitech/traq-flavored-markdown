@@ -1,11 +1,9 @@
-import { createHighlighter } from '@traq-flavored-markdown/commonmark-plugin/highlight'
 import {
   validateLink as defaultLinkPolicy,
   validateImage as defaultStampPolicy
 } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import type { HighlightResult } from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
-import { math } from '@traq-flavored-markdown/extensions-plugin/math'
 import { names } from '@traq-flavored-markdown/traq-plugin/nodes'
 import type {
   ReferenceResolver,
@@ -29,7 +27,10 @@ export interface Options {
   code?: {
     highlight?(code: string, language: string): HighlightResult | undefined
   }
-  math?: { render?(tex: string, displayMode: boolean): string }
+  math?: {
+    render?(tex: string, displayMode: boolean): string
+    renderCondensed?(tex: string): string
+  }
   references?: { resolve?: ReferenceResolver }
   stamps?: {
     resolve?: StampResolver
@@ -45,8 +46,6 @@ export interface Options {
   /** Return customized built-in handlers for the preset. */
   configurePlugins?: (plugins: HtmlPlugins) => HtmlPlugins
 }
-
-const highlight = createHighlighter({ preClass: 'traq-code traq-lang' })
 
 function validateImage(value: string) {
   try {
@@ -66,7 +65,7 @@ export function resolveOptions(options: Options = {}) {
     breaks: options.presentation?.breaks ?? true,
     rawHtml: options.presentation?.rawHtml ?? 'escape',
     xhtmlOut: options.presentation?.xhtmlOut ?? false,
-    highlight: options.code?.highlight ?? highlight,
+    highlight: options.code?.highlight,
     validateLink: options.links?.validate ?? defaultLinkPolicy,
     validateImage: options.images?.validate ?? validateImage,
     validateStampImage: options.stamps?.validateUrl ?? defaultStampPolicy,
@@ -77,20 +76,10 @@ export function resolveOptions(options: Options = {}) {
       rel: 'nofollow noopener noreferrer'
     },
     isBlockSpacing: (node: { kind: string }) => node.kind === names.BlankLine,
-    math: customMath ?? math,
-    condensedMath: customMath
-      ? (tex: string) => customMath(tex, false)
-      : (tex: string) =>
-          math(tex, false, {
-            maxSize: 1,
-            macros: {
-              '\\Huge': '',
-              '\\huge': '',
-              '\\LARGE': '',
-              '\\Large': '',
-              '\\large': ''
-            }
-          })
+    math: customMath,
+    condensedMath:
+      options.math?.renderCondensed ??
+      (customMath ? (tex: string) => customMath(tex, false) : undefined)
   }
 }
 
