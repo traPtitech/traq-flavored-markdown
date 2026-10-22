@@ -5,8 +5,9 @@ import { expect, test } from 'bun:test'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
 import { repositoryRoot } from '../../workspace/paths.ts'
-import { goContract, goFile, goNodes } from './go.ts'
+import { emitGoDeclarations, goContract, goFile, goNodes } from './go.ts'
 import { runCommand } from './io.ts'
+import { normalizeContracts } from './ir.ts'
 import type { RawSchema } from './schema.ts'
 
 async function writeModule(directory: string) {
@@ -199,13 +200,23 @@ func TestStampKind(t *testing.T) {
   })
 }, 60_000)
 
-test('request defaults preserve explicit zero and bounded fractional values', async () => {
+test('request defaults omit invalid enum zeros and preserve valid explicit zero values', async () => {
   const schema: RawSchema = {
     title: 'Request',
     type: 'object',
     additionalProperties: false,
     properties: {
       origin: { type: 'string', default: '' },
+      label: { type: 'string', default: 'fallback' },
+      enabled: { type: 'boolean', default: true },
+      whitespace: { $ref: '#/$defs/Whitespace', default: 'collapse' },
+      emptyChoice: { $ref: '#/$defs/EmptyChoice', default: 'fallback' },
+      inline: {
+        type: 'string',
+        enum: ['collapse', 'preserve'],
+        default: 'collapse'
+      },
+      literal: { type: 'string', const: 'fixed', default: 'fixed' },
       count: {
         type: 'integer',
         format: 'uint16',
@@ -221,13 +232,17 @@ test('request defaults preserve explicit zero and bounded fractional values', as
       },
       nullable: { type: ['string', 'null'] }
     },
-    required: ['percentage']
+    required: ['percentage'],
+    $defs: {
+      Whitespace: { type: 'string', enum: ['collapse', 'preserve'] },
+      EmptyChoice: { type: 'string', enum: ['', 'fallback'] }
+    }
   }
   await withTempDirectory('go-defaults-', async directory => {
     await writeModule(directory)
     await write(
       `${directory}/contract.go`,
-      goFile('contract', goContract(schema))
+      goFile('contract', emitGoDeclarations(normalizeContracts([schema])))
     )
     await write(
       `${directory}/contract_test.go`,
@@ -236,11 +251,18 @@ import ("bytes"; "encoding/json"; "testing")
 func TestRequest(t *testing.T) {
  var value Request
  if err := json.Unmarshal([]byte("{\\"percentage\\":12.5}"), &value); err != nil { t.Fatal(err) }
- if value.Count != 2 || value.Percentage != 12.5 || value.Nullable != nil { t.Fatalf("wrong defaults: %#v", value) }
- if err := json.Unmarshal([]byte("{\\"percentage\\":0,\\"count\\":0,\\"nullable\\":null}"), &value); err != nil { t.Fatal(err) }
- if value.Count != 0 || value.Nullable == nil || *value.Nullable != nil { t.Fatalf("lost zero or null: %#v", value) }
+ if value.Count != 2 || value.Percentage != 12.5 || value.Nullable != nil || !value.Enabled || value.Label != "fallback" || value.Whitespace != WhitespaceCollapse || value.EmptyChoice != EmptyChoiceFallback || value.Inline != "collapse" || value.Literal != "fixed" { t.Fatalf("wrong defaults: %#v", value) }
+ if err := json.Unmarshal([]byte("{\\"percentage\\":0,\\"count\\":0,\\"nullable\\":null,\\"enabled\\":false,\\"label\\":\\"\\",\\"emptyChoice\\":\\"\\",\\"whitespace\\":\\"preserve\\"}"), &value); err != nil { t.Fatal(err) }
+ if value.Count != 0 || value.Nullable == nil || *value.Nullable != nil || value.Enabled || value.Label != "" || value.EmptyChoice != EmptyChoiceEmpty || value.Whitespace != WhitespacePreserve { t.Fatalf("lost zero or null: %#v", value) }
  raw, err := json.Marshal(value); if err != nil { t.Fatal(err) }
  if !bytes.Contains(raw, []byte("\\"count\\":0")) { t.Fatalf("lost explicit zero: %s", raw) }
+ var roundTrip Request
+ if err := json.Unmarshal(raw, &roundTrip); err != nil { t.Fatal(err) }
+ if roundTrip.Count != 0 || roundTrip.Enabled || roundTrip.Label != "" || roundTrip.EmptyChoice != EmptyChoiceEmpty || roundTrip.Whitespace != WhitespacePreserve { t.Fatalf("lost explicit zero values: %s", raw) }
+ raw, err = json.Marshal(Request{Percentage:12.5}); if err != nil { t.Fatal(err) }
+ if bytes.Contains(raw, []byte("\\"whitespace\\"")) || bytes.Contains(raw, []byte("\\"inline\\"")) || bytes.Contains(raw, []byte("\\"literal\\"")) { t.Fatalf("serialized invalid enum or literal zero: %s", raw) }
+ if err := json.Unmarshal(raw, &roundTrip); err != nil { t.Fatal(err) }
+ if roundTrip.Whitespace != WhitespaceCollapse || roundTrip.Inline != "collapse" || roundTrip.Literal != "fixed" || roundTrip.EmptyChoice != EmptyChoiceEmpty || roundTrip.Enabled || roundTrip.Label != "" || roundTrip.Count != 0 { t.Fatalf("wrong omitted defaults: %#v", roundTrip) }
  for _, raw := range []string{"{\\"percentage\\":100.1}", "{\\"percentage\\":-1}", "{\\"percentage\\":5,\\"count\\":11}", "{\\"percentage\\":null}"} {
   if json.Unmarshal([]byte(raw), new(Request)) == nil { t.Fatalf("accepted %s", raw) }
  }

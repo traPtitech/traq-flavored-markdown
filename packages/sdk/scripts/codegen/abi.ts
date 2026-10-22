@@ -1,5 +1,5 @@
 import {
-  emitGoDefinition,
+  emitGoDeclarations,
   goFile
 } from '../../../../tools/contracts/typescript/go.ts'
 import { normalizeContracts } from '../../../../tools/contracts/typescript/ir.ts'
@@ -79,7 +79,7 @@ export function abiFiles(manifest: ArtifactManifest) {
     'go/generated_errors.go',
     goFile(
       'markdown',
-      [...contracts.definitions.values()].map(emitGoDefinition).join('\n') +
+      emitGoDeclarations(contracts) +
         `
 func decodeWireError(raw json.RawMessage) (*binding.Error, error) {
   var value WireError

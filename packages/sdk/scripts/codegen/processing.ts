@@ -1,5 +1,5 @@
 import {
-  emitGoDefinition,
+  emitGoDeclarations,
   goFile
 } from '../../../../tools/contracts/typescript/go.ts'
 import {
@@ -35,10 +35,7 @@ export function processingFiles(
     ],
     [
       'go/generated_processing.go',
-      goFile(
-        'markdown',
-        [...contracts.definitions.values()].map(emitGoDefinition).join('\n')
-      )
+      goFile('markdown', emitGoDeclarations(contracts))
     ]
   ])
 }

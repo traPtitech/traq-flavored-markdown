@@ -446,7 +446,7 @@ func (value *ProcessorConfiguration) UnmarshalJSON(raw []byte) error {
 
 type ProcessorOptions struct {
 	Origin     string           `json:"origin,omitempty"`
-	Whitespace WhitespacePolicy `json:"whitespace"`
+	Whitespace WhitespacePolicy `json:"whitespace,omitempty"`
 }
 
 func (value *ProcessorOptions) UnmarshalJSON(raw []byte) error {
@@ -508,7 +508,7 @@ func (value WhitespacePolicy) MarshalJSON() ([]byte, error) {
 
 type RendererOptions struct {
 	Origin     string           `json:"origin,omitempty"`
-	Whitespace WhitespacePolicy `json:"whitespace"`
+	Whitespace WhitespacePolicy `json:"whitespace,omitempty"`
 }
 
 func (value *RendererOptions) UnmarshalJSON(raw []byte) error {
