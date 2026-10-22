@@ -8,7 +8,7 @@
     "collect": "bun run --bun scripts/fetch.ts",
     "compare": "bun run --bun scripts/compare.ts",
     "report": "bun run build && bun run --bun scripts/report.ts",
-    "test": "bun test scripts collection comparison report viewer/data",
+    "test": "bun test scripts collection comparison report viewer",
     "typecheck": "bun run --bun ../../scripts/tsc.ts -p tsconfig.json"
   },
   "dependencies": {

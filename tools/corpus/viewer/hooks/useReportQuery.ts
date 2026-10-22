@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import type {
-  Progress,
-  Query,
-  QueryResult,
-  ReportRepository
-} from '../data/repository.ts'
+import type { Progress, Query, QueryResult } from '../data/query.ts'
+import type { ReportRepository } from '../data/repository.ts'
 
 export type QueryState =
   | { status: 'idle' }

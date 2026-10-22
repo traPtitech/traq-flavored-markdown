@@ -65,25 +65,31 @@ export async function frontendAdapters({
       }
     })
     const afterInitializationMs = performance.now() - started
-    const output = (value: {
+    const baselineOutput = (value: {
       renderedText: string
       embeddings?: unknown
-      cards?: unknown
     }) => ({
       kind: 'html' as const,
       value: value.renderedText,
-      embeddings: value.cards ?? value.embeddings
+      embeddings: value.embeddings
+    })
+    const candidateOutput = (value: { html: string; cards?: unknown }) => ({
+      kind: 'html' as const,
+      value: value.html,
+      embeddings: value.cards
     })
     const profiles: Profile[] = [
       {
         mode: 'render',
-        before: source => output(baseline.render(source)),
-        after: source => output(views.standard.render(parser.parse(source)))
+        before: source => baselineOutput(baseline.render(source)),
+        after: source =>
+          candidateOutput(views.standard.render(parser.parse(source)))
       },
       {
         mode: 'inline',
-        before: source => output(baseline.renderInline(source)),
-        after: source => output(views.condensed.render(parser.parse(source)))
+        before: source => baselineOutput(baseline.renderInline(source)),
+        after: source =>
+          candidateOutput(views.condensed.render(parser.parse(source)))
       }
     ]
     return {
