@@ -81,6 +81,7 @@ jobs:
 
   typescript:
     name: TypeScript (${{ matrix.os }})
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -100,11 +101,21 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 1.27.3
+          cache-dependency-path: |
+            go.work
+            packages/**/go.mod
+            packages/**/go.sum
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # v1
+        id: rust
         with:
           toolchain: 1.99.1
           targets: wasm32-unknown-unknown
           components: clippy,rustfmt
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          add-rust-environment-hash-key: false
+          key: ${{ steps.rust.outputs.cachekey }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml', '.cargo/config.toml') }}
+          cache-workspace-crates: true
       - run: bun ci
       - run: bun run check:architecture
       - run: bun run build
@@ -113,6 +124,7 @@ jobs:
       - run: bun run test:typescript
       - run: bun run test:corpus
       - run: bun run check:package
+        timeout-minutes: 5
       - run: bun run check:go-consumer
 
   rust:

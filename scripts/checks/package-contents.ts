@@ -5,6 +5,7 @@ import { $ } from 'bun'
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot, sdkRoot } from '../paths.ts'
 import { readNpmPack } from './npm-pack.ts'
+import { capturePackageCommand as capture } from './package-command.ts'
 
 const tempRoot = (
   Bun.env.TEMP ??
@@ -23,9 +24,6 @@ const archiveName = (archive: string) =>
   )
 const { graph, manifests } = await readNpmPackageGraph()
 const packageNames = graph.order
-const capture = async (command: string, args: string[], cwd: string) => {
-  return (await $.cwd(cwd)`${command} ${args}`.quiet()).text()
-}
 await $`mkdir -p ${temporaryDirectory}`
 try {
   const archives: string[] = []
