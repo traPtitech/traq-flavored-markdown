@@ -6,20 +6,9 @@ pub fn syntax() -> &'static commonmark::Syntax {
 }
 
 pub fn builder() -> GrammarBuilder {
-    let base = syntax();
-    let mut builder = GrammarBuilder::new();
-    for feature in traq_markdown_features::selected(traq_markdown_features::Profile::Commonmark) {
-        builder
-            .add((feature.syntax)())
-            .expect("unique CommonMark features");
-    }
-    builder
-        .before(commonmark::html::inline_rule(), &base.inline.entity)
-        .expect("HTML inline anchor");
-    builder
-        .before(commonmark::html::block_rule(), &base.block.heading)
-        .expect("HTML block anchor");
-    builder
+    traq_markdown_features::Profile::Commonmark
+        .grammar_builder()
+        .expect("valid profile definition")
 }
 
 pub fn grammar() -> &'static Grammar {
