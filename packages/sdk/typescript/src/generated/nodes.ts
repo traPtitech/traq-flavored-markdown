@@ -1,6 +1,6 @@
 // Generated from Rust contracts. Do not edit.
 import * as commonmark from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import * as generic from '@traq-flavored-markdown/extensions-plugin/nodes'
+import * as extensions from '@traq-flavored-markdown/extensions-plugin/nodes'
 import * as trap from '@traq-flavored-markdown/traq-plugin/nodes'
 import type {
   Document as AstDocument,
@@ -8,7 +8,7 @@ import type {
   DeepReadonly
 } from '@traq-flavored-markdown/core'
 
-export type NodeKind = commonmark.NodeKind | generic.NodeKind | trap.NodeKind
+export type NodeKind = commonmark.NodeKind | extensions.NodeKind | trap.NodeKind
 export type Node<AllowUnknown extends boolean = false> = AstNode<
   | NodeKind
   | (AllowUnknown extends true ? { kind: string; data: unknown } : never)
@@ -19,12 +19,12 @@ export type Document<AllowUnknown extends boolean = false> = AstDocument<
 >
 export const names = Object.freeze({
   ...commonmark.names,
-  ...generic.names,
+  ...extensions.names,
   ...trap.names
 })
 export const definitions = Object.freeze({
   ...commonmark.definitions,
-  ...generic.definitions,
+  ...extensions.definitions,
   ...trap.definitions
 })
 const validators = new Map<string, (data: unknown) => boolean>(

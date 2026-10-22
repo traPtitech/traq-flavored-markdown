@@ -5,7 +5,7 @@ import "github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding"
 import "github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 
 const contractID = "c40fa9154f94e63bc9561727e0bbe24e05b4bc77ff54eafb156034dd99602ef3"
-const sourceFingerprint = "4575f78aed0fb6e2"
+const sourceFingerprint = "41152312cba70030"
 const inputBytes = 1048576
 const outputBytes = 1048576
 const memoryPages = 512

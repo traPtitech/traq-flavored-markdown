@@ -7,7 +7,7 @@
     },
     {
       "owner": "core",
-      "path": "packages/core/typescript/generated/limits.ts"
+      "path": "packages/core/typescript/src/generated/limits.ts"
     },
     {
       "owner": "commonmark-plugin",
@@ -15,7 +15,7 @@
     },
     {
       "owner": "commonmark-plugin",
-      "path": "packages/plugins/commonmark/typescript/generated/commonmark.ts"
+      "path": "packages/plugins/commonmark/typescript/src/generated/commonmark.ts"
     },
     {
       "owner": "extensions-plugin",
@@ -23,7 +23,7 @@
     },
     {
       "owner": "extensions-plugin",
-      "path": "packages/plugins/extensions/typescript/generated/nodes.ts"
+      "path": "packages/plugins/extensions/typescript/src/generated/nodes.ts"
     },
     {
       "owner": "traq-plugin",
@@ -31,7 +31,7 @@
     },
     {
       "owner": "traq-plugin",
-      "path": "packages/plugins/traq/typescript/generated/trap.ts"
+      "path": "packages/plugins/traq/typescript/src/generated/trap.ts"
     },
     {
       "owner": "sdk",
@@ -55,23 +55,23 @@
     },
     {
       "owner": "sdk",
-      "path": "packages/sdk/typescript/generated/abi.ts"
+      "path": "packages/sdk/typescript/src/generated/abi.ts"
     },
     {
       "owner": "sdk",
-      "path": "packages/sdk/typescript/generated/artifact.ts"
+      "path": "packages/sdk/typescript/src/generated/artifact.ts"
     },
     {
       "owner": "sdk",
-      "path": "packages/sdk/typescript/generated/nodes.ts"
+      "path": "packages/sdk/typescript/src/generated/nodes.ts"
     },
     {
       "owner": "sdk",
-      "path": "packages/sdk/typescript/generated/presets.ts"
+      "path": "packages/sdk/typescript/src/generated/presets.ts"
     },
     {
       "owner": "sdk",
-      "path": "packages/sdk/typescript/generated/processing.ts"
+      "path": "packages/sdk/typescript/src/generated/processing.ts"
     }
   ]
 }
