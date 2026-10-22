@@ -105,28 +105,32 @@ export const operations = Object.freeze({
     input: 'json',
     params: [],
     result: 'configuration',
-    configuration: true
+    configuration: true,
+    requestSchema: 'ExtractorOptions'
   },
   configureProcessor: {
     export: 'configure_processor',
     input: 'json',
     params: [],
     result: 'configuration',
-    configuration: true
+    configuration: true,
+    requestSchema: 'ProcessorConfiguration'
   },
   configureRenderer: {
     export: 'configure_renderer',
     input: 'json',
     params: [],
     result: 'configuration',
-    configuration: true
+    configuration: true,
+    requestSchema: 'RendererOptions'
   },
   extract: {
     export: 'extract',
     input: 'json',
     params: [],
     result: 'extraction',
-    configuration: false
+    configuration: false,
+    responseSchema: 'Extraction'
   },
   parse: {
     export: 'parse',
@@ -140,7 +144,8 @@ export const operations = Object.freeze({
     input: 'text',
     params: ['i32'],
     result: 'processing',
-    configuration: false
+    configuration: false,
+    responseSchema: 'ProcessingResult'
   },
   render: {
     export: 'render',
