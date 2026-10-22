@@ -81,3 +81,63 @@ fn the_same_field_constraints_are_exported_in_the_schema() {
     assert_eq!(properties["percent"]["maximum"], 100.0);
     assert_eq!(properties["labels"]["maxItems"], 2);
 }
+
+#[markdown_definitions::node(role = Inline)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+struct UnicodeLabel {
+    #[constraint(length(min = 2, max = 2))]
+    value: String,
+}
+
+#[test]
+fn string_constraints_count_unicode_scalars_while_heap_limits_count_bytes() {
+    let span = Span { start: 0, end: 0 };
+    let value = UnicodeLabel {
+        value: "日😀".into(),
+    };
+    assert_eq!(value.payload_bytes(), 7);
+    assert!(Node::leaf(span, value).validate().is_ok());
+    for value in ["日", "abc", "日😀字"] {
+        assert!(
+            Node::leaf(
+                span,
+                UnicodeLabel {
+                    value: value.into()
+                }
+            )
+            .validate()
+            .is_err()
+        );
+    }
+    #[cfg(feature = "contracts")]
+    {
+        let schema = schemars::schema_for!(UnicodeLabel);
+        let value = &schema.as_value()["properties"]["value"];
+        assert_eq!(value["minLength"], 2);
+        assert_eq!(value["maxLength"], 2);
+    }
+}
+
+#[markdown_definitions::node(role = Inline)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+struct LowerBound {
+    #[constraint(range(min = 0.0))]
+    value: f64,
+}
+
+#[test]
+fn nonfinite_floats_are_invalid_with_or_without_numeric_bounds() {
+    let span = Span { start: 0, end: 0 };
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(Node::leaf(span, Wrapped(value)).validate().is_err());
+        assert!(Node::leaf(span, Wrapped(value as f32)).validate().is_err());
+        assert!(Node::leaf(span, LowerBound { value }).validate().is_err());
+    }
+    assert!(
+        Node::leaf(span, LowerBound { value: f64::MAX })
+            .validate()
+            .is_ok()
+    );
+}

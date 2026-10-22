@@ -149,63 +149,6 @@ pub fn expand(mut item: DeriveInput, options: Option<NodeOptions>) -> syn::Resul
     Ok(quote!(#item #fields #node))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn conflicting_or_unknown_structural_options_are_rejected() {
-        for invalid in [
-            "",
-            "role = Inline, role = Block",
-            "role = Inline, unknown = Block",
-            "structure = custom, role = Inline",
-            "role = Inline, children = Inline, child_type = Text",
-            "role = Inline, nonempty",
-        ] {
-            assert!(syn::parse_str::<NodeOptions>(invalid).is_err(), "{invalid}");
-        }
-        for valid in [
-            "role = Inline",
-            "role = Block, children = Inline",
-            "role = Block, child_type = Item, nonempty",
-            "structure = custom",
-        ] {
-            assert!(syn::parse_str::<NodeOptions>(valid).is_ok(), "{valid}");
-        }
-    }
-
-    #[test]
-    fn unsupported_and_duplicate_field_constraints_are_rejected() {
-        for input in [
-            quote!(
-                struct Value {
-                    #[constraint(regex(pattern = "x"))]
-                    value: String,
-                }
-            ),
-            quote!(
-                struct Value {
-                    #[constraint(range())]
-                    value: u8,
-                }
-            ),
-            quote!(
-                struct Value {
-                    #[constraint(range(min = 0, min = 1))]
-                    value: u8,
-                }
-            ),
-        ] {
-            let item: DeriveInput = syn::parse2(input).unwrap();
-            let Data::Struct(mut data) = item.data else {
-                unreachable!()
-            };
-            assert!(field_operations(&mut data.fields, &quote!(::markdown_ast), None).is_err());
-        }
-    }
-}
-
 fn field_operations(
     fields: &mut Fields,
     ast: &TokenStream,
@@ -279,7 +222,7 @@ fn field_constraints(
             let kind = &meta.path;
             let schema_bounds = min.iter().map(|min| quote!(min = #min)).chain(max.iter().map(|max| quote!(max = #max))).collect::<Vec<_>>();
             retained.push(parse_quote!(#[cfg_attr(feature = "contracts", schemars(#kind(#(#schema_bounds),*)))]));
-            let checked = if length { quote!((#value).len()) } else { quote!(*(#value)) };
+            let checked = if length { quote!(#ast::PayloadLength::payload_length(#value)) } else { quote!(*(#value)) };
             let valid = match (&min, &max) {
                 (Some(min), Some(max)) => quote!((#min..=#max).contains(&#checked)),
                 (Some(min), None) => quote!(#checked >= #min),
@@ -294,4 +237,61 @@ fn field_constraints(
     }
     field.attrs = retained;
     Ok(checks)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn conflicting_or_unknown_structural_options_are_rejected() {
+        for invalid in [
+            "",
+            "role = Inline, role = Block",
+            "role = Inline, unknown = Block",
+            "structure = custom, role = Inline",
+            "role = Inline, children = Inline, child_type = Text",
+            "role = Inline, nonempty",
+        ] {
+            assert!(syn::parse_str::<NodeOptions>(invalid).is_err(), "{invalid}");
+        }
+        for valid in [
+            "role = Inline",
+            "role = Block, children = Inline",
+            "role = Block, child_type = Item, nonempty",
+            "structure = custom",
+        ] {
+            assert!(syn::parse_str::<NodeOptions>(valid).is_ok(), "{valid}");
+        }
+    }
+
+    #[test]
+    fn unsupported_and_duplicate_field_constraints_are_rejected() {
+        for input in [
+            quote!(
+                struct Value {
+                    #[constraint(regex(pattern = "x"))]
+                    value: String,
+                }
+            ),
+            quote!(
+                struct Value {
+                    #[constraint(range())]
+                    value: u8,
+                }
+            ),
+            quote!(
+                struct Value {
+                    #[constraint(range(min = 0, min = 1))]
+                    value: u8,
+                }
+            ),
+        ] {
+            let item: DeriveInput = syn::parse2(input).unwrap();
+            let Data::Struct(mut data) = item.data else {
+                unreachable!()
+            };
+            assert!(field_operations(&mut data.fields, &quote!(::markdown_ast), None).is_err());
+        }
+    }
 }

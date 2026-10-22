@@ -30,10 +30,44 @@ scalars!(
     i32,
     i64,
     i128,
-    isize,
-    f32,
-    f64
+    isize
 );
+
+macro_rules! floats {
+    ($($ty:ty),+ $(,)?) => { $(impl PayloadFields for $ty {
+        fn heap_bytes(&self) -> usize { 0 }
+        fn validate_fields(&self) -> Result<(), PayloadError> {
+            if self.is_finite() {
+                Ok(())
+            } else {
+                Err(PayloadError::new("finite floating-point value").actual(self.to_string()))
+            }
+        }
+    })+ };
+}
+floats!(f32, f64);
+
+/// The length used by a payload's schema constraint. String lengths count
+/// Unicode scalar values; collection lengths count elements.
+pub trait PayloadLength {
+    fn payload_length(&self) -> usize;
+}
+
+impl PayloadLength for String {
+    fn payload_length(&self) -> usize {
+        self.chars().count()
+    }
+}
+impl<T> PayloadLength for Vec<T> {
+    fn payload_length(&self) -> usize {
+        self.len()
+    }
+}
+impl<T, const N: usize> PayloadLength for [T; N] {
+    fn payload_length(&self) -> usize {
+        N
+    }
+}
 
 impl PayloadFields for String {
     fn heap_bytes(&self) -> usize {

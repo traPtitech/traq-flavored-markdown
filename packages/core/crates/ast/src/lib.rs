@@ -4,7 +4,7 @@
 
 mod data;
 mod fields;
-pub use fields::PayloadFields;
+pub use fields::{PayloadFields, PayloadLength};
 mod source;
 pub use source::{SourceEdit, SourceError, SourceText};
 mod structure;

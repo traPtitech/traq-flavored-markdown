@@ -15,6 +15,9 @@ Field attributes `#[constraint(range(min = 1, max = 6))]` and
 `#[constraint(length(max = 5))]` generate both native checks and Schemars metadata
 under the consumer's `contracts` feature. Bounds use Rust expressions of the
 field's type, including floating-point bounds for floating-point fields.
+Length constraints count Unicode scalar values in strings and elements in
+vectors or arrays. Floating-point fields must be finite even without a range
+constraint, matching their JSON number contract.
 Nested strings, options, vectors, arrays, and boxes participate in heap accounting
 and validation automatically. Custom payload field types implement
 `markdown_ast::PayloadFields`; handwritten `NodeData` implementations remain
