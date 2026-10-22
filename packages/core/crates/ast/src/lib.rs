@@ -6,7 +6,7 @@ mod data;
 mod source;
 pub use source::{SourceEdit, SourceError, SourceText};
 mod structure;
-pub use structure::{ChildStructure, NodeStructure, PayloadType};
+pub use structure::{ChildArity, ChildStructure, NodeStructure, PayloadType};
 mod node;
 mod validation;
 mod walk;

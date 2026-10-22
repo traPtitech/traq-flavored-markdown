@@ -22,10 +22,13 @@ impl NodeData for Table {
         static STRUCTURE: std::sync::LazyLock<markdown_ast::NodeStructure> =
             std::sync::LazyLock::new(|| markdown_ast::NodeStructure {
                 role: NodeRole::Block,
-                children: markdown_ast::ChildStructure::Table {
-                    header: markdown_ast::PayloadType::of::<HeaderRow>(),
-                    row: markdown_ast::PayloadType::of::<Row>(),
-                    columns_field: "alignments",
+                children: markdown_ast::ChildStructure::Sequence {
+                    prefix: vec![markdown_ast::PayloadType::of::<HeaderRow>()],
+                    rest: markdown_ast::PayloadType::of::<Row>(),
+                    child_arity: Some(markdown_ast::ChildArity::new::<Table>(
+                        "alignments",
+                        |table| table.alignments.len(),
+                    )),
                 },
             });
         &STRUCTURE
@@ -34,9 +37,6 @@ impl NodeData for Table {
         self.alignments
             .len()
             .saturating_mul(std::mem::size_of::<Option<Alignment>>())
-    }
-    fn column_count(&self) -> Option<usize> {
-        Some(self.alignments.len())
     }
 }
 

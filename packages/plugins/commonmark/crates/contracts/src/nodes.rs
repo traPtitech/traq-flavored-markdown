@@ -45,8 +45,7 @@ impl NodeData for Heading {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
-        Self::structure().validate(children, None)?;
+    fn validate_payload(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         if (1..=6).contains(&self.level) {
             Ok(())
         } else {
@@ -124,8 +123,7 @@ impl NodeData for List {
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
-        Self::structure().validate(children, None)?;
+    fn validate_payload(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         if let ListKind::Ordered { start, .. } = self.kind
             && start > 999_999_999
         {

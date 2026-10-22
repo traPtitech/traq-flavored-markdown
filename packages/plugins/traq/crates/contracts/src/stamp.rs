@@ -28,8 +28,10 @@ impl markdown_ast::NodeData for Stamp {
                 .saturating_mul(std::mem::size_of::<StampAnimation>()),
         )
     }
-    fn validate(&self, children: &[markdown_ast::Node]) -> Result<(), markdown_ast::PayloadError> {
-        Self::structure().validate(children, None)?;
+    fn validate_payload(
+        &self,
+        _children: &[markdown_ast::Node],
+    ) -> Result<(), markdown_ast::PayloadError> {
         if self.effects.animations.len() > 5 {
             return Err(
                 markdown_ast::PayloadError::new("at most 5 stamp animations")

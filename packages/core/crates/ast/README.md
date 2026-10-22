@@ -11,9 +11,14 @@ use markdown_ast::{Node, NodeData, NodeRole, Span};
 struct Heading { level: u8 }
 
 impl NodeData for Heading {
-    fn role(&self) -> NodeRole { NodeRole::Block }
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Block, children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
+    }
     fn payload_bytes(&self) -> usize { 0 }
-    fn validate(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = (|| {
         (1..=6).contains(&self.level)
     })();
@@ -40,7 +45,7 @@ complete output size before allocating the result.
 
 ## Validation
 
-Every external plugin node must implement `NodeData::role` and
+Every external plugin node must implement `NodeData::structure` and
 `NodeData::payload_bytes`. A role declares block, inline, structural, or opaque
 placement; existing parent contracts accept external nodes according to that
 declaration without registering their types in core. `payload_bytes` counts

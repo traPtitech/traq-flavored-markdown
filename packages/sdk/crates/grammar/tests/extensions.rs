@@ -14,8 +14,12 @@ struct BlockNote {
     title: String,
 }
 impl NodeData for BlockNote {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Block,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.title.len()
@@ -27,8 +31,12 @@ struct InlineNote {
     title: String,
 }
 impl NodeData for InlineNote {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.title.len()

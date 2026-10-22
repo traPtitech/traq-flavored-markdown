@@ -11,13 +11,17 @@ struct Score {
 }
 
 impl NodeData for Score {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = children.is_empty();
         if valid {
             Ok(())
@@ -33,8 +37,12 @@ struct RenamedScore {
 }
 
 impl NodeData for RenamedScore {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
@@ -75,8 +83,12 @@ fn first(codec: &mut Codec) -> Document {
     }
 
     impl NodeData for Collision {
-        fn role(&self) -> NodeRole {
-            NodeRole::Opaque
+        fn structure() -> &'static markdown_ast::NodeStructure {
+            static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+                role: NodeRole::Opaque,
+                children: markdown_ast::ChildStructure::Any,
+            };
+            &STRUCTURE
         }
         fn payload_bytes(&self) -> usize {
             0
@@ -102,8 +114,12 @@ fn second(codec: &mut Codec) -> markdown_codec::Result<()> {
     }
 
     impl NodeData for Collision {
-        fn role(&self) -> NodeRole {
-            NodeRole::Opaque
+        fn structure() -> &'static markdown_ast::NodeStructure {
+            static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+                role: NodeRole::Opaque,
+                children: markdown_ast::ChildStructure::Any,
+            };
+            &STRUCTURE
         }
         fn payload_bytes(&self) -> usize {
             0

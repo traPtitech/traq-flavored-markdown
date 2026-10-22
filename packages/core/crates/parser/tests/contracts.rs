@@ -14,8 +14,12 @@ struct CustomState(Option<String>);
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
 impl NodeData for Text {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.0.len()
@@ -25,13 +29,17 @@ impl NodeData for Text {
 #[derive(Debug, Clone, PartialEq)]
 struct Invalid;
 impl NodeData for Invalid {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = false;
         if valid {
             Ok(())
@@ -275,13 +283,17 @@ fn final_validation_stops_at_the_remaining_work_budget() {
     struct Counted;
 
     impl NodeData for Counted {
-        fn role(&self) -> NodeRole {
-            NodeRole::Opaque
+        fn structure() -> &'static markdown_ast::NodeStructure {
+            static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+                role: NodeRole::Opaque,
+                children: markdown_ast::ChildStructure::Any,
+            };
+            &STRUCTURE
         }
         fn payload_bytes(&self) -> usize {
             0
         }
-        fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
             let valid = {
                 CHECKS.fetch_add(1, Ordering::Relaxed);
                 true

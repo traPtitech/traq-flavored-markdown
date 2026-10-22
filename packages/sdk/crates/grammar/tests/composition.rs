@@ -15,8 +15,12 @@ use traq_markdown_grammar::{
 #[derive(Debug, Clone, PartialEq)]
 struct ExternalNode;
 impl NodeData for ExternalNode {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0

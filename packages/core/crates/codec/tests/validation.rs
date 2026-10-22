@@ -12,13 +12,17 @@ static CHECKS: AtomicUsize = AtomicUsize::new(0);
 struct Group {}
 
 impl NodeData for Group {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = {
             CHECKS.fetch_add(1, Ordering::Relaxed);
             children

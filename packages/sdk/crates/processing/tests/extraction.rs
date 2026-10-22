@@ -136,13 +136,17 @@ fn aggregate_extraction_validates_each_node_once() {
         }
     }
     impl NodeData for Counted {
-        fn role(&self) -> NodeRole {
-            NodeRole::Opaque
+        fn structure() -> &'static markdown_ast::NodeStructure {
+            static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+                role: NodeRole::Opaque,
+                children: markdown_ast::ChildStructure::Any,
+            };
+            &STRUCTURE
         }
         fn payload_bytes(&self) -> usize {
             0
         }
-        fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
             let valid = {
                 self.0.fetch_add(1, Ordering::Relaxed);
                 true

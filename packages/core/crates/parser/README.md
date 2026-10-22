@@ -11,7 +11,12 @@ use markdown_parser::{GrammarBuilder, NodeData, NodeRole, Parser, Plugin};
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
 impl NodeData for Text {
-    fn role(&self) -> NodeRole { NodeRole::Inline }
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline, children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
+    }
     fn payload_bytes(&self) -> usize { self.0.len() }
 }
 
@@ -29,7 +34,7 @@ assert_eq!(document.children[0].get::<Text>(), Some(&Text("hello".into())));
 Implementations are created from shared declarations. Editing a plugin after it
 is registered creates a new snapshot; existing grammars and parsers do not
 change. A grammar needs one plain-text provider. Every external plugin node
-implements `NodeData::role` and `NodeData::payload_bytes` so existing block and
+implements `NodeData::structure` and `NodeData::payload_bytes` so existing block and
 inline containers can validate it and its owned payload is budgeted. Nodes do
 not need serde or codec registration. Completed ASTs are validated against data,
 span, sibling order, depth, node count, and payload size. `Limits::document`
