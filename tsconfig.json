@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.base.json",
+  "extends": "./tsconfig.tooling.json",
   "include": [
     "eslint.config.ts",
     "prettier.config.ts",

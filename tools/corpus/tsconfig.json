@@ -1,8 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.tooling.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
     "jsx": "react-jsx"
   },
-  "include": ["scripts/**/*.ts", "viewer/**/*.ts", "viewer/**/*.tsx"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["dist", "node_modules"]
 }

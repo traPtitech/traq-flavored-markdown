@@ -17,12 +17,15 @@ const files = [
         .some(part => part === 'node_modules' || part === 'dist')
   )
   .sort()
+// Classify every discovered file, even when running only one suite. New tests
+// cannot silently fall out of the selected resource graph.
+const classified = files.map(file => ({ file, suite: suiteFor(file) }))
 for (const suite of (selected.length
   ? selected
   : Object.keys(suites)) as SuiteName[]) {
-  const tests = files
-    .filter(file => suiteFor(file) === suite)
-    .map(file => './' + file.replaceAll('\\', '/'))
+  const tests = classified
+    .filter(test => test.suite === suite)
+    .map(({ file }) => './' + file.replaceAll('\\', '/'))
   if (!tests.length) continue
   console.log(`${suite}: ${suites[suite].resources}`)
   const process = Bun.spawn(

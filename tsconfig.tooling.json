@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.portable.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  }
+}

@@ -42,7 +42,11 @@ not edit them by hand.
 
 `bun run test:typescript` executes the following suites serially. Each can also
 be selected directly while iterating; the suite classifier is in
-`scripts/testing/suites.ts`.
+`scripts/testing/suites.ts`. Its include/exclude globs declare each suite's
+resources explicitly. Every discovered test must match exactly one suite;
+unclassified or overlapping files fail before any test runs. Place new tests in
+the appropriate resource directory or update that declaration when introducing
+a new compiler or workspace test.
 
 | Command                  | Required resources                                                              |
 | ------------------------ | ------------------------------------------------------------------------------- |

@@ -9,7 +9,7 @@
     "compare": "bun run --bun scripts/compare.ts",
     "report": "bun run build && bun run --bun scripts/report.ts",
     "test": "bun test scripts collection comparison report viewer",
-    "typecheck": "bun run --bun ../../scripts/tsc.ts -p tsconfig.json"
+    "typecheck": "bun run --bun ../../scripts/tsc.ts -p tsconfig.browser.json && bun run --bun ../../scripts/tsc.ts -p tsconfig.json"
   },
   "dependencies": {
     "jest-diff": "30.5.2",

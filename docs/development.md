@@ -116,10 +116,15 @@ graphs; Cargo metadata provides crate edges. Architecture checks compare those
 edges with the owner policy and explicit crate restrictions, so changing a
 package's dependencies cannot silently change its architectural permissions.
 
-`tsconfig.build.base.json` defines shared TypeScript emit options. Each package
-owns its source and output selection; `tsconfig.base.json` provides tooling
-type-check options. The corpus has its own configuration, and `scripts/tsc.ts`
-resolves the selected compiler independently of package depth.
+`tsconfig.base.json` defines common language and strictness options.
+`tsconfig.portable.json` supplies browser-independent Web platform APIs without
+Bun or DOM globals; public package builds inherit it through
+`tsconfig.build.base.json`. `tsconfig.browser.json` adds DOM and JSX support,
+while `tsconfig.tooling.json` enables Bun for commands and tests. Root typecheck
+checks public production sources against their build configuration without
+emitting, then checks each package's tests. The corpus separately checks its
+browser viewer and all source/test files. `scripts/tsc.ts` resolves the selected
+compiler independently of package depth.
 
 After dependency changes, rebuild and inspect generated contract diffs. Corpus
 dependencies stay in `tools/corpus`; shared formatters, linters, and compiler
