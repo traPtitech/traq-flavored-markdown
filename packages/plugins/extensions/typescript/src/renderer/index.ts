@@ -32,7 +32,7 @@ function table(node: Node, ctx: RenderContext) {
   )
 }
 
-const declaration = Declaration.group('generic').plugin('presentation')
+const declaration = Declaration.group('extensions').plugin('presentation')
 
 export function plugin({ math }: Options = {}) {
   let result = new RenderPlugin(declaration)

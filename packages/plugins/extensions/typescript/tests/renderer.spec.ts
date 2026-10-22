@@ -8,8 +8,8 @@ import {
 } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
-import { definitions, names } from '../generated/nodes.js'
-import { plugin } from '../renderer/index.js'
+import { definitions, names } from '../src/generated/nodes.js'
+import { plugin } from '../src/renderer/index.js'
 
 function document(): Document {
   const cell = (start: number): Node => ({

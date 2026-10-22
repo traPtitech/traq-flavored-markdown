@@ -3,7 +3,7 @@ import type { Document } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
 import fixtures from '../../../../../tests/fixtures/document-structure.json' with { type: 'json' }
-import { definitions } from '../../generated/nodes.js'
+import { definitions } from '../../src/generated/nodes.js'
 
 test('SDK document validation follows the shared cross-language structure contract', () => {
   for (const fixture of fixtures) {

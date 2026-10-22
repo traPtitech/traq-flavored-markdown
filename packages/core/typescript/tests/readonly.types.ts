@@ -1,6 +1,6 @@
-import type { DocumentContext } from '../document.js'
-import { defineNode } from '../nodes.js'
-import type { Handler } from '../renderer/types.js'
+import type { DocumentContext } from '../src/document.js'
+import { defineNode } from '../src/nodes.js'
+import type { Handler } from '../src/renderer/types.js'
 
 export function snapshotTypes(context: DocumentContext) {
   // @ts-expect-error snapshots expose readonly children

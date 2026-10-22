@@ -43,7 +43,7 @@ accepts the SDK's closed set of built-in contracts.
 
 [The ABI descriptor](../crates/wasm/src/abi.rs) defines operations, argument
 shapes, success categories, required exports, and error codes. Generated host
-descriptors are consumed by [TypeScript transport](../typescript/runtime/transport.ts)
+descriptors are consumed by [TypeScript transport](../typescript/src/runtime/transport.ts)
 and the core Go binding. Each reply has exactly one outcome: `{ ok: value }` or
 `{ error: { code, message, resource?, path?, offset?, span? } }`.
 
@@ -79,11 +79,11 @@ children only for handlers that transform their output.
 `TraqUrlClassifier` classifies absolute file and message URLs by a configured
 lexical prefix; an empty origin disables it. It does not resolve relative URLs.
 
-TypeScript separates [message analysis](../typescript/messages/analysis.ts),
-[resource-card classification](../typescript/messages/cards.ts),
-[reference embedding](../typescript/messages/reference-embedding.ts),
-[display policy](../typescript/profiles/traq.ts), and
-[renderer assembly](../typescript/renderer/index.ts). `messageRenderers.prepare`
+TypeScript separates [message analysis](../typescript/src/messages/analysis.ts),
+[resource-card classification](../typescript/src/messages/cards.ts),
+[reference embedding](../typescript/src/messages/reference-embedding.ts),
+[display policy](../typescript/src/profiles/traq.ts), and
+[renderer assembly](../typescript/src/renderer/index.ts). `messageRenderers.prepare`
 shares one context and analysis between standard and condensed views. A render
 plan holds node selections, omissions, replacement child text, and separators.
 

@@ -11,7 +11,7 @@ import {
   analyzeMessage,
   endsWithResourceCard,
   messageContext
-} from '../../messages/analysis.js'
+} from '../../src/messages/analysis.js'
 
 const origin = 'https://q.example.test'
 const id = '00000000-0000-0000-0000-000000000001'

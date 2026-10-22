@@ -1,15 +1,15 @@
 import { documentLimits as coreDocumentLimits } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
-import { abiExports } from '../../generated/abi.js'
+import { abiExports } from '../../src/generated/abi.js'
 import {
   contractId,
   documentLimits,
   inputBytes,
   outputBytes
-} from '../../generated/artifact.js'
-import { MarkdownError } from '../../runtime/errors.js'
-import { createRuntime } from '../../runtime/index.js'
+} from '../../src/generated/artifact.js'
+import { MarkdownError } from '../../src/runtime/errors.js'
+import { createRuntime } from '../../src/runtime/index.js'
 
 // A tiny real module makes malformed replies and traps independent of Rust builds.
 function moduleBytes(reply: string | 'trap', id = contractId): Uint8Array {

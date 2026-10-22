@@ -6,7 +6,7 @@ import {
 import { expect, test } from 'bun:test'
 
 import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }
-import { classifyTraqLink } from '../../messages/cards.js'
+import { classifyTraqLink } from '../../src/messages/cards.js'
 import { commonParser, parser } from './setup.ts'
 
 const origin = 'https://q.example.test',

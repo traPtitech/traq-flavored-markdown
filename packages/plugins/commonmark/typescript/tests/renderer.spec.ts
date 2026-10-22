@@ -1,8 +1,8 @@
 import type { Document, Node } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
-import { names } from '../generated/commonmark.js'
-import { html } from '../renderer/index.js'
+import { names } from '../src/generated/commonmark.js'
+import { html } from '../src/renderer/index.js'
 
 test('empty highlighted HTML is explicit while undefined selects escaped source', () => {
   const document = {

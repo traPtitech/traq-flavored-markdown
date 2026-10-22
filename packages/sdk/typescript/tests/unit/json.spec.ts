@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
-import { MarkdownError } from '../../runtime/errors.js'
-import { encodeRequest } from '../../runtime/json.js'
+import { MarkdownError } from '../../src/runtime/errors.js'
+import { encodeRequest } from '../../src/runtime/json.js'
 
 function error(value: unknown, limit = 1024): MarkdownError {
   try {
