@@ -32,3 +32,15 @@ export function goVersion(input: string) {
     )
   return version
 }
+
+export function incrementVersion(input: string, component: string): Version {
+  const current = parseVersion(input)
+  if (current.distTag !== 'latest')
+    throw new Error('Automatic increments require a stable release version')
+  const index = ['major', 'minor', 'patch'].indexOf(component)
+  if (index < 0) throw new Error(`Unknown release component: ${component}`)
+  const parts = current.npm.split('.').map(BigInt)
+  parts[index] += 1n
+  for (let next = index + 1; next < parts.length; next++) parts[next] = 0n
+  return parseVersion(parts.join('.'))
+}

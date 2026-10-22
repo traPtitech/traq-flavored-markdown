@@ -5,9 +5,12 @@ layout.
 
 ## Prerequisites
 
-Install Node 26 with npm 12.2.1, Bun 1.4.3 or later, Go 1.27.3 or later, and
-rustup. `rust-toolchain.toml` pins the Rust toolchain and Wasm target. On
-Windows, install the MSVC C++ build tools; neither WSL nor Bash is required.
+Install the Node version in `.node-version`, Bun from `package.json`'s
+`packageManager`, Go and npm from `.github/toolchains.json`, and rustup.
+`rust-toolchain.toml` pins Rust, its components, and the Wasm target. CI reads
+these same declarations through `.github/actions/setup-toolchains`; run
+`node scripts/workspace/toolchains.ts` to print them locally. On Windows,
+install the MSVC C++ build tools; neither WSL nor Bash is required.
 
 From the repository root, install dependencies and prepare all artifacts:
 
