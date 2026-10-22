@@ -10,4 +10,4 @@ require (
 	github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go v0.1.7
 )
 
-require golang.org/x/sys v0.44.0 // indirect
+require golang.org/x/sys v0.49.0 // indirect

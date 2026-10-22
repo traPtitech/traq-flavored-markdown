@@ -5,7 +5,7 @@ layout.
 
 ## Prerequisites
 
-Install Node 24 with npm 11.17.0, Bun 1.3.14 or later, Go 1.26 or later, and
+Install Node 26 with npm 12.2.1, Bun 1.4.3 or later, Go 1.27.3 or later, and
 rustup. `rust-toolchain.toml` pins the Rust toolchain and Wasm target. On
 Windows, install the MSVC C++ build tools; neither WSL nor Bash is required.
 
@@ -124,3 +124,29 @@ resolves the selected compiler independently of package depth.
 After dependency changes, rebuild and inspect generated contract diffs. Corpus
 dependencies stay in `tools/corpus`; shared formatters, linters, and compiler
 tools stay at the repository root.
+
+The `@typescript/native` alias selects the latest stable TypeScript 7 compiler.
+The `typescript` alias uses Microsoft's `@typescript/typescript6` compatibility
+package because typescript-eslint still requires the TypeScript 6 JavaScript
+API. Both builds and package-consumer checks use the native compiler.
+
+The root ESLint override makes the React plugin's older peer range use the
+same ESLint version as the rest of the workspace. Run the full lint and test
+suite before changing this override. Bun keeps its seven-day release-age gate
+for other packages; the exceptions in `bunfig.toml` allow the reviewed, pinned
+updates, including the markdown-it security fix and vite-plugin-singlefile's
+removal of the vulnerable braces dependency.
+
+Bun 1.4.3's age exemptions match package names. Each exception also has an
+exact root override so a fresh install cannot select an unreviewed future
+version. The installation policy tests keep these overrides synchronized with
+the workspace pins and retain script blocking and the default age gate.
+
+Markdown URL handling uses `fluent-uri` for authority parsing and
+`percent-encoding` for escaping and label decoding. Parsing only the authority
+allows Markdown paths to retain spaces and malformed percent escapes until
+they are encoded. Hostname recoding preserves the existing Punycode policy;
+unparseable authorities remain literal and are escaped without losing input.
+IPv6 authority brackets remain literal while path brackets are escaped.
+This replaces the Rust `mdurl` dependency and removes its old
+`idna` dependency without maintaining a local copy or an advisory exception.

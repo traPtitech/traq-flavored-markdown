@@ -10,5 +10,5 @@ require (
 	github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go v0.1.7 // indirect
 	github.com/traPtitech/traq-flavored-markdown/packages/plugins/extensions/go v0.1.7 // indirect
 	github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go v0.1.7 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )

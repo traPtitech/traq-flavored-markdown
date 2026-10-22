@@ -9,9 +9,10 @@ publish.workspace = true
 markdown-parser.workspace = true
 markdown-commonmark-contracts = { path = "../contracts" }
 unicode-general-category = "=1.1.0"
-mdurl = "=0.3.1"
+fluent-uri = "=0.4.1"
+percent-encoding = "=2.3.2"
 idna = "=1.1.0"
 regex = "=1.13.1"
 
 [dev-dependencies]
-serde_json = "=1.0.151"
+serde_json = "=1.0.154"

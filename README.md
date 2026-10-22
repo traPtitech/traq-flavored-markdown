@@ -14,7 +14,7 @@ by language within each package.
 
 ## Install from npm
 
-Use Node 24 with npm 11.17.0. Most applications only need the SDK:
+Use Node 26 with npm 12.2.1. Most applications only need the SDK:
 
 ```sh
 npm install @traq-flavored-markdown/sdk

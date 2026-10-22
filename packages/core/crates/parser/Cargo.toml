@@ -13,4 +13,4 @@ contracts = ["dep:schemars"]
 markdown-ast = { path = "../ast" }
 markdown-definitions = { path = "../definitions" }
 serde = { version = "=1.0.229", features = ["derive"] }
-schemars = { version = "=1.2.2", optional = true }
+schemars = { version = "=1.2.3", optional = true }

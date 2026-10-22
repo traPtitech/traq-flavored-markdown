@@ -4,6 +4,7 @@ import { $ } from 'bun'
 
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot, sdkRoot } from '../paths.ts'
+import { readNpmPack } from './npm-pack.ts'
 import { capturePackageCommand as capture } from './package-command.ts'
 
 const tempRoot = (
@@ -28,7 +29,7 @@ try {
   const archives: string[] = []
   for (const repo of packageNames) {
     const cwd = packageRoot(repo)
-    const [packed] = JSON.parse(
+    const packed = readNpmPack(
       await capture(
         npm,
         [
@@ -39,8 +40,9 @@ try {
           temporaryDirectory
         ],
         cwd
-      )
-    ) as { filename: string; files: { path: string }[] }[]
+      ),
+      manifests[repo].name
+    )
     const archive = path.join(temporaryDirectory, packed.filename)
     archives.push(archive)
     const files = new Set(packed.files.map(file => file.path))
@@ -110,7 +112,12 @@ try {
     ],
     temporaryDirectory
   )
-  const tsc = Bun.fileURLToPath(import.meta.resolve('typescript/bin/tsc'))
+  const tsc = path.join(
+    path.dirname(
+      Bun.fileURLToPath(import.meta.resolve('@typescript/native/package.json'))
+    ),
+    'bin/tsc'
+  )
   for (const [source, name] of [
     ['typescript/tests/package-consumer', 'sdk'],
     ['typescript/tests/rendering', 'renderer']
