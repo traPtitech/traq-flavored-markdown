@@ -9,7 +9,7 @@ Install the Node version in `.node-version`, Bun from `package.json`'s
 `packageManager`, Go and npm from `.github/toolchains.json`, and rustup.
 `rust-toolchain.toml` pins Rust, its components, and the Wasm target. CI reads
 these same declarations through `.github/actions/setup-toolchains`; run
-`node scripts/workspace/toolchains.ts` to print them locally. On Windows,
+`node tools/workspace/toolchains.ts` to print them locally. On Windows,
 install the MSVC C++ build tools; neither WSL nor Bash is required.
 
 From the repository root, install dependencies and prepare all artifacts:
@@ -67,7 +67,7 @@ The root build pipeline:
 3. Builds the traQ Wasm artifact, JavaScript, declarations, and CSS, then writes
    `packages/sdk/dist/contract.json` with the artifact digest.
 
-Generated sources are kept in each owner's `typescript/generated` and
+Generated sources are kept in each owner's `typescript/src/generated` and
 `go/generated_*.go` directories. Intermediate Rust contracts are under `target/`;
 distributable outputs are in each package's `dist/` directory. Changes to Rust
 inputs, including their paths, can change source provenance. Three identities
@@ -111,9 +111,9 @@ replacements for internal dependencies. Published `go.mod` files retain matching
 version requirements without local replacements. `go mod tidy` operates on one
 module rather than the workspace graph, so use workspace tests and `go list -m
 all` to verify local resolution. Go module paths follow the repository layout,
-including the CommonMark, generic extensions, and traQ plugin directories.
+including the CommonMark, extensions, and traQ plugin directories.
 
-`scripts/workspace/descriptor.ts` explicitly declares package owners and allowed
+`tools/workspace/descriptor.ts` explicitly declares package owners and allowed
 owner dependencies. npm manifests and Go module files provide the actual build
 graphs; Cargo metadata provides crate edges. Architecture checks compare those
 edges with the owner policy and explicit crate restrictions, so changing a
@@ -126,7 +126,7 @@ Bun or DOM globals; public package builds inherit it through
 while `tsconfig.tooling.json` enables Bun for commands and tests. Root typecheck
 checks public production sources against their build configuration without
 emitting, then checks each package's tests. The corpus separately checks its
-browser viewer and all source/test files. `scripts/tsc.ts` resolves the selected
+browser viewer and all source/test files. `tools/workspace/tsc.ts` resolves the selected
 compiler independently of package depth.
 
 After dependency changes, rebuild and inspect generated contract diffs. Corpus

@@ -42,7 +42,7 @@ not edit them by hand.
 
 `bun run test:typescript` executes the following suites serially. Each can also
 be selected directly while iterating; the suite classifier is in
-`scripts/testing/suites.ts`. Its include/exclude globs declare each suite's
+`tools/workspace/testing/suites.ts`. Its include/exclude globs declare each suite's
 resources explicitly. Every discovered test must match exactly one suite;
 unclassified or overlapping files fail before any test runs. Place new tests in
 the appropriate resource directory or update that declaration when introducing
@@ -68,8 +68,10 @@ The unmodified CommonMark specification data has one copy in
 [tests/fixtures](../tests/fixtures/README.md). Frozen traQ AST and plain-text
 expectations live in [packages/sdk/tests/fixtures](../packages/sdk/tests/fixtures/README.md).
 Do not regenerate compatibility expectations from the parser under test. Keep
-their source, provenance, attribution, and the accepted meaning of existing
-grammar IDs intact.
+their source, provenance, and attribution intact. For the unreleased v1 grammar,
+review an intentional semantic change against its source and an independent
+specification before editing individual expectations; record that review in the
+fixture notes. Released grammar IDs retain their accepted meaning.
 
 Fixtures contain no production messages or credentials. Private corpus data
 belongs in ignored `.private` directories. The [corpus tool](../tools/corpus/README.md)
