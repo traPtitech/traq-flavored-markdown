@@ -79,6 +79,10 @@ const fields = (value: readonly ContractField[]) =>
 function decoder(shape: ContractShape): string {
   const type = goType(shape)
   switch (shape.kind) {
+    case 'string':
+      if (shape.minLength === undefined && shape.maxLength === undefined)
+        return 'contract.Decode[string]'
+      return `func(raw json.RawMessage, value *string) error { if err := contract.Decode(raw, value); err != nil { return err }; length := uint64(utf8.RuneCountInString(*value)); ${shape.minLength !== undefined ? `if length < ${shape.minLength} { return fmt.Errorf("string shorter than schema bound") };` : ''} ${shape.maxLength !== undefined ? `if length > ${shape.maxLength} { return fmt.Errorf("string longer than schema bound") };` : ''} return nil }`
     case 'integer':
     case 'number':
       return `func(raw json.RawMessage, value *${type}) error { if err := contract.Decode(raw, value); err != nil { return err }; if *value < ${shape.min} || *value > ${shape.max} { return fmt.Errorf("number outside schema range") }; return nil }`
@@ -207,6 +211,7 @@ export function goFile(packageName: string, source: string) {
   const imports = Object.entries({
     json: 'encoding/json',
     fmt: 'fmt',
+    utf8: 'unicode/utf8',
     contract:
       'github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract',
     ast: 'github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast',

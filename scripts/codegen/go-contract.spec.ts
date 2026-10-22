@@ -299,3 +299,56 @@ func TestDirectDecoder(t *testing.T) {
     await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
+
+test('generated Go string bounds count Unicode scalars and preserve one-sided and zero bounds', async () => {
+  const schema: RawSchema = {
+    title: 'Text',
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      value: { type: 'string', minLength: 2, maxLength: 2 },
+      lower: { type: 'string', minLength: 2 },
+      upper: { type: 'string', maxLength: 2 },
+      empty: { type: 'string', maxLength: 0 }
+    },
+    required: ['value', 'lower', 'upper', 'empty']
+  }
+  const fields = { lower: '日😀字', upper: '', empty: '' }
+  const cases = [
+    ...['ab', '日😀', 'e\u0301'].map(
+      value => [{ ...fields, value }, true] as const
+    ),
+    ...['', '日', '😀', 'abc', '日😀字', '\ud800x', 'x\udc00', null, 2].map(
+      value => [{ ...fields, value }, false] as const
+    ),
+    [{ ...fields, value: '日😀', lower: '😀' }, false],
+    [{ ...fields, value: '日😀', upper: '日😀字' }, false],
+    [{ ...fields, value: '日😀', empty: '😀' }, false]
+  ] as const
+  const testSource =
+    'package contract\nimport ("encoding/json"; "testing")\nfunc TestStringLengths(t *testing.T) {\n' +
+    cases
+      .map(([value, valid]) => {
+        const raw = JSON.stringify(JSON.stringify(value))
+        return (
+          'if err := json.Unmarshal([]byte(' +
+          raw +
+          '), new(Text)); (err == nil) != ' +
+          valid +
+          ' { t.Errorf("decode %q: %v", ' +
+          raw +
+          ', err) }'
+        )
+      })
+      .join('\n') +
+    '\n}\n'
+  await withTempDirectory('go-string-length-', async directory => {
+    await writeModule(directory)
+    await write(
+      directory + '/contract.go',
+      goFile('contract', goContract(schema))
+    )
+    await write(directory + '/contract_test.go', testSource)
+    await runCommand(['go', 'test', './...'], directory)
+  })
+}, 60_000)

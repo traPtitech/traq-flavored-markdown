@@ -25,7 +25,7 @@ export const suites = {
     timeout: 60000,
     resources: 'Go compiler and generated temporary modules; run serially',
     include: [
-      'scripts/codegen/{go-contract,contract-integers,contract-unions}.spec.ts'
+      'scripts/codegen/{go-contract,contract-integers,contract-strings,contract-unions}.spec.ts'
     ]
   },
   workspace: {

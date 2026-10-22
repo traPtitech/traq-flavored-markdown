@@ -9,7 +9,15 @@ import type { NodeStructure } from './structure.ts'
 
 function validator(s: ContractShape): string {
   if (s.kind === 'reference') return `validate${s.name}`
-  if (s.kind === 'string' || s.kind === 'boolean') return s.kind
+  if (s.kind === 'string') {
+    if (s.minLength === undefined && s.maxLength === undefined) return 'string'
+    const bounds = [
+      ...(s.minLength !== undefined ? [`length >= ${s.minLength}`] : []),
+      ...(s.maxLength !== undefined ? [`length <= ${s.maxLength}`] : [])
+    ]
+    return `(value: unknown) => { if (!string(value)) return false; let length = 0; for (const scalar of value) { const point = scalar.codePointAt(0)!; if (point >= 0xd800 && point <= 0xdfff) return false; length++ }; return ${bounds.join(' && ')} }`
+  }
+  if (s.kind === 'boolean') return s.kind
   if (s.kind === 'integer')
     return `(value: unknown) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
   if (s.kind === 'number')

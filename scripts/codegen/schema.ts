@@ -26,7 +26,12 @@ export type NullableShape = { kind: 'nullable'; inner: Shape; name?: string }
 export type EnumShape = { kind: 'enum'; values: string[]; name?: string }
 export type LiteralShape = { kind: 'literal'; value: string; name?: string }
 export type UnionShape = { kind: 'union'; variants: Shape[]; name?: string }
-export type StringShape = { kind: 'string'; name?: string }
+export type StringShape = {
+  kind: 'string'
+  name?: string
+  minLength?: number
+  maxLength?: number
+}
 export type BooleanShape = { kind: 'boolean'; name?: string }
 export type NumberShape = {
   kind: 'number'
@@ -148,7 +153,32 @@ export function shape(
     return { kind: 'enum', values: schema.enum as string[] }
   }
 
-  if (schema.type === 'string' || schema.type === 'boolean') {
+  if (schema.type === 'string') {
+    keys(schema, ['type', 'minLength', 'maxLength'])
+    for (const bound of [schema.minLength, schema.maxLength])
+      if (
+        bound !== undefined &&
+        (!Number.isSafeInteger(bound) || Number(bound) < 0)
+      )
+        throw new Error('Invalid string length bound')
+    if (
+      schema.minLength !== undefined &&
+      schema.maxLength !== undefined &&
+      Number(schema.minLength) > Number(schema.maxLength)
+    )
+      throw new Error('Invalid string length bounds')
+    return {
+      kind: 'string',
+      ...(schema.minLength !== undefined
+        ? { minLength: Number(schema.minLength) }
+        : {}),
+      ...(schema.maxLength !== undefined
+        ? { maxLength: Number(schema.maxLength) }
+        : {})
+    }
+  }
+
+  if (schema.type === 'boolean') {
     keys(schema, ['type'])
     return { kind: schema.type }
   }
