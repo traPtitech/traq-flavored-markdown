@@ -8,20 +8,20 @@ description = "Typed SDK feature assembly and profile selections."
 
 [features]
 default = []
-syntax = ["dep:markdown-parser", "dep:markdown-commonmark", "dep:markdown-generic-syntax", "dep:markdown-trap-syntax"]
-text = ["dep:markdown-renderer", "dep:markdown-commonmark-text", "dep:markdown-generic-text", "dep:markdown-trap-text"]
+syntax = ["dep:markdown-parser", "dep:markdown-commonmark", "dep:markdown-extensions-syntax", "dep:markdown-trap-syntax"]
+text = ["dep:markdown-renderer", "dep:markdown-commonmark-text", "dep:markdown-extensions-text", "dep:markdown-trap-text"]
 
 [dependencies]
 markdown-ast.workspace = true
 markdown-definitions.workspace = true
 markdown-commonmark-contracts.workspace = true
-markdown-generic-contracts.workspace = true
+markdown-extensions-contracts.workspace = true
 markdown-trap-contracts.workspace = true
 markdown-parser = { workspace = true, optional = true }
 markdown-commonmark = { workspace = true, optional = true }
-markdown-generic-syntax = { workspace = true, optional = true }
+markdown-extensions-syntax = { workspace = true, optional = true }
 markdown-trap-syntax = { workspace = true, optional = true }
 markdown-renderer = { workspace = true, optional = true }
 markdown-commonmark-text = { workspace = true, optional = true }
-markdown-generic-text = { workspace = true, optional = true }
+markdown-extensions-text = { workspace = true, optional = true }
 markdown-trap-text = { workspace = true, optional = true }

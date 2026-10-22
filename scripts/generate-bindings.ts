@@ -46,7 +46,7 @@ export async function generateCoreContracts(outputRoot = repositoryRoot) {
   const plan = new OutputManifest()
   plan.add(
     'core',
-    'packages/core/typescript/generated/limits.ts',
+    'packages/core/typescript/src/generated/limits.ts',
     '// Generated from Rust AST validation defaults. Do not edit.\n' +
       'export const documentLimits = Object.freeze(' +
       JSON.stringify(limits) +
@@ -100,11 +100,16 @@ async function generateContractGroup(
   )
 
   const manifest = await readManifest(input, parseNodeManifest)
-  for (const [key, node] of Object.entries(manifest.nodes))
+  for (const [key, node] of Object.entries(manifest.nodes)) {
     if (node.group !== group)
       throw new Error(
         `${key}: expected ${group} contract group, got ${node.group}`
       )
+    if (!key.startsWith(metadata.wirePrefix + '.'))
+      throw new Error(
+        `${key}: expected ${metadata.wirePrefix} wire namespace for ${group}`
+      )
+  }
   const goPath = path.join(destination, metadata.goGeneratedPath)
   const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
     ([key, node]) => [key, node.schema]

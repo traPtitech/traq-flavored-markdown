@@ -2,7 +2,7 @@ use markdown_commonmark::blocks::Interrupt;
 mod cells;
 mod parse;
 
-pub use markdown_generic_contracts::{Alignment, Cell, HeaderRow, Row, Table};
+pub use markdown_extensions_contracts::{Alignment, Cell, HeaderRow, Row, Table};
 
 use markdown_parser::engine::{Plugin, block::BlockRule};
 
@@ -22,7 +22,7 @@ pub fn block_rule() -> &'static BlockRule {
 
 pub fn plugin() -> &'static Plugin {
     static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_generic_contracts::declarations().table);
+        let mut plugin = Plugin::new(&markdown_extensions_contracts::declarations().table);
         plugin.add(block_rule());
         plugin
     });

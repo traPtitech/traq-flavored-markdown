@@ -43,9 +43,9 @@ markdown-renderer = { path = "packages/core/crates/renderer" }
 markdown-commonmark = { path = "packages/plugins/commonmark/crates/syntax" }
 markdown-commonmark-contracts = { path = "packages/plugins/commonmark/crates/contracts" }
 markdown-commonmark-text = { path = "packages/plugins/commonmark/crates/text" }
-markdown-generic-contracts = { path = "packages/plugins/extensions/crates/contracts" }
-markdown-generic-syntax = { path = "packages/plugins/extensions/crates/syntax" }
-markdown-generic-text = { path = "packages/plugins/extensions/crates/text" }
+markdown-extensions-contracts = { path = "packages/plugins/extensions/crates/contracts" }
+markdown-extensions-syntax = { path = "packages/plugins/extensions/crates/syntax" }
+markdown-extensions-text = { path = "packages/plugins/extensions/crates/text" }
 markdown-trap-contracts = { path = "packages/plugins/traq/crates/contracts" }
 markdown-trap-extraction = { path = "packages/plugins/traq/crates/extraction" }
 markdown-trap-syntax = { path = "packages/plugins/traq/crates/syntax" }

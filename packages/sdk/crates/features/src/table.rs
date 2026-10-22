@@ -1,6 +1,6 @@
 use super::*;
 use markdown_commonmark_contracts as cm;
-use markdown_generic_contracts as ext;
+use markdown_extensions_contracts as ext;
 use markdown_trap_contracts as traq;
 
 pub(super) fn definitions() -> Vec<FeatureDefinition> {
@@ -57,7 +57,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
         FeatureDefinition {
             id: FeatureId::Math,
             export: Export {
-                group: "generic",
+                group: "extensions",
                 member: "math",
             },
             declaration: &ext::declarations().math,
@@ -66,11 +66,11 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
                 Payload::of::<ext::BlockMath>(),
             ],
             #[cfg(feature = "syntax")]
-            syntax: markdown_generic_syntax::math::plugin,
+            syntax: markdown_extensions_syntax::math::plugin,
             #[cfg(feature = "text")]
             text: Some(|options| {
-                markdown_generic_text::math::plugin_with_options(
-                    markdown_generic_text::math::Options {
+                markdown_extensions_text::math::plugin_with_options(
+                    markdown_extensions_text::math::Options {
                         style: options.math,
                     },
                 )
@@ -79,33 +79,33 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
         FeatureDefinition {
             id: FeatureId::Mark,
             export: Export {
-                group: "generic",
+                group: "extensions",
                 member: "mark",
             },
             declaration: &ext::declarations().mark,
             payloads: vec![Payload::of::<ext::Mark>()],
             #[cfg(feature = "syntax")]
-            syntax: markdown_generic_syntax::mark::plugin,
+            syntax: markdown_extensions_syntax::mark::plugin,
             #[cfg(feature = "text")]
-            text: Some(|_| markdown_generic_text::mark::plugin()),
+            text: Some(|_| markdown_extensions_text::mark::plugin()),
         },
         FeatureDefinition {
             id: FeatureId::Strikethrough,
             export: Export {
-                group: "generic",
+                group: "extensions",
                 member: "strikethrough",
             },
             declaration: &ext::declarations().strikethrough,
             payloads: vec![Payload::of::<ext::Strikethrough>()],
             #[cfg(feature = "syntax")]
-            syntax: markdown_generic_syntax::strikethrough::plugin,
+            syntax: markdown_extensions_syntax::strikethrough::plugin,
             #[cfg(feature = "text")]
-            text: Some(|_| markdown_generic_text::strikethrough::plugin()),
+            text: Some(|_| markdown_extensions_text::strikethrough::plugin()),
         },
         FeatureDefinition {
             id: FeatureId::Table,
             export: Export {
-                group: "generic",
+                group: "extensions",
                 member: "table",
             },
             declaration: &ext::declarations().table,
@@ -116,14 +116,14 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
                 Payload::of::<ext::Cell>(),
             ],
             #[cfg(feature = "syntax")]
-            syntax: markdown_generic_syntax::table::plugin,
+            syntax: markdown_extensions_syntax::table::plugin,
             #[cfg(feature = "text")]
-            text: Some(|_| markdown_generic_text::table::plugin()),
+            text: Some(|_| markdown_extensions_text::table::plugin()),
         },
         FeatureDefinition {
             id: FeatureId::Linkify,
             export: Export {
-                group: "generic",
+                group: "extensions",
                 member: "linkify",
             },
             declaration: &ext::declarations().linkify,

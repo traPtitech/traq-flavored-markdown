@@ -1,5 +1,5 @@
 use markdown_ast::Node;
-use markdown_generic_contracts::*;
+use markdown_extensions_contracts::*;
 use markdown_renderer::{Context, Output, Plugin, Result};
 use std::sync::LazyLock;
 
@@ -19,7 +19,7 @@ pub fn plugin() -> Plugin {
 }
 
 fn build() -> Result<Plugin> {
-    let mut table = Plugin::new(&markdown_generic_contracts::declarations().table);
+    let mut table = Plugin::new(&markdown_extensions_contracts::declarations().table);
 
     table.transparent::<Table>()?;
     table.transparent::<Cell>()?;

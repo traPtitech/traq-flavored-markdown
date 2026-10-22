@@ -1,10 +1,10 @@
-# markdown-generic-contracts
+# markdown-extensions-contracts
 
-Defines the seven node types used by the generic Markdown extensions: math,
+Defines the node types used by the Markdown extensions: math,
 tables, mark, and strikethrough. It does not depend on parser, renderer, or
 codec implementations.
 
-`preset()` returns shared declarations for the math, table, mark,
+`declarations()` returns shared declarations for the math, table, mark,
 strikethrough, and linkify plugins. Grammars and rendering presets select and
 order their implementations separately. Linkify reuses CommonMark `Link` and
 `Text` nodes, so it has no dedicated payload type.

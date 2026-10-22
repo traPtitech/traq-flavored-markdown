@@ -96,14 +96,14 @@ pub fn commonmark_syntax() -> &'static markdown_commonmark::Syntax {
 #[derive(Debug, Clone, Copy)]
 pub struct TextOptions {
     pub explicit_links: markdown_commonmark_text::ExplicitLinkStyle,
-    pub math: markdown_generic_text::math::Style,
+    pub math: markdown_extensions_text::math::Style,
 }
 #[cfg(feature = "text")]
 impl Default for TextOptions {
     fn default() -> Self {
         Self {
             explicit_links: markdown_commonmark_text::ExplicitLinkStyle::LabelAndDestination,
-            math: markdown_generic_text::math::Style::DelimitedTex,
+            math: markdown_extensions_text::math::Style::DelimitedTex,
         }
     }
 }
@@ -125,7 +125,7 @@ mod tests {
             };
         }
         markdown_commonmark_contracts::node_catalog!(register);
-        markdown_generic_contracts::node_catalog!(register);
+        markdown_extensions_contracts::node_catalog!(register);
         markdown_trap_contracts::node_catalog!(register);
         let mut actual = HashMap::new();
         let mut exports = HashSet::new();

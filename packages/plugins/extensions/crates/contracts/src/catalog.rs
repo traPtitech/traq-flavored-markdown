@@ -1,4 +1,4 @@
-//! The generic extension wire contract catalog. Adding a payload starts here.
+//! Extension contracts retain the legacy `generic.*` wire namespace.
 
 use markdown_definitions::implement_wire_kinds;
 
@@ -6,7 +6,7 @@ use markdown_definitions::implement_wire_kinds;
 macro_rules! node_catalog {
     ($consumer:ident) => {
         $consumer! {
-            "generic";
+            "extensions";
             $crate::InlineMath => "generic.inline_math",
             $crate::BlockMath => "generic.block_math",
             $crate::Table => "generic.table",

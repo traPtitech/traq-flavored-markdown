@@ -1,4 +1,4 @@
-use markdown_generic_contracts::*;
+use markdown_extensions_contracts::*;
 use markdown_renderer::{Plugin, Result};
 use std::sync::LazyLock;
 
@@ -9,7 +9,8 @@ pub fn plugin() -> Plugin {
 }
 
 fn build() -> Result<Plugin> {
-    let mut strikethrough = Plugin::new(&markdown_generic_contracts::declarations().strikethrough);
+    let mut strikethrough =
+        Plugin::new(&markdown_extensions_contracts::declarations().strikethrough);
     strikethrough.transparent::<Strikethrough>()?;
     Ok(strikethrough)
 }

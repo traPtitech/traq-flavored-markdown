@@ -1,4 +1,4 @@
-use markdown_generic_contracts::*;
+use markdown_extensions_contracts::*;
 use markdown_renderer::{Plugin, Result};
 use std::sync::LazyLock;
 
@@ -8,7 +8,7 @@ pub fn plugin() -> Plugin {
 }
 
 fn build() -> Result<Plugin> {
-    let mut mark = Plugin::new(&markdown_generic_contracts::declarations().mark);
+    let mut mark = Plugin::new(&markdown_extensions_contracts::declarations().mark);
     mark.transparent::<Mark>()?;
     Ok(mark)
 }

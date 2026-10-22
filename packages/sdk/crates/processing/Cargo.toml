@@ -22,7 +22,7 @@ markdown-extractor.workspace = true
 
 [dev-dependencies]
 markdown-commonmark-text.workspace = true
-markdown-generic-text.workspace = true
+markdown-extensions-text.workspace = true
 markdown-trap-text.workspace = true
 traq-markdown-grammar = { path = "../grammar" }
 serde_json = "=1.0.154"

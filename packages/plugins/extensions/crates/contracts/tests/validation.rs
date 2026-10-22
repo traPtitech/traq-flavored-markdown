@@ -1,7 +1,9 @@
 use markdown_ast::{
     Document, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
 };
-use markdown_generic_contracts::{Alignment, BlockMath, Cell, HeaderRow, InlineMath, Row, Table};
+use markdown_extensions_contracts::{
+    Alignment, BlockMath, Cell, HeaderRow, InlineMath, Row, Table,
+};
 
 fn span() -> Span {
     Span { start: 0, end: 0 }

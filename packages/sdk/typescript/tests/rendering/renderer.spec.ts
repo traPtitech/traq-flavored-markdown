@@ -1,7 +1,7 @@
 import * as commonNodes from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import * as common from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import * as html from '@traq-flavored-markdown/core/renderer'
-import * as generic from '@traq-flavored-markdown/extensions-plugin/renderer'
+import * as extensions from '@traq-flavored-markdown/extensions-plugin/renderer'
 import * as traq from '@traq-flavored-markdown/sdk/renderer'
 import * as trapNodes from '@traq-flavored-markdown/traq-plugin/nodes'
 import * as trap from '@traq-flavored-markdown/traq-plugin/renderer'
@@ -179,7 +179,7 @@ test('fallback replacement keeps other extensions and does not require a store',
   const view = html.renderer(
     new html.PresetBuilder()
       .add(common.plugin())
-      .add(generic.plugin())
+      .add(extensions.plugin())
       .add(extension)
       .build()
   )

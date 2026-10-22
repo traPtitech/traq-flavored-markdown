@@ -12,13 +12,13 @@ pub struct PluginDeclarations {
 
 pub fn declarations() -> &'static PluginDeclarations {
     static CONTRACTS: LazyLock<PluginDeclarations> = LazyLock::new(|| {
-        let generic = Plugin::group("generic");
+        let extensions = Plugin::group("extensions");
         PluginDeclarations {
-            math: generic.plugin("math"),
-            table: generic.plugin("table"),
-            mark: generic.plugin("mark"),
-            strikethrough: generic.plugin("strikethrough"),
-            linkify: generic.plugin("linkify"),
+            math: extensions.plugin("math"),
+            table: extensions.plugin("table"),
+            mark: extensions.plugin("mark"),
+            strikethrough: extensions.plugin("strikethrough"),
+            linkify: extensions.plugin("linkify"),
         }
     });
     &CONTRACTS

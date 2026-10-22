@@ -116,7 +116,7 @@ fn commonmark_precedence() -> Vec<Precedence> {
 #[cfg(feature = "syntax")]
 fn traq_precedence() -> Vec<Precedence> {
     use Precedence::{Block, Inline};
-    use markdown_generic_syntax as extensions;
+    use markdown_extensions_syntax as extensions;
     use markdown_trap_syntax as traq;
     let base = crate::commonmark_syntax();
     vec![

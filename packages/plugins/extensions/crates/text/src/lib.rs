@@ -1,4 +1,4 @@
-//! generic text rendering rules; no parser implementation dependency.
+//! Extension text rendering rules; no parser implementation dependency.
 #![forbid(unsafe_code)]
 
 pub mod mark;

@@ -1,6 +1,6 @@
 use markdown_commonmark_contracts::{HtmlInline, Text};
 use markdown_definitions::Plugin as Declaration;
-use markdown_generic_syntax::math::InlineMath;
+use markdown_extensions_syntax::math::InlineMath;
 use markdown_parser::{NodeData, NodeRole};
 use traq_markdown_grammar::{
     Parser,

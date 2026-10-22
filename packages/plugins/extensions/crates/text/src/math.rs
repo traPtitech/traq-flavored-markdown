@@ -1,4 +1,4 @@
-use markdown_generic_contracts::*;
+use markdown_extensions_contracts::*;
 use markdown_renderer::{Plugin, Result};
 
 use std::sync::LazyLock;
@@ -26,7 +26,7 @@ pub fn plugin_with_options(options: Options) -> Plugin {
 }
 
 fn build(options: Options) -> Result<Plugin> {
-    let mut math = Plugin::new(&markdown_generic_contracts::declarations().math);
+    let mut math = Plugin::new(&markdown_extensions_contracts::declarations().math);
     math.on::<InlineMath>(move |v, _, _, output| {
         if options.style == Style::DelimitedTex {
             output.push("$")?;

@@ -1,6 +1,6 @@
 use markdown_ast::{Document, Node, Span};
-use markdown_generic_contracts::{BlockMath, InlineMath};
-use markdown_generic_text::math::{self, Options, Style};
+use markdown_extensions_contracts::{BlockMath, InlineMath};
+use markdown_extensions_text::math::{self, Options, Style};
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 
 fn renderer(plugin: &Plugin) -> Renderer {
