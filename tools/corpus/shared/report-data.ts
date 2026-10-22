@@ -3,6 +3,7 @@ import {
   type ReportPayload,
   modes
 } from '../report-schema.ts'
+import { validateProvenance } from './comparison.ts'
 
 export type ReportData = { metadata: ReportMetadata; payload: ReportPayload }
 
@@ -36,33 +37,45 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
       !chunks[mode].every(chunk => typeof chunk === 'string')
     )
       throw new Error('Invalid report mode: ' + mode)
-    const timing = mode === 'plainText' ? meta.traq : meta.sui?.modes?.[mode]
-    if (timing?.differences !== meta.counts[mode])
+    const result = meta.results?.[mode]
+    if (result?.differences !== meta.counts[mode])
       throw new Error('Report counts mismatch')
+    if (result.messages !== meta.messages)
+      throw new Error('Report message counts mismatch')
+    for (const field of [
+      'differences',
+      'embeddingDifferences',
+      'beforeErrors',
+      'afterErrors'
+    ] as const)
+      if (
+        !Number.isSafeInteger(result[field]) ||
+        result[field] < 0 ||
+        result[field] > result.messages
+      )
+        throw new Error('Invalid report counts')
     for (const side of ['before', 'after'] as const)
-      for (const field of ['meanUs', 'p50Us', 'p95Us'] as const)
-        if (
-          !Number.isFinite(timing?.[side]?.[field]) ||
-          timing[side][field] < 0
-        )
+      for (const field of [
+        'totalMs',
+        'meanUs',
+        'p50Us',
+        'p95Us',
+        'p99Us'
+      ] as const)
+        if (!Number.isFinite(result[side]?.[field]) || result[side][field] < 0)
           throw new Error('Invalid report timing')
+    for (const side of ['before', 'after'] as const)
+      if (result[side].calls !== meta.messages)
+        throw new Error('Report timing counts mismatch')
+    if (
+      ![result.initialization?.beforeMs, result.initialization?.afterMs].every(
+        value => Number.isFinite(value) && value >= 0
+      )
+    )
+      throw new Error('Invalid report initialization')
   }
-  if (
-    meta.sui.messages !== meta.messages ||
-    meta.traq.messages !== meta.messages
-  )
-    throw new Error('Report message counts mismatch')
-  if (
-    !meta.revisions ||
-    !['suiMaster', 'traqMaster', 'renderer', 'processor'].every(
-      key => typeof meta.revisions[key] === 'string'
-    ) ||
-    ![
-      meta.sui.beforeInitializationMs,
-      meta.sui.afterInitializationMs,
-      meta.traq.afterInitializationMs
-    ].every(value => Number.isFinite(value) && value >= 0)
-  )
-    throw new Error('Invalid report provenance')
+  if (!Number.isSafeInteger(meta.run?.warmups) || meta.run.warmups < 0)
+    throw new Error('Invalid report warmups')
+  validateProvenance(meta.run.provenance)
   return { metadata: meta, payload: chunks }
 }

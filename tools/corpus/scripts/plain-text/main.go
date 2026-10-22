@@ -36,6 +36,29 @@ type timing struct {
 	P95Us   float64 `json:"p95Us"`
 	P99Us   float64 `json:"p99Us"`
 }
+type comparisonPlan struct {
+	Format  int    `json:"format"`
+	Corpus  string `json:"corpus"`
+	Output  string `json:"output"`
+	Origin  string `json:"origin"`
+	Wasm    string `json:"wasm"`
+	Max     int    `json:"max"`
+	Warmups int    `json:"warmups"`
+}
+type initialization struct {
+	BeforeMs float64 `json:"beforeMs"`
+	AfterMs  float64 `json:"afterMs"`
+}
+type comparisonResult struct {
+	Messages             int            `json:"messages"`
+	Differences          int            `json:"differences"`
+	EmbeddingDifferences int            `json:"embeddingDifferences"`
+	BeforeErrors         int            `json:"beforeErrors"`
+	AfterErrors          int            `json:"afterErrors"`
+	Before               timing         `json:"before"`
+	After                timing         `json:"after"`
+	Initialization       initialization `json:"initialization"`
+}
 
 func summarize(values []int64) timing {
 	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
@@ -66,35 +89,34 @@ func run(f func() (string, error)) (value string, elapsed int64, failed bool) {
 	return
 }
 func main() {
-	corpus := flag.String("corpus", "", "corpus JSONL")
-	out := flag.String("out", "", "output directory")
-	config := flag.String("config", "", "local config JSON")
-	max := flag.Int("max", 100000, "message limit")
+	planPath := flag.String("plan", "", "comparison plan JSON")
 	flag.Parse()
-	var conf struct {
-		Origin string `json:"origin"`
-		Wasm   string `json:"wasm"`
+	var plan comparisonPlan
+	data, err := os.ReadFile(*planPath)
+	must(err)
+	must(json.Unmarshal(data, &plan))
+	if plan.Format != 1 || plan.Max < 1 || plan.Warmups < 0 || plan.Corpus == "" || plan.Output == "" || plan.Wasm == "" {
+		panic("invalid comparison plan")
 	}
-	data, err := os.ReadFile(*config)
+	beforeInitStart := time.Now()
+	before.SetOrigin(plan.Origin)
+	beforeInitMs := float64(time.Since(beforeInitStart).Nanoseconds()) / 1e6
+	wasm, err := os.ReadFile(plan.Wasm)
 	must(err)
-	must(json.Unmarshal(data, &conf))
-	before.SetOrigin(conf.Origin)
 	initStart := time.Now()
-	wasm, err := os.ReadFile(conf.Wasm)
-	must(err)
 	runtime, err := markdown.NewRuntime(context.Background(), wasm)
 	must(err)
 	defer runtime.Close(context.Background())
 	parser, err := runtime.NewParser(context.Background(), markdown.PresetTraqV1)
 	must(err)
-	renderer, err := runtime.NewPlainTextRenderer(context.Background(), markdown.RendererOptions{Origin: conf.Origin})
+	renderer, err := runtime.NewPlainTextRenderer(context.Background(), markdown.RendererOptions{Origin: plan.Origin})
 	must(err)
 	initMs := float64(time.Since(initStart).Nanoseconds()) / 1e6
-	input, err := os.Open(*corpus)
+	input, err := os.Open(plan.Corpus)
 	must(err)
 	defer input.Close()
-	must(os.MkdirAll(*out, 0700))
-	output, err := os.Create(filepath.Join(*out, "plain-text-differences.jsonl"))
+	must(os.MkdirAll(plan.Output, 0700))
+	output, err := os.Create(filepath.Join(plan.Output, "plain-text-differences.jsonl"))
 	must(err)
 	defer output.Close()
 	writer := bufio.NewWriterSize(output, 1<<20)
@@ -111,11 +133,11 @@ func main() {
 	}
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(make([]byte, 65536), 16<<20)
-	for n := 0; n < 200 && scanner.Scan(); n++ {
+	for n := 0; n < plan.Warmups && scanner.Scan(); n++ {
 		var r record
 		must(json.Unmarshal(scanner.Bytes(), &r))
-		old(r.Source)
-		current(r.Source)
+		run(func() (string, error) { return old(r.Source) })
+		run(func() (string, error) { return current(r.Source) })
 	}
 	must(scanner.Err())
 	_, err = input.Seek(0, 0)
@@ -124,9 +146,8 @@ func main() {
 	scanner.Buffer(make([]byte, 65536), 16<<20)
 	count, different, oldErrors, newErrors := 0, 0, 0, 0
 	oldTimes, newTimes := make([]int64, 0, 100000), make([]int64, 0, 100000)
-	started := time.Now()
 	for scanner.Scan() {
-		if *max > 0 && count >= *max {
+		if count >= plan.Max {
 			break
 		}
 		var r record
@@ -170,10 +191,13 @@ func main() {
 	}
 	must(scanner.Err())
 	must(writer.Flush())
-	report := map[string]any{"messages": count, "differences": different, "beforeErrors": oldErrors, "afterErrors": newErrors, "before": summarize(oldTimes), "after": summarize(newTimes), "afterInitializationMs": initMs, "wallSeconds": time.Since(started).Seconds(), "timed": "legacy Parse().NotificationText() / Rust Parser.Parse() + PlainTextRenderer.Render(document); 200 warmups; alternating order; I/O excluded"}
+	report := map[string]comparisonResult{"plainText": {
+		Messages: count, Differences: different, BeforeErrors: oldErrors, AfterErrors: newErrors,
+		Before: summarize(oldTimes), After: summarize(newTimes), Initialization: initialization{BeforeMs: beforeInitMs, AfterMs: initMs},
+	}}
 	data, err = json.MarshalIndent(report, "", "  ")
 	must(err)
-	must(os.WriteFile(filepath.Join(*out, "traq-summary.json"), data, 0600))
+	must(os.WriteFile(filepath.Join(plan.Output, "plain-text-results.json"), data, 0600))
 	fmt.Println(string(data))
 }
 func must(err error) {

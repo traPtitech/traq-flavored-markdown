@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import { repositoryRoot } from '../../../scripts/paths.ts'
 import { runComparison } from '../comparison/workflow.ts'
+import { defaultWarmups } from '../shared/comparison.ts'
 import { parseArgs } from './args.ts'
 
 const { values: v } = parseArgs({
@@ -19,8 +20,24 @@ const { values: v } = parseArgs({
     'traq-ref': { type: 'string', default: 'origin/master' },
     'sui-ref': { type: 'string', default: 'origin/master' },
     origin: { type: 'string', default: 'https://q.trap.jp' },
-    max: { type: 'number', default: 1000000, integer: true, min: 1 }
+    max: { type: 'number', default: 1000000, integer: true, min: 1 },
+    warmups: { type: 'number', default: defaultWarmups, integer: true, min: 0 }
   }
 })
 
-console.log(JSON.stringify(await runComparison({ ...v, max: String(v.max) })))
+if (!v.corpus) throw new Error('--corpus messages.jsonl is required')
+console.log(
+  JSON.stringify(
+    await runComparison({
+      corpus: v.corpus,
+      output: v.out,
+      suiDirectory: v.sui!,
+      traqDirectory: v.traq!,
+      suiRef: v['sui-ref']!,
+      traqRef: v['traq-ref']!,
+      origin: v.origin!,
+      max: v.max!,
+      warmups: v.warmups!
+    })
+  )
+)

@@ -1,12 +1,14 @@
 import path from 'node:path'
 
 import { sdkRoot } from '../../../../scripts/paths.ts'
+import type { ComparisonPlan } from '../../shared/comparison.ts'
 import type { Profile } from '../runner.ts'
 
-export async function frontendAdapters(
-  baselineDirectory: string,
-  origin?: string
-) {
+export async function frontendAdapters({
+  baselineDirectory,
+  origin,
+  wasm
+}: Pick<ComparisonPlan, 'baselineDirectory' | 'origin' | 'wasm'>) {
   const baselinePackage = Bun.resolveSync(
     '@traptitech/traq-markdown-it',
     path.resolve(baselineDirectory)
@@ -41,9 +43,7 @@ export async function frontendAdapters(
   let started = performance.now()
   const baseline = new traQMarkdownIt(store, [], origin)
   const beforeInitializationMs = performance.now() - started
-  const bytes = await Bun.file(
-    path.join(sdkRoot, 'dist/parser.wasm')
-  ).arrayBuffer()
+  const bytes = await Bun.file(wasm).arrayBuffer()
   started = performance.now()
   const runtime = await createRuntime(bytes)
   try {

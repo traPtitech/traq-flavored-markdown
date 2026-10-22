@@ -1,15 +1,12 @@
 import React, { useState } from 'react'
 
 import { type Mode, type ReportMetadata, modes } from '../report-schema.ts'
+import { byMode, profileDefinitions } from '../shared/comparison.ts'
 import DiffTable from './DiffTable.tsx'
 import { type ReportRepository } from './data/repository.ts'
 import { useReportQuery } from './hooks/useReportQuery.ts'
 
-const labels: Record<Mode, string> = {
-  render: 'traQ_S-UI · 通常',
-  inline: 'traQ_S-UI · インライン',
-  plainText: 'traQ · プレーンテキスト'
-}
+const labels = byMode(mode => profileDefinitions[mode].label)
 
 export default function App({
   repository
@@ -68,15 +65,17 @@ export default function App({
           <div id="speed">
             <SpeedTable meta={meta} labels={labels} />
             <p>
-              同一入力・200件のウォームアップ後に計測。before / after
+              同一入力・{num(meta.run.warmups)}
+              件のウォームアップ後に計測。before / after
               の実行順は交互。収集・ファイル出力・画面表示の時間は含みません。各モードを順に実行した際の参考値です。
             </p>
-            <p>
-              初期化: S-UI before {meta.sui.beforeInitializationMs.toFixed(2)}{' '}
-              ms / after {meta.sui.afterInitializationMs.toFixed(2)} ms、traQ
-              Rust {meta.traq.afterInitializationMs.toFixed(2)}{' '}
-              ms。モジュール読込は除きます。
-            </p>
+            {modes.map(key => (
+              <p key={key}>
+                {labels[key]} 初期化: before{' '}
+                {meta.results[key].initialization.beforeMs.toFixed(2)} ms /
+                after {meta.results[key].initialization.afterMs.toFixed(2)} ms。
+              </p>
+            ))}
             <p>
               S-UI は同一の固定参照・スタンプデータを使用。traQ は master の
               Parse と Rust PlainTextRenderer
@@ -198,14 +197,16 @@ export default function App({
 
         <footer id="footer">
           生成 {new Date(meta.generated).toLocaleString('ja-JP')}
-          {' · master: S-UI '}
-          {meta.revisions.suiMaster.slice(0, 10)}
-          {' / traQ '}
-          {meta.revisions.traqMaster.slice(0, 10)}
-          {' · after: renderer '}
-          {meta.revisions.renderer.slice(0, 10)}
-          {' / SDK '}
-          {meta.revisions.processor.slice(0, 10)}
+          {modes.map(key => (
+            <span key={key}>
+              {' · '}
+              {labels[key]} before{' '}
+              {meta.run.provenance.before[key].revision.slice(0, 10)}
+            </span>
+          ))}
+          {' · after: '}
+          {meta.run.provenance.after.label}{' '}
+          {meta.run.provenance.after.revision.slice(0, 10)}
           {
             ' · 外部画像はプレースホルダー表示。リンク・スクリプトは実行しません。'
           }
@@ -237,7 +238,7 @@ function SpeedTable({
       </thead>
       <tbody>
         {modes.map(key => {
-          const data = key === 'plainText' ? meta.traq : meta.sui.modes[key]
+          const data = meta.results[key]
           return (
             <tr key={key}>
               <td>{labels[key]}</td>

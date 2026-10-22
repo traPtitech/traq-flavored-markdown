@@ -2,22 +2,44 @@ import path from 'path'
 
 import { $ } from 'bun'
 
+import { readGoPackageGraph } from '../../../scripts/package-graph.ts'
 import { packageRoot, repositoryRoot, sdkRoot } from '../../../scripts/paths.ts'
 import { resolveRepositoryPath } from '../scripts/args.ts'
 import { GitRepo } from '../scripts/git.ts'
-import { parseRunManifest } from '../shared/protocol.ts'
+import {
+  type ComparisonProvenance,
+  byMode,
+  defaultWarmups,
+  modes,
+  parseComparisonPlan
+} from '../shared/comparison.ts'
 
-export async function runComparison(v: Record<string, string | undefined>) {
+export type ComparisonOptions = {
+  corpus: string
+  output?: string
+  suiDirectory: string
+  traqDirectory: string
+  suiRef: string
+  traqRef: string
+  origin: string
+  max: number
+  warmups?: number
+}
+
+export async function runComparison(options: ComparisonOptions) {
   const root = sdkRoot
   const privateRoot = path.join(repositoryRoot, '.private')
-  if (!v.corpus) throw Error('--corpus messages.jsonl is required')
-  if (!Number.isSafeInteger(Number(v.max)) || Number(v.max) <= 0) {
+  if (!options.corpus) throw Error('--corpus messages.jsonl is required')
+  if (!Number.isSafeInteger(options.max) || options.max <= 0) {
     throw Error('--max must be a positive integer')
   }
+  const warmups = options.warmups ?? defaultWarmups
+  if (!Number.isSafeInteger(warmups) || warmups < 0)
+    throw new Error('--warmups must be a nonnegative integer')
 
-  const corpus = resolveRepositoryPath(v.corpus)
+  const corpus = resolveRepositoryPath(options.corpus)
   const out = resolveRepositoryPath(
-    v.out ?? path.join(privateRoot, 'corpora', 'comparison')
+    options.output ?? path.join(privateRoot, 'corpora', 'comparison')
   )
   const baseline = path.join(privateRoot, 'corpus-baseline')
 
@@ -33,20 +55,28 @@ export async function runComparison(v: Record<string, string | undefined>) {
     await $`${cmd} ${args}`.cwd(cwd).env(env)
   }
 
-  const suiRepo = new GitRepo(resolveRepositoryPath(v.sui!))
-  const traqRepo = new GitRepo(resolveRepositoryPath(v.traq!))
+  const suiRepo = new GitRepo(resolveRepositoryPath(options.suiDirectory))
+  const traqRepo = new GitRepo(resolveRepositoryPath(options.traqDirectory))
   const currentRepo = new GitRepo(root)
 
-  const versions: Record<string, string> = {
-    suiMaster: await suiRepo.revParse(v['sui-ref']!),
-    traqMaster: await traqRepo.revParse(v['traq-ref']!),
-    renderer: await currentRepo.revParse('HEAD'),
-    processor: await currentRepo.revParse('HEAD')
+  const [frontendRevision, plainTextRevision, candidateRevision] =
+    await Promise.all([
+      suiRepo.revParse(options.suiRef),
+      traqRepo.revParse(options.traqRef),
+      currentRepo.revParse('HEAD')
+    ])
+  const provenance: ComparisonProvenance = {
+    before: byMode(mode => ({
+      label: mode === 'plainText' ? 'traQ' : 'traQ_S-UI',
+      revision: mode === 'plainText' ? plainTextRevision : frontendRevision
+    })),
+    after: { label: 'traQ Markdown SDK', revision: candidateRevision },
+    dependencies: {}
   }
 
   async function setupBaselinePackage() {
     const lock = JSON.parse(
-      await suiRepo.show(v['sui-ref']!, 'package-lock.json')
+      await suiRepo.show(options.suiRef, 'package-lock.json')
     )
     const rendererVersion =
       lock.packages['node_modules/@traptitech/traq-markdown-it'].version
@@ -101,13 +131,11 @@ export async function runComparison(v: Record<string, string | undefined>) {
       )
     }
 
-    Object.assign(versions, {
-      katexBefore,
-      highlightBefore,
-      highlightAfter: highlightVersion,
-      katexAfter: katexVersion,
-      baselineRenderer: rendererVersion
-    })
+    provenance.dependencies = {
+      katex: { before: katexBefore, after: katexVersion },
+      'highlight.js': { before: highlightBefore, after: highlightVersion },
+      renderer: { before: rendererVersion, after: candidateRevision }
+    }
   }
 
   async function setupBaselineGo() {
@@ -122,7 +150,7 @@ export async function runComparison(v: Record<string, string | undefined>) {
 
     for (const name of ['parser.go', 'spoiler.go']) {
       const content = await traqRepo.show(
-        v['traq-ref']!,
+        options.traqRef,
         'utils/message/' + name
       )
       await Bun.write(path.join(goRoot, 'go-before', name), content)
@@ -133,7 +161,7 @@ export async function runComparison(v: Record<string, string | undefined>) {
       Bun.file(new URL('../scripts/plain-text/main.go', import.meta.url))
     )
 
-    const goMod = await traqRepo.show(v['traq-ref']!, 'go.mod')
+    const goMod = await traqRepo.show(options.traqRef, 'go.mod')
     const getVersion = (name: string) => {
       const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       const match = goMod.match(new RegExp('\\s' + escaped + '\\s+(\\S+)'))
@@ -141,19 +169,8 @@ export async function runComparison(v: Record<string, string | undefined>) {
       return match[1]
     }
 
-    const localGoModule = (root: string) =>
-      JSON.stringify(path.join(root, 'go').replaceAll('\\', '/'))
-    const localGoModules = {
-      'github.com/traPtitech/traq-flavored-markdown/packages/core/go':
-        packageRoot('core'),
-      'github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go':
-        packageRoot('commonmark-plugin'),
-      'github.com/traPtitech/traq-flavored-markdown/packages/plugins/extensions/go':
-        packageRoot('extensions-plugin'),
-      'github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go':
-        packageRoot('traq-plugin'),
-      'github.com/traPtitech/traq-flavored-markdown/packages/sdk/go': sdkRoot
-    }
+    const { published } = await readGoPackageGraph()
+    const sdkModule = published.find(module => module.owner === 'sdk')!
 
     const modContent =
       [
@@ -162,80 +179,52 @@ export async function runComparison(v: Record<string, string | undefined>) {
         `require (`,
         ` github.com/gofrs/uuid ${getVersion('github.com/gofrs/uuid')}`,
         ` github.com/json-iterator/go ${getVersion('github.com/json-iterator/go')}`,
-        ` github.com/traPtitech/traq-flavored-markdown/packages/sdk/go v0.1.0`,
+        ` ${sdkModule.path} v0.0.0`,
         `)`
       ].join('\n') +
       '\n' +
-      Object.entries(localGoModules)
-        .map(([module, root]) => `replace ${module} => ${localGoModule(root)}`)
+      published
+        .map(
+          module =>
+            `replace ${module.path} => ${JSON.stringify(path.join(repositoryRoot, module.directory).replaceAll('\\', '/'))}`
+        )
         .join('\n') +
       '\n'
 
     await Bun.write(path.join(goRoot, 'go.mod'), modContent)
 
-    await Bun.write(
-      path.join(goRoot, 'config.json'),
-      JSON.stringify({
-        origin: v.origin!,
-        wasm: path.join(root, 'dist/parser.wasm')
-      })
-    )
-
     await go(['mod', 'tidy'])
-    return { goRoot, go }
+    return { go }
   }
 
   // 1. Setup Phase
   await setupBaselinePackage()
-  await Bun.write(
-    path.join(out, 'revisions.json'),
-    JSON.stringify(versions, null, 2)
-  )
-  const { goRoot, go } = await setupBaselineGo()
-  await Bun.write(
-    path.join(out, 'run.json'),
-    JSON.stringify(
-      parseRunManifest({
-        format: 1,
-        revisions: versions,
-        max: Number(v.max),
-        warmups: 200,
-        modes: ['render', 'inline', 'plainText']
-      }),
-      null,
-      2
-    ) + '\n'
-  )
+  const { go } = await setupBaselineGo()
+  const planPath = path.join(out, 'run.json')
+  const plan = parseComparisonPlan({
+    format: 1,
+    corpus,
+    output: out,
+    baselineDirectory: baseline,
+    wasm: path.join(root, 'dist/parser.wasm'),
+    origin: options.origin,
+    max: options.max,
+    warmups,
+    profiles: modes,
+    provenance
+  })
+  await Bun.write(planPath, JSON.stringify(plan, null, 2) + '\n')
 
   // 2. Execution Phase
   await run(Bun.argv[0], [
     Bun.fileURLToPath(
       new URL('../scripts/compare-frontend.ts', import.meta.url)
     ),
-    '--corpus',
-    corpus,
-    '--out',
-    out,
-    '--max',
-    v.max!,
-    '--baseline',
-    baseline,
-    '--origin',
-    v.origin!
+    '--plan',
+    planPath
   ])
 
-  await go([
-    'run',
-    '.',
-    '-corpus',
-    corpus,
-    '-out',
-    out,
-    '-max',
-    v.max!,
-    '-config',
-    path.join(goRoot, 'config.json')
-  ])
+  await go(['run', '.', '-plan', planPath])
 
   // Viewer preparation is an explicit artifact task, outside report aggregation.
   await run(Bun.argv[0], ['run', 'build:corpus'], repositoryRoot)
@@ -247,5 +236,5 @@ export async function runComparison(v: Record<string, string | undefined>) {
     out
   ])
 
-  return { out, messagesLimit: Number(v.max) }
+  return { out, messagesLimit: plan.max }
 }
