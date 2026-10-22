@@ -2,7 +2,7 @@ use markdown_parser::{
     NodeKind, ParseError,
     engine::{
         Budget,
-        inline::{DelimiterPolicy, InlineAction, InlineInput, InlineMatch, Pairing},
+        inline::{DelimiterPolicy, InlineAction, InlineInput, InlineMatch, InlineRule, Pairing},
     },
 };
 
@@ -47,6 +47,19 @@ fn flanking(prev: char, next: char, marker: u8) -> (bool, bool) {
         left && (marker != b'_' || !right || punctuation(prev)),
         right && (marker != b'_' || !left || punctuation(next)),
     )
+}
+
+/// Construct a fixed-width extension using CommonMark flanking and pairing.
+pub fn paired_rule(
+    markers: &'static [u8],
+    name: &'static str,
+    width: usize,
+    make: fn() -> NodeKind,
+) -> InlineRule {
+    InlineRule::new(markers, move |input, budget| {
+        paired(input, budget, width, DelimiterPolicy::simple(make))
+    })
+    .named(name)
 }
 
 /// CommonMark-style flanking reused by paired extensions; odd suffixes remain.

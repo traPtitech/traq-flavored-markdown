@@ -31,6 +31,16 @@ impl Plugin {
         }
     }
 
+    /// A plugin implementing one rule and no parser context providers.
+    pub fn from_rule(
+        declaration: &markdown_definitions::Plugin,
+        rule: impl Into<Contribution>,
+    ) -> Self {
+        let mut plugin = Self::new(declaration);
+        plugin.add(rule);
+        plugin
+    }
+
     pub fn name(&self) -> &str {
         self.declaration.name()
     }
