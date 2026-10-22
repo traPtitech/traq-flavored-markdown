@@ -6,8 +6,8 @@ import {
 import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { Node } from '@traq-flavored-markdown/core/renderer'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
-import { decodeHTMLStrict } from 'entities'
 
+import { codeLanguage } from '../semantics.js'
 import type { Options } from './options.js'
 
 function tightList(node?: Node) {
@@ -20,16 +20,6 @@ type BlockOptions = Required<
   Pick<Options, 'rawHtml' | 'xhtmlOut' | 'isBlockSpacing'>
 > &
   Pick<Options, 'highlight'>
-
-function codeLanguage(info: string) {
-  return info
-    .replace(
-      /\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])|&(?:#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z][a-zA-Z0-9]+);/g,
-      (match, escaped) => escaped ?? decodeHTMLStrict(match)
-    )
-    .trim()
-    .split(/\s+/)[0]
-}
 
 export function registerBlockHandlers(
   result: RenderPlugin,
@@ -101,7 +91,7 @@ export function registerBlockHandlers(
   })
 
   result = result.on(definitions.CodeBlock, n => {
-    const language = n.data.fenced ? codeLanguage(n.data.info ?? '') : ''
+    const language = n.data.fenced ? codeLanguage(n.data.info) : ''
     const highlighted = n.data.fenced
       ? highlight?.(n.data.literal, language)
       : undefined

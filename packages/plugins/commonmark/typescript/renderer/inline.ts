@@ -1,41 +1,9 @@
 import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import {
-  isKnownNode,
-  names
-} from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
-import type { Node, RenderContext } from '@traq-flavored-markdown/core/renderer'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 
+import { imageLabelText } from '../semantics.js'
 import type { Options } from './options.js'
-
-function imageAltText(
-  nodes: readonly Node[] = [],
-  sourceSlice: RenderContext['sourceSlice']
-): string {
-  const collect = (children: readonly Node[] = []): string =>
-    children
-      .map(node => {
-        if (!isKnownNode(node)) return sourceSlice(node.span)
-
-        switch (node.kind) {
-          case names.Text:
-            return node.data.value
-          case names.HtmlInline:
-            return node.data.literal
-          case names.Softbreak:
-          case names.Hardbreak:
-            return '\n'
-          case names.InlineCode:
-            return node.data.literal
-          default:
-            return collect(node.children)
-        }
-      })
-      .join('')
-
-  return collect(nodes)
-}
 
 function titleAttribute(title: string | null) {
   return title === null ? '' : attributes([['title', title]])
@@ -114,7 +82,7 @@ export function registerInlineHandlers(
       '<img' +
       attributes([
         ['src', n.data.destination],
-        ['alt', imageAltText(n.children, ctx.sourceSlice)]
+        ['alt', imageLabelText(n.children, ctx.sourceSlice)]
       ]) +
       titleAttribute(n.data.title) +
       (xhtmlOut ? ' />' : '>')
