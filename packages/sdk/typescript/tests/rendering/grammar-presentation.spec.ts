@@ -81,7 +81,7 @@ test('traQ uses CommonMark link nesting and keeps URL policy out of parsing', ()
   const nested = parser.parseInline(
     '[outer <https://inner.test>](https://outer.test)'
   )
-  const visit = (nodes: Node[], insideLink = false) => {
+  const visit = (nodes: readonly Node[], insideLink = false) => {
     for (const node of nodes) {
       if (node.kind === names.Link) expect(insideLink).toBe(false)
       if (node.children)
@@ -159,7 +159,7 @@ test('additional blank lines retain source ranges and trailing-card presentation
   const document = parser.parse('a\n\n\nb')
   expect(traq.html().render(document)).toBe('<p>a</p>\n<br>\n<p>b</p>\n')
   const blanks: Node[] = []
-  const visit = (nodes: Node[]) => {
+  const visit = (nodes: readonly Node[]) => {
     for (const node of nodes) {
       if (node.kind === 'traq.blank_line') blanks.push(node)
       if (node.children) visit(node.children)

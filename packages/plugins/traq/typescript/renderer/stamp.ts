@@ -1,8 +1,11 @@
+import type { DeepReadonly } from '@traq-flavored-markdown/core'
 import { validateImage as defaultImagePolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
-import type { Stamp } from '@traq-flavored-markdown/traq-plugin/nodes'
+import type { Stamp as MutableStamp } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import type { Options } from './types.js'
+
+type Stamp = DeepReadonly<MutableStamp>
 
 function wrapWithEffects(html: string, { animations, size }: Stamp['effects']) {
   const sizeClass = size === 'none' ? '' : size

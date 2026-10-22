@@ -1,3 +1,4 @@
+import type { MutableNode } from '../ast.js'
 import {
   DocumentContext,
   defineNode,
@@ -142,7 +143,7 @@ test('fallback preserves leading BOM and cyclic documents fail before rendering'
       children: [{ kind: 'unknown', data: {}, span: { start: 0, end: 4 } }]
     })
   ).toBe('\uFEFFx')
-  const node: Node = {
+  const node: MutableNode = {
     kind: 'cycle',
     data: {},
     span: { start: 0, end: 0 },

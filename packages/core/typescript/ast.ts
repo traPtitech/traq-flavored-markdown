@@ -21,6 +21,34 @@ export interface Document<
   children: Node<Kind>[]
 }
 
+/** A caller-owned tree that may be edited before creating a snapshot. */
+export type MutableDocument<Kind extends { kind: string; data: unknown } = {
+  kind: string; data: unknown
+}> = Document<Kind>
+export type MutableNode<Kind extends { kind: string; data: unknown } = {
+  kind: string; data: unknown
+}> = Node<Kind>
+
+export type DeepReadonly<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends object
+    ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+    : T
+
+/** Nodes exposed by owned snapshots and consumers cannot be edited. */
+export type ReadonlyNode<Kind extends { kind: string; data: unknown } = {
+  kind: string; data: unknown
+}> = DeepReadonly<Kind> & {
+  readonly span: Readonly<Span>
+  readonly children?: readonly ReadonlyNode<Kind>[]
+}
+export interface ReadonlyDocument<Kind extends { kind: string; data: unknown } = {
+  kind: string; data: unknown
+}> {
+  readonly source: string
+  readonly children: readonly ReadonlyNode<Kind>[]
+}
+
 export { SourceText } from './source.js'
 export type { SourceEdit } from './source.js'
 export { DocumentContext, documentLimits } from './document.js'

@@ -1,4 +1,4 @@
-import type { Document, Node } from './ast.js'
+import type { Node as MutableNode, ReadonlyDocument as Document, ReadonlyNode as Node } from './ast.js'
 import { defineNode, isOwnedDefinition, validateStructure } from './nodes.js'
 import type { NodeDefinition, NodeStructure } from './nodes.js'
 import { SourceText } from './source.js'
@@ -169,7 +169,7 @@ export class DocumentContext {
     let count = 0
     const visited = new Set<Node>()
     const copy = (
-      nodes: Node[],
+      nodes: readonly Node[],
       start: number,
       end: number,
       ancestors: readonly Node[]
@@ -217,17 +217,17 @@ export class DocumentContext {
           throw new TypeError('Invalid render document children')
         payloads.string(kind)
         const data = payloads.copy(dataField(node, 'data'))
-        const snapshot: Node = { kind, span: Object.freeze(span), data }
+        const snapshot: MutableNode = { kind, span: Object.freeze(span), data }
         this.#snapshots.set(node, snapshot)
         this.#snapshots.set(snapshot, snapshot)
         this.#locations.set(snapshot, Object.freeze({ ancestors, index }))
         if (children !== undefined)
-          snapshot.children = copy(
+          Object.defineProperty(snapshot, 'children', { value: copy(
             children,
             span.start,
             span.end,
             Object.freeze([...ancestors, snapshot])
-          )
+          ), enumerable: true })
         result.push(Object.freeze(snapshot))
       }
       Object.freeze(result)

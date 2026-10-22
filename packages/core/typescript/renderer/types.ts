@@ -1,8 +1,8 @@
-import type { Document, Node, Span } from '../ast.js'
+import type { ReadonlyDocument as Document, ReadonlyNode as Node, Span } from '../ast.js'
 import type { DocumentContext } from '../document.js'
 import type { NodeKind } from '../nodes.js'
 
-export type { Node, Document } from '../ast.js'
+export type { ReadonlyNode as Node, ReadonlyDocument as Document } from '../ast.js'
 
 export interface RenderedChild {
   readonly node: Node
@@ -29,7 +29,7 @@ export interface RenderContext {
 
 /** Handlers return trusted HTML. Escape values obtained from the document. */
 export type Handler<K extends NodeKind = NodeKind> = (
-  node: Node & K,
+  node: Node<K>,
   context: RenderContext
 ) => string
 

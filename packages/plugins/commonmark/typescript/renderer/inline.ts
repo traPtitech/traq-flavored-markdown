@@ -10,10 +10,10 @@ import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import type { Options } from './options.js'
 
 function imageAltText(
-  nodes: Node[] = [],
+  nodes: readonly Node[] = [],
   sourceSlice: RenderContext['sourceSlice']
 ): string {
-  const collect = (children: Node[] = []): string =>
+  const collect = (children: readonly Node[] = []): string =>
     children
       .map(node => {
         if (!isKnownNode(node)) return sourceSlice(node.span)

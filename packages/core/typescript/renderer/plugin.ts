@@ -1,10 +1,10 @@
-import type { Node } from '../ast.js'
+import type { ReadonlyNode as Node } from '../ast.js'
 import type { NodeDefinition } from '../nodes.js'
 import { defineNode, isOwnedDefinition } from '../nodes.js'
 import { PluginDeclaration } from './definitions.js'
 import type { Handler, RenderContext } from './types.js'
 
-type NodeFor<D> = D extends NodeDefinition<infer K> ? Node & K : Node
+type NodeFor<D> = D extends NodeDefinition<infer K> ? Node<K> : Node
 type DefinedHandler<D> = (node: NodeFor<D>, context: RenderContext) => string
 
 export interface Implementation {

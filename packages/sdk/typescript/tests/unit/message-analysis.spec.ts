@@ -1,3 +1,4 @@
+import type { MutableNode } from '@traq-flavored-markdown/core'
 import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { defineNode } from '@traq-flavored-markdown/core'
 import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
@@ -218,7 +219,7 @@ test('both message views share an owned preparation and reject invalid trees bef
     standard: views.standard.render(document),
     condensed: views.condensed.render(document)
   })
-  const cycle: Node = {
+  const cycle: MutableNode = {
     kind: 'custom',
     data: {},
     span: { start: 0, end: 0 },
