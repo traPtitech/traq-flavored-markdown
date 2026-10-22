@@ -1,5 +1,9 @@
 //! Related consumers share one immutable validated document.
-use crate::{Result, extraction::{Extraction, Extractor, ExtractorOptions}, rendering::{PlainTextRenderer, RendererOptions, WhitespacePolicy}};
+use crate::{
+    Result,
+    extraction::{Extraction, Extractor, ExtractorOptions},
+    rendering::{PlainTextRenderer, RendererOptions, WhitespacePolicy},
+};
 use markdown_ast::ValidatedDocument;
 use serde::{Deserialize, Serialize};
 
@@ -29,8 +33,13 @@ pub struct Processor {
 impl Processor {
     pub fn new(options: ProcessorOptions) -> Result<Self> {
         Ok(Self {
-            extractor: Extractor::new(ExtractorOptions { origin: options.origin.clone() })?,
-            renderer: PlainTextRenderer::new(RendererOptions { origin: options.origin, whitespace: options.whitespace })?,
+            extractor: Extractor::new(ExtractorOptions {
+                origin: options.origin.clone(),
+            })?,
+            renderer: PlainTextRenderer::new(RendererOptions {
+                origin: options.origin,
+                whitespace: options.whitespace,
+            })?,
         })
     }
 

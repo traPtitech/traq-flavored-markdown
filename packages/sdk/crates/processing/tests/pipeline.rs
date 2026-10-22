@@ -3,6 +3,31 @@ use markdown_renderer::Renderer;
 use traq_markdown_processing::{References, presets::traq};
 
 #[test]
+fn processing_reuses_the_tree_and_names_its_whitespace_policy() {
+    use traq_markdown_processing::{
+        pipeline::{Processor, ProcessorOptions},
+        rendering::WhitespacePolicy,
+    };
+    let document = traq_markdown_grammar::presets::traq::v1::parser()
+        .parse_validated("hello\n\nworld")
+        .unwrap();
+    let collapsed = Processor::new(ProcessorOptions::default())
+        .unwrap()
+        .process_validated(document.validated())
+        .unwrap();
+    let preserved = Processor::new(ProcessorOptions {
+        whitespace: WhitespacePolicy::Preserve,
+        ..Default::default()
+    })
+    .unwrap()
+    .process_validated(document.validated())
+    .unwrap();
+    assert_eq!(collapsed.plain_text, "hello world");
+    assert!(preserved.plain_text.contains('\n'));
+    assert_eq!(collapsed.extraction, preserved.extraction);
+}
+
+#[test]
 fn one_ast_supports_plain_text_and_reference_collection() {
     let parser = traq_markdown_grammar::presets::traq::v1::parser();
     let renderer = Renderer::new(&traq::plain_text::preset("").unwrap());

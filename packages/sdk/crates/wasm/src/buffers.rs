@@ -40,7 +40,7 @@ impl Buffers {
         }
     }
 
-    fn encode_document(
+    pub(crate) fn encode_document(
         &self,
         document: &markdown_ast::ValidatedDocumentBuf,
     ) -> Result<Vec<u8>, Error> {

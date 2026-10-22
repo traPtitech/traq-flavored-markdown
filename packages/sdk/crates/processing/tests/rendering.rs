@@ -8,6 +8,7 @@ fn plain_text_renderer_preserves_all_plain_text_fixtures() {
     let parser = bindings::parser("traq.v1").unwrap();
     let renderer = PlainTextRenderer::new(RendererOptions {
         origin: "https://q.example.test".into(),
+        ..Default::default()
     })
     .unwrap();
     let fixtures: Vec<serde_json::Value> = serde_json::from_str(include_str!(
