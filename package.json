@@ -42,7 +42,7 @@
     "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go",
     "test:corpus": "bun run --cwd tools/corpus test",
     "test:go": "bun run scripts/testing/go.ts",
-    "test:rust": "cargo test --locked -p mdurl && cargo test --locked --workspace --all-features",
+    "test:rust": "cargo test --locked --workspace --all-features",
     "test:typescript": "bun run scripts/testing/run.ts",
     "test:unit": "bun run scripts/testing/run.ts unit",
     "test:assembly": "bun run scripts/testing/run.ts assembly",

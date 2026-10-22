@@ -55,3 +55,70 @@ test('CommonMark fixture inputs match markdown-it with the same escaped-HTML pol
     parser.dispose()
   }
 })
+
+test('URL destinations and labels match markdown-it without normalizing source notation', () => {
+  const parser = commonParser()
+  const view = html({ validateLink: () => true, validateImage: () => true })
+  const expected = new MarkdownIt('commonmark', {
+    html: false,
+    xhtmlOut: false
+  })
+  expected.validateLink = () => true
+  const hosts = [
+    'example.com',
+    '日本語.jp',
+    'bücher.example',
+    'xn--bcher-kva.example',
+    'مثال.إختبار',
+    '😀.example',
+    '[::1]',
+    'user:pass@[2001:db8::1]:8080',
+    'user:pass@日本語.jp:8080'
+  ]
+  // JS uppercases reserved escapes in labels; the existing Rust policy retains
+  // their spelling, which is covered separately by the native URL tests.
+  const paths = [
+    '',
+    '/',
+    '/日本/%20?q=%2F&x=1#片',
+    '/a b',
+    '/a%zz',
+    '/a%2F%25?x=+',
+    '/a/../b',
+    '/x[0]'
+  ]
+  try {
+    for (const scheme of ['https://', 'http://', '//', 'HTTPS://'])
+      for (const host of hosts)
+        for (const path of paths) {
+          const destination = scheme + host + path
+          for (const source of [
+            `[x](<${destination}>)`,
+            `![x](<${destination}>)`,
+            ...(destination.includes(' ') || scheme === '//'
+              ? []
+              : [`<${destination}>`])
+          ])
+            expect(view.render(parser.parse(source)), source).toBe(
+              expected.render(source)
+            )
+        }
+    for (const destination of [
+      '../a/../b?q=%2f#x',
+      '?query=%20',
+      '#日本',
+      'mailto:user@bücher.example?subject=%20',
+      'mailto:user@xn--bcher-kva.example',
+      'ftp://bücher.example/a',
+      'custom:日本/%20',
+      'javascript:alert'
+    ]) {
+      const source = `[x](<${destination}>)`
+      expect(view.render(parser.parse(source)), source).toBe(
+        expected.render(source)
+      )
+    }
+  } finally {
+    parser.dispose()
+  }
+})

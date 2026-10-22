@@ -142,9 +142,11 @@ exact root override so a fresh install cannot select an unreviewed future
 version. The installation policy tests keep these overrides synchronized with
 the workspace pins and retain script blocking and the default age gate.
 
-`vendor/mdurl` retains the latest upstream parser and its tests, with an idna
-dependency update for RUSTSEC-2024-0421. The Cargo patch preserves permissive
-Markdown URL parsing while removing the vulnerable idna 0.3 dependency. The
-patch also preserves malformed host suffixes without slicing through UTF-8
-characters or duplicating ports. The SDK source fingerprint includes the
-vendored sources and manifest.
+Markdown URL handling uses `fluent-uri` for authority parsing and
+`percent-encoding` for escaping and label decoding. Parsing only the authority
+allows Markdown paths to retain spaces and malformed percent escapes until
+they are encoded. Hostname recoding preserves the existing Punycode policy;
+unparseable authorities remain literal and are escaped without losing input.
+IPv6 authority brackets remain literal while path brackets are escaped.
+This replaces the Rust `mdurl` dependency and removes its old
+`idna` dependency without maintaining a local copy or an advisory exception.

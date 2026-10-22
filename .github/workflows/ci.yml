@@ -125,7 +125,6 @@ jobs:
           toolchain: 1.99.1
           targets: wasm32-unknown-unknown
           components: clippy,rustfmt
-      - run: cargo test --locked -p mdurl
       - run: cargo test --locked --workspace --all-features
       - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 
