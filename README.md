@@ -1,4 +1,4 @@
-# traQ Flavored Markdown Engine
+# traQ-Flavored Markdown
 
 Markdown parsing, rendering and extraction for traQ, implemented in Rust with
 TypeScript and Go bindings. The repository groups code by responsibility, then
