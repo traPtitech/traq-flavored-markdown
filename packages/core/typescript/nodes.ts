@@ -1,4 +1,4 @@
-import type { Node } from './ast.js'
+import type { ReadonlyNode as Node } from './ast.js'
 
 export type NodeKind = { kind: string; data: unknown }
 
@@ -18,10 +18,10 @@ export interface NodeStructure {
         readonly nonempty: boolean
       }
     | {
-        readonly kind: 'table'
-        readonly header: string
-        readonly row: string
-        readonly columnsField: string
+        readonly kind: 'sequence'
+        readonly prefix: readonly string[]
+        readonly rest: string
+        readonly arityField?: string
       }
 }
 
@@ -78,15 +78,21 @@ function snapshotStructure(value: NodeStructure): NodeStructure {
       }
       break
     }
-    case 'table': {
-      const { header, row, columnsField } = children
-      if ([header, row, columnsField].some(type => typeof type !== 'string'))
-        throw new TypeError('Invalid table constraint')
+    case 'sequence': {
+      const { prefix, rest, arityField } = children
+      const values = Array.isArray(prefix) ? [...prefix] : undefined
+      if (
+        !values ||
+        values.some(type => typeof type !== 'string') ||
+        typeof rest !== 'string' ||
+        (arityField !== undefined && typeof arityField !== 'string')
+      )
+        throw new TypeError('Invalid child sequence constraint')
       copy = {
-        kind: 'table',
-        header,
-        row,
-        columnsField
+        kind: 'sequence',
+        prefix: Object.freeze(values),
+        rest,
+        ...(arityField === undefined ? {} : { arityField })
       }
       break
     }
@@ -151,20 +157,21 @@ export function validateStructure(
         (!rule.nonempty || children.length > 0) &&
         children.every(child => rule.types.includes(child.kind))
       break
-    case 'table': {
+    case 'sequence': {
       const data = node.data
-      const columns =
+      const arity =
         typeof data === 'object' && data !== null && !Array.isArray(data)
-          ? (data as Record<string, unknown>)[rule.columnsField]
+          ? (data as Record<string, unknown>)[rule.arityField ?? '']
           : undefined
       valid =
-        Array.isArray(columns) &&
-        columns.length > 0 &&
-        children.length > 0 &&
+        (rule.arityField === undefined ||
+          (Array.isArray(arity) && arity.length > 0)) &&
+        children.length >= rule.prefix.length &&
         children.every(
           (child, index) =>
-            child.kind === (index === 0 ? rule.header : rule.row) &&
-            child.children?.length === columns.length
+            child.kind === (rule.prefix[index] ?? rule.rest) &&
+            (rule.arityField === undefined ||
+              (child.children?.length ?? 0) === (arity as unknown[]).length)
         )
       break
     }

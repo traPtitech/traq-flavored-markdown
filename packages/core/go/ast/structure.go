@@ -1,9 +1,7 @@
 package ast
 
 import (
-	"reflect"
 	"slices"
-	"strings"
 )
 
 // NodeStructure is generated from a native payload's structural contract.
@@ -12,13 +10,13 @@ type NodeStructure struct {
 	Children ChildStructure
 }
 type ChildStructure struct {
-	Kind         string
-	Roles        []string
-	Types        []string
-	Nonempty     bool
-	Header       string
-	Row          string
-	ColumnsField string
+	Kind     string
+	Roles    []string
+	Types    []string
+	Nonempty bool
+	Prefix   []string
+	Rest     string
+	HasArity bool
 }
 type StructuredPayload interface {
 	Payload
@@ -60,17 +58,27 @@ func validateStructure(node *Node, path string) error {
 				return invalidChildren()
 			}
 		}
-	case "table":
-		columns, valid := columnCount(node.Data, policy.ColumnsField)
-		if !valid || columns == 0 || len(node.Children) == 0 {
+	case "sequence":
+		if len(node.Children) < len(policy.Prefix) {
 			return invalidChildren()
 		}
-		for index, child := range node.Children {
-			expected := policy.Row
-			if index == 0 {
-				expected = policy.Header
+		arity := -1
+		if policy.HasArity {
+			counter, ok := node.Data.(interface{ ChildArity() int })
+			if !ok {
+				return invalidChildren()
 			}
-			if child.Kind != expected || len(child.Children) != columns {
+			arity = counter.ChildArity()
+			if arity <= 0 {
+				return invalidChildren()
+			}
+		}
+		for index, child := range node.Children {
+			expected := policy.Rest
+			if index < len(policy.Prefix) {
+				expected = policy.Prefix[index]
+			}
+			if child.Kind != expected || (policy.HasArity && len(child.Children) != arity) {
 				return invalidChildren()
 			}
 		}
@@ -78,29 +86,4 @@ func validateStructure(node *Node, path string) error {
 		return invalid(path+".data", "unknown node structural policy")
 	}
 	return nil
-}
-
-func columnCount(payload Payload, fieldName string) (int, bool) {
-	value := reflect.ValueOf(payload)
-	for value.Kind() == reflect.Pointer {
-		if value.IsNil() {
-			return 0, false
-		}
-		value = value.Elem()
-	}
-	if value.Kind() != reflect.Struct {
-		return 0, false
-	}
-	for index := 0; index < value.NumField(); index++ {
-		field := value.Type().Field(index)
-		if strings.Split(field.Tag.Get("json"), ",")[0] != fieldName {
-			continue
-		}
-		column := value.Field(index)
-		if column.Kind() != reflect.Slice && column.Kind() != reflect.Array {
-			return 0, false
-		}
-		return column.Len(), true
-	}
-	return 0, false
 }

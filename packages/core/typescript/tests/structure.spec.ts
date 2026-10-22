@@ -21,10 +21,10 @@ const definitions = [
   defineNode('table', valid, {
     role: 'block',
     children: {
-      kind: 'table',
-      header: 'header',
-      row: 'row',
-      columnsField: 'alignments'
+      kind: 'sequence',
+      prefix: ['header'],
+      rest: 'row',
+      arityField: 'alignments'
     }
   }),
   defineNode('header', valid, {
@@ -48,6 +48,31 @@ const node = (kind: string, children?: Node[], data: unknown = {}): Node => ({
 })
 const context = (children: Node[]) =>
   new DocumentContext({ source: '', children }, { definitions })
+
+test('child sequences support multiple prefix entries without an arity constraint', () => {
+  const sequence = defineNode('sequence', valid, {
+    role: 'opaque',
+    children: { kind: 'sequence', prefix: ['first', 'second'], rest: 'rest' }
+  })
+  const check = (kinds: string[]) =>
+    new DocumentContext(
+      {
+        source: '',
+        children: [
+          node(
+            'sequence',
+            kinds.map(kind => node(kind))
+          )
+        ]
+      },
+      { definitions: [sequence] }
+    )
+  expect(() => check(['first', 'second'])).not.toThrow()
+  expect(() => check(['first', 'second', 'rest', 'rest'])).not.toThrow()
+  expect(() => check(['first'])).toThrow(/children/)
+  expect(() => check(['second', 'first'])).toThrow(/children/)
+  expect(() => check(['first', 'second', 'first'])).toThrow(/children/)
+})
 
 test('node contracts reject malformed leaves, lists, roles and tables before dispatch', () => {
   const cell = () => node('cell', [node('text')])

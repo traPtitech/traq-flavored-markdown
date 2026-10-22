@@ -12,6 +12,9 @@ import {
 export type Blockquote = Record<string, never>
 export type CodeBlock = {
   fenced: boolean
+  /**
+   * Decoded CommonMark info string. Authored notation remains in the source span.
+   */
   info: string
   literal: string
 }
@@ -241,118 +244,118 @@ export const definitions = Object.freeze({
     names.Blockquote,
     validators.get(names.Blockquote)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['block'] },
-      role: 'block'
+      role: 'block',
+      children: { kind: 'roles', roles: ['block'], nonempty: false }
     }
   ),
   CodeBlock: defineNode<Extract<NodeKind, { kind: typeof names.CodeBlock }>>(
     names.CodeBlock,
     validators.get(names.CodeBlock)!,
-    { children: { kind: 'leaf' }, role: 'block' }
+    { role: 'block', children: { kind: 'leaf' } }
   ),
   Emphasis: defineNode<Extract<NodeKind, { kind: typeof names.Emphasis }>>(
     names.Emphasis,
     validators.get(names.Emphasis)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'inline'
+      role: 'inline',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   Hardbreak: defineNode<Extract<NodeKind, { kind: typeof names.Hardbreak }>>(
     names.Hardbreak,
     validators.get(names.Hardbreak)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Heading: defineNode<Extract<NodeKind, { kind: typeof names.Heading }>>(
     names.Heading,
     validators.get(names.Heading)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'block'
+      role: 'block',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   HtmlBlock: defineNode<Extract<NodeKind, { kind: typeof names.HtmlBlock }>>(
     names.HtmlBlock,
     validators.get(names.HtmlBlock)!,
-    { children: { kind: 'leaf' }, role: 'block' }
+    { role: 'block', children: { kind: 'leaf' } }
   ),
   HtmlInline: defineNode<Extract<NodeKind, { kind: typeof names.HtmlInline }>>(
     names.HtmlInline,
     validators.get(names.HtmlInline)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Image: defineNode<Extract<NodeKind, { kind: typeof names.Image }>>(
     names.Image,
     validators.get(names.Image)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'inline'
+      role: 'inline',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   InlineCode: defineNode<Extract<NodeKind, { kind: typeof names.InlineCode }>>(
     names.InlineCode,
     validators.get(names.InlineCode)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Link: defineNode<Extract<NodeKind, { kind: typeof names.Link }>>(
     names.Link,
     validators.get(names.Link)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'inline'
+      role: 'inline',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   List: defineNode<Extract<NodeKind, { kind: typeof names.List }>>(
     names.List,
     validators.get(names.List)!,
     {
+      role: 'block',
       children: {
         kind: 'types',
-        nonempty: true,
-        types: ['commonmark.list_item']
-      },
-      role: 'block'
+        types: ['commonmark.list_item'],
+        nonempty: true
+      }
     }
   ),
   ListItem: defineNode<Extract<NodeKind, { kind: typeof names.ListItem }>>(
     names.ListItem,
     validators.get(names.ListItem)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['block'] },
-      role: 'structural'
+      role: 'structural',
+      children: { kind: 'roles', roles: ['block'], nonempty: false }
     }
   ),
   Paragraph: defineNode<Extract<NodeKind, { kind: typeof names.Paragraph }>>(
     names.Paragraph,
     validators.get(names.Paragraph)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'block'
+      role: 'block',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   Softbreak: defineNode<Extract<NodeKind, { kind: typeof names.Softbreak }>>(
     names.Softbreak,
     validators.get(names.Softbreak)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Strong: defineNode<Extract<NodeKind, { kind: typeof names.Strong }>>(
     names.Strong,
     validators.get(names.Strong)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'inline'
+      role: 'inline',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   Text: defineNode<Extract<NodeKind, { kind: typeof names.Text }>>(
     names.Text,
     validators.get(names.Text)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   ThematicBreak: defineNode<
     Extract<NodeKind, { kind: typeof names.ThematicBreak }>
   >(names.ThematicBreak, validators.get(names.ThematicBreak)!, {
-    children: { kind: 'leaf' },
-    role: 'block'
+    role: 'block',
+    children: { kind: 'leaf' }
   })
 })
 // Check this payload only; children can still contain unknown nodes.

@@ -378,11 +378,16 @@ function goStructure(name: string, structure: NodeStructure) {
       `Types:${strings(children.types)}`,
       `Nonempty:${children.nonempty}`
     )
-  if (children.kind === 'table')
+  if (children.kind === 'sequence')
     fields.push(
-      `Header:${q(children.header)}`,
-      `Row:${q(children.row)}`,
-      `ColumnsField:${q(children.columnsField)}`
+      `Prefix:${strings(children.prefix)}`,
+      `Rest:${q(children.rest)}`,
+      `HasArity:${children.arityField !== undefined}`
     )
-  return `func (*${name}) NodeStructure() ast.NodeStructure { return ast.NodeStructure{Role:${q(structure.role)},Children:ast.ChildStructure{${fields.join(',')}}} }\n`
+  return (
+    `func (*${name}) NodeStructure() ast.NodeStructure { return ast.NodeStructure{Role:${q(structure.role)},Children:ast.ChildStructure{${fields.join(',')}}} }\n` +
+    (children.kind === 'sequence' && children.arityField !== undefined
+      ? `func (value *${name}) ChildArity() int { return len(value.${fieldName(children.arityField)}) }\n`
+      : '')
+  )
 }

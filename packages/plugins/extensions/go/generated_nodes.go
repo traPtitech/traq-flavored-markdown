@@ -410,8 +410,9 @@ const TableName = "generic.table"
 
 func (*Table) NodePayload() {}
 func (*Table) NodeStructure() ast.NodeStructure {
-	return ast.NodeStructure{Role: "block", Children: ast.ChildStructure{Kind: "table", Header: "generic.table_header_row", Row: "generic.row", ColumnsField: "alignments"}}
+	return ast.NodeStructure{Role: "block", Children: ast.ChildStructure{Kind: "sequence", Prefix: []string{"generic.table_header_row"}, Rest: "generic.row", HasArity: true}}
 }
+func (value *Table) ChildArity() int { return len(value.Alignments) }
 
 const HeaderRowName = "generic.table_header_row"
 

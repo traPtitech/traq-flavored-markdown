@@ -98,62 +98,62 @@ export const definitions = Object.freeze({
   BlockMath: defineNode<Extract<NodeKind, { kind: typeof names.BlockMath }>>(
     names.BlockMath,
     validators.get(names.BlockMath)!,
-    { children: { kind: 'leaf' }, role: 'block' }
+    { role: 'block', children: { kind: 'leaf' } }
   ),
   Cell: defineNode<Extract<NodeKind, { kind: typeof names.Cell }>>(
     names.Cell,
     validators.get(names.Cell)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'structural'
+      role: 'structural',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   InlineMath: defineNode<Extract<NodeKind, { kind: typeof names.InlineMath }>>(
     names.InlineMath,
     validators.get(names.InlineMath)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Mark: defineNode<Extract<NodeKind, { kind: typeof names.Mark }>>(
     names.Mark,
     validators.get(names.Mark)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'inline'
+      role: 'inline',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   Row: defineNode<Extract<NodeKind, { kind: typeof names.Row }>>(
     names.Row,
     validators.get(names.Row)!,
     {
-      children: { kind: 'types', nonempty: true, types: ['generic.cell'] },
-      role: 'structural'
+      role: 'structural',
+      children: { kind: 'types', types: ['generic.cell'], nonempty: true }
     }
   ),
   Strikethrough: defineNode<
     Extract<NodeKind, { kind: typeof names.Strikethrough }>
   >(names.Strikethrough, validators.get(names.Strikethrough)!, {
-    children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-    role: 'inline'
+    role: 'inline',
+    children: { kind: 'roles', roles: ['inline'], nonempty: false }
   }),
   Table: defineNode<Extract<NodeKind, { kind: typeof names.Table }>>(
     names.Table,
     validators.get(names.Table)!,
     {
+      role: 'block',
       children: {
-        columnsField: 'alignments',
-        header: 'generic.table_header_row',
-        kind: 'table',
-        row: 'generic.row'
-      },
-      role: 'block'
+        kind: 'sequence',
+        prefix: ['generic.table_header_row'],
+        rest: 'generic.row',
+        arityField: 'alignments'
+      }
     }
   ),
   HeaderRow: defineNode<Extract<NodeKind, { kind: typeof names.HeaderRow }>>(
     names.HeaderRow,
     validators.get(names.HeaderRow)!,
     {
-      children: { kind: 'types', nonempty: true, types: ['generic.cell'] },
-      role: 'structural'
+      role: 'structural',
+      children: { kind: 'types', types: ['generic.cell'], nonempty: true }
     }
   )
 })

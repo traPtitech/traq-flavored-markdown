@@ -246,30 +246,30 @@ export const definitions = Object.freeze({
   BlankLine: defineNode<Extract<NodeKind, { kind: typeof names.BlankLine }>>(
     names.BlankLine,
     validators.get(names.BlankLine)!,
-    { children: { kind: 'leaf' }, role: 'block' }
+    { role: 'block', children: { kind: 'leaf' } }
   ),
   Embedding: defineNode<Extract<NodeKind, { kind: typeof names.Embedding }>>(
     names.Embedding,
     validators.get(names.Embedding)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Reference: defineNode<Extract<NodeKind, { kind: typeof names.Reference }>>(
     names.Reference,
     validators.get(names.Reference)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   ),
   Spoiler: defineNode<Extract<NodeKind, { kind: typeof names.Spoiler }>>(
     names.Spoiler,
     validators.get(names.Spoiler)!,
     {
-      children: { kind: 'roles', nonempty: false, roles: ['inline'] },
-      role: 'inline'
+      role: 'inline',
+      children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
   Stamp: defineNode<Extract<NodeKind, { kind: typeof names.Stamp }>>(
     names.Stamp,
     validators.get(names.Stamp)!,
-    { children: { kind: 'leaf' }, role: 'inline' }
+    { role: 'inline', children: { kind: 'leaf' } }
   )
 })
 // Check this payload only; children can still contain unknown nodes.
