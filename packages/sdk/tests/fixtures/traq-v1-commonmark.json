@@ -2110,7 +2110,7 @@
               },
               "data": {
                 "fenced": true,
-                "info": "foo\\+bar",
+                "info": "foo+bar",
                 "literal": "foo\n"
               }
             }
@@ -2920,7 +2920,7 @@
               },
               "data": {
                 "fenced": true,
-                "info": "f&ouml;&ouml;",
+                "info": "föö",
                 "literal": "foo\n"
               }
             }
