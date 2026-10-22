@@ -5,9 +5,9 @@ mod collectors;
 mod edits;
 mod error;
 mod links;
+pub mod pipeline;
 pub mod presets;
 pub mod rendering;
-pub mod pipeline;
 
 pub use error::{Error, ErrorCategory};
 pub use markdown_trap_extraction::References;
