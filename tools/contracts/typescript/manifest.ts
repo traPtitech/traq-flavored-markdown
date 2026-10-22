@@ -1,5 +1,5 @@
 import type { Direction } from './ir.ts'
-import { type RawSchema, shape } from './schema.ts'
+import { type RawSchema, type Shape, shape } from './schema.ts'
 import type { NodeRole, NodeStructure } from './structure.ts'
 
 export type NodeContract = {
@@ -32,6 +32,8 @@ export type Operation = {
   params: WasmType[]
   result: OperationResult
   configuration: boolean
+  requestSchema?: string
+  responseSchema?: string
 }
 export type Abi = {
   version: number
@@ -227,7 +229,23 @@ export function parseArtifactManifest(value: unknown): ArtifactManifest {
           configuration: boolean(
             operation.configuration,
             path + '.configuration'
-          )
+          ),
+          ...(operation.requestSchema === undefined
+            ? {}
+            : {
+                requestSchema: string(
+                  operation.requestSchema,
+                  path + '.requestSchema'
+                )
+              }),
+          ...(operation.responseSchema === undefined
+            ? {}
+            : {
+                responseSchema: string(
+                  operation.responseSchema,
+                  path + '.responseSchema'
+                )
+              })
         }
       }),
       exports: entries(abi.exports, '$.abi.exports', (value, path) => {
@@ -256,18 +274,69 @@ export function parseArtifactManifest(value: unknown): ArtifactManifest {
     if (operation.configuration !== (operation.result === 'configuration'))
       invalid(`$.abi.operations.${name}.configuration`)
   }
-  for (const name of new Set([
-    ...Object.keys(result.processing),
-    ...Object.keys(result.directions)
-  ])) {
-    if (
-      !Object.hasOwn(result.processing, name) ||
-      !Object.hasOwn(result.directions, name)
-    )
-      invalid(`$.directions.${name}`)
-  }
+  validateOperationSchemas(
+    result.abi.operations,
+    result.processing,
+    result.directions
+  )
   if (result.limits.memoryBytes % 65536 !== 0) invalid('$.limits.memoryBytes')
   return result
+}
+
+/** Every exported processing type must describe an operation or a reachable helper. */
+export function validateOperationSchemas(
+  operations: Readonly<
+    Record<string, Pick<Operation, 'requestSchema' | 'responseSchema'>>
+  >,
+  processing: Readonly<Record<string, RawSchema>>,
+  directions: Readonly<Record<string, Direction>>
+): void {
+  for (const name of new Set([
+    ...Object.keys(processing),
+    ...Object.keys(directions)
+  ])) {
+    if (!Object.hasOwn(processing, name) || !Object.hasOwn(directions, name))
+      invalid(`$.directions.${name}`)
+  }
+  const reached = new Set<string>()
+  function visit(value: Shape, direction: Direction): void {
+    if (value.name && Object.hasOwn(processing, value.name)) {
+      if (directions[value.name] !== direction)
+        invalid(`$.directions.${value.name}`)
+      reached.add(value.name)
+    }
+    switch (value.kind) {
+      case 'nullable':
+        visit(value.inner, direction)
+        break
+      case 'array':
+        visit(value.items, direction)
+        break
+      case 'object':
+        for (const field of value.fields) visit(field.shape, direction)
+        break
+      case 'union':
+        for (const variant of value.variants) visit(variant, direction)
+        break
+    }
+  }
+  for (const [name, operation] of Object.entries(operations)) {
+    for (const direction of ['request', 'response'] as const) {
+      const field = `${direction}Schema` as const
+      const reference = operation[field]
+      if (reference === undefined) continue
+      if (
+        !Object.hasOwn(processing, reference) ||
+        directions[reference] !== direction
+      )
+        invalid(`$.abi.operations.${name}.${field}`)
+      reached.add(reference)
+      visit(shape(processing[reference]), direction)
+    }
+  }
+  for (const name of Object.keys(processing))
+    if (!reached.has(name))
+      invalid(`$.processing.${name}: unreachable operation schema`)
 }
 
 export function parseDocumentLimits(

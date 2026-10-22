@@ -52,6 +52,10 @@ their parser phase, registered rule, payload type, and source location.
 
 The semantic contract ID hashes the ABI, node and processing schemas, presets,
 and limits after projecting away documentation and generated type names.
+Each operation references its request and response schema. Identity resolves
+those references per operation, so moving a schema to a different operation
+changes the ID while renaming a generated type does not. Processing helper types
+must be reachable from an operation; they do not contribute duplicate schemas.
 Source provenance identifies implementation inputs; the Wasm SHA-256
 identifies the exact artifact. These serve different purposes. Contract matching
 is a compatibility check, not a signature. The SDK build pipeline binds the ID

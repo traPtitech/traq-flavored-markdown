@@ -56,13 +56,17 @@ pub struct ArtifactLimits {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Operation {
     pub export: String,
     pub input: Input,
     pub params: Vec<WasmType>,
     pub result: Output,
     pub configuration: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_schema: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response_schema: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -96,7 +100,19 @@ impl Operation {
             params,
             result,
             configuration: matches!(result, Output::Configuration),
+            request_schema: None,
+            response_schema: None,
         }
+    }
+
+    pub fn request_schema(mut self, name: &str) -> Self {
+        self.request_schema = Some(name.into());
+        self
+    }
+
+    pub fn response_schema(mut self, name: &str) -> Self {
+        self.response_schema = Some(name.into());
+        self
     }
 }
 

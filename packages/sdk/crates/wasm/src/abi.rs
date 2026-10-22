@@ -235,7 +235,8 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                     Input::Json,
                     vec![],
                     Output::Configuration,
-                ),
+                )
+                .request_schema("ExtractorOptions"),
             ),
             (
                 "configureRenderer",
@@ -244,7 +245,8 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                     Input::Json,
                     vec![],
                     Output::Configuration,
-                ),
+                )
+                .request_schema("RendererOptions"),
             ),
             (
                 "parse",
@@ -252,7 +254,8 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
             ),
             (
                 "extract",
-                Operation::new("extract", Input::Json, vec![], Output::Extraction),
+                Operation::new("extract", Input::Json, vec![], Output::Extraction)
+                    .response_schema("Extraction"),
             ),
             (
                 "render",
@@ -265,7 +268,8 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                     Input::Json,
                     vec![],
                     Output::Configuration,
-                ),
+                )
+                .request_schema("ProcessorConfiguration"),
             ),
             (
                 "process",
@@ -274,7 +278,8 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                     Input::Text,
                     vec![WasmType::I32],
                     Output::Processing,
-                ),
+                )
+                .response_schema("ProcessingResult"),
             ),
         ],
     )

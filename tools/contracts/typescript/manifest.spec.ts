@@ -105,3 +105,85 @@ test('ABI manifests reject unsupported values and inconsistent operation referen
   const direction = { ...source, processing: { Options: { type: 'string' } } }
   expect(() => parseArtifactManifest(direction)).toThrow('$.directions.Options')
 })
+
+test('processing schemas resolve per operation and reject disconnected roots', () => {
+  const helper = { type: 'string' }
+  const source = {
+    contractId: 'contract',
+    provenance: { sourceFingerprint: 'source' },
+    presets: {},
+    nodes: {},
+    limits: {
+      inputBytes: 100,
+      outputBytes: 100,
+      memoryBytes: 65536,
+      document: { sourceBytes: 10, payloadBytes: 50, nodes: 10, depth: 3 }
+    },
+    abi: {
+      version: 1,
+      error: { type: 'string' },
+      operations: {
+        process: {
+          export: 'process',
+          input: 'json',
+          params: [],
+          result: 'processing',
+          configuration: false,
+          requestSchema: 'Request',
+          responseSchema: 'Response'
+        }
+      },
+      exports: { process: { params: [], results: ['i32'] } }
+    },
+    processing: {
+      Request: {
+        type: 'object',
+        additionalProperties: false,
+        properties: { value: { $ref: '#/$defs/Helper' } },
+        $defs: { Helper: helper }
+      },
+      Helper: helper,
+      Response: { type: 'boolean' }
+    },
+    directions: { Request: 'request', Helper: 'request', Response: 'response' }
+  }
+  expect<unknown>(parseArtifactManifest(source)).toEqual(source)
+  for (const field of ['requestSchema', 'responseSchema'] as const) {
+    const missing = structuredClone(source)
+    missing.abi.operations.process[field] = 'Missing'
+    expect(() => parseArtifactManifest(missing)).toThrow(
+      `$.abi.operations.process.${field}`
+    )
+  }
+  const direction = structuredClone(source)
+  direction.directions.Response = 'request'
+  expect(() => parseArtifactManifest(direction)).toThrow(
+    '$.abi.operations.process.responseSchema'
+  )
+  const helperDirection = structuredClone(source)
+  helperDirection.directions.Helper = 'response'
+  expect(() => parseArtifactManifest(helperDirection)).toThrow(
+    '$.directions.Helper'
+  )
+  const unreferenced = {
+    ...source,
+    processing: { ...source.processing, Unused: { type: 'string' } },
+    directions: { ...source.directions, Unused: 'request' }
+  }
+  expect(() => parseArtifactManifest(unreferenced)).toThrow(
+    '$.processing.Unused'
+  )
+  const unusedDefinition = {
+    ...source,
+    processing: {
+      ...source.processing,
+      Request: {
+        ...source.processing.Request,
+        properties: { value: { type: 'string' } }
+      }
+    }
+  }
+  expect(() => parseArtifactManifest(unusedDefinition)).toThrow(
+    '$.processing.Helper'
+  )
+})

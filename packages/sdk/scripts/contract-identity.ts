@@ -1,4 +1,8 @@
 import {
+  type Operation,
+  validateOperationSchemas
+} from '../../../tools/contracts/typescript/manifest.ts'
+import {
   type RawSchema,
   type Shape,
   shape
@@ -61,7 +65,11 @@ function wireShape(value: Shape): unknown {
 const wireSchema = (schema: RawSchema) => wireShape(shape(schema))
 
 export interface IdentityContract {
-  abi: { error?: RawSchema; [key: string]: unknown }
+  abi: {
+    error?: RawSchema
+    operations?: Record<string, Partial<Operation>>
+    [key: string]: unknown
+  }
   nodes: Record<string, { schema: RawSchema; structure?: unknown }>
   processing?: Record<string, RawSchema>
   presets?: unknown
@@ -71,10 +79,46 @@ export interface IdentityContract {
 
 /** Hash only validated wire semantics; provenance and bytes have separate identities. */
 export function semanticContractId(manifest: IdentityContract) {
+  const processing = manifest.processing ?? {}
+  validateOperationSchemas(
+    manifest.abi.operations ?? {},
+    processing,
+    manifest.directions ?? {}
+  )
   const contract = {
     abi: {
       ...manifest.abi,
-      ...(manifest.abi.error ? { error: wireSchema(manifest.abi.error) } : {})
+      ...(manifest.abi.error ? { error: wireSchema(manifest.abi.error) } : {}),
+      ...(manifest.abi.operations
+        ? {
+            operations: Object.fromEntries(
+              Object.entries(manifest.abi.operations).map(
+                ([name, operation]) => {
+                  const { requestSchema, responseSchema, ...descriptor } =
+                    operation
+                  return [
+                    name,
+                    {
+                      ...descriptor,
+                      ...(requestSchema === undefined
+                        ? {}
+                        : {
+                            requestSchema: wireSchema(processing[requestSchema])
+                          }),
+                      ...(responseSchema === undefined
+                        ? {}
+                        : {
+                            responseSchema: wireSchema(
+                              processing[responseSchema]
+                            )
+                          })
+                    }
+                  ]
+                }
+              )
+            )
+          }
+        : {})
     },
     nodes: Object.fromEntries(
       Object.entries(manifest.nodes).map(([kind, node]) => [
@@ -82,14 +126,6 @@ export function semanticContractId(manifest: IdentityContract) {
         { schema: wireSchema(node.schema), structure: node.structure }
       ])
     ),
-    processing:
-      manifest.processing &&
-      ordered(
-        Object.entries(manifest.processing).map(([name, schema]) => ({
-          direction: manifest.directions?.[name],
-          schema: wireSchema(schema)
-        }))
-      ),
     presets: manifest.presets,
     limits: manifest.limits
   }
