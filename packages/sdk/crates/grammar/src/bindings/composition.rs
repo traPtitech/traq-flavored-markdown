@@ -22,10 +22,12 @@ pub struct PluginSpec {
     pub group: Option<usize>,
     pub name: Option<String>,
     pub rules: Vec<usize>,
-    /// Context providers (ordinary text and block policy). The persisted field
-    /// name remains `text`; user-facing SDKs carry these references with a plugin.
+    /// The catalog plugin supplying ordinary-text construction.
     #[serde(default)]
-    pub text: Vec<usize>,
+    pub text_provider: Option<usize>,
+    /// The catalog plugin supplying block-sequence behavior.
+    #[serde(default)]
+    pub block_policy: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,7 +126,7 @@ impl Catalog {
 
         let mut plugin = Plugin::new(&declaration);
 
-        if spec.rules.len() > 4096 || spec.text.len() > 256 {
+        if spec.rules.len() > 4096 {
             return Err(invalid("rule limit exceeded"));
         }
 
@@ -137,12 +139,20 @@ impl Catalog {
             );
         }
 
-        for &index in &spec.text {
+        if let Some(index) = spec.text_provider {
             let source = self
                 .plugins
                 .get(index)
-                .ok_or_else(|| invalid("unknown context provider"))?;
-            plugin.extend_context_from(source);
+                .ok_or_else(|| invalid("unknown text provider"))?;
+            plugin.inherit_text_from(source)?;
+        }
+
+        if let Some(index) = spec.block_policy {
+            let source = self
+                .plugins
+                .get(index)
+                .ok_or_else(|| invalid("unknown block policy"))?;
+            plugin.inherit_block_policy_from(source)?;
         }
 
         Ok(plugin)

@@ -124,6 +124,12 @@ impl Catalog {
     }
 
     fn plugin_spec(&self, plugin: &Plugin) -> PluginSpec {
+        let provider_index = || {
+            self.plugins
+                .iter()
+                .position(|p| p.same(plugin))
+                .expect("registered plugin")
+        };
         PluginSpec {
             group: plugin.namespace().map(|g| {
                 self.groups
@@ -136,16 +142,8 @@ impl Catalog {
 
             rules: plugin.rules().iter().map(|r| self.rule_index(r)).collect(),
 
-            text: if !plugin.has_context_provider() {
-                vec![]
-            } else {
-                vec![
-                    self.plugins
-                        .iter()
-                        .position(|p| p.same(plugin))
-                        .expect("registered plugin"),
-                ]
-            },
+            text_provider: plugin.has_text_provider().then(provider_index),
+            block_policy: plugin.has_block_policy().then(provider_index),
         }
     }
     pub fn describe(&self) -> Value {

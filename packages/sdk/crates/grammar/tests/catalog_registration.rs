@@ -86,7 +86,7 @@ fn composition_keeps_group_identity_separate_from_names_and_rejects_bad_referenc
     broken.groups[0].parent = Some(0);
     assert!(catalog.build(&broken).is_err());
     let mut broken = composition.clone();
-    broken.plugins[0].text = vec![usize::MAX];
+    broken.plugins[0].text_provider = Some(usize::MAX);
     assert!(catalog.build(&broken).is_err());
     let mut broken = composition;
     broken.plugins[0].name = None;

@@ -11,8 +11,8 @@ pub(crate) type TextFactory = Arc<dyn Fn(String) -> NodeKind + Send + Sync>;
 #[derive(Clone, Default)]
 pub(crate) struct Definition {
     pub rules: Vec<Contribution>,
-    pub text: Vec<TextFactory>,
-    pub block_policies: Vec<Arc<dyn super::block::BlockPolicy>>,
+    pub text: Option<TextFactory>,
+    pub block_policy: Option<Arc<dyn super::block::BlockPolicy>>,
 }
 
 /// Parser implementation of a shared declaration. Editing a shared copy creates
@@ -53,23 +53,57 @@ impl Plugin {
         &self.definition.rules
     }
 
-    pub fn has_context_provider(&self) -> bool {
-        !self.definition.text.is_empty() || !self.definition.block_policies.is_empty()
+    pub fn has_text_provider(&self) -> bool {
+        self.definition.text.is_some()
     }
 
-    pub fn extend_context_from(&mut self, plugin: &Plugin) {
-        Arc::make_mut(&mut self.definition)
-            .text
-            .extend(plugin.definition.text.iter().cloned());
-        Arc::make_mut(&mut self.definition)
-            .block_policies
-            .extend(plugin.definition.block_policies.iter().cloned());
+    pub fn has_block_policy(&self) -> bool {
+        self.definition.block_policy.is_some()
+    }
+
+    /// Inherit only ordinary-text construction, never block-sequence behavior.
+    pub fn inherit_text_from(&mut self, source: &Plugin) -> Result<&mut Self, super::BuildError> {
+        if self.has_text_provider() {
+            return Err(super::BuildError::Duplicate {
+                element: "text provider".into(),
+            });
+        }
+        let provider =
+            source
+                .definition
+                .text
+                .clone()
+                .ok_or_else(|| super::BuildError::Missing {
+                    element: "text provider".into(),
+                })?;
+        Arc::make_mut(&mut self.definition).text = Some(provider);
+        Ok(self)
+    }
+
+    /// Inherit only block-sequence behavior, never ordinary-text construction.
+    pub fn inherit_block_policy_from(
+        &mut self,
+        source: &Plugin,
+    ) -> Result<&mut Self, super::BuildError> {
+        if self.has_block_policy() {
+            return Err(super::BuildError::Duplicate {
+                element: "block sequence policy".into(),
+            });
+        }
+        let policy =
+            source
+                .definition
+                .block_policy
+                .clone()
+                .ok_or_else(|| super::BuildError::Missing {
+                    element: "block sequence policy".into(),
+                })?;
+        Arc::make_mut(&mut self.definition).block_policy = Some(policy);
+        Ok(self)
     }
 
     pub fn block_policy(&mut self, policy: impl super::block::BlockPolicy + 'static) -> &mut Self {
-        Arc::make_mut(&mut self.definition)
-            .block_policies
-            .push(Arc::new(policy));
+        Arc::make_mut(&mut self.definition).block_policy = Some(Arc::new(policy));
         self
     }
 
@@ -84,9 +118,8 @@ impl Plugin {
         &mut self,
         make: impl Fn(String) -> T + Send + Sync + 'static,
     ) -> &mut Self {
-        Arc::make_mut(&mut self.definition)
-            .text
-            .push(Arc::new(move |value| NodeKind::new(make(value))));
+        Arc::make_mut(&mut self.definition).text =
+            Some(Arc::new(move |value| NodeKind::new(make(value))));
         self
     }
 

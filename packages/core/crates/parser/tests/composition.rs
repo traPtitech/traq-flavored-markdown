@@ -130,3 +130,43 @@ fn shared_name_checks_keep_parser_diagnostics_and_rule_error_priority() {
         assert!(matches!(builder.build(), Err(error) if error == expected));
     }
 }
+
+#[test]
+fn text_and_block_context_capabilities_can_be_composed_independently() {
+    use markdown_parser::engine::{
+        ParseState,
+        block::{BlockInput, BlockPolicy, LineIndex},
+    };
+    struct Preserve;
+    impl BlockPolicy for Preserve {
+        fn after_match(
+            &self,
+            _: &BlockInput<'_>,
+            end: LineIndex,
+            _: &mut ParseState,
+        ) -> Result<LineIndex, markdown_parser::ParseError> {
+            Ok(end)
+        }
+    }
+    let mut source = plugin();
+    source.block_policy(Preserve);
+    let mut text = Plugin::new(&Declaration::new("text-only"));
+    text.inherit_text_from(&source).unwrap();
+    let mut blocks = Plugin::new(&Declaration::new("blocks-only"));
+    blocks.inherit_block_policy_from(&source).unwrap();
+    let mut builder = GrammarBuilder::new();
+    builder.add(&text).unwrap().add(&blocks).unwrap();
+    let document = Parser::new(&builder.build().unwrap())
+        .parse_inline("text")
+        .unwrap();
+    assert_eq!(
+        document.children[0].get::<Text>(),
+        Some(&Text("text".into()))
+    );
+
+    assert!(text.inherit_text_from(&source).is_err());
+    assert!(blocks.inherit_block_policy_from(&source).is_err());
+    let empty = Plugin::new(&Declaration::new("no-context"));
+    assert!(blocks.inherit_text_from(&empty).is_err());
+    assert!(text.inherit_block_policy_from(&empty).is_err());
+}

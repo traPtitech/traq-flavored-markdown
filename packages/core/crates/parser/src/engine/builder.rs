@@ -164,7 +164,7 @@ impl GrammarBuilder {
 
         for plugin in &self.plugins {
             lines.push(format!("plugin: {}", plugin.description()));
-            for _ in &plugin.definition.text {
+            if plugin.has_text_provider() {
                 lines.push(format!("text provider: {}", plugin.description()));
             }
         }
@@ -205,7 +205,7 @@ impl GrammarBuilder {
         if self
             .plugins
             .iter()
-            .map(|plugin| plugin.definition.block_policies.len())
+            .map(|plugin| usize::from(plugin.has_block_policy()))
             .sum::<usize>()
             > 1
         {
@@ -222,7 +222,7 @@ impl GrammarBuilder {
         let block_policy = self
             .plugins
             .iter()
-            .flat_map(|plugin| &plugin.definition.block_policies)
+            .filter_map(|plugin| plugin.definition.block_policy.as_ref())
             .next()
             .cloned();
         let mut grammar = super::registry::Compilation {
