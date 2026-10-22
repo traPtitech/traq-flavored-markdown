@@ -51,7 +51,6 @@
     "@traq-flavored-markdown/core": "workspace:*"
   },
   "dependencies": {
-    "entities": "8.1.0",
     "highlight.js": "11.12.0"
   }
 }
