@@ -44,6 +44,14 @@ uses the same `ValidationLimits` as codecs and AST consumers. Its defaults are
 `Parser::with_limits` can pass its document to consumers through
 `ValidatedDocument::with_limits` using the same `Limits::document` value.
 
+Inline and text rules exchange `ViewOffset` and `ViewRange`; block rules receive
+`LineIndex` values and typed view ranges for their lines. `SourceView::span_for`
+maps those ranges to original UTF-8 source spans, preserving CRLF, NUL, tab, and
+container transformations. `SourceView::range` and `offset` check raw byte indexes
+at scanner boundaries. Original `SourceOffset` values cannot be used as match
+endpoints. Cursor advancement and accepted matches still validate UTF-8 boundaries
+and charge the shared work budget.
+
 `bindings::Catalog` is a distribution-layer API. It registers implementations
 with `plugin(&plugin)` and validated preset compositions with `preset(&builder)`.
 Its numeric handles are internal binding references, not persistent IDs. Normal

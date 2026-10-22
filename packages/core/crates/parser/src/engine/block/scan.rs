@@ -5,16 +5,17 @@ use super::{
 
 use crate::{
     Node, ParseError,
-    engine::{Budget, Grammar, ParsePhase, ParseState, inline, source::SourceView},
+    engine::{
+        Budget, Grammar, ParsePhase, ParseState, inline,
+        source::{SourceView, ViewOffset, ViewRange},
+    },
 };
-
-use std::ops::Range;
 
 fn blank(text: &str) -> bool {
     text.bytes().all(|b| b == b' ' || b == b'\t')
 }
 
-fn lines(text: &str) -> Vec<Range<usize>> {
+fn lines(text: &str) -> Vec<ViewRange> {
     let mut position = 0;
 
     text.split_inclusive('\n')
@@ -24,6 +25,7 @@ fn lines(text: &str) -> Vec<Range<usize>> {
             range
         })
         .filter(|range| text[range.clone()].ends_with('\n') || !blank(&text[range.clone()]))
+        .map(|range| ViewOffset(range.start)..ViewOffset(range.end))
         .collect()
 }
 

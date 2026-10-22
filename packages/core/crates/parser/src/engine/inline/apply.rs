@@ -20,7 +20,7 @@ pub(super) fn matched(
     found: InlineMatch,
 ) -> Result<(), ParseError> {
     let start = state.position;
-    let end = found.end;
+    let end = found.end.get();
 
     match found.action {
         InlineAction::Literal => state.literal(end)?,
@@ -180,7 +180,7 @@ fn open_bracket(
         token: state.tokens.len(),
         bottom: state.delimiters.len(),
         info: BracketInfo {
-            label_start: end,
+            label_start: state.source.offset(end)?,
             tag,
             active: true,
         },

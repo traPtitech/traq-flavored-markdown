@@ -1,4 +1,5 @@
 use crate::{ParseError, engine::Budget};
+use std::ops::{Add, AddAssign, Range, Sub};
 
 /// Coordinates in original UTF-8 source and a normalized parser view cannot be
 /// substituted for one another. Conversion is performed by SourceView.
@@ -10,11 +11,52 @@ impl SourceOffset {
     }
 }
 
+/// A byte position in a normalized or selected parser view. Rules preserve
+/// this type until mapping the position back to the original source.
+///
+/// ```compile_fail
+/// use markdown_parser::engine::{inline::InlineMatch, source::SourceOffset};
+/// fn invalid_match(original: SourceOffset) -> InlineMatch {
+///     InlineMatch::literal(original)
+/// }
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ViewOffset(pub(crate) usize);
 impl ViewOffset {
     pub fn get(self) -> usize {
         self.0
+    }
+}
+
+/// An interval measured in the current parser view, never in original source bytes.
+pub type ViewRange = Range<ViewOffset>;
+
+impl Add<usize> for ViewOffset {
+    type Output = Self;
+    fn add(self, bytes: usize) -> Self {
+        Self(self.0 + bytes)
+    }
+}
+impl AddAssign<usize> for ViewOffset {
+    fn add_assign(&mut self, bytes: usize) {
+        self.0 += bytes;
+    }
+}
+impl Sub<usize> for ViewOffset {
+    type Output = Self;
+    fn sub(self, bytes: usize) -> Self {
+        Self(self.0 - bytes)
+    }
+}
+impl Sub for ViewOffset {
+    type Output = usize;
+    fn sub(self, other: Self) -> usize {
+        self.0 - other.0
+    }
+}
+impl std::fmt::Display for ViewOffset {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(formatter)
     }
 }
 
@@ -27,6 +69,16 @@ pub struct Cursor<'source, 'budget> {
 }
 impl<'source, 'budget> Cursor<'source, 'budget> {
     pub fn new(
+        source: &'source str,
+        start: ViewOffset,
+        budget: &'budget mut Budget,
+    ) -> Result<Self, ParseError> {
+        Self::from_byte_index(source, start.get(), budget)
+    }
+
+    /// Enter from a standalone byte scanner after checking its UTF-8 boundary.
+    /// Rules with a SourceView should use its typed `cursor` method.
+    pub fn from_byte_index(
         source: &'source str,
         start: usize,
         budget: &'budget mut Budget,

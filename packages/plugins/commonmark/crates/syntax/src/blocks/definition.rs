@@ -58,7 +58,7 @@ fn find_definition(
 ) -> Result<Option<DefinitionMatch>, ParseError> {
     let first = input.start;
     let start = input.lines[first].start;
-    let text = &input.source.text()[start..];
+    let text = &input.source.text()[start.get()..];
     let Some(mut value) = references::definition(text, budget)? else {
         return Ok(None);
     };

@@ -31,13 +31,14 @@ fn inline_rule(recognizer: std::sync::Arc<recognize::Recognizer>) -> InlineRule 
         // the candidate token inspected by the recognizer.
         let scan_len = recognize::scan_len(tail);
         budget.spend(scan_len)?;
-        let Some(found) = recognizer.at(input.source.text(), input.position, scan_len) else {
+        let Some(found) = recognizer.at(input.source.text(), input.position.get(), scan_len) else {
             return Ok(None);
         };
 
-        let span = input.source.span_for(found.start..found.end)?;
+        let range = input.source.range(found.start..found.end)?;
+        let span = input.source.span_for(range.clone())?;
         Ok(Some(InlineMatch {
-            end: found.end,
+            end: range.end,
             action: InlineAction::Node {
                 kind: NodeKind::new(markdown_commonmark_contracts::Link {
                     destination: found.destination,

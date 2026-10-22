@@ -50,14 +50,17 @@ fn row(
 ) -> Result<DraftNode, ParseError> {
     let source = input.source;
     let line = &input.lines[index];
-    let columns = cells::cells(input.line(index), line.start);
+    let columns = cells::cells(input.line(index), line.start.get());
 
     let mut children = vec![];
 
     budget.token()?;
     for column in 0..align.len() {
         budget.token()?;
-        let range = columns.get(column).cloned().unwrap_or(line.end..line.end);
+        let range = columns
+            .get(column)
+            .cloned()
+            .unwrap_or(line.end.get()..line.end.get());
         children.push(cell(input, range)?);
     }
 
@@ -77,10 +80,13 @@ fn cell(input: &BlockInput<'_>, range: std::ops::Range<usize>) -> Result<DraftNo
     let raw = &source.text()[range.clone()];
     let start = range.start + raw.len() - raw.trim_start().len();
     let end = (range.start + raw.trim_end().len()).max(start);
-    let pieces = split_escaped_pipes(source.text(), start, end);
+    let pieces = split_escaped_pipes(source.text(), start, end)
+        .into_iter()
+        .map(|range| source.range(range))
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(DraftNode::inline(
-        source.span_for(start..end)?,
+        source.span_for(source.range(start..end)?)?,
         markdown_parser::NodeKind::new(Cell {}),
         source.join(&pieces)?,
     ))

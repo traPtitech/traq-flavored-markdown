@@ -23,7 +23,7 @@ impl BlockInput<'_> {
             let position = self
                 .lines
                 .get(lines.start)
-                .map_or(self.source.text().len(), |r| r.start);
+                .map_or(self.source.offset(self.source.text().len())?, |r| r.start);
 
             self.source.join(&[position..position])
         } else {

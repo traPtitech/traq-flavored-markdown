@@ -1,4 +1,4 @@
-use crate::{Node, NodeKind};
+use crate::{Node, NodeKind, engine::source::ViewOffset};
 
 /// Syntax-owned matching policy. The engine only pairs accepted runs and
 /// caches failed searches within the policy's bounded equivalence classes.
@@ -38,7 +38,7 @@ pub struct Pairing {
 }
 
 pub struct InlineMatch {
-    pub end: usize,
+    pub end: ViewOffset,
     pub action: InlineAction,
 }
 
@@ -77,14 +77,14 @@ pub enum InlineAction {
 }
 
 impl InlineMatch {
-    pub fn text(end: usize, value: String) -> Self {
+    pub fn text(end: ViewOffset, value: String) -> Self {
         Self {
             end,
             action: InlineAction::Text(value),
         }
     }
 
-    pub fn leaf(end: usize, kind: NodeKind) -> Self {
+    pub fn leaf(end: ViewOffset, kind: NodeKind) -> Self {
         Self {
             end,
             action: InlineAction::Node {
@@ -95,7 +95,7 @@ impl InlineMatch {
         }
     }
 
-    pub fn literal(end: usize) -> Self {
+    pub fn literal(end: ViewOffset) -> Self {
         Self {
             end,
             action: InlineAction::Literal,
@@ -105,7 +105,7 @@ impl InlineMatch {
 
 #[derive(Clone, Copy)]
 pub struct BracketInfo {
-    pub label_start: usize,
+    pub label_start: ViewOffset,
     pub tag: &'static str,
     pub active: bool,
 }

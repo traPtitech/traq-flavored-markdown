@@ -68,7 +68,7 @@ fn fenced_literal(input: &BlockInput<'_>, end: LineIndex, indent: usize) -> Stri
     input.lines[input.start + 1..end]
         .iter()
         .map(|line| {
-            let raw = &source.text()[line.clone()];
+            let raw = &source[line.clone()];
             let remove = indent.min(raw.len() - raw.trim_start_matches(' ').len());
             source.literal(line.start + remove..line.end)
         })
@@ -111,7 +111,7 @@ fn indented_content(input: &BlockInput<'_>) -> (LineIndex, String) {
     // A blank line belongs to an indented block only when another indented
     // line follows it.
     while end < lines.end() {
-        let raw = &source.text()[lines[end].clone()];
+        let raw = &source[lines[end].clone()];
 
         if blank(input.line(end)) {
             let next = lines
@@ -159,7 +159,7 @@ pub(super) fn atx(
             .len()
             .max(prefix);
 
-    let text = &source.text()[line.start + prefix..end];
+    let text = &source[line.start + prefix..end];
     let without = text.trim_end_matches('#');
 
     if without.is_empty() || without.ends_with([' ', '\t']) {

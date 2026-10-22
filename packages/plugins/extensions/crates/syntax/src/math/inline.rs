@@ -15,29 +15,29 @@ pub(super) fn parse(
     let pos = input.position;
     let bytes = input.source.text().as_bytes();
 
-    if matches!(bytes.get(pos + 1), Some(b' ' | b'\t')) {
+    if matches!(bytes.get((pos + 1).get()), Some(b' ' | b'\t')) {
         return Ok(Some(InlineMatch::literal(pos + 1)));
     }
 
     let (mut end, mut slashes) = (pos + 1, 0);
 
-    while end < bytes.len() {
+    while end.get() < bytes.len() {
         budget.spend(1)?;
-        let byte = bytes[end];
+        let byte = bytes[end.get()];
 
         if byte == b'$' && slashes % 2 == 0 {
             if end == pos + 1 {
                 return Ok(Some(InlineMatch::literal(pos + 2)));
             }
 
-            if matches!(bytes[end - 1], b' ' | b'\t')
-                || bytes.get(end + 1).is_some_and(u8::is_ascii_digit)
+            if matches!(bytes[(end - 1).get()], b' ' | b'\t')
+                || bytes.get((end + 1).get()).is_some_and(u8::is_ascii_digit)
             {
                 return Ok(Some(InlineMatch::literal(pos + 1)));
             }
 
             let data = InlineMath {
-                tex: input.source.text()[pos + 1..end].into(),
+                tex: input.source[pos + 1..end].into(),
             };
 
             return Ok(Some(InlineMatch::leaf(

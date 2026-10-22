@@ -71,9 +71,9 @@ pub fn paired(
 ) -> Result<Option<InlineMatch>, ParseError> {
     let source = &input.source.text();
     let pos = input.position;
-    let marker = source.as_bytes()[pos];
+    let marker = source.as_bytes()[pos.get()];
     let mut end = pos;
-    while source.as_bytes().get(end) == Some(&marker) {
+    while source.as_bytes().get(end.get()) == Some(&marker) {
         budget.spend(1)?;
         end += 1;
     }
@@ -81,8 +81,8 @@ pub fn paired(
     if length < width {
         return Ok(None);
     }
-    let prev = source[..pos].chars().next_back().unwrap_or(' ');
-    let next = source[end..].chars().next().unwrap_or(' ');
+    let prev = source[..pos.get()].chars().next_back().unwrap_or(' ');
+    let next = source[end.get()..].chars().next().unwrap_or(' ');
     let (open, close) = flanking(prev, next, marker);
     let pairing = Pairing {
         marker,

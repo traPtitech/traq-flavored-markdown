@@ -1,3 +1,4 @@
+use crate::engine::source::ViewRange;
 use std::ops::{Add, AddAssign, Index, Range, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -36,7 +37,7 @@ impl Sub for LineIndex {
 
 /// Line indexing is distinct from byte indexing into a source view.
 #[derive(Clone, Copy)]
-pub struct Lines<'a>(pub(crate) &'a [Range<usize>]);
+pub struct Lines<'a>(pub(crate) &'a [ViewRange]);
 impl<'a> Lines<'a> {
     pub fn len(self) -> usize {
         self.0.len()
@@ -47,7 +48,7 @@ impl<'a> Lines<'a> {
     pub fn end(self) -> LineIndex {
         LineIndex(self.0.len())
     }
-    pub fn get(self, index: LineIndex) -> Option<&'a Range<usize>> {
+    pub fn get(self, index: LineIndex) -> Option<&'a ViewRange> {
         self.0.get(index.0)
     }
     pub fn indices(self, range: Range<LineIndex>) -> impl DoubleEndedIterator<Item = LineIndex> {
@@ -55,19 +56,19 @@ impl<'a> Lines<'a> {
     }
 }
 impl Index<LineIndex> for Lines<'_> {
-    type Output = Range<usize>;
+    type Output = ViewRange;
     fn index(&self, index: LineIndex) -> &Self::Output {
         &self.0[index.0]
     }
 }
 impl Index<Range<LineIndex>> for Lines<'_> {
-    type Output = [Range<usize>];
+    type Output = [ViewRange];
     fn index(&self, range: Range<LineIndex>) -> &Self::Output {
         &self.0[range.start.0..range.end.0]
     }
 }
 impl Index<std::ops::RangeFrom<LineIndex>> for Lines<'_> {
-    type Output = [Range<usize>];
+    type Output = [ViewRange];
     fn index(&self, range: std::ops::RangeFrom<LineIndex>) -> &Self::Output {
         &self.0[range.start.0..]
     }

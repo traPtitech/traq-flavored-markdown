@@ -63,28 +63,28 @@ fn parser(plugin: &Plugin) -> Parser {
 
 #[test]
 fn invalid_plugin_results_never_return_partial_documents() {
-    for action in [
-        InlineMatch::literal(0),
-        InlineMatch::literal(1),
-        InlineMatch::literal(99),
-        InlineMatch::leaf(3, Invalid.into()),
-        InlineMatch {
-            end: 3,
-            action: InlineAction::Node {
-                kind: Text("parent".into()).into(),
-                inhibit_brackets: false,
-                children: vec![Node::leaf(
-                    Span { start: 1, end: 2 },
-                    Text("bad span".into()),
-                )],
-            },
-        },
-    ] {
-        let action = std::sync::Mutex::new(Some(action));
+    for case in 0..5 {
         let mut plugin = plugin();
-
-        plugin.add(InlineRule::new(b"", move |_, _| {
-            Ok(action.lock().unwrap().take())
+        plugin.add(InlineRule::new(b"", move |input, _| {
+            let start = input.position;
+            let action = match case {
+                0 => InlineMatch::literal(start),
+                1 => InlineMatch::literal(start + 1),
+                2 => InlineMatch::literal(start + 99),
+                3 => InlineMatch::leaf(start + 3, Invalid.into()),
+                _ => InlineMatch {
+                    end: start + 3,
+                    action: InlineAction::Node {
+                        kind: Text("parent".into()).into(),
+                        inhibit_brackets: false,
+                        children: vec![Node::leaf(
+                            Span { start: 1, end: 2 },
+                            Text("bad span".into()),
+                        )],
+                    },
+                },
+            };
+            Ok(Some(action))
         }));
 
         assert!(matches!(
@@ -170,7 +170,7 @@ fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
     let mut accepted = plugin();
     accepted.add(InlineRule::new(b"a", |input, _| {
         Ok(Some(InlineMatch::leaf(
-            input.source.text().len(),
+            input.source.offset(input.source.text().len())?,
             Text("node".into()).into(),
         )))
     }));
@@ -357,9 +357,9 @@ fn final_validation_stops_at_the_remaining_work_budget() {
 
     let mut plugin = plugin();
 
-    plugin.add(InlineRule::new(b"x", |_, _| {
+    plugin.add(InlineRule::new(b"x", |input, _| {
         Ok(Some(InlineMatch {
-            end: 1,
+            end: input.position + 1,
             action: InlineAction::Node {
                 kind: Text("parent".into()).into(),
                 inhibit_brackets: false,

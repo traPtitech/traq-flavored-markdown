@@ -67,7 +67,7 @@ pub(crate) fn skip_spaces(
     index: &mut usize,
     budget: &mut Budget,
 ) -> Result<(), ParseError> {
-    let mut cursor = Cursor::new(source, *index, budget)?;
+    let mut cursor = Cursor::from_byte_index(source, *index, budget)?;
     cursor.skip_while(|ch| matches!(ch, ' ' | '\t' | '\n'))?;
     *index = cursor.position().get();
     Ok(())
@@ -79,7 +79,7 @@ pub(crate) fn target(
     position: usize,
     budget: &mut Budget,
 ) -> Result<Option<ParsedTarget>, ParseError> {
-    let mut cursor = Cursor::new(source, position, budget)?;
+    let mut cursor = Cursor::from_byte_index(source, position, budget)?;
     let angle = cursor.peek() == Some('<');
     if angle {
         cursor.next_char()?;
@@ -136,7 +136,7 @@ pub(crate) fn parse_title(
     index: &mut usize,
     budget: &mut Budget,
 ) -> Result<Option<String>, ParseError> {
-    let mut cursor = Cursor::new(source, *index, budget)?;
+    let mut cursor = Cursor::from_byte_index(source, *index, budget)?;
     let Some(opening) = cursor.next_char()? else {
         return Ok(None);
     };
