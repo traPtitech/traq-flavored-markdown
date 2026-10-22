@@ -20,53 +20,55 @@ mod tests;
 mod compatibility_tests;
 
 use traq_markdown_processing::extraction::{Extraction, ExtractorOptions};
+use traq_markdown_processing::pipeline::{ProcessingResult, ProcessorOptions};
 use traq_markdown_processing::rendering::RendererOptions;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> markdown_contract_export::Result<()> {
+    use markdown_contract_export::{ArtifactContract, Direction, Provenance, schema, write};
+    use schemars::generate::Contract;
+    use std::collections::BTreeMap;
     let directory = std::env::args().nth(1).ok_or("Pass the output directory")?;
-    let parse_error = schemars::generate::SchemaSettings::default()
-        .with(|settings| settings.contract = schemars::generate::Contract::Serialize)
-        .into_generator()
-        .into_root_schema_for::<traq_markdown_grammar::ParseError>();
-
-    let mut processing = serde_json::Map::new();
-    macro_rules! processing_type {
-        ($direction:ident; $($ty:ident),*) => {
-            $(
-                let schema = schemars::generate::SchemaSettings::default()
-                    .with(|settings| {
-                        settings.contract = schemars::generate::Contract::$direction
-                    })
-                    .into_generator()
-                    .into_root_schema_for::<$ty>();
-                processing.insert(
-                    stringify!($ty).into(),
-                    serde_json::to_value(schema)?,
-                );
-            )*
-        };
-    }
-    processing_type!(Deserialize; ExtractorOptions, RendererOptions);
-    processing_type!(Serialize; Extraction);
-
     // Check that metadata and codec registrations agree before writing bindings.
     let _ = nodes::codec();
-    let manifest = serde_json::json!({
-        "contractId": abi::CONTRACT_ID,
-        "provenance": { "sourceFingerprint": env!("MARKDOWN_SOURCE_FINGERPRINT") },
-        "abi": abi::descriptor(),
-        "directions": { "ExtractorOptions": "request", "RendererOptions": "request", "Extraction": "response" },
-        "processing": processing,
-        "parseError": parse_error,
-        "presets": traq_markdown_grammar::bindings::preset_exports(),
-        "limits": limits::metadata(),
-        "nodes": node_metadata::export()?,
-    });
-
-    std::fs::create_dir_all(&directory)?;
-    std::fs::write(
-        std::path::Path::new(&directory).join("contracts.json"),
-        serde_json::to_vec_pretty(&manifest)?,
-    )?;
-    Ok(())
+    let manifest = ArtifactContract {
+        contract_id: abi::CONTRACT_ID.into(),
+        provenance: Provenance {
+            source_fingerprint: env!("MARKDOWN_SOURCE_FINGERPRINT").into(),
+        },
+        abi: abi::descriptor()?,
+        directions: BTreeMap::from([
+            ("ExtractorOptions".into(), Direction::Request),
+            ("RendererOptions".into(), Direction::Request),
+            ("Extraction".into(), Direction::Response),
+            ("ProcessorOptions".into(), Direction::Request),
+            ("ProcessingResult".into(), Direction::Response),
+        ]),
+        processing: BTreeMap::from([
+            (
+                "ExtractorOptions".into(),
+                schema::<ExtractorOptions>(Contract::Deserialize),
+            ),
+            (
+                "RendererOptions".into(),
+                schema::<RendererOptions>(Contract::Deserialize),
+            ),
+            (
+                "Extraction".into(),
+                schema::<Extraction>(Contract::Serialize),
+            ),
+            (
+                "ProcessorOptions".into(),
+                schema::<ProcessorOptions>(Contract::Deserialize),
+            ),
+            (
+                "ProcessingResult".into(),
+                schema::<ProcessingResult>(Contract::Serialize),
+            ),
+        ]),
+        parse_error: schema::<traq_markdown_grammar::ParseError>(Contract::Serialize),
+        presets: traq_markdown_grammar::bindings::preset_exports(),
+        limits: serde_json::from_value(limits::metadata())?,
+        nodes: node_metadata::export()?.nodes,
+    };
+    write(directory, &manifest)
 }

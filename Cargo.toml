@@ -21,7 +21,8 @@ members = [
   "packages/sdk/crates/features",
   "packages/sdk/crates/processing",
   "packages/sdk/crates/wasm",
-  "packages/sdk/examples/rust"
+  "packages/sdk/examples/rust",
+  "tools/contracts/rust"
 ]
 resolver = "3"
 
@@ -33,6 +34,7 @@ publish = false
 
 [workspace.dependencies]
 markdown-ast = { path = "packages/core/crates/ast" }
+markdown-contract-export = { path = "tools/contracts/rust" }
 markdown-codec = { path = "packages/core/crates/codec" }
 markdown-definitions = { path = "packages/core/crates/definitions" }
 markdown-extractor = { path = "packages/core/crates/extractor" }

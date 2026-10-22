@@ -1,27 +1,14 @@
 import path from 'path'
 
+import {
+  type ArtifactMetadata,
+  parseArtifactMetadata
+} from '../../../scripts/codegen/manifest.ts'
 import { sdkRoot } from '../../../scripts/paths.ts'
-
-type WasmMetadata = {
-  contractId: string
-  provenance: { sourceFingerprint: string }
-  limits: {
-    inputBytes: number
-    outputBytes: number
-    memoryBytes: number
-    document: {
-      sourceBytes: number
-      payloadBytes: number
-      nodes: number
-      depth: number
-    }
-  }
-  presets: Record<string, unknown>
-}
 
 export async function readWasmMetadata(
   bytes: Uint8Array
-): Promise<WasmMetadata> {
+): Promise<ArtifactMetadata> {
   // The workspace graph generates the ABI and builds core before assembling
   // Wasm. Loading its validators at startup would require core/dist too early.
   const { abiExports } = await import('../typescript/generated/abi.ts')
@@ -68,32 +55,13 @@ export async function readWasmMetadata(
     throw new Error('Invalid Wasm contract range')
   }
 
-  const metadata = JSON.parse(
-    new TextDecoder('utf-8', { fatal: true }).decode(
-      new Uint8Array(wasm.memory.buffer, pointer, length)
+  return parseArtifactMetadata(
+    JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(
+        new Uint8Array(wasm.memory.buffer, pointer, length)
+      )
     )
-  ) as WasmMetadata
-  if (
-    !metadata ||
-    typeof metadata !== 'object' ||
-    typeof metadata.contractId !== 'string' ||
-    typeof metadata.provenance?.sourceFingerprint !== 'string' ||
-    !metadata.limits ||
-    !Number.isSafeInteger(metadata.limits.inputBytes) ||
-    !Number.isSafeInteger(metadata.limits.outputBytes) ||
-    !Number.isSafeInteger(metadata.limits.memoryBytes) ||
-    !metadata.limits.document ||
-    !['sourceBytes', 'payloadBytes', 'nodes', 'depth'].every(key => {
-      const limit =
-        metadata.limits.document[key as keyof typeof metadata.limits.document]
-      return Number.isSafeInteger(limit) && limit > 0
-    }) ||
-    !metadata.presets ||
-    typeof metadata.presets !== 'object'
-  ) {
-    throw new Error('Invalid Wasm contract')
-  }
-  return metadata
+  )
 }
 
 function sorted(value: unknown): unknown {

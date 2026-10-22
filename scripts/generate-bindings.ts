@@ -8,13 +8,13 @@ import {
   nodeGroups
 } from './codegen/groups.ts'
 import { readManifest, runCommand } from './codegen/io.ts'
+import { parseNodeManifest } from './codegen/manifest.ts'
 import { nodeFiles } from './codegen/nodes.ts'
 import {
   OutputManifest,
   applyOutputManifest
 } from './codegen/output-manifest.ts'
 import type { RawSchema } from './codegen/schema.ts'
-import type { NodeStructure } from './codegen/structure.ts'
 import { readNpmPackageGraph } from './package-graph.ts'
 import {
   cargoTargetDirectory,
@@ -22,13 +22,6 @@ import {
   packageRoot,
   repositoryRoot
 } from './paths.ts'
-
-type Manifest = {
-  nodes: Record<
-    string,
-    { group: string; schema: RawSchema; structure?: NodeStructure }
-  >
-}
 
 const runCargo = (command: string[], cwd = repositoryRoot) =>
   runCommand(command, cwd).env({
@@ -65,7 +58,7 @@ async function generateContractGroup(
     root
   )
 
-  const manifest = await readManifest<Manifest>(input)
+  const manifest = await readManifest(input, parseNodeManifest)
   for (const [key, node] of Object.entries(manifest.nodes))
     if (node.group !== group)
       throw new Error(

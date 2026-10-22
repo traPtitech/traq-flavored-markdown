@@ -5,5 +5,5 @@ export type NodeStructure = {
     | { kind: 'leaf' | 'any' }
     | { kind: 'roles'; roles: NodeRole[]; nonempty: boolean }
     | { kind: 'types'; types: string[]; nonempty: boolean }
-    | { kind: 'table'; header: string; row: string; columnsField: string }
+    | { kind: 'sequence'; prefix: string[]; rest: string; arityField?: string }
 }

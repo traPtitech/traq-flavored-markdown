@@ -61,7 +61,8 @@ fn main() {
         "../../../../Cargo.lock",
         "../../../../rust-toolchain.toml",
         "../../../../.cargo/config.toml",
-        "../../../../scripts/codegen/structure.rs",
+        "../../../../tools/contracts/rust/Cargo.toml",
+        "../../../../tools/contracts/rust/src",
     ] {
         input(Path::new(path), &mut hash);
     }

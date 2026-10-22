@@ -1,37 +1,13 @@
 import { normalizeContracts } from '../../../../scripts/codegen/ir.ts'
-import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
+import type { ArtifactManifest } from '../../../../scripts/codegen/manifest.ts'
 import { emitContractValidators } from '../../../../scripts/codegen/typescript-validators.ts'
 import { emitTypeScriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
 
-export type Operation = {
-  export: string
-  input: 'text' | 'json'
-  params: string[]
-  result: string
-  configuration: boolean
-}
-export type Abi = {
-  version: number
-  operations: Record<string, Operation>
-  exports: Record<string, { params: string[]; results: string[] }>
-  error: RawSchema
-}
-export type ArtifactManifest = {
-  contractId: string
-  provenance: { sourceFingerprint: string }
-  limits: {
-    inputBytes: number
-    outputBytes: number
-    memoryBytes: number
-    document: {
-      sourceBytes: number
-      payloadBytes: number
-      nodes: number
-      depth: number
-    }
-  }
-  abi: Abi
-}
+export type {
+  Abi,
+  Operation,
+  ArtifactManifest
+} from '../../../../scripts/codegen/manifest.ts'
 
 export function abiFiles(manifest: ArtifactManifest) {
   const error = { ...manifest.abi.error, title: 'WireError' }

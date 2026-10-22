@@ -1,6 +1,8 @@
-const q = JSON.stringify
+import type { PresetTree } from '../../../../scripts/codegen/manifest.ts'
 
-export type PresetTree = { [key: string]: number | PresetTree }
+export type { PresetTree } from '../../../../scripts/codegen/manifest.ts'
+
+const q = JSON.stringify
 
 function leaves(tree: PresetTree, path: string[] = []): string[][] {
   return Object.entries(tree).flatMap(([key, value]) =>

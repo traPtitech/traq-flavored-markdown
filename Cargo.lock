@@ -232,6 +232,7 @@ name = "markdown-commonmark-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
+ "markdown-contract-export",
  "markdown-definitions",
  "schemars",
  "serde",
@@ -245,6 +246,16 @@ dependencies = [
  "markdown-ast",
  "markdown-commonmark-contracts",
  "markdown-renderer",
+]
+
+[[package]]
+name = "markdown-contract-export"
+version = "0.1.0"
+dependencies = [
+ "markdown-ast",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -277,6 +288,7 @@ name = "markdown-generic-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
+ "markdown-contract-export",
  "markdown-definitions",
  "schemars",
  "serde",
@@ -328,6 +340,7 @@ name = "markdown-trap-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
+ "markdown-contract-export",
  "markdown-definitions",
  "schemars",
  "serde",
@@ -647,6 +660,7 @@ dependencies = [
 name = "traq-markdown-grammar"
 version = "0.1.0"
 dependencies = [
+ "markdown-ast",
  "markdown-commonmark",
  "markdown-commonmark-contracts",
  "markdown-definitions",
@@ -687,6 +701,7 @@ dependencies = [
  "markdown-ast",
  "markdown-codec",
  "markdown-commonmark-contracts",
+ "markdown-contract-export",
  "markdown-definitions",
  "markdown-generic-contracts",
  "markdown-parser",

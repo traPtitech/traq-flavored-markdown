@@ -1,0 +1,13 @@
+[package]
+name = "markdown-contract-export"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Development-only typed contract export for Markdown owners."
+
+[dependencies]
+markdown-ast.workspace = true
+schemars = "=1.2.3"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
