@@ -43,7 +43,7 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
             let value: Value = serde_json::from_slice(&json).unwrap();
             let mut pending: Vec<_> = value["children"].as_array().unwrap().iter().collect();
             while let Some(node) = pending.pop() {
-                assert!(metadata.get(node["kind"].as_str().unwrap()).is_some());
+                assert!(metadata.contains_key(node["kind"].as_str().unwrap()));
                 assert!(node["data"].is_object());
                 assert!(node.get("name").is_none());
                 if let Some(children) = node["children"].as_array() {

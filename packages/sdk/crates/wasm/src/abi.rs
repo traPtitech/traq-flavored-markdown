@@ -30,9 +30,9 @@ pub struct Error {
     pub code: ErrorCode,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource: Option<String>,
+    pub resource: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<String>,
+    pub path: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -40,9 +40,9 @@ pub struct Error {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase: Option<markdown_parser::engine::ParsePhase>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rule: Option<String>,
+    pub rule: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub payload_type: Option<String>,
+    pub payload_type: Option<Box<str>>,
 }
 
 impl Error {
@@ -79,9 +79,15 @@ impl Error {
         } else {
             Self::new(ErrorCode::InvalidDocument, &error)
         };
-        reply.path = Some(error.path.iter().fold(String::from("$"), |path, index| {
-            format!("{path}.children[{index}]")
-        }));
+        reply.path = Some(
+            error
+                .path
+                .iter()
+                .fold(String::from("$"), |path, index| {
+                    format!("{path}.children[{index}]")
+                })
+                .into_boxed_str(),
+        );
         reply.span = error.span.and_then(wire_span);
         reply
     }
@@ -119,9 +125,11 @@ impl Error {
                 .iter()
                 .fold(String::from("$"), |path, index| {
                     format!("{path}.children[{index}]")
-                }),
+                })
+                .into_boxed_str(),
         );
         error.span = validation.span.and_then(wire_span);
+        error.payload_type = validation.payload_type.map(Into::into);
         error
     }
     pub fn not_configured() -> Self {
@@ -155,7 +163,7 @@ impl From<traq_markdown_grammar::ParseError> for Error {
             } => {
                 let mut reply = Self::new(ErrorCode::InternalError, reason);
                 reply.phase = Some(phase);
-                reply.rule = rule;
+                reply.rule = rule.map(String::into_boxed_str);
                 reply.offset = position.try_into().ok();
                 reply
             }
@@ -167,13 +175,17 @@ impl From<traq_markdown_grammar::ParseError> for Error {
                 reason,
             } => {
                 let mut reply = Self::new(ErrorCode::InternalError, reason);
-                reply.path = Some(path.iter().fold(String::from("$"), |path, index| {
-                    format!("{path}.children[{index}]")
-                }));
+                reply.path = Some(
+                    path.iter()
+                        .fold(String::from("$"), |path, index| {
+                            format!("{path}.children[{index}]")
+                        })
+                        .into_boxed_str(),
+                );
                 reply.span = start
                     .zip(end)
                     .and_then(|(start, end)| wire_span(markdown_ast::Span { start, end }));
-                reply.payload_type = payload_type;
+                reply.payload_type = payload_type.map(String::into_boxed_str);
                 reply
             }
         }
@@ -266,4 +278,32 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
             ),
         ],
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Error;
+    use markdown_ast::{Span, ValidationError, ValidationErrorKind};
+
+    #[test]
+    fn validation_context_survives_codec_and_processing_boundaries() {
+        let validation = ValidationError {
+            kind: ValidationErrorKind::InvalidNode,
+            path: vec![1, 2],
+            span: Some(Span { start: 3, end: 7 }),
+            payload_type: Some("example::Heading"),
+            payload: None,
+        };
+        for error in [
+            Error::validation(&validation),
+            Error::document(validation.clone().into()),
+            Error::processing(validation.into()),
+        ] {
+            let wire = serde_json::to_value(error).unwrap();
+            assert_eq!(wire["code"], "invalid_document");
+            assert_eq!(wire["payload_type"], "example::Heading");
+            assert_eq!(wire["path"], "$.children[1].children[2]");
+            assert_eq!(wire["span"], serde_json::json!({"start": 3, "end": 7}));
+        }
+    }
 }
