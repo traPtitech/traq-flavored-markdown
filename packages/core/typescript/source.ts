@@ -1,4 +1,5 @@
 import type { Span } from './ast.js'
+import { utf8ByteLength } from './boundary.js'
 
 export interface SourceEdit {
   span: Span
@@ -16,9 +17,8 @@ export class SourceText {
 
   constructor(text: string) {
     if (typeof text !== 'string') throw new TypeError('Expected source string')
+    utf8ByteLength(text)
     this.#bytes = encoder.encode(text)
-    if (decoder.decode(this.#bytes) !== text)
-      throw new TypeError('Source contains an unpaired surrogate')
     this.text = text
     this.byteLength = this.#bytes.length
     Object.freeze(this)
@@ -61,11 +61,8 @@ export class SourceText {
       this.assertSpan(span)
       if (span.start < position)
         throw new TypeError('Overlapping or unordered source edits')
-      if (
-        typeof text !== 'string' ||
-        decoder.decode(encoder.encode(text)) !== text
-      )
-        throw new TypeError('Invalid replacement text')
+      if (typeof text !== 'string') throw new TypeError('Invalid replacement text')
+      utf8ByteLength(text)
       output.push(this.slice({ start: position, end: span.start }), text)
       position = span.end
     }

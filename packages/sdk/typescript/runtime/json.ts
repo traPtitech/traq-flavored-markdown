@@ -1,3 +1,4 @@
+import { ByteBudget, dataField, jsonStringByteLength } from '@traq-flavored-markdown/core/validation'
 import { MarkdownError } from './errors.js'
 
 const maximumDepth = 256
@@ -10,21 +11,15 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
   const chunks: string[] = []
   const active = new Set<object>()
   const workLimit = Math.min(byteLimit, 1_048_575) + 1
-  let bytes = 0
+  const budget = new ByteBudget(byteLimit, () => new MarkdownError({
+    code: 'resource_limit', resource: 'input_bytes', message: 'input_bytes limit exceeded'
+  }))
   let work = 0
 
   write(value, 0)
   return chunks.join('')
 
-  function reserve(length: number) {
-    if (length > byteLimit - bytes)
-      throw new MarkdownError({
-        code: 'resource_limit',
-        resource: 'input_bytes',
-        message: 'input_bytes limit exceeded'
-      })
-    bytes += length
-  }
+  function reserve(length: number) { budget.reserve(length) }
 
   function token(text: string) {
     reserve(text.length)
@@ -33,20 +28,9 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
 
   function quoted(text: string) {
     // UTF-16 length is a lower bound on its quoted UTF-8 representation.
-    if (text.length > byteLimit - bytes) reserve(text.length)
-    let length = 2
-    for (let index = 0; index < text.length; index++) {
-      const code = text.charCodeAt(index)
-      if (code >= 0xd800 && code <= 0xdbff) {
-        const next = text.charCodeAt(++index)
-        if (!(next >= 0xdc00 && next <= 0xdfff)) invalidUnicode()
-        length += 4
-      } else if (code >= 0xdc00 && code <= 0xdfff) invalidUnicode()
-      else if (code === 0x22 || code === 0x5c) length += 2
-      else if (code < 0x20) length += [8, 9, 10, 12, 13].includes(code) ? 2 : 6
-      else length += code < 0x80 ? 1 : code < 0x800 ? 2 : 3
-      if (length > byteLimit - bytes) reserve(length)
-    }
+    if (text.length > budget.remaining) reserve(text.length)
+    let length: number
+    try { length = jsonStringByteLength(text) } catch { invalidUnicode() }
     reserve(length)
     // Only a primitive reaches JSON.stringify; output allocation is now bounded.
     chunks.push(JSON.stringify(text))
@@ -81,8 +65,8 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
     if (array) {
       const length = item.length
       // Even an array of single-digit numbers needs at least two bytes per item.
-      if (length > Math.floor((byteLimit - bytes) / 2))
-        reserve(byteLimit - bytes + 1)
+      if (length > Math.floor((budget.remaining) / 2))
+        reserve(budget.remaining + 1)
       token('[')
       for (let index = 0; index < length; index++) {
         if (index) token(',')
@@ -120,10 +104,8 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
 }
 
 function data(value: object, key: string): unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(value, key)
-  if (!descriptor || !Object.hasOwn(descriptor, 'value'))
-    invalid('Request fields must be own data properties')
-  return descriptor.value as unknown
+  if (!Object.hasOwn(value, key)) invalid('Request fields must be own data properties')
+  try { return dataField(value, key) } catch { invalid('Request fields must be own data properties') }
 }
 
 function invalid(message: string): never {

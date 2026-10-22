@@ -1,7 +1,15 @@
-import type { Node as MutableNode, ReadonlyDocument as Document, ReadonlyNode as Node } from './ast.js'
+import type {
+  ReadonlyDocument as Document,
+  Node as MutableNode,
+  ReadonlyNode as Node
+} from './ast.js'
+import { ByteBudget, dataField, utf8ByteLength } from './boundary.js'
+import { documentLimits } from './generated/limits.js'
 import { defineNode, isOwnedDefinition, validateStructure } from './nodes.js'
 import type { NodeDefinition, NodeStructure } from './nodes.js'
 import { SourceText } from './source.js'
+
+export { documentLimits } from './generated/limits.js'
 
 export interface DocumentLimits {
   sourceBytes: number
@@ -10,27 +18,12 @@ export interface DocumentLimits {
   depth: number
 }
 
-export const documentLimits: Readonly<DocumentLimits> = Object.freeze({
-  sourceBytes: 65_536,
-  payloadBytes: 8 * 1024 * 1024,
-  nodes: 16_384,
-  depth: 64
-})
-
 export interface DocumentOptions {
   definitions?: Iterable<NodeDefinition>
   limits?: Readonly<DocumentLimits>
 }
 
 type Location = { readonly ancestors: readonly Node[]; readonly index: number }
-
-/** Read JSON data without invoking caller-defined accessors. */
-function dataField(value: object, key: string): unknown {
-  const field = Object.getOwnPropertyDescriptor(value, key)
-  if (field && !('value' in field))
-    throw new TypeError('Document accessors are not supported')
-  return field?.value
-}
 
 function plainRecord(value: unknown): asserts value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
@@ -41,41 +34,27 @@ function plainRecord(value: unknown): asserts value is Record<string, unknown> {
   for (const key in value) if (Object.hasOwn(value, key)) dataField(value, key)
 }
 
-/** Count UTF-8 bytes without allocating a second copy of a large payload. */
-function utf8Bytes(value: string): number {
-  let bytes = 0
-  for (let i = 0; i < value.length; i++) {
-    const unit = value.charCodeAt(i)
-    if (unit >= 0xd800 && unit <= 0xdbff) {
-      const next = value.charCodeAt(++i)
-      if (!(next >= 0xdc00 && next <= 0xdfff))
-        throw new TypeError('Document contains an unpaired surrogate')
-      bytes += 4
-    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
-      throw new TypeError('Document contains an unpaired surrogate')
-    } else bytes += unit < 0x80 ? 1 : unit < 0x800 ? 2 : 3
-  }
-  return bytes
-}
-
 class PayloadSnapshot {
-  #used = 0
+  #budget: ByteBudget
   #active = new Set<object>()
   constructor(
-    private readonly limit: number,
+    limit: number,
     private readonly depthLimit: number
-  ) {}
+  ) {
+    this.#budget = new ByteBudget(
+      limit,
+      () => new RangeError('Document payload byte limit')
+    )
+  }
 
   #charge(bytes: number): void {
-    if (bytes > this.limit - this.#used)
-      throw new RangeError('Document payload byte limit')
-    this.#used += bytes
+    this.#budget.reserve(bytes)
   }
 
   string(value: string): string {
-    if (value.length > this.limit - this.#used)
+    if (value.length > this.#budget.remaining)
       throw new RangeError('Document payload byte limit')
-    this.#charge(utf8Bytes(value))
+    this.#charge(utf8ByteLength(value))
     return value
   }
 
@@ -159,7 +138,7 @@ export class DocumentContext {
       throw new TypeError('Invalid render document source')
     if (
       source.length > bound.sourceBytes ||
-      utf8Bytes(source) > bound.sourceBytes
+      utf8ByteLength(source) > bound.sourceBytes
     )
       throw new RangeError('Render document source byte limit')
     this.source = new SourceText(source)
@@ -222,12 +201,15 @@ export class DocumentContext {
         this.#snapshots.set(snapshot, snapshot)
         this.#locations.set(snapshot, Object.freeze({ ancestors, index }))
         if (children !== undefined)
-          Object.defineProperty(snapshot, 'children', { value: copy(
-            children,
-            span.start,
-            span.end,
-            Object.freeze([...ancestors, snapshot])
-          ), enumerable: true })
+          Object.defineProperty(snapshot, 'children', {
+            value: copy(
+              children,
+              span.start,
+              span.end,
+              Object.freeze([...ancestors, snapshot])
+            ),
+            enumerable: true
+          })
         result.push(Object.freeze(snapshot))
       }
       Object.freeze(result)
