@@ -3,9 +3,14 @@ use markdown_definitions::RegistrationHandle;
 
 #[derive(Clone, Default)]
 pub struct GrammarBuilder {
-    pub(crate) plugins: Vec<Plugin>,
+    registrations: Vec<RegisteredPlugin>,
     pub(crate) rules: Vec<(Plugin, Contribution)>,
-    handles: Vec<RegistrationHandle>,
+}
+
+#[derive(Clone)]
+struct RegisteredPlugin {
+    handle: RegistrationHandle,
+    implementation: Plugin,
 }
 
 impl GrammarBuilder {
@@ -19,7 +24,7 @@ impl GrammarBuilder {
     }
 
     pub fn register(&mut self, plugin: &Plugin) -> Result<RegistrationHandle, BuildError> {
-        if self.plugins.iter().any(|p| p.same(plugin)) {
+        if self.plugins().any(|p| p.same(plugin)) {
             return Err(BuildError::Duplicate {
                 element: plugin.description(),
             });
@@ -36,9 +41,11 @@ impl GrammarBuilder {
             pending.push(rule);
         }
 
-        self.plugins.push(plugin.clone());
         let handle = RegistrationHandle::new(&plugin.declaration);
-        self.handles.push(handle.clone());
+        self.registrations.push(RegisteredPlugin {
+            handle: handle.clone(),
+            implementation: plugin.clone(),
+        });
 
         self.rules.extend(
             plugin
@@ -53,22 +60,21 @@ impl GrammarBuilder {
     }
 
     pub fn registration(&self, plugin: &Plugin) -> Option<RegistrationHandle> {
-        self.plugins
+        self.registrations
             .iter()
-            .position(|existing| existing.declaration == plugin.declaration)
-            .map(|index| self.handles[index].clone())
+            .find(|existing| existing.implementation.declaration == plugin.declaration)
+            .map(|entry| entry.handle.clone())
     }
 
     pub fn remove(&mut self, handle: &RegistrationHandle) -> Result<&mut Self, BuildError> {
         let index = self
-            .handles
+            .registrations
             .iter()
-            .position(|existing| existing == handle)
+            .position(|existing| &existing.handle == handle)
             .ok_or_else(|| BuildError::Missing {
                 element: handle.plugin().name().into(),
             })?;
-        self.handles.remove(index);
-        let plugin = self.plugins.remove(index);
+        let plugin = self.registrations.remove(index).implementation;
         self.rules.retain(|(owner, _)| !owner.same(&plugin));
 
         Ok(self)
@@ -116,8 +122,8 @@ impl GrammarBuilder {
 
         Ok(self)
     }
-    pub fn plugins(&self) -> &[Plugin] {
-        &self.plugins
+    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &Plugin> + Clone {
+        self.registrations.iter().map(|entry| &entry.implementation)
     }
 
     pub fn rules(&self) -> impl Iterator<Item = &Contribution> {
@@ -162,7 +168,7 @@ impl GrammarBuilder {
     pub fn describe(&self) -> String {
         let mut lines = vec![];
 
-        for plugin in &self.plugins {
+        for plugin in self.plugins() {
             lines.push(format!("plugin: {}", plugin.description()));
             if plugin.has_text_provider() {
                 lines.push(format!("text provider: {}", plugin.description()));
@@ -185,9 +191,9 @@ impl GrammarBuilder {
     }
 
     pub(crate) fn validate(&self) -> Result<super::plugin::TextFactory, BuildError> {
-        super::names::validate(&self.plugins)?;
+        super::names::validate(self.plugins())?;
 
-        let mut providers = self.plugins.iter().flat_map(|p| &p.definition.text);
+        let mut providers = self.plugins().filter_map(|p| p.definition.text.as_ref());
 
         let make_text = providers
             .next()
@@ -203,8 +209,7 @@ impl GrammarBuilder {
         }
 
         if self
-            .plugins
-            .iter()
+            .plugins()
             .map(|plugin| usize::from(plugin.has_block_policy()))
             .sum::<usize>()
             > 1
@@ -220,8 +225,7 @@ impl GrammarBuilder {
         let make_text = self.validate()?;
 
         let block_policy = self
-            .plugins
-            .iter()
+            .plugins()
             .filter_map(|plugin| plugin.definition.block_policy.as_ref())
             .next()
             .cloned();

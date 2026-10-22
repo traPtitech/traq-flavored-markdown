@@ -70,11 +70,7 @@ impl Catalog {
         definition.validate_definition()?;
 
         let description = definition.describe();
-        let plugins = definition
-            .plugins()
-            .iter()
-            .map(|p| self.plugin(p))
-            .collect();
+        let plugins = definition.plugins().map(|p| self.plugin(p)).collect();
 
         let order = definition.rules().map(|r| self.rule_index(r)).collect();
 

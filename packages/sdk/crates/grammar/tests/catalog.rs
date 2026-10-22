@@ -84,8 +84,12 @@ fn named_grammars_share_native_compilations_and_sdk_names() {
     assert_eq!(bindings::grammars().len(), expected.len());
     for (name, native) in expected {
         let selected = bindings::grammar(name).unwrap();
+        assert_eq!(selected.plugins().len(), native.plugins().len());
         assert!(
-            std::ptr::eq(selected.plugins(), native.plugins()),
+            selected
+                .plugins()
+                .zip(native.plugins())
+                .all(|(selected, native)| std::ptr::eq(selected, native)),
             "{name} must reuse the native compilation"
         );
     }
