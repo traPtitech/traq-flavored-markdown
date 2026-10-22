@@ -1,4 +1,4 @@
-import type { ErrorCode, WireError } from '../generated/abi.js'
+import type { ErrorCode, ParsePhase, WireError } from '../generated/abi.js'
 
 export type MarkdownErrorCode =
   ErrorCode | 'disposed' | 'transport_error' | 'contract_mismatch'
@@ -12,6 +12,9 @@ export class MarkdownError extends Error {
   readonly path?: string
   readonly offset?: number
   readonly span?: Readonly<{ start: number; end: number }>
+  readonly phase?: ParsePhase
+  readonly rule?: string
+  readonly payloadType?: string
 
   constructor(
     detail: Omit<WireError, 'code'> & { code: MarkdownErrorCode },
@@ -26,6 +29,9 @@ export class MarkdownError extends Error {
     this.path = detail.path ?? undefined
     this.offset = detail.offset ?? undefined
     this.span = detail.span ? Object.freeze({ ...detail.span }) : undefined
+    this.phase = detail.phase ?? undefined
+    this.rule = detail.rule ?? undefined
+    this.payloadType = detail.payload_type ?? undefined
     this.#detail = Object.freeze({ ...detail, span: this.span })
   }
 

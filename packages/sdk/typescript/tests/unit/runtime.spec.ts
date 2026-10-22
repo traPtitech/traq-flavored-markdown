@@ -124,7 +124,10 @@ test('valid domain errors and host request errors leave the processor reusable',
     code: 'invalid_document',
     message: 'Invalid node',
     path: '$.children[0]',
-    span: { start: 1, end: 2 }
+    span: { start: 1, end: 2 },
+    phase: 'inline',
+    rule: 'custom',
+    payload_type: 'example.Text'
   }
   const runtime = await createRuntime(
     moduleBytes(JSON.stringify({ error: detail }))
@@ -138,7 +141,16 @@ test('valid domain errors and host request errors leave the processor reusable',
     expect(error).toMatchObject({
       code: detail.code,
       path: detail.path,
-      span: detail.span
+      span: detail.span,
+      phase: detail.phase,
+      rule: detail.rule,
+      payloadType: detail.payload_type
+    })
+    expect(error.withOperation('another')).toMatchObject({
+      phase: detail.phase,
+      rule: detail.rule,
+      payloadType: detail.payload_type,
+      operation: 'another'
     })
     expect(error.cause).toEqual(detail)
   }
