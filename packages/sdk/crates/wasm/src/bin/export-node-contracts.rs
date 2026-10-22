@@ -70,7 +70,7 @@ fn main() -> markdown_contract_export::Result<()> {
                 schema::<ProcessingResult>(Contract::Serialize),
             ),
         ]),
-        presets: traq_markdown_grammar::bindings::preset_exports(),
+        presets: serde_json::from_value(traq_markdown_grammar::bindings::preset_exports())?,
         limits: serde_json::from_value(limits::metadata())?,
         nodes: node_metadata::export()?.nodes,
     };

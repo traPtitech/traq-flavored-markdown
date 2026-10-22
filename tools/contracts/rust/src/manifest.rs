@@ -199,6 +199,15 @@ pub enum Direction {
     Response,
 }
 
+pub type PresetTree = BTreeMap<String, PresetEntry>;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PresetEntry {
+    Id(u32),
+    Group(PresetTree),
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArtifactContract {
@@ -207,7 +216,7 @@ pub struct ArtifactContract {
     pub abi: AbiContract,
     pub directions: BTreeMap<String, Direction>,
     pub processing: BTreeMap<String, Value>,
-    pub presets: Value,
+    pub presets: PresetTree,
     pub limits: ArtifactLimits,
     pub nodes: BTreeMap<String, NodeContract>,
 }
