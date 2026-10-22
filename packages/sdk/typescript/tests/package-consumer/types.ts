@@ -1,6 +1,5 @@
-import { type Extraction } from '@traq-flavored-markdown/sdk'
 import { DocumentContext } from '@traq-flavored-markdown/core'
-import { html as composeHtml } from '@traq-flavored-markdown/sdk/renderer/composition'
+import { type Extraction } from '@traq-flavored-markdown/sdk'
 import {
   type Document,
   type Node,
@@ -13,6 +12,7 @@ import {
   isPreset as isBrowserPreset,
   loadRuntime
 } from '@traq-flavored-markdown/sdk/browser'
+import { html as composeHtml } from '@traq-flavored-markdown/sdk/renderer/composition'
 import {
   type Reference,
   names
@@ -39,11 +39,15 @@ runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
 const output: Extraction = extractor.extract(document)
 const plainText: string = runtime.createPlainTextRenderer().render(document)
-const processed = runtime.createProcessor(presets.traq.v1, { whitespace: 'preserve' }).process('text')
+const processed = runtime
+  .createProcessor(presets.traq.v1, { whitespace: 'preserve' })
+  .process('text')
 const processedDocument: Document = processed.document
 const snapshot = new DocumentContext(processedDocument)
 runtime.createPlainTextRenderer().render(snapshot.document)
-const customHtml: string = composeHtml({ math: { render: tex => tex } }).render(snapshot.document)
+const customHtml: string = composeHtml({ math: { render: tex => tex } }).render(
+  snapshot.document
+)
 const snapshotNode = snapshot.document.children[0]
 if (isKnownNode(snapshotNode) && snapshotNode.kind === names.Stamp) {
   // @ts-expect-error generated guards preserve snapshot payload ownership

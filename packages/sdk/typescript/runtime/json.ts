@@ -1,4 +1,9 @@
-import { ByteBudget, dataField, jsonStringByteLength } from '@traq-flavored-markdown/core/validation'
+import {
+  ByteBudget,
+  dataField,
+  jsonStringByteLength
+} from '@traq-flavored-markdown/core/validation'
+
 import { MarkdownError } from './errors.js'
 
 const maximumDepth = 256
@@ -11,15 +16,23 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
   const chunks: string[] = []
   const active = new Set<object>()
   const workLimit = Math.min(byteLimit, 1_048_575) + 1
-  const budget = new ByteBudget(byteLimit, () => new MarkdownError({
-    code: 'resource_limit', resource: 'input_bytes', message: 'input_bytes limit exceeded'
-  }))
+  const budget = new ByteBudget(
+    byteLimit,
+    () =>
+      new MarkdownError({
+        code: 'resource_limit',
+        resource: 'input_bytes',
+        message: 'input_bytes limit exceeded'
+      })
+  )
   let work = 0
 
   write(value, 0)
   return chunks.join('')
 
-  function reserve(length: number) { budget.reserve(length) }
+  function reserve(length: number) {
+    budget.reserve(length)
+  }
 
   function token(text: string) {
     reserve(text.length)
@@ -30,7 +43,11 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
     // UTF-16 length is a lower bound on its quoted UTF-8 representation.
     if (text.length > budget.remaining) reserve(text.length)
     let length: number
-    try { length = jsonStringByteLength(text) } catch { invalidUnicode() }
+    try {
+      length = jsonStringByteLength(text)
+    } catch {
+      invalidUnicode()
+    }
     reserve(length)
     // Only a primitive reaches JSON.stringify; output allocation is now bounded.
     chunks.push(JSON.stringify(text))
@@ -65,7 +82,7 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
     if (array) {
       const length = item.length
       // Even an array of single-digit numbers needs at least two bytes per item.
-      if (length > Math.floor((budget.remaining) / 2))
+      if (length > Math.floor(budget.remaining / 2))
         reserve(budget.remaining + 1)
       token('[')
       for (let index = 0; index < length; index++) {
@@ -104,8 +121,13 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
 }
 
 function data(value: object, key: string): unknown {
-  if (!Object.hasOwn(value, key)) invalid('Request fields must be own data properties')
-  try { return dataField(value, key) } catch { invalid('Request fields must be own data properties') }
+  if (!Object.hasOwn(value, key))
+    invalid('Request fields must be own data properties')
+  try {
+    return dataField(value, key)
+  } catch {
+    invalid('Request fields must be own data properties')
+  }
 }
 
 function invalid(message: string): never {

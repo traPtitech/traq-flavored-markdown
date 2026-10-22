@@ -1,4 +1,3 @@
-import type { MutableNode } from '../ast.js'
 import {
   DocumentContext,
   defineNode,
@@ -10,8 +9,9 @@ import {
   RenderPlugin,
   renderer
 } from '@traq-flavored-markdown/core/renderer'
-import type { Node } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
+
+import type { MutableNode } from '../ast.js'
 
 test('every render plan node must belong to the validated document before any handler runs', () => {
   let calls = 0

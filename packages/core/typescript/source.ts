@@ -61,7 +61,8 @@ export class SourceText {
       this.assertSpan(span)
       if (span.start < position)
         throw new TypeError('Overlapping or unordered source edits')
-      if (typeof text !== 'string') throw new TypeError('Invalid replacement text')
+      if (typeof text !== 'string')
+        throw new TypeError('Invalid replacement text')
       utf8ByteLength(text)
       output.push(this.slice({ start: position, end: span.start }), text)
       position = span.end

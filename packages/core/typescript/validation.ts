@@ -1,5 +1,10 @@
 // Small validators shared by the common AST and plugin-owned payload codecs.
-export { dataField, utf8ByteLength, jsonStringByteLength, ByteBudget } from './boundary.js'
+export {
+  dataField,
+  utf8ByteLength,
+  jsonStringByteLength,
+  ByteBudget
+} from './boundary.js'
 export type Check = (value: unknown) => boolean
 type Checked<C> = C extends (value: unknown) => value is infer T ? T : unknown
 type Shape<S> = { [K in keyof S]: Checked<S[K]> }

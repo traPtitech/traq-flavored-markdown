@@ -1,5 +1,5 @@
-import type { DeepReadonly } from '@traq-flavored-markdown/core'
 import { validateImage as defaultImagePolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
+import type { DeepReadonly } from '@traq-flavored-markdown/core'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { Stamp as MutableStamp } from '@traq-flavored-markdown/traq-plugin/nodes'
 

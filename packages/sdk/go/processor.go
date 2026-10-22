@@ -18,7 +18,7 @@ type ProcessedDocument struct {
 type Processor struct{ instance *binding.Instance }
 
 func (r *Runtime) NewProcessor(ctx context.Context, preset Preset, options ProcessorOptions) (*Processor, error) {
-    config := ProcessorConfiguration{Preset: string(preset), Options: options}
+	config := ProcessorConfiguration{Preset: string(preset), Options: options}
 	instance, err := r.configure(ctx, operationConfigureProcessor, config, options.Origin)
 	if err != nil {
 		return nil, err

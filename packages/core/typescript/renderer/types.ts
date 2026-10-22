@@ -1,8 +1,16 @@
-import type { ReadonlyDocument as Document, ReadonlyNode as Node, DeepReadonly, Span } from '../ast.js'
+import type {
+  DeepReadonly,
+  ReadonlyDocument as Document,
+  ReadonlyNode as Node,
+  Span
+} from '../ast.js'
 import type { DocumentContext } from '../document.js'
 import type { NodeKind } from '../nodes.js'
 
-export type { ReadonlyNode as Node, ReadonlyDocument as Document } from '../ast.js'
+export type {
+  ReadonlyNode as Node,
+  ReadonlyDocument as Document
+} from '../ast.js'
 
 export interface RenderedChild {
   readonly node: Node

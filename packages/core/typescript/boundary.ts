@@ -42,7 +42,9 @@ export class ByteBudget {
     private readonly exceeded: () => Error
   ) {}
 
-  get remaining(): number { return this.limit - this.#used }
+  get remaining(): number {
+    return this.limit - this.#used
+  }
 
   reserve(bytes: number): void {
     if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > this.remaining)

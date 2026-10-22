@@ -1,12 +1,13 @@
 import type { ReadonlyDocument } from '@traq-flavored-markdown/core'
+
 import type { Document } from '../generated/nodes.js'
 import type { Preset } from '../generated/presets.js'
 import type {
   Extraction,
   ExtractorOptions,
   ProcessingResult,
-  ProcessorOptions,
   ProcessorConfiguration,
+  ProcessorOptions,
   RendererOptions
 } from '../generated/processing.js'
 import { MarkdownError } from './errors.js'
@@ -66,14 +67,16 @@ export async function createRuntime(bytes: Uint8Array): Promise<Runtime> {
     createExtractor(options: ExtractorOptions = {}): Extractor {
       const instance = instantiate('configureExtractor', options)
       return Object.freeze({
-        extract: (document: ReadonlyDocument) => instance.call('extract', document),
+        extract: (document: ReadonlyDocument) =>
+          instance.call('extract', document),
         dispose: instance.dispose
       })
     },
     createPlainTextRenderer(options: RendererOptions = {}): PlainTextRenderer {
       const instance = instantiate('configureRenderer', options)
       return Object.freeze({
-        render: (document: ReadonlyDocument) => instance.call('render', document),
+        render: (document: ReadonlyDocument) =>
+          instance.call('render', document),
         dispose: instance.dispose
       })
     },
@@ -97,11 +100,7 @@ export async function createRuntime(bytes: Uint8Array): Promise<Runtime> {
       | 'configureExtractor'
       | 'configureRenderer'
       | 'configureProcessor',
-    input:
-      | string
-      | ExtractorOptions
-      | RendererOptions
-      | ProcessorConfiguration
+    input: string | ExtractorOptions | RendererOptions | ProcessorConfiguration
   ): Transport {
     if (!module)
       throw new MarkdownError(
