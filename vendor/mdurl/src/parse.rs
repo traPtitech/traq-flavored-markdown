@@ -150,11 +150,11 @@ static SLASHED_PROTOCOL : Lazy<HashSet<&'static str>> = Lazy::new(||
 ///
 pub fn parse_url(url: &str) -> Url {
     let mut this = Url::default();
-    let mut rest = url;
 
     // trim before proceeding.
     // This is to support parse stuff like "  http://foo.com  \n"
-    rest = rest.trim();
+    let url = url.trim();
+    let mut rest = url;
 
     if let Some(proto_match) = PROTOCOL_PATTERN.captures(rest) {
         let proto = Some(proto_match.get(0).unwrap().as_str());
@@ -218,6 +218,7 @@ pub fn parse_url(url: &str) -> Url {
         let mut host_end = host_end.unwrap_or(rest.len());
 
         if rest[..host_end].ends_with(':') { host_end -= 1; }
+        let host_start = url.len() - rest.len();
         let mut host = &rest[..host_end];
         rest = &rest[host_end..];
 
@@ -251,18 +252,14 @@ pub fn parse_url(url: &str) -> Url {
                     // we test again with ASCII char only
                     if !HOSTNAME_PART_PATTERN.is_match(&newpart) {
                         let mut valid_parts = hostparts[..i].to_vec();
-                        let mut not_host = hostparts[i+1..].to_vec();
                         if let Some(bit) = HOSTNAME_PART_START.captures(part) {
                             valid_parts.push(bit.get(1).unwrap().as_str());
-                            not_host.push(bit.get(2).unwrap().as_str());
                         }
-                        if !not_host.is_empty() {
-                            // same as:
-                            //rest = not_host.join(".") + rest;
-                            rest = &url[url.len()-rest.len()-not_host.join(".").len()..];
-                        }
-                        this.hostname = Some(valid_parts.join("."));
-                        //this.hostname = Some(&url[url.len()-rest.len()-valid_parts.join(".").len()..url.len()-rest.len()]);
+                        let valid_host = valid_parts.join(".");
+                        // Preserve the original suffix, including any extracted port.
+                        rest = &url[host_start + valid_host.len()..];
+                        this.port = None;
+                        this.hostname = Some(valid_host);
                         break;
                     }
                 }

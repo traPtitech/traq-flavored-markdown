@@ -3,7 +3,7 @@
 exact = true
 ignoreScripts = true
 minimumReleaseAge = 604800
-# These packages have reviewed exact pins; keep the age gate for other packages.
+# Bun 1.4.3 matches package names; exact root overrides bound each exception.
 minimumReleaseAgeExcludes = [
   "@typescript-eslint/eslint-plugin",
   "@typescript-eslint/parser",

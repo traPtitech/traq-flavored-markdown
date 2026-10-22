@@ -111,3 +111,20 @@ fn destinations_are_encoded_without_losing_source_notation() {
         );
     }
 }
+
+#[test]
+fn malformed_unicode_hosts_do_not_panic_or_lose_ports() {
+    let parser = presets::traq::v1::parser();
+    for (destination, encoded) in [
+        ("http://😀!:80/path", "http://%F0%9F%98%80!:80/path"),
+        ("http://abc.!é:80/path", "http://abc.!%C3%A9:80/path"),
+    ] {
+        let source = format!("[x]({destination})");
+        let document = parser.parse_inline(&source).unwrap();
+        assert_eq!(document.source, source);
+        assert_eq!(
+            document.children[0].get::<Link>().unwrap().destination,
+            encoded
+        );
+    }
+}

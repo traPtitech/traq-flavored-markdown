@@ -137,7 +137,14 @@ for other packages; the exceptions in `bunfig.toml` allow the reviewed, pinned
 updates, including the markdown-it security fix and vite-plugin-singlefile's
 removal of the vulnerable braces dependency.
 
+Bun 1.4.3's age exemptions match package names. Each exception also has an
+exact root override so a fresh install cannot select an unreviewed future
+version. The installation policy tests keep these overrides synchronized with
+the workspace pins and retain script blocking and the default age gate.
+
 `vendor/mdurl` retains the latest upstream parser and its tests, with an idna
 dependency update for RUSTSEC-2024-0421. The Cargo patch preserves permissive
 Markdown URL parsing while removing the vulnerable idna 0.3 dependency. The
-SDK source fingerprint includes the vendored sources and manifest.
+patch also preserves malformed host suffixes without slicing through UTF-8
+characters or duplicating ports. The SDK source fingerprint includes the
+vendored sources and manifest.
