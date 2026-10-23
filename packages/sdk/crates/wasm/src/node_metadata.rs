@@ -9,7 +9,13 @@ pub(crate) fn export() -> markdown_contract_export::Result<markdown_contract_exp
     let manifest = exporter.finish()?;
     let expected: std::collections::HashSet<_> = traq_markdown_features::all()
         .iter()
-        .flat_map(|feature| feature.payloads.iter().map(|payload| payload.kind.as_str()))
+        .flat_map(|feature| {
+            feature
+                .contract
+                .payloads
+                .iter()
+                .map(|payload| payload.kind.as_str())
+        })
         .collect();
     let actual: std::collections::HashSet<_> = manifest.nodes.keys().map(String::as_str).collect();
     if actual != expected {

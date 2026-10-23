@@ -2,8 +2,7 @@
 #![doc = include_str!("../README.md")]
 #![forbid(unsafe_code)]
 
-use markdown_ast::{NodeData, PayloadType};
-use markdown_definitions::{NodeType, Plugin as Declaration};
+use markdown_definitions::FeatureContract;
 use std::sync::LazyLock;
 
 #[cfg(feature = "syntax")]
@@ -12,7 +11,11 @@ mod profiles;
 mod table;
 #[cfg(feature = "syntax")]
 pub use linkify::syntax as traq_linkify_syntax;
-pub use profiles::{Profile, ProfileDefinition};
+pub use profiles::{GrammarProfile, GrammarProfileDefinition, TextProfile};
+#[cfg(feature = "text")]
+mod text;
+#[cfg(feature = "text")]
+pub use text::TextFeature;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FeatureId {
@@ -35,31 +38,13 @@ pub struct Export {
     pub member: &'static str,
 }
 
-/// A native payload identity paired with its plugin-owned persisted key.
-#[derive(Debug)]
-pub struct Payload {
-    pub native: PayloadType,
-    pub kind: String,
-}
-impl Payload {
-    pub fn of<T: NodeData + NodeType>() -> Self {
-        Self {
-            native: PayloadType::of::<T>(),
-            kind: T::type_key(),
-        }
-    }
-}
-
 /// One feature's contract, SDK export, and available implementations.
 pub struct FeatureDefinition {
     pub id: FeatureId,
     pub export: Export,
-    pub declaration: &'static Declaration,
-    pub payloads: Vec<Payload>,
+    pub contract: &'static FeatureContract,
     #[cfg(feature = "syntax")]
     pub syntax: fn() -> &'static markdown_parser::engine::Plugin,
-    #[cfg(feature = "text")]
-    pub text: Option<fn(TextOptions) -> markdown_renderer::Plugin>,
 }
 
 pub fn all() -> &'static [FeatureDefinition] {
@@ -77,7 +62,9 @@ impl FeatureId {
 }
 
 /// Ordered feature capabilities selected by the profile policy.
-pub fn selected(profile: Profile) -> impl Iterator<Item = &'static FeatureDefinition> {
+pub fn grammar_features(
+    profile: GrammarProfile,
+) -> impl Iterator<Item = &'static FeatureDefinition> {
     profile
         .definition()
         .features
@@ -133,10 +120,10 @@ mod tests {
         for feature in all() {
             assert!(ids.insert(feature.id));
             assert!(exports.insert((feature.export.group, feature.export.member)));
-            for payload in &feature.payloads {
+            for payload in &feature.contract.payloads {
                 assert!(
                     actual
-                        .insert((payload.native.id)(), payload.kind.as_str())
+                        .insert(payload.native, payload.kind.as_str())
                         .is_none(),
                     "duplicate payload {}",
                     payload.kind
@@ -148,18 +135,20 @@ mod tests {
 
     #[test]
     fn profile_orders_are_complete_and_unambiguous() {
-        for profile in [Profile::Commonmark, Profile::TraqV1, Profile::TraqPlainText] {
-            let ids: Vec<_> = selected(profile).map(|feature| feature.id).collect();
+        for profile in [GrammarProfile::Commonmark, GrammarProfile::TraqV1] {
+            let ids: Vec<_> = grammar_features(profile)
+                .map(|feature| feature.id)
+                .collect();
             assert_eq!(ids.len(), ids.iter().collect::<HashSet<_>>().len());
             assert_eq!(ids, profile.definition().features);
         }
         assert_eq!(
-            selected(Profile::Commonmark)
+            grammar_features(GrammarProfile::Commonmark)
                 .map(|f| f.id)
                 .collect::<Vec<_>>(),
             [FeatureId::Core, FeatureId::Html]
         );
-        assert!(!selected(Profile::TraqV1).any(|f| f.id == FeatureId::Html));
+        assert!(!grammar_features(GrammarProfile::TraqV1).any(|f| f.id == FeatureId::Html));
     }
 
     #[cfg(feature = "syntax")]
@@ -167,8 +156,8 @@ mod tests {
     fn syntax_implementations_share_declared_namespaces_and_commonmark_identity() {
         for feature in all() {
             let plugin = (feature.syntax)();
-            assert_eq!(plugin.name(), feature.declaration.name());
-            assert_eq!(plugin.namespace(), feature.declaration.namespace());
+            assert_eq!(plugin.name(), feature.contract.declaration.name());
+            assert_eq!(plugin.namespace(), feature.contract.declaration.namespace());
         }
         assert!(std::ptr::eq(
             (FeatureId::Core.definition().syntax)(),
@@ -180,14 +169,11 @@ mod tests {
     #[test]
     fn selected_text_features_have_nonconflicting_implementations() {
         let mut builder = markdown_renderer::PresetBuilder::new();
-        for feature in selected(Profile::TraqPlainText) {
+        for feature in TextProfile::Traq.features() {
             builder
-                .add(&(feature.text.expect("selected text capability"))(
-                    TextOptions::default(),
-                ))
+                .add(&feature.plugin(TextOptions::default()))
                 .unwrap();
         }
         builder.build().unwrap();
-        assert!(FeatureId::Linkify.definition().text.is_none());
     }
 }

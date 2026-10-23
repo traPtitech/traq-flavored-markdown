@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let renderer = traq_markdown_processing::rendering::PlainTextRenderer::new(
-        traq_markdown_processing::rendering::RendererOptions::default(),
+        traq_markdown_processing::rendering::PlainTextOptions::default(),
     )?;
 
     let document = parser.parse("**hello** !!secret!!")?;

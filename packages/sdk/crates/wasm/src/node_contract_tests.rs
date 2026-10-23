@@ -10,7 +10,7 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
 
     let payloads: usize = traq_markdown_features::all()
         .iter()
-        .map(|feature| feature.payloads.len())
+        .map(|feature| feature.contract.payloads.len())
         .sum();
     assert_eq!(metadata.len(), payloads);
     let commonmark = traq_markdown_grammar::presets::commonmark::parser();

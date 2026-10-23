@@ -4,6 +4,7 @@
 
 extern crate self as markdown_definitions;
 
+mod features;
 mod names;
 mod namespace;
 mod node_type;
@@ -11,6 +12,7 @@ mod registration;
 
 pub mod handlers;
 
+pub use features::{FeatureContract, PayloadContract};
 pub use markdown_definitions_derive::NodeType;
 pub use markdown_definitions_derive::{node, payload};
 pub use names::{NameCollision, validate_names};

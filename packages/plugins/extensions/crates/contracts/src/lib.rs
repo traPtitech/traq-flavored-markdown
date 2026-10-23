@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 
 mod catalog;
+pub use catalog::Feature;
 mod declarations;
 pub use declarations::{PluginDeclarations, declarations};
 

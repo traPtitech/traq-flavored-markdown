@@ -317,7 +317,7 @@ mod tests {
         ] {
             let wire = serde_json::to_value(error).unwrap();
             assert_eq!(wire["code"], "invalid_document");
-            assert_eq!(wire["payload_type"], "example::Heading");
+            assert_eq!(wire["payloadType"], "example::Heading");
             assert_eq!(wire["path"], "$.children[1].children[2]");
             assert_eq!(wire["span"], serde_json::json!({"start": 3, "end": 7}));
         }
