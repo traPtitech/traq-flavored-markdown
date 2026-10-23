@@ -5,6 +5,8 @@ export {
   jsonStringByteLength,
   ByteBudget
 } from './boundary.js'
+export { JsonBoundary, JsonBoundaryError } from './bounded-json.js'
+export type { JsonBoundaryOptions, JsonFailure } from './bounded-json.js'
 export type Check = (value: unknown) => boolean
 type Checked<C> = C extends (value: unknown) => value is infer T ? T : unknown
 type Shape<S> = { [K in keyof S]: Checked<S[K]> }

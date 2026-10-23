@@ -1,4 +1,4 @@
-import type { ReadonlyDocument, NodeVariant, DeepReadonly } from './ast.js'
+import type { DeepReadonly, NodeVariant, ReadonlyDocument } from './ast.js'
 import { DocumentContext } from './document.js'
 import type { DocumentLimits } from './document.js'
 import { DocumentValidationError } from './errors.js'
@@ -23,7 +23,9 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
         : defineNode(input.kind, input.validateData, input.structure)
       const previous = contracts.get(definition.kind)
       if (previous && previous !== definition)
-        throw new DocumentValidationError('Duplicate node contract: ' + definition.kind)
+        throw new DocumentValidationError(
+          'Duplicate node contract: ' + definition.kind
+        )
       contracts.set(definition.kind, definition)
       structures.set(definition.kind, definition.structure)
     }
@@ -42,7 +44,9 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   }
 
   /** Payload guard for external nodes; owned documents use their preserved union. */
-  isKnownNode<T extends NodeVariant>(node: T): node is T & DeepReadonly<Variant> {
+  isKnownNode<T extends NodeVariant>(
+    node: T
+  ): node is T & DeepReadonly<Variant> {
     return this.#definitions.get(node.kind)?.validateData(node.data) ?? false
   }
 
@@ -51,14 +55,18 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
     definitions: Iterable<NodeDefinition<Additional>>
   ): DocumentSchema<Variant | Additional> {
     return new DocumentSchema<Variant | Additional>(
-      [...this.#definitions.values(), ...definitions] as NodeDefinition<Variant | Additional>[],
+      [...this.#definitions.values(), ...definitions] as NodeDefinition<
+        Variant | Additional
+      >[],
       { unknown: this.#unknown }
     )
   }
 
   /** Preserve opaque application nodes while still checking every known contract. */
   withUnknownNodes(): DocumentSchema<NodeVariant> {
-    return new DocumentSchema(this.#definitions.values(), { unknown: 'preserve' })
+    return new DocumentSchema(this.#definitions.values(), {
+      unknown: 'preserve'
+    })
   }
 
   /** Validate and own external input, or reuse an already owned document. */
@@ -86,7 +94,11 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   assertCompatible(other: DocumentSchema): void {
     for (const [kind, definition] of this.#definitions) {
       const previous = other.#definitions.get(kind)
-      if (previous && JSON.stringify(previous.structure) !== JSON.stringify(definition.structure))
+      if (
+        previous &&
+        JSON.stringify(previous.structure) !==
+          JSON.stringify(definition.structure)
+      )
         throw new DocumentValidationError('Conflicting node structure: ' + kind)
     }
   }
@@ -98,19 +110,26 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
       const path = context.location(node).path
       if (!definition) {
         if (this.#unknown === 'reject')
-          throw new DocumentValidationError('Unknown node kind: ' + node.kind, { path })
+          throw new DocumentValidationError('Unknown node kind: ' + node.kind, {
+            path
+          })
         continue
       }
       try {
         if (!definition.validateData(node.data))
-          throw new DocumentValidationError('Invalid node payload: ' + node.kind, {
-            path: path + '.data'
-          })
+          throw new DocumentValidationError(
+            'Invalid node payload: ' + node.kind,
+            {
+              path: path + '.data'
+            }
+          )
         validateStructure(node, this.#structures)
       } catch (cause) {
         if (cause instanceof DocumentValidationError) throw cause
         throw new DocumentValidationError(
-          cause instanceof Error ? cause.message : 'Invalid node structure: ' + node.kind,
+          cause instanceof Error
+            ? cause.message
+            : 'Invalid node structure: ' + node.kind,
           { path, cause }
         )
       }
@@ -119,4 +138,6 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
 }
 
 /** Grammar-independent snapshots accept opaque nodes without assigning payload types. */
-export const opaqueDocumentSchema = new DocumentSchema([], { unknown: 'preserve' })
+export const opaqueDocumentSchema = new DocumentSchema([], {
+  unknown: 'preserve'
+})

@@ -1,5 +1,6 @@
 import { SourceText } from '@traq-flavored-markdown/core'
 import type { SourceEdit } from '@traq-flavored-markdown/core'
+import { utf8ByteLength } from '@traq-flavored-markdown/core/validation'
 
 import type {
   LookupKind,
@@ -26,7 +27,7 @@ export function embedReferences(
         throw new TypeError('Invalid candidate')
       if (kind !== 'user' && kind !== 'group' && kind !== 'channel')
         throw new TypeError('Invalid lookup kind')
-      new SourceText(name)
+      utf8ByteLength(name)
     } catch {
       throw new TypeError('Embedding plan does not match source')
     }
@@ -45,7 +46,7 @@ export function embedReferences(
       continue
     }
 
-    new SourceText(id)
+    utf8ByteLength(id)
     edits.push({
       span: { start, end },
       text: '!' + JSON.stringify({ type: kind, raw, id })

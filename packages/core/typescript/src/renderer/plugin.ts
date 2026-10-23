@@ -72,8 +72,7 @@ export class RenderPlugin {
     const handlers = new Map(state.handlers)
     handlers.set(kind, (node, context) => handler(node as NodeFor<D>, context))
     const requiredKinds = new Set(state.requiredKinds)
-    if (typeof definition !== 'string')
-      requiredKinds.add(kind)
+    if (typeof definition !== 'string') requiredKinds.add(kind)
 
     const next = new RenderPlugin(state.declaration)
     implementations.set(next, {

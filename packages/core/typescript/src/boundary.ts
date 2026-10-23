@@ -8,6 +8,7 @@ export function dataField(value: object, key: string): unknown {
 
 /** Measure valid Unicode text without allocating an encoded copy. */
 export function utf8ByteLength(value: string): number {
+  if (typeof value !== 'string') throw new TypeError('Expected text string')
   let bytes = 0
   for (let index = 0; index < value.length; index++) {
     const unit = value.charCodeAt(index)

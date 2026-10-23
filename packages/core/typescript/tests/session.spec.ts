@@ -219,7 +219,10 @@ test('limits are finite integers and payload allocations are bounded before vali
     () =>
       new DocumentContext(
         { source: '', children: [{ ...node, data: new Array(1000) }] },
-        { schema: new DocumentSchema(definitions), limits: { ...documentLimits, payloadBytes: 32 } }
+        {
+          schema: new DocumentSchema(definitions),
+          limits: { ...documentLimits, payloadBytes: 32 }
+        }
       )
   ).toThrow(/payload byte limit/)
   expect(validations).toBe(0)
@@ -345,14 +348,15 @@ test('a schema captures a changing external declaration before consumers run', (
     }
   }
   const schema = new DocumentSchema([declaration])
-  const plugin = new RenderPlugin(new PluginDeclaration('changing-kind')).withHandler(
-    'text',
-    () => {
-      handlers++
-      return 'invalid handler ran'
-    }
-  )
-  const view = createRenderer(new PresetBuilder().add(plugin).build(), { schema })
+  const plugin = new RenderPlugin(
+    new PluginDeclaration('changing-kind')
+  ).withHandler('text', () => {
+    handlers++
+    return 'invalid handler ran'
+  })
+  const view = createRenderer(new PresetBuilder().add(plugin).build(), {
+    schema
+  })
   expect(() =>
     view.render({
       source: '',

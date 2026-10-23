@@ -1,7 +1,7 @@
 import type { DocumentContext } from '../src/document.js'
 import { defineNode } from '../src/nodes.js'
-import { DocumentSchema } from '../src/schema.js'
 import type { Handler } from '../src/renderer/types.js'
+import { DocumentSchema } from '../src/schema.js'
 
 export function snapshotTypes(context: DocumentContext) {
   // @ts-expect-error snapshots expose readonly children
@@ -30,9 +30,13 @@ export const payloadTypes: Handler<{
 
 export function schemaTypes() {
   const text = defineNode<{ kind: 'text'; data: { value: string } }>(
-    'text', () => true
+    'text',
+    () => true
   )
-  const document = new DocumentSchema([text]).document({ source: '', children: [] })
+  const document = new DocumentSchema([text]).document({
+    source: '',
+    children: []
+  })
   for (const node of document.walk()) {
     const value: string = node.data.value
     // @ts-expect-error a validated schema retains its exact node kind

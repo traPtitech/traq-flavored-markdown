@@ -6,7 +6,11 @@ export class DocumentValidationError extends TypeError {
 
   constructor(
     message: string,
-    { path = '$', resource, cause }: {
+    {
+      path = '$',
+      resource,
+      cause
+    }: {
       path?: string
       resource?: string
       cause?: unknown

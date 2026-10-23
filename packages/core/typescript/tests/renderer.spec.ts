@@ -31,7 +31,9 @@ test('plugins are immutable values and presets retain the selected version', () 
   builder.remove(registration)
   expect(createRenderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
   const nextRegistration = builder.register(updated)
-  expect(createRenderer(builder.build()).render(document)).toBe('<b>changed</b>')
+  expect(createRenderer(builder.build()).render(document)).toBe(
+    '<b>changed</b>'
+  )
   builder.remove(nextRegistration)
   expect(createRenderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
   expect(view.render(document)).toBe('&lt;猫&gt;')
@@ -75,9 +77,9 @@ test('fallback and child rendering have no block or inline mode', () => {
     /Expected render fallback/
   )
   expect(() =>
-    createRenderer(builder.build({ fallback: () => [] as unknown as string })).render(
-      document
-    )
+    createRenderer(
+      builder.build({ fallback: () => [] as unknown as string })
+    ).render(document)
   ).toThrow(/HTML string/)
 })
 
@@ -141,10 +143,10 @@ test('renderer rejects invalid UTF-8 spans throughout the document', () => {
   const reversed = structuredClone(valid)
   reversed.children.reverse()
   for (const document of [middleOfCharacter, outsideSource, reversed])
-    expect(() => view.render(document)).toThrow(/Invalid render document span/)
+    expect(() => view.render(document)).toThrow(/Invalid document span/)
 
   const omitted = structuredClone(outsideSource)
   expect(() =>
     view.render(omitted, { omittedNodes: new Set([omitted.children[1]]) })
-  ).toThrow(/Invalid render document span/)
+  ).toThrow(/Invalid document span/)
 })

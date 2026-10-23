@@ -1,4 +1,8 @@
-import { DocumentContext, DocumentSchema, defineNode } from '@traq-flavored-markdown/core'
+import {
+  DocumentContext,
+  DocumentSchema,
+  defineNode
+} from '@traq-flavored-markdown/core'
 import type { Node } from '@traq-flavored-markdown/core'
 import type { NodeStructure } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
@@ -47,7 +51,10 @@ const node = (kind: string, children?: Node[], data: unknown = {}): Node => ({
   ...(children ? { children } : {})
 })
 const context = (children: Node[]) =>
-  new DocumentContext({ source: '', children }, { schema: new DocumentSchema(definitions).withUnknownNodes() })
+  new DocumentContext(
+    { source: '', children },
+    { schema: new DocumentSchema(definitions).withUnknownNodes() }
+  )
 
 test('child sequences support multiple prefix entries without an arity constraint', () => {
   const sequence = defineNode('sequence', valid, {
@@ -114,14 +121,26 @@ test('custom nodes declare roles and conflicting declarations do not poison a co
     role: 'block',
     children: { kind: 'leaf' }
   })
-  expect(() => context.withSchema(new DocumentSchema([conflict]).withUnknownNodes())).toThrow(/Conflicting/)
-  expect(() => context.withSchema(new DocumentSchema([...definitions, custom]).withUnknownNodes())).not.toThrow()
   expect(() =>
-    context.withSchema(new DocumentSchema([
-      defineNode('custom', () => false, custom.structure)
-    ]).withUnknownNodes())
+    context.withSchema(new DocumentSchema([conflict]).withUnknownNodes())
+  ).toThrow(/Conflicting/)
+  expect(() =>
+    context.withSchema(
+      new DocumentSchema([...definitions, custom]).withUnknownNodes()
+    )
+  ).not.toThrow()
+  expect(() =>
+    context.withSchema(
+      new DocumentSchema([
+        defineNode('custom', () => false, custom.structure)
+      ]).withUnknownNodes()
+    )
   ).toThrow(/payload/)
-  expect(() => context.withSchema(new DocumentSchema([...definitions, custom]).withUnknownNodes())).not.toThrow()
+  expect(() =>
+    context.withSchema(
+      new DocumentSchema([...definitions, custom]).withUnknownNodes()
+    )
+  ).not.toThrow()
 })
 
 test('all source nodes are snapshotted before a user validator executes', () => {
@@ -172,7 +191,9 @@ test('definition metadata is copied and mutable structural definitions are reval
   context.withSchema(new DocumentSchema([external]))
   expect(calls).toBe(2)
   external.validateData = () => false
-  expect(() => context.withSchema(new DocumentSchema([external]))).toThrow(/payload/)
+  expect(() => context.withSchema(new DocumentSchema([external]))).toThrow(
+    /payload/
+  )
 })
 
 test('reentrant validators cannot drop a structure while leaving its cached identity', () => {
@@ -188,16 +209,20 @@ test('reentrant validators cannot drop a structure while leaving its cached iden
     context.withSchema(new DocumentSchema([parent]).withUnknownNodes())
     return true
   })
-  expect(() => context.withSchema(new DocumentSchema([trigger]).withUnknownNodes())).toThrow(/not reentrant/)
+  expect(() =>
+    context.withSchema(new DocumentSchema([trigger]).withUnknownNodes())
+  ).toThrow(/not reentrant/)
   context.withSchema(new DocumentSchema([parent]).withUnknownNodes())
   const custom = defineNode('custom', valid, {
     role: 'inline',
     children: { kind: 'leaf' }
   })
-  expect(() => context.withSchema(new DocumentSchema([parent, custom]).withUnknownNodes())).toThrow(
-    /Invalid node children/
-  )
-  expect(() => context.withSchema(new DocumentSchema([parent]).withUnknownNodes())).not.toThrow()
+  expect(() =>
+    context.withSchema(new DocumentSchema([parent, custom]).withUnknownNodes())
+  ).toThrow(/Invalid node children/)
+  expect(() =>
+    context.withSchema(new DocumentSchema([parent]).withUnknownNodes())
+  ).not.toThrow()
 })
 
 test('owned definitions retain the same metadata values that were checked', () => {

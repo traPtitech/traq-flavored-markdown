@@ -4,8 +4,8 @@ import { escapeHtml } from './html.js'
 import { configuration } from './preset.js'
 import type {
   Document,
-  Node,
   HtmlPreset,
+  Node,
   RenderContext,
   RenderPlan,
   Renderer
@@ -89,7 +89,9 @@ export function createRenderer(
           index,
           parent: (definition, distance = 1) => {
             const parent = ancestors.at(-distance)
-            return parent && context.matches(parent, definition) ? parent : undefined
+            return parent && context.matches(parent, definition)
+              ? parent
+              : undefined
           },
           escape: escapeHtml,
           renderChildren: (join = '') => {

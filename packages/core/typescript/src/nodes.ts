@@ -1,4 +1,5 @@
 import type { DeepReadonly, ReadonlyNode as Node, NodeVariant } from './ast.js'
+
 export type { NodeVariant } from './ast.js'
 
 export type NodeRole = 'block' | 'inline' | 'structural' | 'opaque'

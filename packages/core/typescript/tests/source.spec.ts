@@ -94,7 +94,7 @@ test('document context validates the whole tree before a consumer can traverse i
   expect(() => new DocumentContext({} as never)).toThrow(/source/)
   expect(
     () => new DocumentContext({ source: '', children: [{}] } as never)
-  ).toThrow(/span/)
+  ).toThrow(/node/)
   expect(
     () =>
       new DocumentContext({

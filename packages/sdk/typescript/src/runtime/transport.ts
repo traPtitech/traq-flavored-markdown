@@ -1,5 +1,9 @@
-import { SourceText } from '@traq-flavored-markdown/core'
-import { fields, object, string } from '@traq-flavored-markdown/core/validation'
+import {
+  fields,
+  object,
+  string,
+  utf8ByteLength
+} from '@traq-flavored-markdown/core/validation'
 
 import { abiExports, isWireError, operations } from '../generated/abi.js'
 import {
@@ -30,6 +34,7 @@ type Params<N extends OperationName> =
 type Wasm = WebAssembly.Exports & { memory: WebAssembly.Memory }
 type ExportFunction = (...args: number[]) => number
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
+const encoder = new TextEncoder()
 
 export interface Transport {
   call<N extends OperationName>(
@@ -160,9 +165,9 @@ export function createTransport(
         },
         operation
       )
-    let text: SourceText
+    let byteLength: number
     try {
-      text = new SourceText(source)
+      byteLength = utf8ByteLength(source)
     } catch (cause) {
       throw new MarkdownError(
         {
@@ -173,7 +178,7 @@ export function createTransport(
         cause
       )
     }
-    if (text.byteLength > byteLimit)
+    if (byteLength > byteLimit)
       throw new MarkdownError(
         {
           code: 'resource_limit',
@@ -196,10 +201,10 @@ export function createTransport(
 
     let reply: unknown
     try {
-      const pointer = invoke('input_ptr', text.byteLength)
+      const pointer = invoke('input_ptr', byteLength)
       if (pointer === 0)
         throw new Error('Wasm rejected bounded input allocation')
-      memorySlice(pointer, text.byteLength).set(text.bytes())
+      memorySlice(pointer, byteLength).set(encoder.encode(source))
       const length = invoke(descriptor.export, ...params)
       reply = readJSON(invoke('output_ptr'), length)
       if (
