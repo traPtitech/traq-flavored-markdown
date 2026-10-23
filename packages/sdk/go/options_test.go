@@ -13,7 +13,7 @@ func TestOptionsUseDefaultWhitespace(t *testing.T) {
 		decoded any
 	}{
 		{"processor", ProcessorOptions{}, &ProcessorOptions{}},
-		{"renderer", RendererOptions{Origin: origin}, &RendererOptions{}},
+		{"renderer", PlainTextOptions{Origin: origin}, &PlainTextOptions{}},
 		{"configuration", ProcessorConfiguration{Preset: "traq.v1"}, &ProcessorConfiguration{}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestOptionsUseDefaultWhitespace(t *testing.T) {
 			switch value := test.decoded.(type) {
 			case *ProcessorOptions:
 				whitespace = value.Whitespace
-			case *RendererOptions:
+			case *PlainTextOptions:
 				whitespace = value.Whitespace
 				if value.Origin != origin {
 					t.Fatalf("lost renderer origin: %s", raw)

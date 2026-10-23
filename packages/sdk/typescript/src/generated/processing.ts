@@ -53,6 +53,11 @@ export type ExtractorOptions = {
    */
   origin?: string
 }
+export type PlainTextOptions = {
+  origin?: string
+  whitespace?: WhitespacePolicy
+}
+export type WhitespacePolicy = 'preserve' | 'collapse'
 export type ProcessingResult = {
   extraction: Extraction
   plainText: string
@@ -62,11 +67,6 @@ export type ProcessorConfiguration = {
   preset: string
 }
 export type ProcessorOptions = {
-  origin?: string
-  whitespace?: WhitespacePolicy
-}
-export type WhitespacePolicy = 'preserve' | 'collapse'
-export type RendererOptions = {
   origin?: string
   whitespace?: WhitespacePolicy
 }
@@ -154,6 +154,17 @@ function validateReferences(value: unknown): boolean {
 function validateExtractorOptions(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, { origin: string }))(value)
 }
+function validatePlainTextOptions(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      {},
+      { origin: string, whitespace: validateWhitespacePolicy }
+    ))(value)
+}
+function validateWhitespacePolicy(value: unknown): boolean {
+  return oneOf('preserve', 'collapse')(value)
+}
 function validateProcessingResult(value: unknown): boolean {
   return ((value: unknown) =>
     fields(value, { extraction: validateExtraction, plainText: string }, {}))(
@@ -174,21 +185,12 @@ function validateProcessorOptions(value: unknown): boolean {
       { origin: string, whitespace: validateWhitespacePolicy }
     ))(value)
 }
-function validateWhitespacePolicy(value: unknown): boolean {
-  return oneOf('preserve', 'collapse')(value)
-}
-function validateRendererOptions(value: unknown): boolean {
-  return ((value: unknown) =>
-    fields(
-      value,
-      {},
-      { origin: string, whitespace: validateWhitespacePolicy }
-    ))(value)
-}
 export const isExtraction = (value: unknown): value is Extraction =>
   validateExtraction(value)
 export const isExtractorOptions = (value: unknown): value is ExtractorOptions =>
   validateExtractorOptions(value)
+export const isPlainTextOptions = (value: unknown): value is PlainTextOptions =>
+  validatePlainTextOptions(value)
 export const isProcessingResult = (value: unknown): value is ProcessingResult =>
   validateProcessingResult(value)
 export const isProcessorConfiguration = (
@@ -196,5 +198,3 @@ export const isProcessorConfiguration = (
 ): value is ProcessorConfiguration => validateProcessorConfiguration(value)
 export const isProcessorOptions = (value: unknown): value is ProcessorOptions =>
   validateProcessorOptions(value)
-export const isRendererOptions = (value: unknown): value is RendererOptions =>
-  validateRendererOptions(value)

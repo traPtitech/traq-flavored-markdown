@@ -12,7 +12,7 @@ export type WireError = {
   message: string
   offset?: number | null
   path?: string | null
-  payload_type?: string | null
+  payloadType?: string | null
   phase?: ParsePhase | null
   resource?: string | null
   rule?: string | null
@@ -47,7 +47,7 @@ function validateWireError(value: unknown): boolean {
             value <= 4294967295
         ),
         path: nullable(string),
-        payload_type: nullable(string),
+        payloadType: nullable(string),
         phase: nullable(validateParsePhase),
         resource: nullable(string),
         rule: nullable(string),
@@ -122,7 +122,7 @@ export const operations = Object.freeze({
     params: [],
     result: 'configuration',
     configuration: true,
-    requestSchema: 'RendererOptions'
+    requestSchema: 'PlainTextOptions'
   },
   extract: {
     export: 'extract',

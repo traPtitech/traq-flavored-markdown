@@ -23,16 +23,7 @@ func (r *Runtime) NewExtractor(
 }
 
 func (p *Extractor) Extract(ctx context.Context, document *Document) (*Extraction, error) {
-	validated, err := ValidateDocument(document)
-	if err != nil {
-		return nil, binding.DocumentError(err)
-	}
-	return p.ExtractValidated(ctx, validated)
-}
-
-// ExtractValidated reuses an immutable document snapshot.
-func (p *Extractor) ExtractValidated(ctx context.Context, document *ValidatedDocument) (*Extraction, error) {
-	if document == nil {
+	if !document.IsValid() {
 		return nil, &Error{Code: "invalid_document", Message: "document is required"}
 	}
 

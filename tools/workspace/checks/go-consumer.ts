@@ -49,12 +49,12 @@ func TestBundledRuntime(t *testing.T) {
   runtime, err := markdown.NewBundledRuntime(ctx)
   if err != nil { t.Fatal(err) }
   defer runtime.Close(ctx)
-  parser, err := runtime.NewParser(ctx, markdown.PresetTraqV1)
+  parser, err := runtime.NewParser(ctx, markdown.GrammarTraqV1)
   if err != nil { t.Fatal(err) }
   defer parser.Close(ctx)
   document, err := parser.Parse(ctx, "**outside workspace**")
   if err != nil { t.Fatal(err) }
-  if document == nil || len(document.Children) == 0 { t.Fatal("empty document") }
+  if document == nil || len(document.Children()) == 0 { t.Fatal("empty document") }
 }
 `
     )

@@ -1,43 +1,37 @@
 // Generated from Rust contracts. Do not edit.
 import * as commonmark from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import * as extensions from '@traq-flavored-markdown/extensions-plugin/nodes'
-import * as trap from '@traq-flavored-markdown/traq-plugin/nodes'
-import type {
-  Document as AstDocument,
-  Node as AstNode,
-  DeepReadonly
+import * as traq from '@traq-flavored-markdown/traq-plugin/nodes'
+import {
+  type MutableDocument as AstMutableDocument,
+  type MutableNode as AstMutableNode,
+  type ReadonlyDocument as AstReadonlyDocument,
+  type ReadonlyNode as AstReadonlyNode,
+  type DeepReadonly,
+  DocumentSchema
 } from '@traq-flavored-markdown/core'
 
-export type NodeKind = commonmark.NodeKind | extensions.NodeKind | trap.NodeKind
-export type Node<AllowUnknown extends boolean = false> = AstNode<
-  | NodeKind
-  | (AllowUnknown extends true ? { kind: string; data: unknown } : never)
->
-export type Document<AllowUnknown extends boolean = false> = AstDocument<
-  | NodeKind
-  | (AllowUnknown extends true ? { kind: string; data: unknown } : never)
->
+export type NodeVariant =
+  commonmark.NodeVariant | extensions.NodeVariant | traq.NodeVariant
+export type MutableNode = AstMutableNode<NodeVariant>
+export type MutableDocument = AstMutableDocument<NodeVariant>
+export type ReadonlyNode = AstReadonlyNode<NodeVariant>
+export type ReadonlyDocument = AstReadonlyDocument<NodeVariant>
 export const names = Object.freeze({
   ...commonmark.names,
   ...extensions.names,
-  ...trap.names
+  ...traq.names
 })
 export const definitions = Object.freeze({
   ...commonmark.definitions,
   ...extensions.definitions,
-  ...trap.definitions
+  ...traq.definitions
 })
-const validators = new Map<string, (data: unknown) => boolean>(
-  Object.values(definitions).map(definition => [
-    definition.kind,
-    definition.validateData
-  ])
-)
-export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
-  validators
+export const schema = new DocumentSchema<NodeVariant>(
+  Object.values(definitions)
 )
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T
-): node is T & DeepReadonly<NodeKind> {
-  return validators.get(node.kind)?.(node.data) ?? false
+): node is T & DeepReadonly<NodeVariant> {
+  return schema.isKnownNode(node)
 }

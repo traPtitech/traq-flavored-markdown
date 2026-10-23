@@ -14,7 +14,7 @@ type WireError struct {
 	Message     string       `json:"message"`
 	Offset      **uint32     `json:"offset,omitempty"`
 	Path        **string     `json:"path,omitempty"`
-	PayloadType **string     `json:"payload_type,omitempty"`
+	PayloadType **string     `json:"payloadType,omitempty"`
 	Phase       **ParsePhase `json:"phase,omitempty"`
 	Resource    **string     `json:"resource,omitempty"`
 	Rule        **string     `json:"rule,omitempty"`
@@ -28,7 +28,7 @@ func (value *WireError) UnmarshalJSON(raw []byte) error {
 	}
 	type wire WireError
 	var decoded wire
-	if err := contract.Fields(object, "code", "message", "offset", "path", "payload_type", "phase", "resource", "rule", "span"); err != nil {
+	if err := contract.Fields(object, "code", "message", "offset", "path", "payloadType", "phase", "resource", "rule", "span"); err != nil {
 		return err
 	}
 	if raw, present := object["code"]; present {
@@ -71,12 +71,12 @@ func (value *WireError) UnmarshalJSON(raw []byte) error {
 		}
 		decoded.Path = &present
 	}
-	if raw, present := object["payload_type"]; present {
+	if raw, present := object["payloadType"]; present {
 		var present *string
 		if err := (func(raw json.RawMessage, value **string) error {
 			return contract.Nullable(raw, value, contract.Decode[string])
 		})(raw, &present); err != nil {
-			return fmt.Errorf("field %q: %w", "payload_type", err)
+			return fmt.Errorf("field %q: %w", "payloadType", err)
 		}
 		decoded.PayloadType = &present
 	}

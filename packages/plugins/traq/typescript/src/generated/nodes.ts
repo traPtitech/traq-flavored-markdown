@@ -1,5 +1,9 @@
 // Generated from Rust node payload types. Do not edit.
-import { type DeepReadonly, defineNode } from '@traq-flavored-markdown/core'
+import {
+  type DeepReadonly,
+  DocumentSchema,
+  defineNode
+} from '@traq-flavored-markdown/core'
 import {
   boolean,
   fields,
@@ -85,7 +89,7 @@ export type StampKind =
       type: 'hsl_color'
     }
 export type StampSize = 'none' | 'ex-large' | 'large' | 'small'
-export type NodeKind =
+export type NodeVariant =
   | { kind: 'traq.blank_line'; data: BlankLine }
   | { kind: 'traq.embedding'; data: Embedding }
   | { kind: 'traq.reference'; data: Reference }
@@ -239,26 +243,23 @@ const validators = new Map<string, (data: unknown) => boolean>([
   ['traq.spoiler', validateSpoiler],
   ['traq.stamp', validateStamp]
 ])
-export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
-  validators
-)
 export const definitions = Object.freeze({
-  BlankLine: defineNode<Extract<NodeKind, { kind: typeof names.BlankLine }>>(
+  BlankLine: defineNode<Extract<NodeVariant, { kind: typeof names.BlankLine }>>(
     names.BlankLine,
     validators.get(names.BlankLine)!,
     { role: 'block', children: { kind: 'leaf' } }
   ),
-  Embedding: defineNode<Extract<NodeKind, { kind: typeof names.Embedding }>>(
+  Embedding: defineNode<Extract<NodeVariant, { kind: typeof names.Embedding }>>(
     names.Embedding,
     validators.get(names.Embedding)!,
     { role: 'inline', children: { kind: 'leaf' } }
   ),
-  Reference: defineNode<Extract<NodeKind, { kind: typeof names.Reference }>>(
+  Reference: defineNode<Extract<NodeVariant, { kind: typeof names.Reference }>>(
     names.Reference,
     validators.get(names.Reference)!,
     { role: 'inline', children: { kind: 'leaf' } }
   ),
-  Spoiler: defineNode<Extract<NodeKind, { kind: typeof names.Spoiler }>>(
+  Spoiler: defineNode<Extract<NodeVariant, { kind: typeof names.Spoiler }>>(
     names.Spoiler,
     validators.get(names.Spoiler)!,
     {
@@ -266,15 +267,18 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  Stamp: defineNode<Extract<NodeKind, { kind: typeof names.Stamp }>>(
+  Stamp: defineNode<Extract<NodeVariant, { kind: typeof names.Stamp }>>(
     names.Stamp,
     validators.get(names.Stamp)!,
     { role: 'inline', children: { kind: 'leaf' } }
   )
 })
+export const schema = new DocumentSchema<NodeVariant>(
+  Object.values(definitions)
+)
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T
-): node is T & DeepReadonly<NodeKind> {
-  return validators.get(node.kind)?.(node.data) ?? false
+): node is T & DeepReadonly<NodeVariant> {
+  return schema.isKnownNode(node)
 }

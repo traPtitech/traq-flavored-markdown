@@ -1,5 +1,9 @@
 // Generated from Rust node payload types. Do not edit.
-import { type DeepReadonly, defineNode } from '@traq-flavored-markdown/core'
+import {
+  type DeepReadonly,
+  DocumentSchema,
+  defineNode
+} from '@traq-flavored-markdown/core'
 import {
   boolean,
   fields,
@@ -31,7 +35,7 @@ export type HtmlInline = {
 }
 export type Image = {
   destination: string
-  label_source: string
+  labelSource: string
   title: string | null
 }
 export type InlineCode = {
@@ -69,7 +73,7 @@ export type Text = {
 export type ThematicBreak = {
   marker: string
 }
-export type NodeKind =
+export type NodeVariant =
   | { kind: 'commonmark.blockquote'; data: Blockquote }
   | { kind: 'commonmark.code_block'; data: CodeBlock }
   | { kind: 'commonmark.emphasis'; data: Emphasis }
@@ -127,7 +131,7 @@ function validateImage(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
       value,
-      { destination: string, label_source: string, title: nullable(string) },
+      { destination: string, labelSource: string, title: nullable(string) },
       {}
     ))(value)
 }
@@ -236,24 +240,19 @@ const validators = new Map<string, (data: unknown) => boolean>([
   ['commonmark.text', validateText],
   ['commonmark.thematic_break', validateThematicBreak]
 ])
-export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(
-  validators
-)
 export const definitions = Object.freeze({
-  Blockquote: defineNode<Extract<NodeKind, { kind: typeof names.Blockquote }>>(
-    names.Blockquote,
-    validators.get(names.Blockquote)!,
-    {
-      role: 'block',
-      children: { kind: 'roles', roles: ['block'], nonempty: false }
-    }
-  ),
-  CodeBlock: defineNode<Extract<NodeKind, { kind: typeof names.CodeBlock }>>(
+  Blockquote: defineNode<
+    Extract<NodeVariant, { kind: typeof names.Blockquote }>
+  >(names.Blockquote, validators.get(names.Blockquote)!, {
+    role: 'block',
+    children: { kind: 'roles', roles: ['block'], nonempty: false }
+  }),
+  CodeBlock: defineNode<Extract<NodeVariant, { kind: typeof names.CodeBlock }>>(
     names.CodeBlock,
     validators.get(names.CodeBlock)!,
     { role: 'block', children: { kind: 'leaf' } }
   ),
-  Emphasis: defineNode<Extract<NodeKind, { kind: typeof names.Emphasis }>>(
+  Emphasis: defineNode<Extract<NodeVariant, { kind: typeof names.Emphasis }>>(
     names.Emphasis,
     validators.get(names.Emphasis)!,
     {
@@ -261,12 +260,12 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  Hardbreak: defineNode<Extract<NodeKind, { kind: typeof names.Hardbreak }>>(
+  Hardbreak: defineNode<Extract<NodeVariant, { kind: typeof names.Hardbreak }>>(
     names.Hardbreak,
     validators.get(names.Hardbreak)!,
     { role: 'inline', children: { kind: 'leaf' } }
   ),
-  Heading: defineNode<Extract<NodeKind, { kind: typeof names.Heading }>>(
+  Heading: defineNode<Extract<NodeVariant, { kind: typeof names.Heading }>>(
     names.Heading,
     validators.get(names.Heading)!,
     {
@@ -274,17 +273,18 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  HtmlBlock: defineNode<Extract<NodeKind, { kind: typeof names.HtmlBlock }>>(
+  HtmlBlock: defineNode<Extract<NodeVariant, { kind: typeof names.HtmlBlock }>>(
     names.HtmlBlock,
     validators.get(names.HtmlBlock)!,
     { role: 'block', children: { kind: 'leaf' } }
   ),
-  HtmlInline: defineNode<Extract<NodeKind, { kind: typeof names.HtmlInline }>>(
-    names.HtmlInline,
-    validators.get(names.HtmlInline)!,
-    { role: 'inline', children: { kind: 'leaf' } }
-  ),
-  Image: defineNode<Extract<NodeKind, { kind: typeof names.Image }>>(
+  HtmlInline: defineNode<
+    Extract<NodeVariant, { kind: typeof names.HtmlInline }>
+  >(names.HtmlInline, validators.get(names.HtmlInline)!, {
+    role: 'inline',
+    children: { kind: 'leaf' }
+  }),
+  Image: defineNode<Extract<NodeVariant, { kind: typeof names.Image }>>(
     names.Image,
     validators.get(names.Image)!,
     {
@@ -292,12 +292,13 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  InlineCode: defineNode<Extract<NodeKind, { kind: typeof names.InlineCode }>>(
-    names.InlineCode,
-    validators.get(names.InlineCode)!,
-    { role: 'inline', children: { kind: 'leaf' } }
-  ),
-  Link: defineNode<Extract<NodeKind, { kind: typeof names.Link }>>(
+  InlineCode: defineNode<
+    Extract<NodeVariant, { kind: typeof names.InlineCode }>
+  >(names.InlineCode, validators.get(names.InlineCode)!, {
+    role: 'inline',
+    children: { kind: 'leaf' }
+  }),
+  Link: defineNode<Extract<NodeVariant, { kind: typeof names.Link }>>(
     names.Link,
     validators.get(names.Link)!,
     {
@@ -305,7 +306,7 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  List: defineNode<Extract<NodeKind, { kind: typeof names.List }>>(
+  List: defineNode<Extract<NodeVariant, { kind: typeof names.List }>>(
     names.List,
     validators.get(names.List)!,
     {
@@ -317,7 +318,7 @@ export const definitions = Object.freeze({
       }
     }
   ),
-  ListItem: defineNode<Extract<NodeKind, { kind: typeof names.ListItem }>>(
+  ListItem: defineNode<Extract<NodeVariant, { kind: typeof names.ListItem }>>(
     names.ListItem,
     validators.get(names.ListItem)!,
     {
@@ -325,7 +326,7 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['block'], nonempty: false }
     }
   ),
-  Paragraph: defineNode<Extract<NodeKind, { kind: typeof names.Paragraph }>>(
+  Paragraph: defineNode<Extract<NodeVariant, { kind: typeof names.Paragraph }>>(
     names.Paragraph,
     validators.get(names.Paragraph)!,
     {
@@ -333,12 +334,12 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  Softbreak: defineNode<Extract<NodeKind, { kind: typeof names.Softbreak }>>(
+  Softbreak: defineNode<Extract<NodeVariant, { kind: typeof names.Softbreak }>>(
     names.Softbreak,
     validators.get(names.Softbreak)!,
     { role: 'inline', children: { kind: 'leaf' } }
   ),
-  Strong: defineNode<Extract<NodeKind, { kind: typeof names.Strong }>>(
+  Strong: defineNode<Extract<NodeVariant, { kind: typeof names.Strong }>>(
     names.Strong,
     validators.get(names.Strong)!,
     {
@@ -346,21 +347,24 @@ export const definitions = Object.freeze({
       children: { kind: 'roles', roles: ['inline'], nonempty: false }
     }
   ),
-  Text: defineNode<Extract<NodeKind, { kind: typeof names.Text }>>(
+  Text: defineNode<Extract<NodeVariant, { kind: typeof names.Text }>>(
     names.Text,
     validators.get(names.Text)!,
     { role: 'inline', children: { kind: 'leaf' } }
   ),
   ThematicBreak: defineNode<
-    Extract<NodeKind, { kind: typeof names.ThematicBreak }>
+    Extract<NodeVariant, { kind: typeof names.ThematicBreak }>
   >(names.ThematicBreak, validators.get(names.ThematicBreak)!, {
     role: 'block',
     children: { kind: 'leaf' }
   })
 })
+export const schema = new DocumentSchema<NodeVariant>(
+  Object.values(definitions)
+)
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T
-): node is T & DeepReadonly<NodeKind> {
-  return validators.get(node.kind)?.(node.data) ?? false
+): node is T & DeepReadonly<NodeVariant> {
+  return schema.isKnownNode(node)
 }

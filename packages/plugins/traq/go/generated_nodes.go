@@ -1,5 +1,5 @@
 // Code generated from Rust contracts. DO NOT EDIT.
-package trap
+package traq
 
 import (
 	"encoding/json"

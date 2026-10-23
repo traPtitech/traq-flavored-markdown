@@ -58,3 +58,10 @@ CommonMark examples 24 and 34 were reviewed against the independent specificatio
 HTML (`language-foo+bar` and `language-föö`) in the root fixture and edited by hand.
 Source text, spans, literal code, inline-mode expectations, and every other
 expectation are unchanged. No parser output was used to regenerate this fixture.
+
+On 2026-10-24, the unreleased wire contract adopted plugin-owned
+`extensions.*` kind names and camelCase payload fields. Existing kind strings
+were mechanically renamed from `generic.*`, and `label_source` keys became
+`labelSource`. Source text, spans, payload values, child order, parse failures,
+and all 787 plain-text expectations were preserved. This migration did not use
+parser output to generate expected trees.

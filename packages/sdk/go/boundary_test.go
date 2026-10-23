@@ -22,7 +22,7 @@ func TestConfigurationBoundsBeforeEncodingAndInstantiation(t *testing.T) {
 	runtime := &Runtime{}
 	origin := strings.Repeat("x", inputBytes+1)
 	_, extractorErr := runtime.NewExtractor(context.Background(), ExtractorOptions{Origin: origin})
-	_, rendererErr := runtime.NewPlainTextRenderer(context.Background(), RendererOptions{Origin: origin})
+	_, rendererErr := runtime.NewPlainTextRenderer(context.Background(), PlainTextOptions{Origin: origin})
 	for _, err := range []error{extractorErr, rendererErr} {
 		var detail *Error
 		if !errors.As(err, &detail) || detail.Code != "resource_limit" || detail.Resource != "input_bytes" {
@@ -61,11 +61,11 @@ func TestValidatedSnapshotsAcrossConsumers(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer runtime.Close(ctx)
-	parser, err := runtime.NewParser(ctx, PresetTraqV1)
+	parser, err := runtime.NewParser(ctx, GrammarTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	renderer, err := runtime.NewPlainTextRenderer(ctx, RendererOptions{})
+	renderer, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,31 +73,31 @@ func TestValidatedSnapshotsAcrossConsumers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	validated, err := parser.ParseValidated(ctx, "**é😀**")
+	validated, err := parser.Parse(ctx, "**é😀**")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {
-		text, err := renderer.RenderValidated(ctx, validated)
+		text, err := renderer.Render(ctx, validated)
 		if err != nil || text != "é😀" {
 			t.Fatalf("%q %v", text, err)
 		}
-		result, err := extractor.ExtractValidated(ctx, validated)
+		result, err := extractor.Extract(ctx, validated)
 		if err != nil || result.MessageText != "**é😀**" {
 			t.Fatalf("%+v %v", result, err)
 		}
 	}
-	mutable, err := parser.Parse(ctx, "original")
+	snapshot, err := parser.Parse(ctx, "original")
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot, err := ValidateDocument(mutable)
+	mutable, err := snapshot.ToMutable()
 	if err != nil {
 		t.Fatal(err)
 	}
 	mutable.Source = ""
 	mutable.Children[0].Span.End = 0
-	if text, err := renderer.RenderValidated(ctx, snapshot); err != nil || text != "original" {
+	if text, err := renderer.Render(ctx, snapshot); err != nil || text != "original" {
 		t.Fatalf("snapshot: %q %v", text, err)
 	}
 	if _, err := parser.Parse(ctx, string([]byte{0xff})); err == nil {
