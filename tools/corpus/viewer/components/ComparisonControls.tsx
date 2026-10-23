@@ -1,64 +1,64 @@
-import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
-import type { ViewerController } from '../hooks/useViewerController.ts'
+import { type ProfileId, profileIds } from '../../protocol/report.ts'
+import type { Query } from '../data/query.ts'
 import { profileLabels } from '../profiles.ts'
 import type { OutputView } from '../state.ts'
 
 const number = (value: number) => value.toLocaleString('ja-JP')
 
 export function ComparisonControls({
-  metadata,
-  controller
+  counts,
+  query,
+  searchDraft,
+  outputView,
+  status,
+  loading,
+  failed,
+  totalPages,
+  onProfile,
+  onSearchDraft,
+  onSearch,
+  onWhitespace,
+  onPage,
+  onOutput
 }: {
-  metadata: ReportMetadata
-  controller: ViewerController
+  counts: Record<ProfileId, number>
+  query: Query
+  searchDraft: string
+  outputView: OutputView
+  status: string
+  loading: boolean
+  failed: boolean
+  totalPages: number
+  onProfile: (profile: ProfileId) => void
+  onSearchDraft: (text: string) => void
+  onSearch: () => void
+  onWhitespace: (ignore: boolean) => void
+  onPage: (page: number) => void
+  onOutput: (view: OutputView) => void
 }) {
-  const {
-    state,
-    dispatch,
-    response,
-    result,
-    totalHits,
-    totalPages,
-    loading,
-    selectPage
-  } = controller
-  const { query } = state
-  const status =
-    response.status === 'failed'
-      ? response.message
-      : response.status === 'loading' && response.progress
-        ? `検索 ${number(response.progress.done)} / ${number(response.progress.total)}`
-        : number(totalHits) +
-          ' 件' +
-          (result?.filtered
-            ? ` / 全 ${number(metadata.counts[query.mode])} 件`
-            : '')
   const movePage = (page: number) => {
-    selectPage(page)
+    onPage(page)
     window.scrollTo({ top: 0 })
   }
   return (
     <>
       <nav className="toolbar">
-        <div id="profileIds" className="profileIds">
-          {profileIds.map(mode => (
+        <div id="profiles" className="profiles" aria-label="比較対象">
+          {profileIds.map(profile => (
             <button
-              key={mode}
-              aria-pressed={query.mode === mode}
-              onClick={() => dispatch({ type: 'mode', mode })}
+              key={profile}
+              aria-pressed={query.profile === profile}
+              onClick={() => onProfile(profile)}
             >
-              {profileLabels[mode]} {number(metadata.counts[mode])}
+              {profileLabels[profile]} {number(counts[profile])}
             </button>
           ))}
           <select
             id="output-view"
             aria-label="表示形式"
-            value={state.outputView}
+            value={outputView}
             onChange={event =>
-              dispatch({
-                type: 'output',
-                view: event.target.value as OutputView
-              })
+              onOutput(event.target.value === 'raw' ? 'raw' : 'rendered')
             }
           >
             <option value="rendered">レンダリング</option>
@@ -70,7 +70,7 @@ export function ComparisonControls({
             id="search-form"
             onSubmit={event => {
               event.preventDefault()
-              dispatch({ type: 'search' })
+              onSearch()
             }}
           >
             <input
@@ -79,15 +79,17 @@ export function ComparisonControls({
               type="search"
               placeholder="原文を検索"
               aria-label="原文を検索"
-              value={state.searchDraft}
-              onChange={event =>
-                dispatch({ type: 'draft', text: event.target.value })
-              }
+              value={searchDraft}
+              onChange={event => onSearchDraft(event.target.value)}
             />
             <button type="submit">検索</button>
           </form>
-          <span id="status" aria-live="polite">
-            {status} {loading ? '...' : ''}
+          <span
+            id="status"
+            role={failed ? 'alert' : 'status'}
+            aria-live="polite"
+          >
+            {status}
           </span>
           <button
             id="previous"
@@ -100,12 +102,13 @@ export function ComparisonControls({
           <label>
             <input
               id="page"
+              aria-label="ページ"
               type="number"
               min="1"
               max={totalPages}
               disabled={loading}
               value={query.page}
-              onChange={event => selectPage(Number(event.target.value))}
+              onChange={event => onPage(Number(event.target.value))}
             />
             {' / '}
             <span id="pages">{number(totalPages)}</span>
@@ -126,9 +129,7 @@ export function ComparisonControls({
             type="checkbox"
             id="ignore-whitespace"
             checked={query.ignoreWhitespace}
-            onChange={event =>
-              dispatch({ type: 'whitespace', ignore: event.target.checked })
-            }
+            onChange={event => onWhitespace(event.target.checked)}
           />
           ホワイトスペースのみを除外
         </label>

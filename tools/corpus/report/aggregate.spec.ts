@@ -55,7 +55,7 @@ test('aggregation, validation, filtering and cached querying share the same run 
     )
   })
   const query = {
-    mode: 'render' as const,
+    profile: 'render' as const,
     search: 'beta',
     ignoreWhitespace: true,
     page: 99
@@ -93,7 +93,7 @@ test('query cancellation cannot publish a partially scanned filter index', async
     )
   })
   const query = {
-    mode: 'render' as const,
+    profile: 'render' as const,
     search: 'beta',
     ignoreWhitespace: false,
     page: 1

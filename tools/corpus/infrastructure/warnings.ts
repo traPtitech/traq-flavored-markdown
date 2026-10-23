@@ -1,4 +1,3 @@
-/* eslint-disable no-console -- Scoped interception redacts third-party warnings in an isolated process. */
 /** Each frontend worker has its own process; warnings must not disclose corpus text. */
 export function countPrivateWarnings() {
   const previous = console.warn

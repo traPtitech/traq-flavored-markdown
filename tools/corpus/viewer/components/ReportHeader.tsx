@@ -20,15 +20,17 @@ export function ReportHeader({ metadata }: { metadata: ReportMetadata }) {
         <div id="speed">
           <SpeedTable metadata={metadata} />
           <p>
-            同一入力・{number(metadata.run.warmups)}
-            件のウォームアップ後に計測。before / after
+            同一入力でウォームアップ後に計測（指定上限{' '}
+            {number(metadata.run.warmups)} 件）。before / after
             の実行順は交互。収集・ファイル出力・画面表示の時間は含みません。各モードを順に実行した際の参考値です。
           </p>
-          {profileIds.map(mode => (
-            <p key={mode}>
-              {profileLabels[mode]} 初期化: before{' '}
-              {number(metadata.results[mode].initialization.beforeMs)} ms /
-              after {number(metadata.results[mode].initialization.afterMs)} ms。
+          {profileIds.map(profile => (
+            <p key={profile}>
+              {profileLabels[profile]} ウォームアップ実施:{' '}
+              {number(metadata.results[profile].actualWarmups)} 件。初期化:
+              before {number(metadata.results[profile].initialization.beforeMs)}{' '}
+              ms / after{' '}
+              {number(metadata.results[profile].initialization.afterMs)} ms。
             </p>
           ))}
           <p>
@@ -55,11 +57,11 @@ function SpeedTable({ metadata }: { metadata: ReportMetadata }) {
         </tr>
       </thead>
       <tbody>
-        {profileIds.map(mode => {
-          const data = metadata.results[mode]
+        {profileIds.map(profile => {
+          const data = metadata.results[profile]
           return (
-            <tr key={mode}>
-              <td>{profileLabels[mode]}</td>
+            <tr key={profile}>
+              <td>{profileLabels[profile]}</td>
               <td>
                 {number(data.before.meanUs)} / {number(data.after.meanUs)}
               </td>

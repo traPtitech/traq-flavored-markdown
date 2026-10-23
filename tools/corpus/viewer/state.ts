@@ -8,12 +8,12 @@ export type ViewerState = {
   outputView: OutputView
 }
 export const initialViewerState: ViewerState = {
-  query: { mode: 'render', search: '', ignoreWhitespace: false, page: 1 },
+  query: { profile: 'render', search: '', ignoreWhitespace: false, page: 1 },
   searchDraft: '',
   outputView: 'rendered'
 }
 export type ViewerAction =
-  | { type: 'mode'; mode: ProfileId }
+  | { type: 'profile'; profile: ProfileId }
   | { type: 'draft'; text: string }
   | { type: 'search' }
   | { type: 'whitespace'; ignore: boolean }
@@ -26,11 +26,11 @@ export function viewerReducer(
   action: ViewerAction
 ): ViewerState {
   switch (action.type) {
-    case 'mode':
+    case 'profile':
       return {
         ...state,
         searchDraft: '',
-        query: { ...state.query, mode: action.mode, search: '', page: 1 }
+        query: { ...state.query, profile: action.profile, search: '', page: 1 }
       }
     case 'draft':
       return { ...state, searchDraft: action.text }

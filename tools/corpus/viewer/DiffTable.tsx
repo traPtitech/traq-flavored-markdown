@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react'
 import type { Outcome } from '../protocol/comparison.ts'
 import type { DifferenceRow } from '../protocol/report.ts'
 import { outputDiff } from './data/diff.ts'
-import { renderHTML } from './preview/html.ts'
+import { createInertPreviewFragment } from './preview/html.ts'
 import type { OutputView } from './state.ts'
 
 type DiffTableProps = {
@@ -28,7 +28,7 @@ export default function DiffTable({ rows, outputView }: DiffTableProps) {
       </thead>
       <tbody id="rows">
         {rows.map(row => (
-          <tr key={row.index}>
+          <tr key={`${row.profile}:${row.index}`}>
             <SourceCell row={row} />
             {outputView === 'raw' ? (
               <RawDiffCells row={row} />
@@ -81,7 +81,7 @@ function RenderCell({ outcome }: { outcome: Outcome }) {
 function HtmlPreview({ html }: { html: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    ref.current?.replaceChildren(renderHTML(html))
+    ref.current?.replaceChildren(createInertPreviewFragment(html))
   }, [html])
   return <div className="cell-content markdown-body" ref={ref} />
 }
@@ -94,22 +94,35 @@ function RawDiffCells({ row }: { row: DifferenceRow }) {
     : undefined
 
   const renderSide = (isAfter: boolean) => {
+    const outcome = isAfter ? row.after : row.before
     return (
-      <pre className="cell-content raw-html" title={title}>
-        {parts.map((part, i) => {
-          const op = part[0]
-          const value = part[1]
-          if (!value) return null
-          if (op === (isAfter ? -1 : 1)) return null
+      <>
+        {(outcome.kind === 'error' || row.before.kind !== row.after.kind) && (
+          <strong
+            className={outcome.kind === 'error' ? 'output-error' : undefined}
+          >
+            {outcome.kind === 'error' ? '実行エラー' : outcome.kind}
+          </strong>
+        )}
+        <pre className="cell-content raw-html" title={title}>
+          {parts.map((part, i) => {
+            const op = part[0]
+            const value = part[1]
+            if (!value) return null
+            if (op === (isAfter ? -1 : 1)) return null
 
-          if (op === 0) return <span key={i}>{value}</span>
-          return (
-            <mark key={i} className={op === -1 ? 'diff-removed' : 'diff-added'}>
-              {value}
-            </mark>
-          )
-        })}
-      </pre>
+            if (op === 0) return <span key={i}>{value}</span>
+            return (
+              <mark
+                key={i}
+                className={op === -1 ? 'diff-removed' : 'diff-added'}
+              >
+                {value}
+              </mark>
+            )
+          })}
+        </pre>
+      </>
     )
   }
 

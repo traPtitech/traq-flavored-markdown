@@ -15,7 +15,11 @@ const styleNames = [
   'text-align'
 ]
 
-export function renderHTML(html: string) {
+/** Build an inert approximation: no navigation, fetches, handlers, or UI classes. */
+export function createInertPreviewFragment(
+  html: string,
+  document: Document = globalThis.document
+) {
   const template = document.createElement('template')
   template.innerHTML = html
 
@@ -41,7 +45,6 @@ export function renderHTML(html: string) {
       : document.createElement(name)
 
     for (const attr of [
-      'class',
       'title',
       'colspan',
       'rowspan',
@@ -60,6 +63,7 @@ export function renderHTML(html: string) {
         value.setAttribute(attr, element.getAttribute(attr)!)
       }
     }
+    for (const name of element.classList) value.classList.add(`preview-${name}`)
 
     for (const key of styleNames) {
       const text = (element as HTMLElement).style?.getPropertyValue(key)
