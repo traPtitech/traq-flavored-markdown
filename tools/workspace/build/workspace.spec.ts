@@ -4,7 +4,41 @@ import path from 'node:path'
 import { expect, test } from 'bun:test'
 
 import { withTempDirectory } from '../infrastructure/temp-directory.ts'
+import { dependencyGraph } from '../package-graph.ts'
 import { repositoryRoot } from '../paths.ts'
+import type { PackageName } from '../paths.ts'
+import { runTasks } from './tasks.ts'
+import { workspaceTasks } from './workspace.ts'
+
+test('selective builds generate only artifacts reachable from the requested package', async () => {
+  const graph = dependencyGraph<PackageName>([
+    ['core', []],
+    ['commonmark-plugin', ['core']],
+    ['extensions-plugin', ['core', 'commonmark-plugin']],
+    ['traq-plugin', ['core', 'commonmark-plugin', 'extensions-plugin']],
+    ['sdk', ['core', 'commonmark-plugin', 'extensions-plugin', 'traq-plugin']]
+  ])
+  const calls: string[] = []
+  const tasks = workspaceTasks(graph, {
+    contracts: async name => {
+      calls.push(`contracts:${name}`)
+    },
+    build: async name => {
+      calls.push(`build:${name}`)
+    }
+  })
+  await runTasks(tasks, ['build:core'])
+  expect(calls).toEqual(['contracts:core', 'build:core'])
+  calls.length = 0
+  await runTasks(tasks, ['build:extensions-plugin'])
+  expect(calls).not.toContain('contracts:traq-plugin')
+  expect(calls).not.toContain('contracts:sdk')
+  expect(calls.filter(call => call === 'contracts:core')).toHaveLength(1)
+  expect(calls.indexOf('build:core')).toBeLessThan(
+    calls.indexOf('build:commonmark-plugin')
+  )
+  expect(calls.at(-1)).toBe('build:extensions-plugin')
+})
 
 test('build modules load before workspace packages have been built', async () => {
   await withTempDirectory('build-bootstrap-', async root => {

@@ -1,6 +1,27 @@
 import { expect, test } from 'bun:test'
 
+import { crateRestrictions } from './descriptor.ts'
 import { validateCapabilities, validateModules } from './policy.ts'
+
+test('core and every plugin layer reject capabilities belonging to another stage', () => {
+  for (const [root, forbidden] of [
+    ['markdown-ast', 'markdown-parser'],
+    ['markdown-parser', 'markdown-renderer'],
+    ['markdown-codec', 'markdown-extractor'],
+    ['markdown-commonmark-contracts', 'markdown-parser'],
+    ['markdown-extensions-contracts', 'markdown-codec'],
+    ['markdown-commonmark-text', 'markdown-parser'],
+    ['markdown-extensions-text', 'markdown-codec'],
+    ['markdown-extensions-syntax', 'markdown-renderer'],
+    ['markdown-trap-extraction', 'markdown-parser'],
+    ['traq-markdown-grammar', 'traq-markdown-processing']
+  ]) {
+    expect(Object.hasOwn(crateRestrictions, root)).toBe(true)
+    expect(() => validateCapabilities(root, new Set([forbidden]))).toThrow(
+      'disallowed capability'
+    )
+  }
+})
 
 test('owner permissions and selected-root capabilities are independent policies', () => {
   expect(() =>

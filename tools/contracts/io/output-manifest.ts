@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, rm } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
@@ -120,7 +120,7 @@ export async function applyOutputManifest(
       ...outputs.map(({ owner, path }) => ({ owner, path }))
     ].sort((a, b) => a.path.localeCompare(b.path, 'en'))
   }
-  await Bun.write(
+  await writeFile(
     path.join(root, outputIndex),
     JSON.stringify(index, null, 2) + '\n'
   )
