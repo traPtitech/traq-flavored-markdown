@@ -7,10 +7,11 @@ pub mod presets;
 pub mod syntax {
     pub use markdown_commonmark as commonmark;
     pub use markdown_extensions_syntax as extensions;
-    pub use markdown_trap_syntax as trap;
+    pub use markdown_trap_syntax as traq;
 }
 
 pub use markdown_parser::{
-    Document, DocumentView, Grammar, GrammarBuilder, Limits, MutableDocument, Node, NodeKind,
-    NodeRole, ParseError, Parser, Span, ValidationLimits, engine,
+    AnyPayload, BuildError, Document, DocumentView, Grammar, GrammarBuilder, Limits,
+    MutableDocument, Node, NodeRole, ParseError, ParsePhase, ParseResource, Parser, Span,
+    SyntaxPlugin, ValidationLimits, grammar, rules, source,
 };

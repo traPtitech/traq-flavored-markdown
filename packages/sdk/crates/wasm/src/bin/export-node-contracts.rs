@@ -74,7 +74,7 @@ fn main() -> markdown_contract_export::Result<()> {
             .into_iter()
             .map(|(name, entry)| Ok((name, preset_entry(entry)?)))
             .collect::<Result<_, Box<dyn std::error::Error>>>()?,
-        limits: serde_json::from_value(limits::metadata())?,
+        limits: limits::metadata().into(),
         nodes: node_metadata::export()?.nodes,
     };
     write(directory, &manifest)

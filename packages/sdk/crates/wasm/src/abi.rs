@@ -149,9 +149,9 @@ pub enum ParsePhase {
     Inline,
     Text,
 }
-impl From<markdown_parser::engine::ParsePhase> for ParsePhase {
-    fn from(phase: markdown_parser::engine::ParsePhase) -> Self {
-        use markdown_parser::engine::ParsePhase as Native;
+impl From<markdown_parser::ParsePhase> for ParsePhase {
+    fn from(phase: markdown_parser::ParsePhase) -> Self {
+        use markdown_parser::ParsePhase as Native;
         match phase {
             Native::Block => Self::Block,
             Native::Inline => Self::Inline,

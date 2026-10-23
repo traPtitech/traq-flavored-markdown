@@ -31,7 +31,7 @@ impl TextFeature {
         }
         .definition()
     }
-    pub fn plugin(self, options: TextOptions) -> markdown_renderer::Plugin {
+    pub fn plugin(self, options: TextOptions) -> markdown_renderer::RenderPlugin {
         match self {
             Self::Core => {
                 markdown_commonmark_text::plugin_with_options(markdown_commonmark_text::Options {

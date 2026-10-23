@@ -19,7 +19,7 @@ pub use contribution::Contribution;
 pub use limits::{Budget, Limits, ParseError, ParsePhase, ParseResource};
 pub use markdown_definitions::PluginGroup;
 pub use parser::Parser;
-pub use plugin::Plugin;
+pub use plugin::SyntaxPlugin;
 pub use registry::{BuildError, Grammar};
 pub use rule::Rule;
 pub use state::ParseState;

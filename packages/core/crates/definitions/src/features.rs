@@ -1,4 +1,4 @@
-use crate::{NodeType, Plugin};
+use crate::{PluginDeclaration, WireTypeKey};
 use std::any::TypeId;
 
 /// A plugin-owned native payload identity paired with its persisted key.
@@ -8,10 +8,10 @@ pub struct PayloadContract {
     pub kind: String,
 }
 impl PayloadContract {
-    pub fn of<T: NodeType + 'static>() -> Self {
+    pub fn of<T: WireTypeKey + 'static>() -> Self {
         Self {
             native: TypeId::of::<T>(),
-            kind: T::type_key(),
+            kind: T::wire_key(),
         }
     }
 }
@@ -19,7 +19,7 @@ impl PayloadContract {
 /// Contracts describe available payloads independently of syntax and rendering.
 #[derive(Debug)]
 pub struct FeatureContract {
-    pub declaration: &'static Plugin,
+    pub declaration: &'static PluginDeclaration,
     pub payloads: Vec<PayloadContract>,
 }
 
@@ -48,8 +48,8 @@ macro_rules! define_feature_contracts {
                 }),+ }
             }
         }
-        $($( impl $crate::NodeType for $payload {
-            fn type_key() -> String { $kind.into() }
+        $($( impl $crate::WireTypeKey for $payload {
+            fn wire_key() -> String { $kind.into() }
         } )*)+
     };
 }

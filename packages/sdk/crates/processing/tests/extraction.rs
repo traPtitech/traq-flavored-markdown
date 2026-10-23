@@ -1,4 +1,6 @@
-use traq_markdown_grammar::{Document, MutableDocument, bindings};
+use traq_markdown_grammar::Document;
+use traq_markdown_grammar::MutableDocument;
+use traq_markdown_grammar::bindings;
 use traq_markdown_processing::extraction::{Extractor, ExtractorOptions};
 
 fn parse(source: &str) -> Document {

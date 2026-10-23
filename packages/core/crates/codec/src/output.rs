@@ -20,9 +20,9 @@ impl<'a> SerializableDocument<'a> {
         for visit in document.walk() {
             path.truncate(visit.depth - 1);
             path.push(visit.index);
-            if !codec.entries.contains_key(&visit.node.data_type_id()) {
+            if !codec.entries.contains_key(&visit.node.payload_type_id()) {
                 return Err(Error::new(ErrorKind::UnregisteredPayload {
-                    payload_type: visit.node.data_type_name(),
+                    payload_type: visit.node.payload_type_name(),
                 })
                 .at(&path, Some(visit.node.span)));
             }
@@ -108,7 +108,7 @@ impl Serialize for NodeOutput<'_> {
         let entry = self
             .codec
             .entries
-            .get(&self.node.kind.data_type_id())
+            .get(&self.node.payload.payload_type_id())
             .ok_or_else(|| serde::ser::Error::custom("unregistered node type"))?;
 
         #[derive(Serialize)]
@@ -132,7 +132,7 @@ impl Serialize for NodeOutput<'_> {
                 start: self.node.span.start,
                 end: self.node.span.end,
             },
-            data: (entry.borrow)(&self.node.kind),
+            data: (entry.borrow)(&self.node.payload),
             children: Children {
                 nodes: &self.node.children,
                 codec: self.codec,

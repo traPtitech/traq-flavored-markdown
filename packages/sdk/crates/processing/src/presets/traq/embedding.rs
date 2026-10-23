@@ -75,11 +75,11 @@ pub(crate) fn observe<'a>(
     result: &mut ReferenceEmbeddingPlan,
     edits: &mut Vec<(Span, &'a str)>,
 ) -> bool {
-    if let Some(reference) = node.get::<Reference>() {
+    if let Some(reference) = node.payload::<Reference>() {
         edits.push((node.span, reference.label.as_str()));
-    } else if let Some(embedding) = node.get::<Embedding>() {
+    } else if let Some(embedding) = node.payload::<Embedding>() {
         edits.push((node.span, embedding.label.as_str()));
-    } else if allow_embedding && node.get::<Text>().is_some() {
+    } else if allow_embedding && node.payload::<Text>().is_some() {
         collect(
             source,
             node.span.start,
@@ -89,7 +89,7 @@ pub(crate) fn observe<'a>(
     }
 
     // Restore existing references in labels, but never look up new names inside links or images.
-    allow_embedding && node.get::<Link>().is_none() && node.get::<Image>().is_none()
+    allow_embedding && node.payload::<Link>().is_none() && node.payload::<Image>().is_none()
 }
 
 pub(crate) fn finish(

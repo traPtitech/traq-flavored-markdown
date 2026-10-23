@@ -70,12 +70,12 @@ impl GrammarProfile {
 #[cfg(feature = "syntax")]
 enum Precedence {
     Inline(
-        &'static markdown_parser::engine::inline::InlineRule,
-        &'static markdown_parser::engine::inline::InlineRule,
+        &'static markdown_parser::rules::inline::InlineRule,
+        &'static markdown_parser::rules::inline::InlineRule,
     ),
     Block(
-        &'static markdown_parser::engine::block::BlockRule,
-        &'static markdown_parser::engine::block::BlockRule,
+        &'static markdown_parser::rules::block::BlockRule,
+        &'static markdown_parser::rules::block::BlockRule,
     ),
 }
 

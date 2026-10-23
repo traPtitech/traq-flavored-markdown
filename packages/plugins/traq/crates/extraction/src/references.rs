@@ -1,4 +1,5 @@
-use markdown_extractor::{Plugin, Result};
+use markdown_extractor::ExtractionPlugin;
+use markdown_extractor::Result;
 use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 use serde::Serialize;
 
@@ -34,14 +35,15 @@ pub struct References {
 }
 
 /// Repeated calls share the default implementation; editing a value is isolated.
-pub fn plugin() -> Plugin<References> {
-    static PLUGIN: std::sync::LazyLock<Plugin<References>> =
+pub fn plugin() -> ExtractionPlugin<References> {
+    static PLUGIN: std::sync::LazyLock<ExtractionPlugin<References>> =
         std::sync::LazyLock::new(|| build().expect("valid reference extraction plugin"));
     PLUGIN.clone()
 }
 
-fn build() -> Result<Plugin<References>> {
-    let mut plugin = Plugin::<References>::new(&markdown_trap_contracts::declarations().references);
+fn build() -> Result<ExtractionPlugin<References>> {
+    let mut plugin =
+        ExtractionPlugin::<References>::new(&markdown_trap_contracts::declarations().references);
 
     plugin.on::<Reference>(|reference, _, result| {
         result.record_reference(reference);

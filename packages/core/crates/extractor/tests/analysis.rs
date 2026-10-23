@@ -1,5 +1,10 @@
 use markdown_ast::{MutableDocument, Node, Span};
-use markdown_extractor::{AnalysisContext, Collector, Error, Extractor, Plugin, PresetBuilder};
+use markdown_extractor::AnalysisContext;
+use markdown_extractor::Collector;
+use markdown_extractor::Error;
+use markdown_extractor::ExtractionPlugin;
+use markdown_extractor::ExtractionPresetBuilder;
+use markdown_extractor::Extractor;
 
 #[markdown_definitions::node(role = Opaque, children = Any)]
 #[derive(Debug, Clone, PartialEq)]
@@ -34,7 +39,9 @@ fn typed_handlers_and_scoped_collectors_share_source_and_location() {
     }
     .finish()
     .unwrap();
-    let mut plugin = Plugin::<Vec<String>>::new(&markdown_definitions::Plugin::new("source"));
+    let mut plugin = ExtractionPlugin::<Vec<String>>::new(
+        &markdown_definitions::PluginDeclaration::new("source"),
+    );
     plugin
         .on::<Item>(|_, context, result| {
             let span = context.visit.node.span;
@@ -42,7 +49,7 @@ fn typed_handlers_and_scoped_collectors_share_source_and_location() {
             Ok(())
         })
         .unwrap();
-    let mut builder = PresetBuilder::new();
+    let mut builder = ExtractionPresetBuilder::new();
     builder.add(&plugin).unwrap();
     let extractor = Extractor::new(&builder.build().unwrap());
     let mut collectors = (Depths::default(), extractor.collector::<Error>());

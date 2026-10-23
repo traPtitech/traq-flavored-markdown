@@ -1,5 +1,5 @@
 use super::{
-    GrammarBuilder, Plugin,
+    GrammarBuilder, SyntaxPlugin,
     block::BlockRule,
     inline::{InlineRule, TextRule},
 };
@@ -25,7 +25,7 @@ impl Grammar {
         self.data.definition.clone()
     }
 
-    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &Plugin> + Clone {
+    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &SyntaxPlugin> + Clone {
         self.data.definition.plugins()
     }
 

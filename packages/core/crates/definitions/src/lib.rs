@@ -7,15 +7,16 @@ extern crate self as markdown_definitions;
 mod features;
 mod names;
 mod namespace;
-mod node_type;
 mod registration;
+mod wire_type;
 
 pub mod handlers;
 
 pub use features::{FeatureContract, PayloadContract};
-pub use markdown_definitions_derive::NodeType;
-pub use markdown_definitions_derive::{node, payload};
+pub use markdown_definitions_derive::WireTypeKey;
+pub use markdown_definitions_derive::node;
+pub use markdown_definitions_derive::payload;
 pub use names::{NameCollision, validate_names};
-pub use namespace::{Plugin, PluginGroup};
-pub use node_type::NodeType;
+pub use namespace::{PluginDeclaration, PluginGroup};
 pub use registration::{RegistrationError, RegistrationErrorKind, RegistrationHandle};
+pub use wire_type::WireTypeKey;

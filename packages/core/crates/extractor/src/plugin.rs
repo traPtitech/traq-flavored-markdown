@@ -1,16 +1,16 @@
 use crate::{AnalysisContext, Error, Result};
 use markdown_ast::NodeData;
-use markdown_definitions::Plugin as Declaration;
+use markdown_definitions::PluginDeclaration as Declaration;
 use markdown_definitions::handlers::Handlers;
 use std::sync::Arc;
 
 pub(crate) type Handler<R> = Arc<dyn Fn(AnalysisContext<'_>, &mut R) -> Result<()> + Send + Sync>;
 
-pub struct Plugin<R> {
+pub struct ExtractionPlugin<R> {
     pub(crate) handlers: Handlers<Handler<R>>,
 }
 
-impl<R> Clone for Plugin<R> {
+impl<R> Clone for ExtractionPlugin<R> {
     fn clone(&self) -> Self {
         Self {
             handlers: self.handlers.clone(),
@@ -18,7 +18,7 @@ impl<R> Clone for Plugin<R> {
     }
 }
 
-impl<R> Plugin<R> {
+impl<R> ExtractionPlugin<R> {
     pub fn new(declaration: &Declaration) -> Self {
         Self {
             handlers: Handlers::new(declaration),
@@ -32,9 +32,13 @@ impl<R> Plugin<R> {
         self.handlers
             .on::<T>(Arc::new(move |context, result| {
                 handler(
-                    context.visit.node.get::<T>().ok_or(Error::InvalidPayload {
-                        expected: std::any::type_name::<T>(),
-                    })?,
+                    context
+                        .visit
+                        .node
+                        .payload::<T>()
+                        .ok_or(Error::InvalidPayload {
+                            expected: std::any::type_name::<T>(),
+                        })?,
                     context,
                     result,
                 )

@@ -27,13 +27,13 @@ impl NodeData for Heading {
 }
 
 let node = Node::leaf(Span { start: 0, end: 4 }, Heading { level: 2 });
-assert_eq!(node.get::<Heading>().unwrap().level, 2);
+assert_eq!(node.payload::<Heading>().unwrap().level, 2);
 assert!(node.validate().is_ok());
 ```
 
-`Node::new(span, data, children)` accepts a concrete data type. `NodeKind` holds
+`Node::new(span, data, children)` accepts a concrete data type. `AnyPayload` holds
 type-erased data while a parser is still determining children and positions.
-`node.get::<T>()` borrows the stored value without copying or serializing it.
+`node.payload::<T>()` borrows the stored value without copying or serializing it.
 Adding a node type never requires a core enum change.
 
 `SourceText::new(&source)` borrows the original UTF-8 text. Its `slice(span)`

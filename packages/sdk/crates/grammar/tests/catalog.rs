@@ -1,8 +1,9 @@
 use markdown_parser::Parser;
-use traq_markdown_grammar::{
-    bindings::{Composition, PresetId, RuleId, bundled},
-    presets,
-};
+use traq_markdown_grammar::bindings::Composition;
+use traq_markdown_grammar::bindings::PresetId;
+use traq_markdown_grammar::bindings::RuleId;
+use traq_markdown_grammar::bindings::bundled;
+use traq_markdown_grammar::presets;
 
 #[test]
 fn bundled_compositions_preserve_presets_and_validate_untrusted_recipes() {

@@ -12,6 +12,6 @@ pub use analysis::{AnalysisContext, Collector, collect};
 pub use error::Error;
 pub use extraction::{Extraction, Extractor};
 pub use markdown_definitions::RegistrationHandle;
-pub use plugin::Plugin;
-pub use preset::{Preset, PresetBuilder};
+pub use plugin::ExtractionPlugin;
+pub use preset::{ExtractionPreset, ExtractionPresetBuilder};
 pub type Result<T> = std::result::Result<T, Error>;

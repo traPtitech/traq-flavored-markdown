@@ -1,17 +1,17 @@
 use super::Interrupt;
 use super::markers::*;
 use markdown_commonmark_contracts::{BulletMarker, ListKind, OrderedDelimiter};
-use markdown_parser::engine::block::LineIndex;
+use markdown_parser::rules::block::LineIndex;
 
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch, DraftNode, ResolvedBlock},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::DraftNode;
+use markdown_parser::rules::block::ResolvedBlock;
 
-use markdown_parser::engine::source::ViewRange;
+use markdown_parser::source::ViewRange;
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
@@ -77,14 +77,14 @@ pub(super) fn parse(
         budget.token()?;
         children.push(DraftNode::blocks(
             source.span_for(lines[item_start].start..lines[i - 1].end)?,
-            NodeKind::new(markdown_commonmark_contracts::ListItem {}),
+            AnyPayload::new(markdown_commonmark_contracts::ListItem {}),
             source.join(&ranges)?,
         ));
     }
 
     let mut node = DraftNode::nodes(
         source.span_for(lines[first].start..lines[i - 1].end)?,
-        NodeKind::new(markdown_commonmark_contracts::List {
+        AnyPayload::new(markdown_commonmark_contracts::List {
             kind: if first_marker.ordered {
                 ListKind::Ordered {
                     start: first_marker.start,
@@ -191,7 +191,7 @@ fn collect_continuation(
 }
 
 fn unindent_blank_continuations(
-    source: &markdown_parser::engine::source::SourceView,
+    source: &markdown_parser::source::SourceView,
     marker_width: usize,
     ranges: &mut [ViewRange],
 ) {
@@ -214,15 +214,18 @@ fn finish_list(node: &mut ResolvedBlock) {
                 .iter()
                 .filter(|child| {
                     child
-                        .kind
-                        .get::<markdown_commonmark_contracts::Paragraph>()
+                        .payload
+                        .downcast_ref::<markdown_commonmark_contracts::Paragraph>()
                         .is_some()
                 })
                 .count()
                 > 1
     });
 
-    if let Some(list) = node.kind.get_mut::<markdown_commonmark_contracts::List>() {
+    if let Some(list) = node
+        .payload
+        .downcast_mut::<markdown_commonmark_contracts::List>()
+    {
         list.tight &= !loose;
     }
 }

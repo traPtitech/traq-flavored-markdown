@@ -1,10 +1,12 @@
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        inline::{DelimiterPolicy, InlineAction, InlineInput, InlineMatch, InlineRule, Pairing},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::inline::DelimiterPolicy;
+use markdown_parser::rules::inline::InlineAction;
+use markdown_parser::rules::inline::InlineInput;
+use markdown_parser::rules::inline::InlineMatch;
+use markdown_parser::rules::inline::InlineRule;
+use markdown_parser::rules::inline::Pairing;
 
 use unicode_general_category::{GeneralCategory as G, get_general_category};
 
@@ -54,7 +56,7 @@ pub fn paired_rule(
     markers: &'static [u8],
     name: &'static str,
     width: usize,
-    make: fn() -> NodeKind,
+    make: fn() -> AnyPayload,
 ) -> InlineRule {
     InlineRule::new(markers, move |input, budget| {
         paired(input, budget, width, DelimiterPolicy::simple(make))
@@ -113,8 +115,8 @@ pub(super) fn emphasis(
                     && (!opening.length.is_multiple_of(3) || !closing.length.is_multiple_of(3)))
             },
             cache_class: |run| (usize::from(run.open) * 3 + run.length % 3) as u8,
-            single: || NodeKind::new(markdown_commonmark_contracts::Emphasis {}),
-            combined: Some(|| NodeKind::new(markdown_commonmark_contracts::Strong {})),
+            single: || AnyPayload::new(markdown_commonmark_contracts::Emphasis {}),
+            combined: Some(|| AnyPayload::new(markdown_commonmark_contracts::Strong {})),
         },
     )
 }

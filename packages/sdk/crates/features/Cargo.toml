@@ -12,7 +12,6 @@ syntax = ["dep:markdown-parser", "dep:markdown-commonmark", "dep:markdown-extens
 text = ["dep:markdown-renderer", "dep:markdown-commonmark-text", "dep:markdown-extensions-text", "dep:markdown-trap-text"]
 
 [dependencies]
-markdown-ast.workspace = true
 markdown-definitions.workspace = true
 markdown-commonmark-contracts.workspace = true
 markdown-extensions-contracts.workspace = true

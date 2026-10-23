@@ -4,8 +4,8 @@ Plain-text renderer plugins for traP nodes. They do not depend on parser or
 extractor implementations.
 
 Add `references::plugin()`, `stamp::plugin()`, `spoiler::plugin()`, or
-`spacing::plugin()` to a `PresetBuilder`. The factories return shareable plugins
-by value; callers do not need to clone them. Use `Plugin::replace` to customize
+`spacing::plugin()` to a `RenderPresetBuilder`. The factories return shareable plugins
+by value; callers do not need to clone them. Use `RenderPlugin::replace` to customize
 one handler.
 
 References render their display labels, stamps render their literals, and

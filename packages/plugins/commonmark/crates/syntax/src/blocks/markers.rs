@@ -7,8 +7,8 @@ pub(super) fn ascii_space(ch: char) -> bool {
 }
 
 pub(super) fn content<'a>(
-    source: &'a markdown_parser::engine::source::SourceView,
-    line: &markdown_parser::engine::source::ViewRange,
+    source: &'a markdown_parser::source::SourceView,
+    line: &markdown_parser::source::ViewRange,
 ) -> &'a str {
     source[line.clone()].trim_end_matches('\n')
 }

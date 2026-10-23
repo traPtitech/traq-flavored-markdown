@@ -1,6 +1,9 @@
 use markdown_ast::Node;
 use markdown_extensions_contracts::*;
-use markdown_renderer::{Context, Output, Plugin, Result};
+use markdown_renderer::Context;
+use markdown_renderer::Output;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::Result;
 use std::sync::LazyLock;
 
 fn row<T>(_: &T, nodes: &[Node], ctx: &Context<'_>, output: &mut Output<'_>) -> Result<()> {
@@ -13,13 +16,14 @@ fn row<T>(_: &T, nodes: &[Node], ctx: &Context<'_>, output: &mut Output<'_>) -> 
     output.push("\n")
 }
 
-pub fn plugin() -> Plugin {
-    static PLUGIN: LazyLock<Plugin> = LazyLock::new(|| build().expect("valid table text plugin"));
+pub fn plugin() -> RenderPlugin {
+    static PLUGIN: LazyLock<RenderPlugin> =
+        LazyLock::new(|| build().expect("valid table text plugin"));
     PLUGIN.clone()
 }
 
-fn build() -> Result<Plugin> {
-    let mut table = Plugin::new(&markdown_extensions_contracts::declarations().table);
+fn build() -> Result<RenderPlugin> {
+    let mut table = RenderPlugin::new(&markdown_extensions_contracts::declarations().table);
 
     table.transparent::<Table>()?;
     table.transparent::<Cell>()?;

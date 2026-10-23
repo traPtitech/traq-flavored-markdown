@@ -6,7 +6,8 @@ use crate::{
 };
 use serde::Serialize;
 use std::cell::RefCell;
-use traq_markdown_grammar::{Grammar, bindings};
+use traq_markdown_grammar::Grammar;
+use traq_markdown_grammar::bindings;
 use traq_markdown_processing::pipeline::{ProcessingResult, Processor};
 
 struct Pipeline {

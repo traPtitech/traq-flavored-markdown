@@ -1,11 +1,12 @@
 use markdown_ast::{MutableDocument, Node, Span};
-use markdown_extractor::{Extractor, PresetBuilder};
+use markdown_extractor::ExtractionPresetBuilder;
+use markdown_extractor::Extractor;
 use markdown_trap_contracts::{Reference, ReferenceKind};
 use markdown_trap_extraction::{References, references};
 
 #[test]
 fn normalized_references_preserve_order_duplicates_and_categories() {
-    let mut builder = PresetBuilder::new();
+    let mut builder = ExtractionPresetBuilder::new();
     builder.add(&references::plugin()).unwrap();
 
     let extractor = Extractor::new(&builder.build().unwrap());

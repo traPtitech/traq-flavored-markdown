@@ -13,7 +13,7 @@ mod node;
 mod validation;
 mod walk;
 
-pub use data::{NodeData, NodeKind, NodeRole, PayloadError};
+pub use data::{AnyPayload, NodeData, NodeRole, PayloadError};
 pub use node::Node;
 pub use validation::{
     Document, DocumentInput, DocumentView, ValidationError, ValidationErrorKind, ValidationLimits,

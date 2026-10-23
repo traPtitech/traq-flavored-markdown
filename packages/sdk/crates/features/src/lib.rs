@@ -44,7 +44,7 @@ pub struct FeatureDefinition {
     pub export: Export,
     pub contract: &'static FeatureContract,
     #[cfg(feature = "syntax")]
-    pub syntax: fn() -> &'static markdown_parser::engine::Plugin,
+    pub syntax: fn() -> &'static markdown_parser::grammar::SyntaxPlugin,
 }
 
 pub fn all() -> &'static [FeatureDefinition] {
@@ -168,7 +168,7 @@ mod tests {
     #[cfg(feature = "text")]
     #[test]
     fn selected_text_features_have_nonconflicting_implementations() {
-        let mut builder = markdown_renderer::PresetBuilder::new();
+        let mut builder = markdown_renderer::RenderPresetBuilder::new();
         for feature in TextProfile::Traq.features() {
             builder
                 .add(&feature.plugin(TextOptions::default()))

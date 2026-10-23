@@ -1,10 +1,10 @@
 use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "test.score")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "test.score")]
 #[serde(deny_unknown_fields)]
 struct Score {
     value: f64,
@@ -30,8 +30,8 @@ impl NodeData for Score {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "test.renamed_score")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "test.renamed_score")]
 struct RenamedScore {
     value: f64,
 }
@@ -76,8 +76,8 @@ fn shared_types_work_across_independent_registration_orders() {
 }
 
 fn first(codec: &mut Codec) -> MutableDocument {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-    #[node_type(key = "test.collision")]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+    #[wire_type(key = "test.collision")]
     struct Collision {
         value: u8,
     }
@@ -107,8 +107,8 @@ fn first(codec: &mut Codec) -> MutableDocument {
 }
 
 fn second(codec: &mut Codec) -> markdown_codec::Result<()> {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-    #[node_type(key = "test.collision")]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+    #[wire_type(key = "test.collision")]
     struct Collision {
         value: u16,
     }

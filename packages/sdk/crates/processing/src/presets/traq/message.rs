@@ -41,11 +41,11 @@ impl Extractor {
         message: &mut Message,
         edits: &mut Vec<(Span, &'a str)>,
     ) {
-        if let Some(reference) = node.get::<Reference>() {
+        if let Some(reference) = node.payload::<Reference>() {
             if reference.id.canonical().is_some() {
                 edits.push((node.span, reference.label.as_str()));
             }
-        } else if let Some(embedding) = node.get::<Embedding>() {
+        } else if let Some(embedding) = node.payload::<Embedding>() {
             if let Some(id) = embedding.id.canonical() {
                 let label = labels::for_embedding(embedding.target);
                 match embedding.target {
@@ -54,7 +54,7 @@ impl Extractor {
                 }
                 edits.push((node.span, label));
             }
-        } else if let Some(link) = node.get::<Link>()
+        } else if let Some(link) = node.payload::<Link>()
             && let Some(target) = self.links.classify(&link.destination)
         {
             let label = labels::for_target(&target);

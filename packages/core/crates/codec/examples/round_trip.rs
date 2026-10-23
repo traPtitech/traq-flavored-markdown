@@ -1,10 +1,10 @@
 use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "example.heading")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "example.heading")]
 struct Heading {
     level: u8,
 }
@@ -29,8 +29,8 @@ impl NodeData for Heading {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "example.text")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "example.text")]
 struct Text {
     value: String,
 }

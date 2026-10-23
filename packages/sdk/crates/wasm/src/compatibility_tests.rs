@@ -1,6 +1,8 @@
 use crate::nodes;
 use serde_json::{Value, json};
-use traq_markdown_grammar::{Document, ParseError, presets};
+use traq_markdown_grammar::Document;
+use traq_markdown_grammar::ParseError;
+use traq_markdown_grammar::presets;
 
 fn result(value: Result<Document, ParseError>) -> Value {
     match value {

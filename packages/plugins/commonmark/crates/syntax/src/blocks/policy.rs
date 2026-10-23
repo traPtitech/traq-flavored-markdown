@@ -1,11 +1,8 @@
-use markdown_parser::engine::block::LineIndex;
-use markdown_parser::{
-    ParseError,
-    engine::{
-        ParseState,
-        block::{BlockInput, BlockPolicy},
-    },
-};
+use markdown_parser::ParseError;
+use markdown_parser::rules::ParseState;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockPolicy;
+use markdown_parser::rules::block::LineIndex;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Interrupt {

@@ -1,27 +1,27 @@
 /// Wire identity used by codecs and generated host contracts.
 ///
-/// Plugin catalogs assign explicit stable keys to public payloads. Standalone
-/// extensions must declare `#[node_type(key = "vendor.node")]` on their derive.
-pub trait NodeType {
+/// PluginDeclaration catalogs assign explicit stable keys to public payloads. Standalone
+/// extensions must declare `#[wire_type(key = "vendor.node")]` on their derive.
+pub trait WireTypeKey {
     /// Used by codec and binding registration, never for native type identity.
     #[doc(hidden)]
-    fn type_key() -> String;
+    fn wire_key() -> String;
 }
 
 /// Implement stable wire kinds from a plugin-owned node catalog.
 #[macro_export]
 macro_rules! implement_wire_kinds {
     ($group:literal; $($payload:ty => $kind:literal),+ $(,)?) => {
-        $(impl $crate::NodeType for $payload {
-            fn type_key() -> String { $kind.into() }
+        $(impl $crate::WireTypeKey for $payload {
+            fn wire_key() -> String { $kind.into() }
         })+
     };
 }
 
 macro_rules! primitives {
     ($($ty:ty => $key:literal),* $(,)?) => { $(
-        impl NodeType for $ty {
-            fn type_key() -> String { $key.into() }
+        impl WireTypeKey for $ty {
+            fn wire_key() -> String { $key.into() }
         }
     )* };
 }
@@ -35,16 +35,16 @@ primitives! {
 
 macro_rules! containers {
     ($($ty:ident => $key:literal),* $(,)?) => { $(
-        impl<T: NodeType> NodeType for $ty<T> {
-            fn type_key() -> String { format!(concat!($key, "<{}>"), T::type_key()) }
+        impl<T: WireTypeKey> WireTypeKey for $ty<T> {
+            fn wire_key() -> String { format!(concat!($key, "<{}>"), T::wire_key()) }
         }
     )* };
 }
 
 containers! { Vec => "std::vec::Vec", Option => "core::option::Option", Box => "std::boxed::Box" }
 
-impl<T: NodeType, const N: usize> NodeType for [T; N] {
-    fn type_key() -> String {
-        format!("[{};{}]", T::type_key(), N)
+impl<T: WireTypeKey, const N: usize> WireTypeKey for [T; N] {
+    fn wire_key() -> String {
+        format!("[{};{}]", T::wire_key(), N)
     }
 }

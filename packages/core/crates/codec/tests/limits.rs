@@ -1,7 +1,7 @@
 use markdown_ast::{MutableDocument, Node, Span, ValidationLimits};
 use markdown_codec::{Codec, CodecLimits};
 mod support;
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use support::{Paragraph, Text};
 
 fn codec() -> Codec {
@@ -21,7 +21,7 @@ fn deep_json(depth: usize) -> String {
         json.push_str("]}");
     }
     json.push_str("]}");
-    json.replace("<paragraph>", &Paragraph::type_key())
+    json.replace("<paragraph>", &Paragraph::wire_key())
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn ambiguous_or_unknown_input_is_rejected() {
         json.replace("\"value\":\"\"", "\"value\":\"\",\"unknown\":0"),
         json.replace("\"start\":0", "\"start\":0,\"start\":0"),
         json.replace("\"data\":", "\"unknown\":0,\"data\":"),
-        json.replace(&Text::type_key(), "unregistered::Missing"),
+        json.replace(&Text::wire_key(), "unregistered::Missing"),
         format!("{json} true"),
     ] {
         assert!(codec.decode(bad.as_bytes()).is_err());
@@ -265,8 +265,8 @@ fn decode_failures_keep_field_contract_span_and_nested_path() {
     let codec = codec();
     let mut json = serde_json::json!({
         "source": "é",
-        "children": [{"kind": Paragraph::type_key(), "data": {}, "span": {"start":0,"end":2}, "children": [
-            {"kind": Text::type_key(), "data":{"value":"é"}, "span":{"start":1,"end":2}}
+        "children": [{"kind": Paragraph::wire_key(), "data": {}, "span": {"start":0,"end":2}, "children": [
+            {"kind": Text::wire_key(), "data":{"value":"é"}, "span":{"start":1,"end":2}}
         ]}]
     });
     let error = codec
@@ -284,7 +284,7 @@ fn decode_failures_keep_field_contract_span_and_nested_path() {
         matches!(error.kind, ErrorKind::UnknownContract { ref name } if name == "missing.payload")
     );
     assert_eq!(error.path, [0, 0]);
-    json["children"][0]["children"][0]["kind"] = Text::type_key().into();
+    json["children"][0]["children"][0]["kind"] = Text::wire_key().into();
     json["children"][0]["children"][0]
         .as_object_mut()
         .unwrap()

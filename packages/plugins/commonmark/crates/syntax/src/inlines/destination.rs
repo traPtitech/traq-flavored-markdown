@@ -1,8 +1,8 @@
 use super::{entities::unescape, url};
-use markdown_parser::engine::{
-    Budget, ParseError,
-    source::{Cursor, ViewOffset},
-};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::source::Cursor;
+use markdown_parser::source::ViewOffset;
 
 pub(crate) struct ParsedDestination {
     pub end: usize,

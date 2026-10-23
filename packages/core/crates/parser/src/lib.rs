@@ -3,10 +3,26 @@
 #![allow(clippy::single_range_in_vec_init)]
 #![doc = include_str!("../README.md")]
 
+mod engine;
+pub use engine::{Limits, ParseError, ParsePhase, ParseResource, Parser};
+pub use grammar::{BuildError, Grammar, GrammarBuilder, SyntaxPlugin};
 pub use markdown_ast::{
-    Document, DocumentView, MutableDocument, Node, NodeData, NodeKind, NodeRole, Span,
+    AnyPayload, Document, DocumentView, MutableDocument, Node, NodeData, NodeRole, Span,
     ValidationLimits,
 };
-pub mod engine;
-pub use engine::{BuildError, Grammar, GrammarBuilder, Limits, ParseError, Parser, Plugin};
 pub use markdown_definitions::RegistrationHandle;
+
+/// Grammar composition and shared implementation snapshots.
+pub mod grammar {
+    pub use crate::engine::{BuildError, Grammar, GrammarBuilder, SyntaxPlugin};
+    pub use markdown_definitions::{PluginDeclaration, PluginGroup};
+}
+
+/// Extension-facing rule inputs, matches, and per-parse state.
+pub mod rules {
+    pub use crate::engine::{Budget, Contribution, ParseState, Rule};
+    pub use crate::engine::{block, inline};
+}
+
+/// Checked coordinates and source views supplied to syntax rules.
+pub use engine::source;

@@ -1,11 +1,11 @@
 use super::{Catalog, GroupId, PluginId, RuleId};
 
-use crate::{
-    Grammar, GrammarBuilder,
-    engine::{BuildError, Plugin},
-};
+use crate::Grammar;
+use crate::GrammarBuilder;
+use crate::grammar::BuildError;
+use crate::grammar::SyntaxPlugin;
 
-use markdown_definitions::Plugin as Declaration;
+use markdown_definitions::PluginDeclaration as Declaration;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -61,8 +61,8 @@ impl Catalog {
     fn compose_groups(
         &self,
         spec: &Composition,
-    ) -> Result<Vec<crate::engine::PluginGroup>, BuildError> {
-        let mut groups: Vec<crate::engine::PluginGroup> = vec![];
+    ) -> Result<Vec<crate::grammar::PluginGroup>, BuildError> {
+        let mut groups: Vec<crate::grammar::PluginGroup> = vec![];
         let mut depths = vec![];
 
         for (index, group) in spec.groups.iter().enumerate() {
@@ -92,7 +92,7 @@ impl Catalog {
     fn compose_plugins(
         &self,
         spec: &Composition,
-        groups: &[crate::engine::PluginGroup],
+        groups: &[crate::grammar::PluginGroup],
     ) -> Result<GrammarBuilder, BuildError> {
         let mut builder = GrammarBuilder::new();
 
@@ -106,8 +106,8 @@ impl Catalog {
     fn compose_plugin(
         &self,
         spec: &PluginSpec,
-        groups: &[crate::engine::PluginGroup],
-    ) -> Result<Plugin, BuildError> {
+        groups: &[crate::grammar::PluginGroup],
+    ) -> Result<SyntaxPlugin, BuildError> {
         let name = &spec.name;
 
         let declaration = match spec.group {
@@ -118,7 +118,7 @@ impl Catalog {
             None => Declaration::new(name),
         };
 
-        let mut plugin = Plugin::new(&declaration);
+        let mut plugin = SyntaxPlugin::new(&declaration);
 
         if spec.rules.len() > 4096 {
             return Err(invalid("rule limit exceeded"));

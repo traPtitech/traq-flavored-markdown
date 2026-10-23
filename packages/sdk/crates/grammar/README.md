@@ -6,12 +6,14 @@ extensions; their individual syntax crates own the rules themselves.
 `traq-markdown-features` joins each feature's shared declaration, native payload
 types, SDK export member, implementation factories, and profile membership.
 The grammar presets and exported plugin catalog select entries from that table;
-their typed rule precedence remains in this crate. Both native presets reuse
+their typed rule precedence belongs to the selected grammar profile. Both native presets reuse
 one CommonMark syntax instance. The `syntax` Cargo feature keeps this assembly
 independent of renderer implementations.
 
 ```rust
-use traq_markdown_grammar::{Parser, presets, syntax::extensions};
+use traq_markdown_grammar::Parser;
+use traq_markdown_grammar::presets;
+use traq_markdown_grammar::syntax::extensions;
 
 let parser = presets::traq::v1::parser();
 let document = parser.parse("**hello** :stamp:")?;

@@ -639,7 +639,6 @@ dependencies = [
 name = "traq-markdown-features"
 version = "0.1.0"
 dependencies = [
- "markdown-ast",
  "markdown-commonmark",
  "markdown-commonmark-contracts",
  "markdown-commonmark-text",

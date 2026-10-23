@@ -24,7 +24,7 @@ macro_rules! feature_catalog {
 #[macro_export]
 macro_rules! node_catalog {
     ($consumer:ident) => {
-        $crate::feature_catalog!(markdown_definitions::nodes_from_features, $consumer);
+        $crate::feature_catalog!($crate::__nodes_from_features, $consumer);
     };
 }
 feature_catalog!(markdown_definitions::define_feature_contracts);

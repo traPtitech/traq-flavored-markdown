@@ -17,9 +17,9 @@ impl Declaration {
 
 /// A shared plugin declaration. Names are for people; identity is instance based.
 #[derive(Clone, Debug)]
-pub struct Plugin(Arc<Declaration>);
+pub struct PluginDeclaration(Arc<Declaration>);
 
-impl Plugin {
+impl PluginDeclaration {
     pub fn new(name: impl Into<String>) -> Self {
         Self(Declaration::new(None, name))
     }
@@ -37,13 +37,13 @@ impl Plugin {
     }
 }
 
-impl PartialEq for Plugin {
+impl PartialEq for PluginDeclaration {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
-impl Eq for Plugin {}
+impl Eq for PluginDeclaration {}
 
 #[derive(Clone, Debug)]
 pub struct PluginGroup(Arc<Declaration>);
@@ -54,8 +54,8 @@ impl PluginGroup {
     }
 
     /// Create a plugin declaration within this namespace.
-    pub fn plugin(&self, name: impl Into<String>) -> Plugin {
-        Plugin(Declaration::new(Some(self), name))
+    pub fn plugin(&self, name: impl Into<String>) -> PluginDeclaration {
+        PluginDeclaration(Declaration::new(Some(self), name))
     }
 
     pub fn name(&self) -> &str {

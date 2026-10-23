@@ -1,7 +1,7 @@
 use crate::nodes;
 use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Heading, Text};
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use serde_json::Value;
 
 #[test]
@@ -66,7 +66,7 @@ fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
 
     assert!(nodes::codec().encode(&document).is_err());
     let json = serde_json::json!({"source":"x", "children":[{
-        "kind":Heading::type_key(),"span":{"start":0,"end":1},"data":{"level":7}
+        "kind":Heading::wire_key(),"span":{"start":0,"end":1},"data":{"level":7}
     }]});
     assert!(
         nodes::codec()

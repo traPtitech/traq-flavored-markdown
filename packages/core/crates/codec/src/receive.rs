@@ -1,6 +1,6 @@
 //! Bounded document framing; the caller supplies payload decoding.
 use crate::{CodecLimits, Error as CodecError, ErrorKind, Result as CodecResult, fields::Fields};
-use markdown_ast::{Document, MutableDocument, Node, NodeKind, Span};
+use markdown_ast::{AnyPayload, Document, MutableDocument, Node, Span};
 
 use serde::{
     Deserialize, Deserializer,
@@ -20,7 +20,7 @@ struct Position {
 pub(crate) fn decode(
     json: &[u8],
     limits: CodecLimits,
-    decode_kind: &dyn Fn(&str, Fields<'_>) -> CodecResult<NodeKind>,
+    decode_kind: &dyn Fn(&str, Fields<'_>) -> CodecResult<AnyPayload>,
 ) -> CodecResult<Document> {
     check_json_limit(json, limits)?;
 
@@ -71,7 +71,7 @@ fn decode_source(fields: &mut Fields<'_>, limits: CodecLimits) -> CodecResult<St
 }
 
 struct State<'a> {
-    decode_kind: &'a dyn Fn(&str, Fields<'_>) -> CodecResult<NodeKind>,
+    decode_kind: &'a dyn Fn(&str, Fields<'_>) -> CodecResult<AnyPayload>,
     source: &'a str,
     limits: CodecLimits,
     count: usize,

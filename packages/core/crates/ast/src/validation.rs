@@ -54,7 +54,7 @@ impl ValidationError {
             kind,
             path,
             span: Some(node.span),
-            payload_type: Some(node.data_type_name()),
+            payload_type: Some(node.payload_type_name()),
             payload: None,
         }
     }

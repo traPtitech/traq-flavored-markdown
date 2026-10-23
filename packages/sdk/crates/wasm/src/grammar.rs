@@ -1,7 +1,8 @@
 use super::buffers::IO;
 use crate::abi::{self, Error, ErrorCode};
 use std::cell::RefCell;
-use traq_markdown_grammar::{Grammar, bindings};
+use traq_markdown_grammar::Grammar;
+use traq_markdown_grammar::bindings;
 
 thread_local! { static GRAMMAR: RefCell<Option<Grammar>> = const { RefCell::new(None) }; }
 

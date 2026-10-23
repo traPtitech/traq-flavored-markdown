@@ -74,14 +74,14 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
         );
     }
 
-    doc.children[0].children[1].get_mut::<Data>().unwrap().0 = false;
+    doc.children[0].children[1].payload_mut::<Data>().unwrap().0 = false;
     assert_eq!(
         doc.validate(limits)
             .map(|view| view.node_count())
             .map_err(|error| error.kind),
         Err(Error::InvalidNode)
     );
-    doc.children[0].children[1].get_mut::<Data>().unwrap().0 = true;
+    doc.children[0].children[1].payload_mut::<Data>().unwrap().0 = true;
 
     for (start, end) in [(1, 3), (3, 2), (0, 5), (0, usize::MAX)] {
         doc.children[0].children[1].span = Span { start, end };
@@ -328,7 +328,7 @@ fn diagnostics_and_scoped_walk_share_tree_coordinates() {
     assert_eq!(seen, [(0, 0), (0, 1), (1, 1), (3, 0)]);
 
     document.children[0].children[1]
-        .get_mut::<Data>()
+        .payload_mut::<Data>()
         .unwrap()
         .0 = false;
     let error = DocumentView::new(&document).unwrap_err();

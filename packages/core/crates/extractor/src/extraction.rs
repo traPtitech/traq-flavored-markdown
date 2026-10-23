@@ -1,11 +1,11 @@
-use crate::{AnalysisContext, Collector, Error, Preset, Result};
+use crate::{AnalysisContext, Collector, Error, ExtractionPreset, Result};
 use std::marker::PhantomData;
 
 pub struct Extractor<R> {
-    preset: Preset<R>,
+    preset: ExtractionPreset<R>,
 }
 impl<R> Extractor<R> {
-    pub fn new(preset: &Preset<R>) -> Self {
+    pub fn new(preset: &ExtractionPreset<R>) -> Self {
         Self {
             preset: preset.clone(),
         }
@@ -51,7 +51,7 @@ impl<'a, R, E: From<Error>> Collector<'a> for Extraction<'_, R, E> {
             .extractor
             .preset
             .handlers
-            .get(&context.visit.node.data_type_id())
+            .get(&context.visit.node.payload_type_id())
         {
             handler(context, &mut self.result)?;
         }

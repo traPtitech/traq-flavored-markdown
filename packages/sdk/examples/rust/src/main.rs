@@ -1,4 +1,6 @@
-use traq_markdown_grammar::{Parser, presets, syntax::extensions::math};
+use traq_markdown_grammar::Parser;
+use traq_markdown_grammar::presets;
+use traq_markdown_grammar::syntax::extensions::math;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = "**hello** :stamp: $x$";

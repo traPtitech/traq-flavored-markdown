@@ -6,8 +6,10 @@ parser, or a codec.
 
 ```rust
 use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_renderer::{Plugin, PresetBuilder, Renderer};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
@@ -22,12 +24,12 @@ impl NodeData for Text {
 }
 
 let prefix = String::from("hello ");
-let mut plugin = Plugin::new(&Declaration::new("greeting"));
+let mut plugin = RenderPlugin::new(&Declaration::new("greeting"));
 plugin.on::<Text>(move |text, _, _, output| {
     output.push(&prefix)?;
     output.push(&text.0)
 })?;
-let mut builder = PresetBuilder::new();
+let mut builder = RenderPresetBuilder::new();
 builder.add(&plugin)?;
 let renderer = Renderer::new(&builder.build()?);
 let document = MutableDocument {
@@ -38,7 +40,7 @@ assert_eq!(renderer.render(&document)?, "hello world");
 # Ok::<(), markdown_renderer::Error>(())
 ```
 
-`Plugin::on` registers a handler for one concrete node type. Handler closures
+`RenderPlugin::on` registers a handler for one concrete node type. Handler closures
 are `Send + Sync` and can retain configuration. `replace::<T>` changes a
 registered handler in that plugin; missing and duplicate handlers fail without
 changing its snapshot. Builders, presets, and renderers preserve the snapshot

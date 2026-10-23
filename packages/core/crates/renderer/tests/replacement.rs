@@ -1,6 +1,8 @@
 use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_renderer::{Plugin, PresetBuilder, Renderer};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -40,8 +42,8 @@ fn document<T: NodeData>(value: T) -> MutableDocument {
     }
 }
 
-fn renderer(plugin: &Plugin) -> Renderer {
-    let mut builder = PresetBuilder::new();
+fn renderer(plugin: &RenderPlugin) -> Renderer {
+    let mut builder = RenderPresetBuilder::new();
     builder.add(plugin).unwrap();
     Renderer::new(&builder.build().unwrap())
 }
@@ -50,7 +52,7 @@ fn renderer(plugin: &Plugin) -> Renderer {
 fn replacement_changes_only_the_selected_type_in_the_new_snapshot() {
     let old_config = Arc::new("old".to_owned());
     let old_weak = Arc::downgrade(&old_config);
-    let mut plugin = Plugin::new(&Declaration::new("configured"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("configured"));
 
     plugin
         .on::<Text>(move |_, _, _, output| output.push(&old_config))
@@ -105,11 +107,11 @@ fn replacement_changes_only_the_selected_type_in_the_new_snapshot() {
 
 #[test]
 fn missing_replacement_is_atomic_and_does_not_register_a_handler() {
-    let mut plugin = Plugin::new(&Declaration::new("text"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("text"));
     plugin
         .on::<Text>(|_, _, _, output| output.push("unchanged"))
         .unwrap();
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
     assert_eq!(
         plugin

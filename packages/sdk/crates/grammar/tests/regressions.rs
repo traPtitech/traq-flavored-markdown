@@ -9,11 +9,11 @@ fn table_pipes_follow_backslash_parity() {
     let even = "| a\\\\| b | c |\n| --- | --- | --- |\n| x | y | z |";
     let document = parser.parse(even).unwrap();
     let table = &document.children[0];
-    assert!(table.get::<Table>().is_some());
+    assert!(table.payload::<Table>().is_some());
     assert_eq!(table.children[0].children.len(), 3);
     assert_eq!(
         table.children[0].children[0].children[0]
-            .get::<Text>()
+            .payload::<Text>()
             .unwrap()
             .value,
         "a\\"
@@ -22,11 +22,11 @@ fn table_pipes_follow_backslash_parity() {
     let odd = "| a\\\\\\| b | c |\n| --- | --- |\n| x | y |";
     let document = parser.parse(odd).unwrap();
     let table = &document.children[0];
-    assert!(table.get::<Table>().is_some());
+    assert!(table.payload::<Table>().is_some());
     assert_eq!(table.children[0].children.len(), 2);
     assert_eq!(
         table.children[0].children[0].children[0]
-            .get::<Text>()
+            .payload::<Text>()
             .unwrap()
             .value,
         "a\\| b"
@@ -41,7 +41,7 @@ fn many_short_links_fit_the_default_work_budget() {
         document
             .children
             .iter()
-            .filter(|node| node.get::<Link>().is_some())
+            .filter(|node| node.payload::<Link>().is_some())
             .count(),
         1_000
     );

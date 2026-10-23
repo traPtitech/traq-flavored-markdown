@@ -1,7 +1,7 @@
 use crate::{CodecLimits, Error, ErrorKind, Result, fields::Fields};
 
-use markdown_ast::{Document, NodeData, NodeKind};
-use markdown_definitions::NodeType;
+use markdown_ast::{AnyPayload, Document, NodeData};
+use markdown_definitions::WireTypeKey;
 
 use serde::{
     Deserialize, Serialize,
@@ -12,8 +12,8 @@ use std::{any::TypeId, collections::HashMap};
 
 pub(crate) struct Entry {
     pub name: String,
-    pub borrow: fn(&NodeKind) -> &dyn erased_serde::Serialize,
-    decode: fn(Fields<'_>) -> serde_json::Result<NodeKind>,
+    pub borrow: fn(&AnyPayload) -> &dyn erased_serde::Serialize,
+    decode: fn(Fields<'_>) -> serde_json::Result<AnyPayload>,
 }
 
 /// Reusable mapping between native payload types and generated wire keys.
@@ -25,10 +25,10 @@ pub struct Codec {
 
 impl Codec {
     /// Registration is atomic; duplicate types and names are rejected.
-    pub fn register<T: NodeData + NodeType + Serialize + DeserializeOwned>(
+    pub fn register<T: NodeData + WireTypeKey + Serialize + DeserializeOwned>(
         &mut self,
     ) -> Result<()> {
-        let name = T::type_key();
+        let name = T::wire_key();
         if name.is_empty() || name.chars().any(char::is_control) {
             return Err(Error::new(ErrorKind::InvalidContractKey {
                 key: name,
@@ -50,9 +50,9 @@ impl Codec {
             id,
             Entry {
                 name,
-                borrow: |kind| kind.get::<T>().expect("registered type invariant"),
+                borrow: |kind| kind.downcast_ref::<T>().expect("registered type invariant"),
                 decode: |fields| {
-                    T::deserialize(MapDeserializer::new(fields.0.into_iter())).map(NodeKind::new)
+                    T::deserialize(MapDeserializer::new(fields.0.into_iter())).map(AnyPayload::new)
                 },
             },
         );

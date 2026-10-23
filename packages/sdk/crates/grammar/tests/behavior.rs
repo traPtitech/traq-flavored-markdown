@@ -1,12 +1,15 @@
 use markdown_commonmark_contracts::Link;
-use markdown_parser::{Limits, Node, ParseError, ValidationLimits};
+use markdown_parser::Limits;
+use markdown_parser::Node;
+use markdown_parser::ParseError;
+use markdown_parser::ValidationLimits;
 use markdown_trap_contracts::{Stamp, StampKind};
 use traq_markdown_grammar::presets;
 
 fn has_link(nodes: &[Node]) -> bool {
     nodes
         .iter()
-        .any(|node| node.get::<Link>().is_some() || has_link(&node.children))
+        .any(|node| node.payload::<Link>().is_some() || has_link(&node.children))
 }
 
 #[test]
@@ -29,14 +32,17 @@ fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
     ] {
         let document = parser.parse_inline(source).unwrap();
         assert_eq!(document.children.len(), 1, "{source}");
-        assert_eq!(document.children[0].get::<Stamp>().unwrap().kind, expected);
+        assert_eq!(
+            document.children[0].payload::<Stamp>().unwrap().kind,
+            expected
+        );
     }
     let document = parser.parse_inline(":foohsl(0, 20%, 30%):").unwrap();
     assert!(
         document
             .children
             .iter()
-            .all(|node| node.get::<Stamp>().is_none())
+            .all(|node| node.payload::<Stamp>().is_none())
     );
 }
 
@@ -109,7 +115,7 @@ fn syntax_and_rendering_policy_are_separate() {
         let destinations: Vec<_> = document
             .children
             .iter()
-            .filter_map(|node| node.get::<Link>())
+            .filter_map(|node| node.payload::<Link>())
             .map(|link| link.destination.as_str())
             .collect();
         assert_eq!(destinations, ["javascript:alert", "file:///a"]);

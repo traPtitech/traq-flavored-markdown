@@ -6,8 +6,10 @@ traQ-specific result type.
 
 ```rust
 use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_extractor::{Extractor, Plugin, PresetBuilder};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_extractor::Extractor;
+use markdown_extractor::ExtractionPlugin;
+use markdown_extractor::ExtractionPresetBuilder;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Reference(String);
@@ -21,12 +23,12 @@ impl NodeData for Reference {
     fn payload_bytes(&self) -> usize { self.0.len() }
 }
 
-let mut plugin = Plugin::<Vec<String>>::new(&Declaration::new("references"));
+let mut plugin = ExtractionPlugin::<Vec<String>>::new(&Declaration::new("references"));
 plugin.on::<Reference>(|reference, _, result| {
     result.push(reference.0.clone());
     Ok(())
 })?;
-let mut builder = PresetBuilder::new();
+let mut builder = ExtractionPresetBuilder::new();
 builder.add(&plugin)?;
 let extractor = Extractor::new(&builder.build()?);
 let document = MutableDocument {

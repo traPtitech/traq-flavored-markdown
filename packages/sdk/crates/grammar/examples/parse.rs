@@ -1,9 +1,12 @@
 use markdown_commonmark_contracts::Text;
-use traq_markdown_grammar::{Node, Parser, presets, syntax::extensions};
+use traq_markdown_grammar::Node;
+use traq_markdown_grammar::Parser;
+use traq_markdown_grammar::presets;
+use traq_markdown_grammar::syntax::extensions;
 
 fn print_text(nodes: &[Node]) {
     for node in nodes {
-        if let Some(text) = node.get::<Text>() {
+        if let Some(text) = node.payload::<Text>() {
             println!("{}..{}: {}", node.span.start, node.span.end, text.value);
         }
         print_text(&node.children);

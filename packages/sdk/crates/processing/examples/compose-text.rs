@@ -1,8 +1,9 @@
-use markdown_renderer::{PresetBuilder, Renderer};
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 use markdown_trap_contracts::Spoiler;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     for plugin in [
         markdown_commonmark_text::plugin(),
         markdown_commonmark_text::html::plugin(),

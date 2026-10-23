@@ -11,7 +11,7 @@ let document = codec.decode(&json)?;
 ```
 
 Core has no fixed list of node types. A registered type implements `NodeData`,
-`NodeType`, `Serialize`, and `DeserializeOwned`; `#[derive(NodeType)]` generates
+`WireTypeKey`, `Serialize`, and `DeserializeOwned`; `#[derive(WireTypeKey)]` generates
 its transport metadata. Each external plugin type declares its `NodeRole` and
 owned payload byte count through `NodeData`, including every dynamic string.
 Plugins and explicit contract-version IDs are not part of registration.

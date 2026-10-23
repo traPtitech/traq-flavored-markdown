@@ -4,10 +4,10 @@ use super::{
     inline::{InlineRule, TextRule},
 };
 
-use markdown_ast::{NodeData, NodeKind};
+use markdown_ast::{AnyPayload, NodeData};
 use std::sync::Arc;
 
-pub(crate) type TextFactory = Arc<dyn Fn(String) -> NodeKind + Send + Sync>;
+pub(crate) type TextFactory = Arc<dyn Fn(String) -> AnyPayload + Send + Sync>;
 #[derive(Clone, Default)]
 pub(crate) struct Definition {
     pub rules: Vec<Contribution>,
@@ -18,13 +18,13 @@ pub(crate) struct Definition {
 /// Parser implementation of a shared declaration. Editing a shared copy creates
 /// a new implementation snapshot, without changing the shared declaration.
 #[derive(Clone)]
-pub struct Plugin {
+pub struct SyntaxPlugin {
     pub(crate) definition: Arc<Definition>,
-    pub(super) declaration: markdown_definitions::Plugin,
+    pub(super) declaration: markdown_definitions::PluginDeclaration,
 }
 
-impl Plugin {
-    pub fn new(declaration: &markdown_definitions::Plugin) -> Self {
+impl SyntaxPlugin {
+    pub fn new(declaration: &markdown_definitions::PluginDeclaration) -> Self {
         Self {
             definition: Arc::default(),
             declaration: declaration.clone(),
@@ -33,7 +33,7 @@ impl Plugin {
 
     /// A plugin implementing one rule and no parser context providers.
     pub fn from_rule(
-        declaration: &markdown_definitions::Plugin,
+        declaration: &markdown_definitions::PluginDeclaration,
         rule: impl Into<Contribution>,
     ) -> Self {
         let mut plugin = Self::new(declaration);
@@ -62,7 +62,10 @@ impl Plugin {
     }
 
     /// Inherit only ordinary-text construction, never block-sequence behavior.
-    pub fn inherit_text_from(&mut self, source: &Plugin) -> Result<&mut Self, super::BuildError> {
+    pub fn inherit_text_from(
+        &mut self,
+        source: &SyntaxPlugin,
+    ) -> Result<&mut Self, super::BuildError> {
         if self.has_text_provider() {
             return Err(super::BuildError::Duplicate {
                 element: "text provider".into(),
@@ -83,7 +86,7 @@ impl Plugin {
     /// Inherit only block-sequence behavior, never ordinary-text construction.
     pub fn inherit_block_policy_from(
         &mut self,
-        source: &Plugin,
+        source: &SyntaxPlugin,
     ) -> Result<&mut Self, super::BuildError> {
         if self.has_block_policy() {
             return Err(super::BuildError::Duplicate {
@@ -119,7 +122,7 @@ impl Plugin {
         make: impl Fn(String) -> T + Send + Sync + 'static,
     ) -> &mut Self {
         Arc::make_mut(&mut self.definition).text =
-            Some(Arc::new(move |value| NodeKind::new(make(value))));
+            Some(Arc::new(move |value| AnyPayload::new(make(value))));
         self
     }
 

@@ -1,5 +1,5 @@
 use super::{delimiters, scan::State, token::TokenKind, tree};
-use crate::{NodeKind, ParseError};
+use crate::{AnyPayload, ParseError};
 
 pub(super) fn inhibit(state: &mut State<'_, '_>) {
     for bracket in &mut state.brackets {
@@ -12,7 +12,7 @@ pub(super) fn inhibit(state: &mut State<'_, '_>) {
 pub(super) fn close(
     state: &mut State<'_, '_>,
     end: usize,
-    kind: NodeKind,
+    kind: AnyPayload,
     inhibit: bool,
 ) -> Result<(), ParseError> {
     let bracket = state.brackets.pop().ok_or(ParseError::InternalError)?;

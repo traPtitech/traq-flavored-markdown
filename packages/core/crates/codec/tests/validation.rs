@@ -1,14 +1,14 @@
 use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 mod support;
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use support::{Heading, Text};
 
 static CHECKS: AtomicUsize = AtomicUsize::new(0);
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "test.group")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "test.group")]
 struct Group {}
 
 impl NodeData for Group {
@@ -27,7 +27,7 @@ impl NodeData for Group {
             CHECKS.fetch_add(1, Ordering::Relaxed);
             children
                 .iter()
-                .all(|node| node.get::<Group>().is_some() || node.get::<Text>().is_some())
+                .all(|node| node.payload::<Group>().is_some() || node.payload::<Text>().is_some())
         };
         if valid {
             Ok(())
@@ -117,7 +117,7 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     doc.children = vec![Node::leaf(span, Heading { level: 2 })];
 
     let json = String::from_utf8(codec.encode(&doc).unwrap()).unwrap();
-    doc.children[0].get_mut::<Heading>().unwrap().level = 7;
+    doc.children[0].payload_mut::<Heading>().unwrap().level = 7;
 
     assert!(codec.encode(&doc).is_err());
     assert!(
@@ -127,7 +127,7 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     );
 
     let mut invalid: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    invalid["children"][0]["children"][0]["children"][0]["children"] = serde_json::json!([{ "kind": Text::type_key(), "span": {"start":0,"end":1}, "data":{"value":"x"} }]);
+    invalid["children"][0]["children"][0]["children"][0]["children"] = serde_json::json!([{ "kind": Text::wire_key(), "span": {"start":0,"end":1}, "data":{"value":"x"} }]);
 
     assert!(
         codec

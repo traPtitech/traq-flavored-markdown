@@ -1,10 +1,10 @@
 use super::{
     CatalogExports, Composition, GroupId, GroupSpec, PluginId, PluginSpec, PresetId, RuleId,
 };
-use markdown_parser::{
-    GrammarBuilder,
-    engine::{Contribution, Plugin, PluginGroup},
-};
+use markdown_parser::GrammarBuilder;
+use markdown_parser::grammar::PluginGroup;
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::Contribution;
 use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -23,7 +23,7 @@ pub struct PresetSpec {
 #[derive(Default)]
 pub struct Catalog {
     pub(super) groups: Vec<PluginGroup>,
-    pub(super) plugins: Vec<Plugin>,
+    pub(super) plugins: Vec<SyntaxPlugin>,
     pub(super) rules: Vec<Contribution>,
     pub(super) presets: Vec<PresetSpec>,
     pub exports: CatalogExports,
@@ -43,7 +43,7 @@ impl Catalog {
         GroupId(self.groups.len() - 1)
     }
 
-    pub fn plugin(&mut self, plugin: &Plugin) -> PluginId {
+    pub fn plugin(&mut self, plugin: &SyntaxPlugin) -> PluginId {
         if let Some(index) = self.plugins.iter().position(|p| p.same(plugin)) {
             return PluginId(index);
         }
@@ -65,7 +65,7 @@ impl Catalog {
     pub fn preset(
         &mut self,
         definition: &GrammarBuilder,
-    ) -> Result<PresetId, crate::engine::BuildError> {
+    ) -> Result<PresetId, crate::grammar::BuildError> {
         // Metadata registration validates the recipe without compiling dispatch
         // tables or invoking a preset parser for recognizer warmup.
         definition.validate_definition()?;
@@ -124,7 +124,7 @@ impl Catalog {
             .collect()
     }
 
-    fn plugin_spec(&self, plugin: &Plugin) -> PluginSpec {
+    fn plugin_spec(&self, plugin: &SyntaxPlugin) -> PluginSpec {
         let provider_index = || {
             PluginId(
                 self.plugins

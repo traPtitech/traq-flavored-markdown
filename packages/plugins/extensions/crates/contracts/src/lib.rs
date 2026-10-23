@@ -17,3 +17,6 @@ pub use mark::*;
 
 mod strikethrough;
 pub use strikethrough::*;
+
+#[doc(hidden)]
+pub use markdown_definitions::nodes_from_features as __nodes_from_features;

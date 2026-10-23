@@ -1,15 +1,12 @@
 use super::Interrupt;
 use super::markers::*;
 use crate::references;
-use markdown_parser::engine::block::LineIndex;
+use markdown_parser::rules::block::LineIndex;
 
-use markdown_parser::{
-    ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch},
-    },
-};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
 
 struct DefinitionMatch {
     end: LineIndex,

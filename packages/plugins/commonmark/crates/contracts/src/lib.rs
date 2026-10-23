@@ -8,3 +8,6 @@ mod nodes;
 
 pub use declarations::{PluginDeclarations, declarations};
 pub use nodes::*;
+
+#[doc(hidden)]
+pub use markdown_definitions::nodes_from_features as __nodes_from_features;

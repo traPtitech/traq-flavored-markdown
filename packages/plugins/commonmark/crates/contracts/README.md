@@ -1,10 +1,10 @@
 # markdown-commonmark-contracts
 
 Defines the 17 CommonMark node types, their `NodeData` validation, serde
-representations, and `NodeType` metadata. It does not depend on parser,
+representations, and `WireTypeKey` metadata. It does not depend on parser,
 renderer, or codec implementations.
 
-`#[derive(NodeType)]` provides transport metadata. A distribution registers the
+`#[derive(WireTypeKey)]` provides transport metadata. A distribution registers the
 types it ships, for example `codec.register::<Heading>()?`; this crate does not
 maintain a node catalog or contract version.
 

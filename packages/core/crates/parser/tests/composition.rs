@@ -1,7 +1,11 @@
-use markdown_definitions::Plugin as Declaration;
-use markdown_parser::{
-    BuildError, GrammarBuilder, NodeData, NodeRole, Parser, Plugin, engine::inline::InlineRule,
-};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_parser::BuildError;
+use markdown_parser::GrammarBuilder;
+use markdown_parser::NodeData;
+use markdown_parser::NodeRole;
+use markdown_parser::Parser;
+use markdown_parser::SyntaxPlugin;
+use markdown_parser::rules::inline::InlineRule;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
@@ -17,8 +21,8 @@ impl NodeData for Text {
         self.0.len()
     }
 }
-fn plugin() -> Plugin {
-    let mut plugin = Plugin::new(&Declaration::new("text"));
+fn plugin() -> SyntaxPlugin {
+    let mut plugin = SyntaxPlugin::new(&Declaration::new("text"));
     plugin.text(Text);
     plugin
 }
@@ -27,7 +31,7 @@ fn plugin() -> Plugin {
 fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     let mut plugin = plugin();
     let rule = InlineRule::new(b"x", |input, _| {
-        Ok(Some(markdown_parser::engine::inline::InlineMatch::literal(
+        Ok(Some(markdown_parser::rules::inline::InlineMatch::literal(
             input.position + 1,
         )))
     });
@@ -38,7 +42,7 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     let registration = builder.register(&plugin).unwrap();
 
     let original = builder.clone().build().unwrap();
-    let mut duplicate = Plugin::new(&Declaration::new("duplicate"));
+    let mut duplicate = SyntaxPlugin::new(&Declaration::new("duplicate"));
     duplicate.add(&rule);
     assert!(builder.add(&duplicate).is_err());
 
@@ -51,7 +55,7 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     );
 
     plugin.add(InlineRule::new(b"y", |input, _| {
-        Ok(Some(markdown_parser::engine::inline::InlineMatch::text(
+        Ok(Some(markdown_parser::rules::inline::InlineMatch::text(
             input.position + 1,
             "changed".into(),
         )))
@@ -67,7 +71,7 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     drop(original);
 
     assert_eq!(
-        parser.parse_inline("y").unwrap().children[0].get::<Text>(),
+        parser.parse_inline("y").unwrap().children[0].payload::<Text>(),
         Some(&Text("y".into()))
     );
 }
@@ -95,8 +99,8 @@ fn rule_names_are_checked_per_plugin_and_phase() {
 fn shared_name_checks_keep_parser_diagnostics_and_rule_error_priority() {
     let root = Declaration::group("generic");
     let nested = root.group("nested");
-    let first = Plugin::new(&nested.plugin("same"));
-    let mut second = Plugin::new(&nested.plugin("same"));
+    let first = SyntaxPlugin::new(&nested.plugin("same"));
+    let mut second = SyntaxPlugin::new(&nested.plugin("same"));
 
     for rule_collision in [false, true] {
         if rule_collision {
@@ -133,7 +137,7 @@ fn shared_name_checks_keep_parser_diagnostics_and_rule_error_priority() {
 
 #[test]
 fn text_and_block_context_capabilities_can_be_composed_independently() {
-    use markdown_parser::engine::{
+    use markdown_parser::rules::{
         ParseState,
         block::{BlockInput, BlockPolicy, LineIndex},
     };
@@ -150,9 +154,9 @@ fn text_and_block_context_capabilities_can_be_composed_independently() {
     }
     let mut source = plugin();
     source.block_policy(Preserve);
-    let mut text = Plugin::new(&Declaration::new("text-only"));
+    let mut text = SyntaxPlugin::new(&Declaration::new("text-only"));
     text.inherit_text_from(&source).unwrap();
-    let mut blocks = Plugin::new(&Declaration::new("blocks-only"));
+    let mut blocks = SyntaxPlugin::new(&Declaration::new("blocks-only"));
     blocks.inherit_block_policy_from(&source).unwrap();
     let mut builder = GrammarBuilder::new();
     builder.add(&text).unwrap().add(&blocks).unwrap();
@@ -160,13 +164,13 @@ fn text_and_block_context_capabilities_can_be_composed_independently() {
         .parse_inline("text")
         .unwrap();
     assert_eq!(
-        document.children[0].get::<Text>(),
+        document.children[0].payload::<Text>(),
         Some(&Text("text".into()))
     );
 
     assert!(text.inherit_text_from(&source).is_err());
     assert!(blocks.inherit_block_policy_from(&source).is_err());
-    let empty = Plugin::new(&Declaration::new("no-context"));
+    let empty = SyntaxPlugin::new(&Declaration::new("no-context"));
     assert!(blocks.inherit_text_from(&empty).is_err());
     assert!(text.inherit_block_policy_from(&empty).is_err());
 }

@@ -1,4 +1,4 @@
-use crate::{Node, NodeKind, engine::source::ViewOffset};
+use crate::{AnyPayload, Node, engine::source::ViewOffset};
 
 /// Syntax-owned matching policy. The engine only pairs accepted runs and
 /// caches failed searches within the policy's bounded equivalence classes.
@@ -6,11 +6,11 @@ use crate::{Node, NodeKind, engine::source::ViewOffset};
 pub struct DelimiterPolicy {
     pub accepts: fn(DelimiterRun, DelimiterRun) -> bool,
     pub cache_class: fn(DelimiterRun) -> u8,
-    pub single: fn() -> NodeKind,
-    pub combined: Option<fn() -> NodeKind>,
+    pub single: fn() -> AnyPayload,
+    pub combined: Option<fn() -> AnyPayload>,
 }
 impl DelimiterPolicy {
-    pub const fn simple(single: fn() -> NodeKind) -> Self {
+    pub const fn simple(single: fn() -> AnyPayload) -> Self {
         Self {
             accepts: |_, _| true,
             cache_class: |_| 0,
@@ -50,7 +50,7 @@ pub enum InlineAction {
     Text(String),
 
     Node {
-        kind: NodeKind,
+        payload: AnyPayload,
         children: Vec<Node>,
         inhibit_brackets: bool,
     },
@@ -58,7 +58,7 @@ pub enum InlineAction {
     /// Remove trailing literal bytes before emitting a node, e.g. a hard break.
     TrimmedNode {
         trim: usize,
-        kind: NodeKind,
+        payload: AnyPayload,
     },
 
     Delimiter(Pairing),
@@ -69,7 +69,7 @@ pub enum InlineAction {
     },
 
     CloseBracket {
-        kind: NodeKind,
+        payload: AnyPayload,
         inhibit_brackets: bool,
     },
 
@@ -84,11 +84,11 @@ impl InlineMatch {
         }
     }
 
-    pub fn leaf(end: ViewOffset, kind: NodeKind) -> Self {
+    pub fn leaf(end: ViewOffset, payload: AnyPayload) -> Self {
         Self {
             end,
             action: InlineAction::Node {
-                kind,
+                payload,
                 children: vec![],
                 inhibit_brackets: false,
             },
@@ -114,8 +114,8 @@ pub(super) enum TokenKind {
     Text(String),
     Decoded(String),
     Marker(String),
-    Atom(NodeKind, Vec<Node>),
-    Open(fn() -> NodeKind),
+    Atom(AnyPayload, Vec<Node>),
+    Open(fn() -> AnyPayload),
     Close,
     Empty,
 }

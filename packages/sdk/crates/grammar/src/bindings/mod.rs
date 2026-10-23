@@ -33,15 +33,15 @@ pub fn grammars() -> &'static std::collections::BTreeMap<String, crate::Grammar>
 }
 
 /// Resolve the exact stored identifier; unknown versions never use a fallback.
-pub fn grammar(version: &str) -> Result<crate::Grammar, crate::engine::BuildError> {
+pub fn grammar(version: &str) -> Result<crate::Grammar, crate::grammar::BuildError> {
     grammars()
         .get(version)
         .cloned()
-        .ok_or_else(|| crate::engine::BuildError::InvalidDefinition {
+        .ok_or_else(|| crate::grammar::BuildError::InvalidDefinition {
             reason: format!("unknown grammar version: {version}"),
         })
 }
 
-pub fn parser(version: &str) -> Result<crate::Parser, crate::engine::BuildError> {
+pub fn parser(version: &str) -> Result<crate::Parser, crate::grammar::BuildError> {
     grammar(version).map(|grammar| crate::Parser::new(&grammar))
 }
