@@ -43,12 +43,12 @@ pub fn plugin() -> Plugin<References> {
 fn build() -> Result<Plugin<References>> {
     let mut plugin = Plugin::<References>::new(&markdown_trap_contracts::declarations().references);
 
-    plugin.on::<Reference>(|reference, result| {
+    plugin.on::<Reference>(|reference, _, result| {
         result.record_reference(reference);
         Ok(())
     })?;
 
-    plugin.on::<Embedding>(|embedding, result| {
+    plugin.on::<Embedding>(|embedding, _, result| {
         result.record_embedding(embedding);
         Ok(())
     })?;

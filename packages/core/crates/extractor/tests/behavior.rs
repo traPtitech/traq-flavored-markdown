@@ -85,7 +85,7 @@ fn document(children: Vec<Node>) -> MutableDocument {
 fn plugin(calls: Arc<AtomicUsize>) -> Plugin<Collected> {
     let mut plugin = Plugin::new(&Declaration::new("references"));
     plugin
-        .on::<Reference>(move |value, result: &mut Collected| {
+        .on::<Reference>(move |value, _, result: &mut Collected| {
             calls.fetch_add(1, Ordering::Relaxed);
             if value.0 == 99 {
                 return Err(markdown_extractor::Error::Handler {
@@ -182,11 +182,11 @@ fn snapshots_duplicate_rejection_and_removal_are_atomic() {
     let old = Extractor::new(&builder.clone().build().unwrap());
 
     assert!(builder.add(&plugin).is_err());
-    assert!(plugin.on::<Reference>(|_, _| Ok(())).is_err());
+    assert!(plugin.on::<Reference>(|_, _, _| Ok(())).is_err());
 
     builder.clone().remove(&registration).unwrap();
     plugin
-        .on::<Container>(|_, result| {
+        .on::<Container>(|_, _, result| {
             result.ids.push(3);
             Ok(())
         })

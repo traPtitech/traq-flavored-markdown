@@ -1,7 +1,6 @@
 //! traQ processing presets, composed without a parser or AST codec dependency.
 #![forbid(unsafe_code)]
 
-mod collectors;
 mod edits;
 mod error;
 mod links;

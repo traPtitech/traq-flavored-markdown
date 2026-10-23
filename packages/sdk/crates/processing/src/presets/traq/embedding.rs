@@ -42,7 +42,7 @@ pub fn plan<'a>(
 ) -> crate::Result<ReferenceEmbeddingPlan> {
     let document = document.into_view()?;
     let mut collector = Collector::default();
-    crate::collectors::collect(document, &mut collector)?;
+    markdown_extractor::collect(document, &mut collector)?;
     collector.finish(&document.document().source)
 }
 
@@ -56,20 +56,20 @@ impl Collector<'_> {
         finish(source, self.plan, self.edits)
     }
 }
-impl<'a> crate::collectors::Collector<'a> for Collector<'a> {
+impl<'a> markdown_extractor::Collector<'a> for Collector<'a> {
     type Scope = bool;
+    type Error = crate::Error;
     fn initial(&self) -> bool {
         true
     }
     fn observe(
         &mut self,
-        node: &'a Node,
-        source: &'a str,
+        context: markdown_extractor::AnalysisContext<'a>,
         allow_embedding: &bool,
     ) -> crate::Result<bool> {
         Ok(observe(
-            node,
-            source,
+            context.visit.node,
+            context.source,
             *allow_embedding,
             &mut self.plan,
             &mut self.edits,

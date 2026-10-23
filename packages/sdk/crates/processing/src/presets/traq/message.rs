@@ -31,7 +31,7 @@ impl Extractor {
     ) -> crate::Result<Message> {
         let document = document.into_view()?;
         let mut collector = Collector::new(self);
-        crate::collectors::collect(document, &mut collector)?;
+        markdown_extractor::collect(document, &mut collector)?;
         collector.finish(&document.document().source)
     }
 
@@ -101,10 +101,16 @@ impl<'a, 'policy> Collector<'a, 'policy> {
     }
 }
 
-impl<'a> crate::collectors::Collector<'a> for Collector<'a, '_> {
+impl<'a> markdown_extractor::Collector<'a> for Collector<'a, '_> {
     type Scope = ();
+    type Error = crate::Error;
     fn initial(&self) {}
-    fn observe(&mut self, node: &'a Node, source: &'a str, _: &()) -> crate::Result<()> {
+    fn observe(
+        &mut self,
+        context: markdown_extractor::AnalysisContext<'a>,
+        _: &(),
+    ) -> crate::Result<()> {
+        let (node, source) = (context.visit.node, context.source);
         self.policy
             .observe(node, source, &mut self.message, &mut self.edits);
         Ok(())

@@ -22,7 +22,7 @@ impl NodeData for Reference {
 }
 
 let mut plugin = Plugin::<Vec<String>>::new(&Declaration::new("references"));
-plugin.on::<Reference>(|reference, result| {
+plugin.on::<Reference>(|reference, _, result| {
     result.push(reference.0.clone());
     Ok(())
 })?;
@@ -55,3 +55,12 @@ and depth 64. Handlers own the limits of their work and result sizes.
 Use `extract(DocumentView)` to avoid repeating validation when
 sharing an immutable document with other consumers. It still creates a fresh
 result and traverses all nodes.
+
+`Collector` describes scoped analyses, and `collect(document, &mut collector)`
+runs them in source order. The callback receives `AnalysisContext` with the
+node's source, parent, sibling index, and depth. Its returned scope is inherited
+by descendants without leaking to siblings. Tuple collectors share one traversal.
+`extractor.collector::<E>()` participates in the same composition and returns
+its accumulated result through `finish()`; `E` converts extractor errors into
+the enclosing analysis error type. Typed plugin handlers also receive this
+context, so source-aware operations need no second extraction framework.
