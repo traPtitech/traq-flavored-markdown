@@ -1,33 +1,35 @@
 import type {
   DeepReadonly,
-  ReadonlyDocument as Document,
-  ReadonlyNode as Node,
+  ReadonlyDocument,
+  ReadonlyNode,
   Span
 } from '../ast.js'
 import type { DocumentContext } from '../document.js'
 import type { NodeVariant } from '../nodes.js'
 import type { NodeDefinition } from '../nodes.js'
 
-export type {
-  ReadonlyNode as Node,
-  ReadonlyDocument as Document
-} from '../ast.js'
+export type { ReadonlyNode, ReadonlyDocument } from '../ast.js'
 
 export interface RenderedChild {
-  readonly node: Node
+  readonly node: ReadonlyNode
   readonly html: string
 }
 
 export interface RenderContext {
   /** Ancestors in outermost-to-innermost order, excluding the current node. */
-  ancestors: readonly Node[]
+  ancestors: readonly ReadonlyNode[]
   /** Position among the node's original siblings. */
   index: number
+  /** Narrow an owned node using a contract already validated by its schema. */
+  matches<Variant extends NodeVariant>(
+    node: ReadonlyNode,
+    definition: NodeDefinition<Variant>
+  ): node is ReadonlyNode & ReadonlyNode<Variant>
   /** Get a typed ancestor whose contract was validated by the document schema. */
   parent<Variant extends NodeVariant>(
     definition: NodeDefinition<Variant>,
     distance?: number
-  ): Node<Variant> | undefined
+  ): ReadonlyNode<Variant> | undefined
   source: string
   /** Escape text before including it in a custom HTML handler. */
   escape(text: string): string
@@ -36,14 +38,14 @@ export interface RenderContext {
     join?: string | ((children: readonly RenderedChild[]) => string)
   ): string
   /** Dispatch an existing document node with its original ancestry and plan. */
-  renderNode(node: Node): string
+  renderNode(node: ReadonlyNode): string
   sourceSlice(span: Span): string
-  fallback(node: Node): string
+  fallback(node: ReadonlyNode): string
 }
 
 /** Handlers return trusted HTML. Escape values obtained from the document. */
 export type Handler<K extends NodeVariant = NodeVariant> = (
-  node: Node & DeepReadonly<K>,
+  node: ReadonlyNode & DeepReadonly<K>,
   context: RenderContext
 ) => string
 
@@ -58,10 +60,10 @@ export interface HtmlPreset {
 
 /** Presentation changes keyed by original or snapshot nodes in this document. */
 export interface RenderPlan {
-  roots?: readonly Node[]
-  omittedNodes?: ReadonlySet<Node>
+  roots?: readonly ReadonlyNode[]
+  omittedNodes?: ReadonlySet<ReadonlyNode>
   /** Plain text to show in place of a node's rendered children. */
-  childText?: ReadonlyMap<Node, string>
+  childText?: ReadonlyMap<ReadonlyNode, string>
   /** Separator between selected roots, for flattened document views. */
   rootSeparator?: string
 }
@@ -72,6 +74,9 @@ export interface RenderSession {
 }
 
 export interface Renderer {
-  createSession(document: Document | DocumentContext): RenderSession
-  render(document: Document | DocumentContext, plan?: RenderPlan): string
+  createSession(document: ReadonlyDocument | DocumentContext): RenderSession
+  render(
+    document: ReadonlyDocument | DocumentContext,
+    plan?: RenderPlan
+  ): string
 }

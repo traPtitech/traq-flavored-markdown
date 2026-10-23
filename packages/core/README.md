@@ -30,26 +30,29 @@ only inspect ASTs do not need parser, renderer, or serialization dependencies.
 
 ## TypeScript and Go
 
-`@traq-flavored-markdown/core` exports shared AST types, `SourceText`,
-`DocumentContext`, and typed `NodeDefinition` values. `SourceText` slices and edits
-UTF-8 byte spans, preserving BOM, CRLF, and NUL. A `DocumentContext` owns a frozen
-snapshot after checking the tree, sibling order, source boundaries, and resource
-limits. Pass `{ definitions }` to validate known payloads and child structure;
-render sessions supply their registered definitions automatically. It never freezes
-the caller's mutable document. Create a
-new context after editing that document.
+`@traq-flavored-markdown/core` exports explicit `MutableDocument`/`MutableNode` drafts,
+`ReadonlyDocument`/`ReadonlyNode` snapshots, `SourceText`, `DocumentSchema`, and
+`DocumentContext<Variant>`. A schema owns immutable node definitions independently
+of render handlers. It validates payloads and child structure even when no HTML
+handler renders a node. Generated plugin `/nodes` entrypoints export `schema`,
+`definitions`, `names`, and the discriminated `NodeVariant` union.
 
-`MutableDocument` and `MutableNode` name the editable input types. Snapshot
-documents and nodes use `ReadonlyDocument` and `ReadonlyNode`; their spans,
-children, and typed payloads are deeply readonly. Handler arguments, location
-ancestors, traversal, and render plans preserve that distinction.
+`schema.document(rawDocument)` validates and snapshots the complete tree. The
+result owns deeply frozen source data, spans, children, and payloads. It preserves
+the schema's node union for traversal and accepts reuse by independent consumers.
+`context.toMutable()` makes an independent draft; validate that draft again after
+editing. `SourceText` slices and edits UTF-8 byte spans while preserving BOM, CRLF,
+and NUL. `DocumentValidationError` exposes `code`, `path`, and optional `resource`.
 
-`RenderPlugin.on(definition, handler)` infers the payload type and registers its
-validator and structure. A definition declares whether its node is inline, block,
-structural, or opaque, plus the allowed children. Custom nodes used inside a known
-paragraph or another constrained parent must declare the appropriate role:
+Schemas reject unknown nodes by default. `schema.withUnknownNodes()` preserves
+opaque application nodes while validating known contracts; unknown children do
+not bypass a known parent's child constraints. Extend a schema with typed
+application contracts before using custom nodes inside constrained parents:
 
 ```ts
+import { schema } from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import { defineNode } from '@traq-flavored-markdown/core'
+
 const mention = defineNode<{ kind: 'app.mention'; data: { id: string } }>(
   'app.mention',
   data =>
@@ -59,27 +62,28 @@ const mention = defineNode<{ kind: 'app.mention'; data: { id: string } }>(
     typeof data.id === 'string',
   { role: 'inline', children: { kind: 'leaf' } }
 )
+const applicationSchema = schema.extend([mention])
+const context = applicationSchema.document(rawDocument)
 ```
 
-String registrations remain available for opaque application nodes. Unknown
-nodes can occur at roots or below unconstrained parents; they do not bypass a
-known parent's child contract. `context.validateDefinitions(definitions)` validates
-additional definitions on the owned snapshot and rejects conflicting structures.
+`RenderPlugin.withHandler(definition, handler)` infers validated payload types.
+`withReplacedHandler` replaces a handler. Both return a new immutable plugin;
+retain the returned value. String registrations handle opaque nodes.
+`PluginDeclaration` names a plugin; `PresetBuilder` composes handlers into an
+`HtmlPreset`. Registration handles support replacement and removal.
 
-`PluginDeclaration` names a plugin; `RenderPlugin` contains its handlers;
-`PresetBuilder.register()` returns a durable `RegistrationHandle` used for
-replacement or removal. Built presets retain their own snapshots.
+`createRenderer(preset, { schema })` accepts external trees under an explicit
+schema. A renderer without a schema accepts previously validated contexts; typed
+handlers require their node contracts to be present. `createSession(context)`
+reuses ownership across renders. `RenderPlan` selects roots, omits nodes, and
+replaces rendered children with escaped text. Plan nodes must belong to the
+document. `ctx.renderChildren()` accepts a separator or joining callback,
+`ctx.renderNode(node)` retains original ancestry, and `ctx.parent(definition)` or
+`ctx.matches(node, definition)` narrows validated nodes without rerunning payload
+guards. The default fallback emits escaped original source.
 
-`renderer.createSession(documentOrContext)` reuses one validated context across
-renders. A `RenderPlan` selects roots, omits nodes, or replaces a node's rendered
-children with escaped plain text. Every node in the plan must belong to the
-document. `ctx.renderChildren()` dispatches this node's visible children and
-applies its replacement. It accepts a separator or a callback joining already
-rendered children for containers such as lists and tables. `ctx.renderNode(node)`
-dispatches an existing node with its original ancestors and sibling index.
-`ctx.sourceSlice(span)` reads its original source; the default fallback emits
-escaped source without markup. `renderer.render(document, plan)` creates a
-session for one render.
+Generic URL defaults `validateLink` and `validateImage` live in `core/html`.
+Applications and plugins can select policy without depending on CommonMark.
 
 The Go module `github.com/traPtitech/traq-flavored-markdown/packages/core/go`
 owns the shared `ast`, JSON `contract`, and Wasm `binding` packages. It has no CommonMark or traQ

@@ -1,16 +1,18 @@
-import type { DeepReadonly, ReadonlyNode as Node } from '../ast.js'
+import type { DeepReadonly, ReadonlyNode } from '../ast.js'
 import type { NodeDefinition } from '../nodes.js'
 import { PluginDeclaration } from './definitions.js'
 import type { Handler, RenderContext } from './types.js'
 
 type NodeFor<D> =
-  D extends NodeDefinition<infer K> ? Node & DeepReadonly<K> : Node
+  D extends NodeDefinition<infer K>
+    ? ReadonlyNode & DeepReadonly<K>
+    : ReadonlyNode
 type DefinedHandler<D> = (node: NodeFor<D>, context: RenderContext) => string
 
 export interface Implementation {
   declaration: PluginDeclaration
   handlers: ReadonlyMap<string, Handler>
-  requiredKinds: ReadonlySet<string>
+  requiredContracts: ReadonlyMap<string, NodeDefinition>
 }
 
 const implementations = new WeakMap<RenderPlugin, Implementation>()
@@ -29,7 +31,7 @@ export class RenderPlugin {
     implementations.set(this, {
       declaration,
       handlers: new Map(),
-      requiredKinds: new Set()
+      requiredContracts: new Map()
     })
     Object.freeze(this)
   }
@@ -71,14 +73,14 @@ export class RenderPlugin {
 
     const handlers = new Map(state.handlers)
     handlers.set(kind, (node, context) => handler(node as NodeFor<D>, context))
-    const requiredKinds = new Set(state.requiredKinds)
-    if (typeof definition !== 'string') requiredKinds.add(kind)
+    const requiredContracts = new Map(state.requiredContracts)
+    if (typeof definition !== 'string') requiredContracts.set(kind, definition)
 
     const next = new RenderPlugin(state.declaration)
     implementations.set(next, {
       declaration: state.declaration,
       handlers,
-      requiredKinds
+      requiredContracts
     })
     return next
   }

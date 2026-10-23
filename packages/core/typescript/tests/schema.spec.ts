@@ -138,6 +138,13 @@ test('unknown node policy and typed renderer requirements are explicit', () => {
     children: [{ kind: 'text', data: 'value', span: { start: 0, end: 0 } }]
   }
   expect(() => renderer.render(input)).toThrow(/requires a document schema/)
+  const sameKindWithDifferentPayload = defineNode<{ kind: 'text'; data: number }>(
+    'text', data => typeof data === 'number'
+  )
+  const unrelated = new DocumentSchema([sameKindWithDifferentPayload]).document({
+    source: '', children: [{ kind: 'text', data: 42, span: { start: 0, end: 0 } }]
+  })
+  expect(() => renderer.render(unrelated)).toThrow(/requires a document schema/)
   expect(calls).toBe(0)
   expect(renderer.render(schema.document(input))).toBe('value')
 })

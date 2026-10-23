@@ -3,7 +3,7 @@ import {
   DocumentSchema,
   defineNode
 } from '@traq-flavored-markdown/core'
-import type { Node } from '@traq-flavored-markdown/core'
+import type { MutableNode } from '@traq-flavored-markdown/core'
 import type { NodeStructure } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
@@ -44,13 +44,17 @@ const definitions = [
     children: { kind: 'roles', roles: ['inline'], nonempty: false }
   })
 ]
-const node = (kind: string, children?: Node[], data: unknown = {}): Node => ({
+const node = (
+  kind: string,
+  children?: MutableNode[],
+  data: unknown = {}
+): MutableNode => ({
   kind,
   span: { start: 0, end: 0 },
   data,
   ...(children ? { children } : {})
 })
-const context = (children: Node[]) =>
+const context = (children: MutableNode[]) =>
   new DocumentContext(
     { source: '', children },
     { schema: new DocumentSchema(definitions).withUnknownNodes() }

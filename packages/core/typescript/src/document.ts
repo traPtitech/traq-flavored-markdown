@@ -1,7 +1,7 @@
 import type {
   ReadonlyDocument as Document,
   MutableDocument,
-  Node as MutableNode,
+  MutableNode,
   ReadonlyNode as Node,
   NodeVariant
 } from './ast.js'
@@ -286,6 +286,10 @@ export class DocumentContext<Variant extends NodeVariant = NodeVariant> {
 
   hasContract(kind: string): boolean {
     return [...this.#validated].some(schema => schema.has(kind))
+  }
+
+  hasDefinition(definition: NodeDefinition): boolean {
+    return [...this.#validated].some(schema => schema.hasDefinition(definition))
   }
 
   /** Narrow owned, validated data without running its payload validator again. */

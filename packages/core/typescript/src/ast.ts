@@ -9,36 +9,22 @@ export interface NodeVariant {
   data: unknown
 }
 
-export type Node<
+export type MutableNode<
   Kind extends { kind: string; data: unknown } = {
     kind: string
     data: unknown
   }
-> = Kind & { span: Span; children?: Node<Kind>[] }
+> = Kind & { span: Span; children?: MutableNode<Kind>[] }
 
-export interface Document<
+export interface MutableDocument<
   Kind extends { kind: string; data: unknown } = {
     kind: string
     data: unknown
   }
 > {
   source: string
-  children: Node<Kind>[]
+  children: MutableNode<Kind>[]
 }
-
-/** A caller-owned tree that may be edited before creating a snapshot. */
-export type MutableDocument<
-  Kind extends { kind: string; data: unknown } = {
-    kind: string
-    data: unknown
-  }
-> = Document<Kind>
-export type MutableNode<
-  Kind extends { kind: string; data: unknown } = {
-    kind: string
-    data: unknown
-  }
-> = Node<Kind>
 
 export type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T

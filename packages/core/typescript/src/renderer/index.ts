@@ -3,17 +3,17 @@ import type { DocumentSchema } from '../schema.js'
 import { escapeHtml } from './html.js'
 import { configuration } from './preset.js'
 import type {
-  Document,
   HtmlPreset,
-  Node,
+  ReadonlyDocument,
+  ReadonlyNode,
   RenderContext,
   RenderPlan,
   Renderer
 } from './types.js'
 
 export type {
-  Node,
-  Document,
+  ReadonlyNode,
+  ReadonlyDocument,
   HtmlPreset,
   Renderer,
   RenderContext,
@@ -33,18 +33,18 @@ export function createRenderer(
 ): Renderer {
   const {
     handlers,
-    requiredKinds,
+    requiredContracts,
     fallback: renderFallback
   } = configuration(preset)
 
-  function createSession(document: Document | DocumentContext) {
+  function createSession(document: ReadonlyDocument | DocumentContext) {
     const context = schema
       ? schema.document(document)
       : document instanceof DocumentContext
         ? document
         : new DocumentContext(document)
-    for (const kind of requiredKinds)
-      if (!context.hasContract(kind))
+    for (const [kind, definition] of requiredContracts)
+      if (!context.hasDefinition(definition))
         throw new TypeError('Renderer requires a document schema for: ' + kind)
 
     function render(plan: RenderPlan = {}) {
@@ -67,7 +67,7 @@ export function createRenderer(
       )
         throw new TypeError('Root separator must be a string')
 
-      const fallback = (value: Node) => {
+      const fallback = (value: ReadonlyNode) => {
         const node = context.node(value)
         const output = renderFallback(
           escapeHtml(context.source.slice(node.span))
@@ -77,7 +77,7 @@ export function createRenderer(
         return output
       }
 
-      function renderNode(value: Node): string {
+      function renderNode(value: ReadonlyNode): string {
         const node = context.node(value)
         if (omitted.has(node)) return ''
         const handler = handlers.get(node.kind)
@@ -87,6 +87,7 @@ export function createRenderer(
           source: context.source.text,
           ancestors,
           index,
+          matches: (node, definition) => context.matches(node, definition),
           parent: (definition, distance = 1) => {
             const parent = ancestors.at(-distance)
             return parent && context.matches(parent, definition)
@@ -131,7 +132,7 @@ export function createRenderer(
 
   return Object.freeze({
     createSession,
-    render: (document: Document | DocumentContext, plan?: RenderPlan) =>
+    render: (document: ReadonlyDocument | DocumentContext, plan?: RenderPlan) =>
       createSession(document).render(plan)
   })
 }
