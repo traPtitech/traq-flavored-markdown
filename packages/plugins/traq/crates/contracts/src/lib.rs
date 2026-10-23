@@ -20,3 +20,6 @@ pub use spacing::*;
 
 mod embedding;
 pub use embedding::*;
+
+mod identity;
+pub use identity::{ReferenceId, ReferenceIdentity};

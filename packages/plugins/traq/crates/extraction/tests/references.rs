@@ -43,7 +43,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
                 },
                 Reference {
                     target,
-                    id: id.clone(),
+                    id: id.clone().into(),
                     label: "label".into(),
                 },
             ));

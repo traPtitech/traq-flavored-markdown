@@ -96,7 +96,7 @@ fn limits_cover_multibyte_input_and_nested_results() {
     ] {
         assert!(
             matches!(presets::traq::v1::parser().with_limits(limits).parse(source),
-            Err(ParseError::ResourceLimit { resource: actual }) if actual == resource)
+            Err(ParseError::ResourceLimit { resource: actual }) if actual.as_str() == resource)
         );
     }
 }
@@ -162,7 +162,7 @@ fn intermediate_tokens_syntax_nesting_and_final_tree_limits_are_independent() {
             .with_limits(limits)
             .parse_inline(source);
         assert!(
-            matches!(result, Err(ParseError::ResourceLimit { resource: actual }) if actual == resource),
+            matches!(result, Err(ParseError::ResourceLimit { resource: actual }) if actual.as_str() == resource),
             "{source}: {resource}"
         );
     }

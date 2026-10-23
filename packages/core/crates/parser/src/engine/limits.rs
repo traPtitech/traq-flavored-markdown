@@ -1,22 +1,16 @@
-use markdown_ast::ValidationLimits;
-use serde::{Deserialize, Serialize};
+use markdown_ast::{ValidationError, ValidationLimits};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParsePhase {
     Block,
     Inline,
     Text,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(tag = "code", rename_all = "snake_case", deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
-    InvalidUtf8,
     ResourceLimit {
-        resource: String,
+        resource: ParseResource,
     },
     /// A plugin broke its parser-output contract. Position is an original
     /// source byte offset, so diagnostics remain useful for normalized views.
@@ -27,21 +21,13 @@ pub enum ParseError {
         reason: String,
     },
     /// The final native tree failed a payload or source-structure contract.
-    InvalidDocument {
-        path: Vec<usize>,
-        start: Option<usize>,
-        end: Option<usize>,
-        payload_type: Option<String>,
-        reason: String,
-    },
+    InvalidDocument(ValidationError),
     InternalError,
 }
 
 impl ParseError {
-    pub(crate) fn limit(resource: &str) -> Self {
-        Self::ResourceLimit {
-            resource: resource.into(),
-        }
+    pub(crate) fn limit(resource: ParseResource) -> Self {
+        Self::ResourceLimit { resource }
     }
 
     pub(crate) fn invalid_rule(
@@ -77,7 +63,14 @@ impl std::fmt::Display for ParseError {
     }
 }
 
-impl std::error::Error for ParseError {}
+impl std::error::Error for ParseError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::InvalidDocument(error) => Some(error),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
@@ -124,10 +117,10 @@ impl Budget {
         self.work = self
             .work
             .checked_add(work)
-            .ok_or_else(|| ParseError::limit("work"))?;
+            .ok_or_else(|| ParseError::limit(ParseResource::Work))?;
 
         if self.work > self.limits.work {
-            return Err(ParseError::limit("work"));
+            return Err(ParseError::limit(ParseResource::Work));
         }
 
         Ok(())
@@ -141,10 +134,10 @@ impl Budget {
         self.tokens = self
             .tokens
             .checked_add(1)
-            .ok_or_else(|| ParseError::limit("tokens"))?;
+            .ok_or_else(|| ParseError::limit(ParseResource::Tokens))?;
 
         if self.tokens > self.limits.tokens {
-            return Err(ParseError::limit("tokens"));
+            return Err(ParseError::limit(ParseResource::Tokens));
         }
 
         Ok(())
@@ -155,18 +148,43 @@ impl Budget {
         self.nodes = self
             .nodes
             .checked_add(1)
-            .ok_or_else(|| ParseError::limit("nodes"))?;
+            .ok_or_else(|| ParseError::limit(ParseResource::Nodes))?;
         if self.nodes > self.limits.document.nodes {
-            return Err(ParseError::limit("nodes"));
+            return Err(ParseError::limit(ParseResource::Nodes));
         }
         Ok(())
     }
 
     pub fn nesting(&self, depth: usize) -> Result<(), ParseError> {
         if depth > self.limits.nesting {
-            return Err(ParseError::limit("nesting"));
+            return Err(ParseError::limit(ParseResource::Nesting));
         }
 
         Ok(())
+    }
+}
+
+/// A native parser budget, independent of transport error names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseResource {
+    SourceBytes,
+    PayloadBytes,
+    Nodes,
+    Depth,
+    Work,
+    Tokens,
+    Nesting,
+}
+impl ParseResource {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::SourceBytes => "source_bytes",
+            Self::PayloadBytes => "payload_bytes",
+            Self::Nodes => "nodes",
+            Self::Depth => "depth",
+            Self::Work => "work",
+            Self::Tokens => "tokens",
+            Self::Nesting => "nesting",
+        }
     }
 }

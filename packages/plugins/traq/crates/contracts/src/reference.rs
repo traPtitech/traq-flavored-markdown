@@ -17,6 +17,6 @@ pub enum ReferenceKind {
 pub struct Reference {
     #[serde(rename = "type")]
     pub target: ReferenceKind,
-    pub id: String,
+    pub id: crate::ReferenceIdentity,
     pub label: String,
 }

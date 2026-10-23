@@ -29,7 +29,7 @@ pub fn builder(origin: &str) -> Result<PresetBuilder> {
             }
             TextFeature::References => {
                 plugin.replace::<Embedding>(|embedding, _, _, output| {
-                    if markdown_trap_extraction::normalize_reference_id(&embedding.id).is_none() {
+                    if embedding.id.canonical().is_none() {
                         return output.push(&embedding.literal);
                     }
                     output.push(labels::for_embedding(embedding.target))

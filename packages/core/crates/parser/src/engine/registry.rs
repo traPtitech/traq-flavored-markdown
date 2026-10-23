@@ -34,8 +34,7 @@ impl Grammar {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "code", rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BuildError {
     Duplicate { element: String },
     Missing { element: String },

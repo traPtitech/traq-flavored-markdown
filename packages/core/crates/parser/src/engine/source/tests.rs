@@ -150,7 +150,7 @@ fn cursor_rejects_invalid_boundaries_and_charges_utf8_bytes_without_moving_on_er
     assert_eq!(cursor.next_char().unwrap(), Some('α'));
     assert_eq!(cursor.next_char().unwrap(), Some('x'));
     assert!(
-        matches!(cursor.next_char(), Err(ParseError::ResourceLimit { resource }) if resource == "work")
+        matches!(cursor.next_char(), Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
     );
     assert_eq!(cursor.position().get(), 3);
 }

@@ -4,7 +4,6 @@ use crate::links::{Target, TraqUrlClassifier};
 use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Link, LinkForm};
 use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference};
-use markdown_trap_extraction::normalize_reference_id;
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Message {
@@ -43,15 +42,15 @@ impl Extractor {
         edits: &mut Vec<(Span, &'a str)>,
     ) {
         if let Some(reference) = node.get::<Reference>() {
-            if normalize_reference_id(&reference.id).is_some() {
+            if reference.id.canonical().is_some() {
                 edits.push((node.span, reference.label.as_str()));
             }
         } else if let Some(embedding) = node.get::<Embedding>() {
-            if let Some(id) = normalize_reference_id(&embedding.id) {
+            if let Some(id) = embedding.id.canonical() {
                 let label = labels::for_embedding(embedding.target);
                 match embedding.target {
-                    EmbeddingKind::File => message.attachments.push(id),
-                    EmbeddingKind::Message => message.citations.push(id),
+                    EmbeddingKind::File => message.attachments.push(id.to_string()),
+                    EmbeddingKind::Message => message.citations.push(id.to_string()),
                 }
                 edits.push((node.span, label));
             }

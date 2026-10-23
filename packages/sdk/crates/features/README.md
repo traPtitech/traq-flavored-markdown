@@ -1,24 +1,23 @@
 # traq-markdown-features
 
-This SDK assembly layer joins each feature's shared declaration, native payload
-types, plugin-owned wire keys, exported SDK member, syntax implementation, and
-text implementation. `all()` exposes these capabilities. Profile definitions
-own their ordered feature lists and typed rule precedence together;
-`selected(profile)` returns the selected capabilities in registration order.
+This SDK assembly layer selects plugin-owned feature contracts and joins them
+with exported SDK members and syntax factories. Each plugin owns one grouped
+payload catalog, used for wire registrations and typed feature contracts.
+Adding a payload does not require another list in the SDK.
 
-The default build depends only on AST, definitions, and payload contract crates.
-Enable `syntax` for grammar assembly or `text` for plain-text assembly. Syntax
-does not require a renderer, and text does not require a parser. Contracts never
-depend on this SDK crate or its implementations.
+GrammarProfile owns syntax feature order and typed rule precedence together.
+grammar_features(profile) returns its features in registration order.
+TextProfile selects TextFeature values; every such value has a plain-text
+implementation. Grammar and text profiles are distinct types, so a rendering
+profile cannot enter grammar construction and missing rendering capabilities
+cannot reach an unwrap.
 
-`Profile::grammar_builder()` assembles syntax from the profile definition.
-Processing presets retain application-specific link and reference overrides.
-Feature factories select implementations without owning profile policy. Both native grammar
-presets reuse `commonmark_syntax()` so their shared rule identities agree with
-the exported catalog.
+The default build depends on definitions and payload contract crates. Enable
+syntax for grammar assembly or text for plain-text assembly. Syntax does not
+require a renderer, and text does not require a parser. Contracts never depend
+on this SDK crate or its implementations.
 
-When adding a feature, add its implementation in the owning plugin and one table
-entry here, then select it in the relevant profile definition. The feature table
-drives SDK catalog members independently of profile membership.
-Its coverage test compares native payload identities and wire keys with all
-plugin-owned catalogs, rejecting missing and duplicate bindings.
+GrammarProfile::grammar_builder() assembles syntax. Processing presets retain
+application-specific link and reference overrides. Both native grammar presets
+reuse commonmark_syntax(), keeping shared rule identities consistent with the
+exported catalog. Coverage tests reject missing or duplicate payload bindings.

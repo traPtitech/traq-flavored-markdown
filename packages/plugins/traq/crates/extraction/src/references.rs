@@ -67,18 +67,18 @@ impl References {
                     ReferenceKind::Group => EmbeddedKind::Group,
                     ReferenceKind::Channel => EmbeddedKind::Channel,
                 },
-                id: reference.id.clone(),
+                id: reference.id.as_str().to_owned(),
             });
         }
 
-        if let Some(id) = crate::uuid::normalize(&reference.id) {
+        if let Some(id) = reference.id.canonical() {
             let ids = match reference.target {
                 ReferenceKind::User => &mut self.mentions,
                 ReferenceKind::Group => &mut self.group_mentions,
                 ReferenceKind::Channel => &mut self.channel_links,
             };
 
-            ids.push(id);
+            ids.push(id.to_string());
         }
     }
 
@@ -91,7 +91,7 @@ impl References {
                     EmbeddingKind::File => EmbeddedKind::File,
                     EmbeddingKind::Message => EmbeddedKind::Message,
                 },
-                id: embedding.id.clone(),
+                id: embedding.id.as_str().to_owned(),
             });
         }
     }

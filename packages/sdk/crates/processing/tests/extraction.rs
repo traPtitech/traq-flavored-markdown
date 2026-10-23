@@ -274,7 +274,7 @@ fn native_reference_payload_is_bounded_before_extraction() {
             Span { start: 0, end: 0 },
             Reference {
                 target: ReferenceKind::User,
-                id: String::new(),
+                id: String::new().into(),
                 label: "x".repeat(ValidationLimits::default().payload_bytes + 1),
             },
         )],

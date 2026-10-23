@@ -38,7 +38,7 @@ pub struct Error {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<ErrorSpan>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phase: Option<markdown_parser::engine::ParsePhase>,
+    pub phase: Option<ParsePhase>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -79,15 +79,7 @@ impl Error {
         } else {
             Self::new(ErrorCode::InvalidDocument, &error)
         };
-        reply.path = Some(
-            error
-                .path
-                .iter()
-                .fold(String::from("$"), |path, index| {
-                    format!("{path}.children[{index}]")
-                })
-                .into_boxed_str(),
-        );
+        reply.path = Some(wire_path(&error.path));
         reply.span = error.span.and_then(wire_span);
         reply
     }
@@ -130,21 +122,41 @@ impl Error {
         } else {
             Self::new(ErrorCode::InvalidDocument, validation)
         };
-        error.path = Some(
-            validation
-                .path
-                .iter()
-                .fold(String::from("$"), |path, index| {
-                    format!("{path}.children[{index}]")
-                })
-                .into_boxed_str(),
-        );
+        error.path = Some(wire_path(&validation.path));
         error.span = validation.span.and_then(wire_span);
         error.payload_type = validation.payload_type.map(Into::into);
         error
     }
     pub fn not_configured() -> Self {
         Self::new(ErrorCode::NotConfigured, "operation is not configured")
+    }
+}
+
+fn wire_path(indices: &[usize]) -> Box<str> {
+    indices
+        .iter()
+        .fold(String::from("$"), |path, index| {
+            format!("{path}.children[{index}]")
+        })
+        .into_boxed_str()
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ParsePhase {
+    Block,
+    Inline,
+    Text,
+}
+impl From<markdown_parser::engine::ParsePhase> for ParsePhase {
+    fn from(phase: markdown_parser::engine::ParsePhase) -> Self {
+        use markdown_parser::engine::ParsePhase as Native;
+        match phase {
+            Native::Block => Self::Block,
+            Native::Inline => Self::Inline,
+            Native::Text => Self::Text,
+        }
     }
 }
 
@@ -159,10 +171,7 @@ impl From<traq_markdown_grammar::ParseError> for Error {
     fn from(error: traq_markdown_grammar::ParseError) -> Self {
         use traq_markdown_grammar::ParseError;
         match error {
-            ParseError::InvalidUtf8 => {
-                Self::new(ErrorCode::InvalidUtf8, "source is not valid UTF-8")
-            }
-            ParseError::ResourceLimit { resource } => Self::limit(&resource),
+            ParseError::ResourceLimit { resource } => Self::limit(resource.as_str()),
             ParseError::InternalError => {
                 Self::new(ErrorCode::InternalError, "parser invariant failed")
             }
@@ -173,30 +182,14 @@ impl From<traq_markdown_grammar::ParseError> for Error {
                 reason,
             } => {
                 let mut reply = Self::new(ErrorCode::InternalError, reason);
-                reply.phase = Some(phase);
+                reply.phase = Some(phase.into());
                 reply.rule = rule.map(String::into_boxed_str);
                 reply.offset = position.try_into().ok();
                 reply
             }
-            ParseError::InvalidDocument {
-                path,
-                start,
-                end,
-                payload_type,
-                reason,
-            } => {
-                let mut reply = Self::new(ErrorCode::InternalError, reason);
-                reply.path = Some(
-                    path.iter()
-                        .fold(String::from("$"), |path, index| {
-                            format!("{path}.children[{index}]")
-                        })
-                        .into_boxed_str(),
-                );
-                reply.span = start
-                    .zip(end)
-                    .and_then(|(start, end)| wire_span(markdown_ast::Span { start, end }));
-                reply.payload_type = payload_type.map(String::into_boxed_str);
+            ParseError::InvalidDocument(validation) => {
+                let mut reply = Self::validation(&validation);
+                reply.code = ErrorCode::InternalError;
                 reply
             }
         }

@@ -1,17 +1,8 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
 use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Image, Link, Text};
-use markdown_trap_contracts::{Embedding, Reference};
+use markdown_trap_contracts::{Embedding, Reference, ReferenceKind};
 use serde::Serialize;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(rename_all = "snake_case")]
-pub enum LookupKind {
-    User,
-    Group,
-    Channel,
-}
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
@@ -22,7 +13,7 @@ pub struct ReferenceEmbeddingCandidate {
     pub end: u32,
     pub raw: String,
     pub name: String,
-    pub kind: LookupKind,
+    pub kind: ReferenceKind,
 }
 
 #[derive(Debug, Default, PartialEq, Serialize)]
@@ -151,7 +142,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
                     position,
                     name_start,
                     name_start + length,
-                    LookupKind::Channel,
+                    ReferenceKind::Channel,
                     result,
                 );
             }
@@ -186,7 +177,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
             position,
             name_start,
             name_end,
-            LookupKind::User,
+            ReferenceKind::User,
             result,
         );
         push(
@@ -194,7 +185,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
             position,
             name_start,
             name_end,
-            LookupKind::Group,
+            ReferenceKind::Group,
             result,
         );
 
@@ -209,7 +200,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
                 position,
                 name_start,
                 name_start + prefix,
-                LookupKind::User,
+                ReferenceKind::User,
                 result,
             );
         }
@@ -221,7 +212,7 @@ fn push(
     start: usize,
     name_start: usize,
     end: usize,
-    kind: LookupKind,
+    kind: ReferenceKind,
     result: &mut Vec<ReferenceEmbeddingCandidate>,
 ) {
     result.push(ReferenceEmbeddingCandidate {

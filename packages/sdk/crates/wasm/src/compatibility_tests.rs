@@ -5,7 +5,7 @@ use traq_markdown_grammar::{Document, ParseError, presets};
 fn result(value: Result<Document, ParseError>) -> Value {
     match value {
         Ok(document) => json!({"Ok": encoded_document(&document)}),
-        Err(error) => json!({"Err": error}),
+        Err(error) => panic!("fixture source must parse: {error}"),
     }
 }
 

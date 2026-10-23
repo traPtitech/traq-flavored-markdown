@@ -322,8 +322,6 @@ version = "0.1.0"
 dependencies = [
  "markdown-ast",
  "markdown-definitions",
- "schemars",
- "serde",
 ]
 
 [[package]]

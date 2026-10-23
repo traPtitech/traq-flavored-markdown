@@ -16,7 +16,7 @@ pub enum EmbeddingKind {
 pub struct Embedding {
     #[serde(rename = "type")]
     pub target: EmbeddingKind,
-    pub id: String,
+    pub id: crate::ReferenceIdentity,
     pub label: String,
     /// Original JSON notation, available to renderers that display it as text.
     pub literal: String,

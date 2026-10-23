@@ -89,7 +89,7 @@ fn invalid_plugin_results_never_return_partial_documents() {
 
         assert!(matches!(
             parser(&plugin).parse_inline("日"),
-            Err(ParseError::InvalidRuleOutput { .. } | ParseError::InvalidDocument { .. })
+            Err(ParseError::InvalidRuleOutput { .. } | ParseError::InvalidDocument(_))
         ));
     }
 }
@@ -134,8 +134,8 @@ fn invalid_payload_diagnostics_keep_the_original_tree_location() {
     );
     let error = parser(&plugin).parse_inline("日!").unwrap_err();
     assert!(
-        matches!(error, ParseError::InvalidDocument { ref path, start: Some(3), end: Some(4), payload_type: Some(ref payload), ref reason }
-        if path == &[1] && payload.ends_with("Invalid") && reason.contains("custom payload invariant")),
+        matches!(error, ParseError::InvalidDocument(ref cause)
+        if cause.path == [1] && cause.span == Some(Span { start: 3, end: 4 }) && cause.payload_type.unwrap().ends_with("Invalid") && cause.payload.as_ref().unwrap().expected == "custom payload invariant"),
         "{error:?}"
     );
 }
@@ -155,7 +155,7 @@ fn unsuccessful_rules_still_consume_the_work_budget() {
     });
 
     assert!(matches!(parser.parse_inline("x"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work"));
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
     rejected.add(InlineRule::new(b"x", |_, _| Ok(None)));
     assert!(
         matches!(parser(&rejected).with_limits(Limits { work: 1, ..Limits::default() }).parse_inline("x"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "work")
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
     );
 
     let mut accepted = plugin();
@@ -176,7 +176,7 @@ fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
     }));
     assert!(
         matches!(parser(&accepted).with_limits(Limits { work: 9, ..Limits::default() }).parse_inline("abcdefgh"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "work")
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
     );
 }
 
@@ -192,7 +192,7 @@ fn parser_charges_plugin_owned_payload_bytes() {
     });
     assert!(matches!(
         parser.parse_inline("abc"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "payload_bytes"
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "payload_bytes"
     ));
 }
 
@@ -320,7 +320,9 @@ fn accepted_block_commits_obey_the_work_budget() {
         })
         .parse("x");
 
-    assert!(matches!(result, Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+    assert!(
+        matches!(result, Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
+    );
 }
 
 #[test]
@@ -377,7 +379,9 @@ fn final_validation_stops_at_the_remaining_work_budget() {
         })
         .parse_inline("x");
 
-    assert!(matches!(result, Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+    assert!(
+        matches!(result, Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
+    );
     assert!(CHECKS.load(Ordering::Relaxed) <= 20);
     CHECKS.store(0, Ordering::Relaxed);
 
