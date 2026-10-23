@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
-	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
+	traq "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
 func TestRuntimeOwnership(t *testing.T) {
@@ -23,7 +23,7 @@ func TestRuntimeOwnership(t *testing.T) {
 	}
 	defer runtime.Close(ctx)
 
-	traq, err := runtime.NewParser(ctx, GrammarTraqV1)
+	traqParser, err := runtime.NewParser(ctx, GrammarTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,8 +34,8 @@ func TestRuntimeOwnership(t *testing.T) {
 	}
 
 	for parser, kind := range map[*Parser]string{
-		traq:   trap.StampName,
-		common: commonmark.TextName,
+		traqParser: traq.StampName,
+		common:     commonmark.TextName,
 	} {
 		doc, err := parser.ParseInline(ctx, ":stamp:")
 		if err != nil {
@@ -56,7 +56,7 @@ func TestRuntimeOwnership(t *testing.T) {
 		parser.Close(ctx)
 		t.Fatal("accepted canceled creation")
 	}
-	if err := traq.Close(ctx); err != nil {
+	if err := traqParser.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := common.Parse(ctx, "still open"); err != nil {

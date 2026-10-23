@@ -32,6 +32,49 @@ async function writeModule(directory: string) {
   )
 }
 
+test('named scalar contracts preserve strict decoding and bounded round trips', async () => {
+  const schemas: RawSchema[] = [
+    { title: 'Identity', type: 'string', minLength: 1, maxLength: 2 },
+    {
+      title: 'Count',
+      type: 'integer',
+      format: 'uint8',
+      minimum: 1,
+      maximum: 3
+    },
+    { title: 'Enabled', type: 'boolean' }
+  ]
+  await withTempDirectory('go-scalars-', async directory => {
+    await writeModule(directory)
+    await write(
+      `${directory}/contract.go`,
+      goFile('contract', emitGoDeclarations(normalizeContracts(schemas)))
+    )
+    await write(
+      `${directory}/contract_test.go`,
+      `package contract
+import ("encoding/json"; "testing")
+func TestScalars(t *testing.T) {
+ for _, value := range []any{Identity("日😀"), Count(3), Enabled(false)} {
+  if _, err := json.Marshal(value); err != nil { t.Fatal(err) }
+ }
+ for _, value := range []any{Identity(""), Identity("abc"), Identity(string([]byte{0xff})), Count(0), Count(4)} {
+  if _, err := json.Marshal(value); err == nil { t.Fatalf("accepted invalid scalar %#v", value) }
+ }
+ var identity Identity
+ if err := json.Unmarshal([]byte("\\"日😀\\""), &identity); err != nil || string(identity) != "日😀" { t.Fatalf("lost identity: %v", err) }
+ for _, raw := range []string{"null", "1", "\\"\\"", "\\"abc\\"", "\\"\\\\ud800\\""} {
+  if json.Unmarshal([]byte(raw), &identity) == nil { t.Fatalf("accepted invalid identity %s", raw) }
+ }
+ var enabled Enabled
+ if json.Unmarshal([]byte("null"), &enabled) == nil { t.Fatal("accepted null boolean") }
+}
+`
+    )
+    await runCommand(['go', 'test', './...'], directory)
+  })
+}, 60_000)
+
 test('string enums retain their values in named Go types', () => {
   expect(
     goContract({

@@ -1,7 +1,7 @@
 // Generated from the Rust ABI contract. Do not edit.
 export const contractId =
   'cccdcdf0e53b5c8fc6a9965d97cdded4bfe4349760d367122f94a2bb1fff4b98'
-export const sourceFingerprint = '228ccb7fa8220a5a'
+export const sourceFingerprint = '5a5cf8db8c8f3319'
 export const inputBytes = 1048576
 export const outputBytes = 1048576
 export const documentLimits = Object.freeze({

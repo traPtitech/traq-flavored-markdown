@@ -274,7 +274,21 @@ function emitGoDefinition(
   if (value.kind === 'union') return unionDeclaration(name, value, definitions)
   if (value.kind === 'object')
     return objectDeclaration(name, value, definitions)
-  throw new Error('Contract must be object, enum or tagged union')
+  if (
+    ['string', 'boolean', 'integer', 'number', 'literal'].includes(value.kind)
+  ) {
+    const type = goType(value, definitions)
+    return (
+      `type ${name} ${type}\n` +
+      `func (value *${name}) UnmarshalJSON(raw []byte) error {\nvar decoded ${type}\nif err := (${decoder(value, definitions)})(raw, &decoded); err != nil { return err }\n*value = ${name}(decoded)\nreturn nil\n}\n` +
+      `func (value ${name}) MarshalJSON() ([]byte, error) {\n` +
+      (type === 'string'
+        ? `if !utf8.ValidString(string(value)) { return nil, fmt.Errorf("invalid UTF-8") }\n`
+        : '') +
+      `raw, err := json.Marshal(${type}(value))\nif err != nil { return nil, err }\nvar checked ${name}\nif err := json.Unmarshal(raw, &checked); err != nil { return nil, err }\nreturn raw, nil\n}\n`
+    )
+  }
+  throw new Error(`Unsupported named Go contract: ${name} (${value.kind})`)
 }
 
 export function emitGoDeclarations(module: ContractModule) {

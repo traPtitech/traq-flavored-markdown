@@ -3,7 +3,7 @@ package markdown
 import "testing"
 
 func TestWireDiagnosticsUseGeneratedSchema(t *testing.T) {
-	result, err := decodeWireError([]byte(`{"code":"internal_error","message":"invalid output","phase":"inline","rule":"custom","offset":0,"path":"$.children[0]","span":{"start":0,"end":1},"payload_type":"example.Text"}`))
+	result, err := decodeWireError([]byte(`{"code":"internal_error","message":"invalid output","phase":"inline","rule":"custom","offset":0,"path":"$.children[0]","span":{"start":0,"end":1},"payloadType":"example.Text"}`))
 	if err != nil {
 		t.Fatal(err)
 	}

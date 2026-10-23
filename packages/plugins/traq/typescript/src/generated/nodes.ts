@@ -18,7 +18,7 @@ import {
  */
 export type BlankLine = Record<string, never>
 export type Embedding = {
-  id: string
+  id: ReferenceIdentity
   label: string
   /**
    * Original JSON notation, available to renderers that display it as text.
@@ -27,8 +27,13 @@ export type Embedding = {
   type: EmbeddingKind
 }
 export type EmbeddingKind = 'file' | 'message'
+/**
+ * Lossless authored ID with its semantic identity parsed once on construction.
+ * Invalid UUIDs remain accepted syntax and serialize exactly as authored.
+ */
+export type ReferenceIdentity = string
 export type Reference = {
-  id: string
+  id: ReferenceIdentity
   label: string
   type: ReferenceKind
 }
@@ -104,7 +109,7 @@ function validateEmbedding(value: unknown): boolean {
     fields(
       value,
       {
-        id: string,
+        id: validateReferenceIdentity,
         label: string,
         literal: string,
         type: validateEmbeddingKind
@@ -115,11 +120,18 @@ function validateEmbedding(value: unknown): boolean {
 function validateEmbeddingKind(value: unknown): boolean {
   return oneOf('file', 'message')(value)
 }
+function validateReferenceIdentity(value: unknown): boolean {
+  return string(value)
+}
 function validateReference(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
       value,
-      { id: string, label: string, type: validateReferenceKind },
+      {
+        id: validateReferenceIdentity,
+        label: string,
+        type: validateReferenceKind
+      },
       {}
     ))(value)
 }

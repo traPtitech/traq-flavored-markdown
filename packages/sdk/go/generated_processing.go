@@ -143,38 +143,12 @@ func (value EmbeddedKind) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(value))
 }
 
-type LookupKind string
-
-const (
-	LookupKindUser    LookupKind = "user"
-	LookupKindGroup   LookupKind = "group"
-	LookupKindChannel LookupKind = "channel"
-)
-
-func (value *LookupKind) UnmarshalJSON(raw []byte) error {
-	var decoded string
-	if err := contract.Decode(raw, &decoded); err != nil {
-		return err
-	}
-	if err := contract.Enum(decoded, "user", "group", "channel"); err != nil {
-		return err
-	}
-	*value = LookupKind(decoded)
-	return nil
-}
-func (value LookupKind) MarshalJSON() ([]byte, error) {
-	if err := contract.Enum(string(value), "user", "group", "channel"); err != nil {
-		return nil, err
-	}
-	return json.Marshal(string(value))
-}
-
 type ReferenceEmbeddingCandidate struct {
-	End   uint32     `json:"end"`
-	Kind  LookupKind `json:"kind"`
-	Name  string     `json:"name"`
-	Raw   string     `json:"raw"`
-	Start uint32     `json:"start"`
+	End   uint32        `json:"end"`
+	Kind  ReferenceKind `json:"kind"`
+	Name  string        `json:"name"`
+	Raw   string        `json:"raw"`
+	Start uint32        `json:"start"`
 }
 
 func (value *ReferenceEmbeddingCandidate) UnmarshalJSON(raw []byte) error {
@@ -203,7 +177,7 @@ func (value *ReferenceEmbeddingCandidate) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("missing required field %q", "end")
 	}
 	if raw, present := object["kind"]; present {
-		if err := (contract.Decode[LookupKind])(raw, &decoded.Kind); err != nil {
+		if err := (contract.Decode[ReferenceKind])(raw, &decoded.Kind); err != nil {
 			return fmt.Errorf("field %q: %w", "kind", err)
 		}
 	} else {
@@ -278,6 +252,32 @@ func (value *ReferenceEmbeddingPlan) UnmarshalJSON(raw []byte) error {
 	}
 	*value = ReferenceEmbeddingPlan(decoded)
 	return nil
+}
+
+type ReferenceKind string
+
+const (
+	ReferenceKindUser    ReferenceKind = "user"
+	ReferenceKindGroup   ReferenceKind = "group"
+	ReferenceKindChannel ReferenceKind = "channel"
+)
+
+func (value *ReferenceKind) UnmarshalJSON(raw []byte) error {
+	var decoded string
+	if err := contract.Decode(raw, &decoded); err != nil {
+		return err
+	}
+	if err := contract.Enum(decoded, "user", "group", "channel"); err != nil {
+		return err
+	}
+	*value = ReferenceKind(decoded)
+	return nil
+}
+func (value ReferenceKind) MarshalJSON() ([]byte, error) {
+	if err := contract.Enum(string(value), "user", "group", "channel"); err != nil {
+		return nil, err
+	}
+	return json.Marshal(string(value))
 }
 
 type References struct {

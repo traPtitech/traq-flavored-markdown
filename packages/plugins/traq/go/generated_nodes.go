@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
+	"unicode/utf8"
 )
 
 type BlankLine struct {
@@ -26,10 +27,10 @@ func (value *BlankLine) UnmarshalJSON(raw []byte) error {
 }
 
 type Embedding struct {
-	ID      string        `json:"id"`
-	Label   string        `json:"label"`
-	Literal string        `json:"literal"`
-	Type    EmbeddingKind `json:"type"`
+	ID      ReferenceIdentity `json:"id"`
+	Label   string            `json:"label"`
+	Literal string            `json:"literal"`
+	Type    EmbeddingKind     `json:"type"`
 }
 
 func (value *Embedding) UnmarshalJSON(raw []byte) error {
@@ -43,7 +44,7 @@ func (value *Embedding) UnmarshalJSON(raw []byte) error {
 		return err
 	}
 	if raw, present := object["id"]; present {
-		if err := (contract.Decode[string])(raw, &decoded.ID); err != nil {
+		if err := (contract.Decode[ReferenceIdentity])(raw, &decoded.ID); err != nil {
 			return fmt.Errorf("field %q: %w", "id", err)
 		}
 	} else {
@@ -99,10 +100,35 @@ func (value EmbeddingKind) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(value))
 }
 
+type ReferenceIdentity string
+
+func (value *ReferenceIdentity) UnmarshalJSON(raw []byte) error {
+	var decoded string
+	if err := (contract.Decode[string])(raw, &decoded); err != nil {
+		return err
+	}
+	*value = ReferenceIdentity(decoded)
+	return nil
+}
+func (value ReferenceIdentity) MarshalJSON() ([]byte, error) {
+	if !utf8.ValidString(string(value)) {
+		return nil, fmt.Errorf("invalid UTF-8")
+	}
+	raw, err := json.Marshal(string(value))
+	if err != nil {
+		return nil, err
+	}
+	var checked ReferenceIdentity
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		return nil, err
+	}
+	return raw, nil
+}
+
 type Reference struct {
-	ID    string        `json:"id"`
-	Label string        `json:"label"`
-	Type  ReferenceKind `json:"type"`
+	ID    ReferenceIdentity `json:"id"`
+	Label string            `json:"label"`
+	Type  ReferenceKind     `json:"type"`
 }
 
 func (value *Reference) UnmarshalJSON(raw []byte) error {
@@ -116,7 +142,7 @@ func (value *Reference) UnmarshalJSON(raw []byte) error {
 		return err
 	}
 	if raw, present := object["id"]; present {
-		if err := (contract.Decode[string])(raw, &decoded.ID); err != nil {
+		if err := (contract.Decode[ReferenceIdentity])(raw, &decoded.ID); err != nil {
 			return fmt.Errorf("field %q: %w", "id", err)
 		}
 	} else {

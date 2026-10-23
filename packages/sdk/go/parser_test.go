@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
-	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
+	traq "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
 func parserFor(t *testing.T, preset GrammarPresetID) *Parser {
@@ -113,7 +113,7 @@ func TestLifecycleAndBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := first.Children()[0].DecodePayload(&trap.Stamp{}); err != nil {
+	if err := first.Children()[0].DecodePayload(&traq.Stamp{}); err != nil {
 		t.Fatal(err)
 	}
 	plain, err := common.ParseInline(ctx, ":stamp:")

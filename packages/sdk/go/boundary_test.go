@@ -123,33 +123,33 @@ func TestValidatedSnapshotsAcrossConsumers(t *testing.T) {
 
 func TestEmbeddingPreservesSourceBytesAndPreflightsCandidates(t *testing.T) {
 	source := "\ufeff@é\r\n\x00"
-	plan := ReferenceEmbeddingPlan{Candidates: []ReferenceEmbeddingCandidate{{Kind: LookupKindUser, Name: "é", Raw: "@é", Start: 3, End: 6}}}
-	unchanged, err := EmbedReferences(source, ReferenceEmbeddingPlan{}, func(LookupKind, string) (string, bool) { t.Fatal("unexpected resolver"); return "", false })
+	plan := ReferenceEmbeddingPlan{Candidates: []ReferenceEmbeddingCandidate{{Kind: ReferenceKindUser, Name: "é", Raw: "@é", Start: 3, End: 6}}}
+	unchanged, err := EmbedReferences(source, ReferenceEmbeddingPlan{}, func(ReferenceKind, string) (string, bool) { t.Fatal("unexpected resolver"); return "", false })
 	if err != nil || unchanged != source {
 		t.Fatalf("no-op %q %v", unchanged, err)
 	}
-	result, err := EmbedReferences(source, plan, func(LookupKind, string) (string, bool) { return "caller-defined-id", true })
+	result, err := EmbedReferences(source, plan, func(ReferenceKind, string) (string, bool) { return "caller-defined-id", true })
 	if err != nil || !strings.HasPrefix(result, "\ufeff!{") || !strings.HasSuffix(result, "\r\n\x00") {
 		t.Fatalf("%q %v", result, err)
 	}
-	plan.Candidates = append(plan.Candidates, ReferenceEmbeddingCandidate{Kind: LookupKindUser, Raw: "bad", Start: 4, End: 99})
+	plan.Candidates = append(plan.Candidates, ReferenceEmbeddingCandidate{Kind: ReferenceKindUser, Raw: "bad", Start: 4, End: 99})
 	calls := 0
-	if _, err := EmbedReferences(source, plan, func(LookupKind, string) (string, bool) { calls++; return "id", true }); err == nil || calls != 0 {
+	if _, err := EmbedReferences(source, plan, func(ReferenceKind, string) (string, bool) { calls++; return "id", true }); err == nil || calls != 0 {
 		t.Fatalf("malformed candidate passed resolver: %v, calls=%d", err, calls)
 	}
 	plan.Candidates = plan.Candidates[:1]
-	if _, err := EmbedReferences(source, plan, func(LookupKind, string) (string, bool) { return string([]byte{0xff}), true }); err == nil {
+	if _, err := EmbedReferences(source, plan, func(ReferenceKind, string) (string, bool) { return string([]byte{0xff}), true }); err == nil {
 		t.Fatal("accepted lossy identifier")
 	}
 }
 
 func TestEmbeddingResolverCannotChangeValidatedPlan(t *testing.T) {
 	plan := ReferenceEmbeddingPlan{Candidates: []ReferenceEmbeddingCandidate{
-		{Kind: LookupKindUser, Name: "a", Raw: "@a", Start: 0, End: 2},
-		{Kind: LookupKindUser, Name: "b", Raw: "@b", Start: 3, End: 5},
+		{Kind: ReferenceKindUser, Name: "a", Raw: "@a", Start: 0, End: 2},
+		{Kind: ReferenceKindUser, Name: "b", Raw: "@b", Start: 3, End: 5},
 	}}
 	var seen []string
-	output, err := EmbedReferences("@a @b", plan, func(_ LookupKind, name string) (string, bool) {
+	output, err := EmbedReferences("@a @b", plan, func(_ ReferenceKind, name string) (string, bool) {
 		seen = append(seen, name)
 		plan.Candidates[1].End = 1000
 		plan.Candidates[1].Name = "changed"

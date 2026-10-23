@@ -20,10 +20,9 @@ export type EmbeddedInfo = {
   type: EmbeddedKind
 }
 export type EmbeddedKind = 'user' | 'group' | 'channel' | 'file' | 'message'
-export type LookupKind = 'user' | 'group' | 'channel'
 export type ReferenceEmbeddingCandidate = {
   end: number
-  kind: LookupKind
+  kind: ReferenceKind
   name: string
   raw: string
   /**
@@ -41,6 +40,7 @@ export type ReferenceEmbeddingPlan = {
    */
   unembeddedText: string
 }
+export type ReferenceKind = 'user' | 'group' | 'channel'
 export type References = {
   channelLinks: Array<string>
   embeddings: Array<EmbeddedInfo>
@@ -96,9 +96,6 @@ function validateEmbeddedInfo(value: unknown): boolean {
 function validateEmbeddedKind(value: unknown): boolean {
   return oneOf('user', 'group', 'channel', 'file', 'message')(value)
 }
-function validateLookupKind(value: unknown): boolean {
-  return oneOf('user', 'group', 'channel')(value)
-}
 function validateReferenceEmbeddingCandidate(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -109,7 +106,7 @@ function validateReferenceEmbeddingCandidate(value: unknown): boolean {
           Number.isInteger(value) &&
           value >= 0 &&
           value <= 4294967295,
-        kind: validateLookupKind,
+        kind: validateReferenceKind,
         name: string,
         raw: string,
         start: (value: unknown) =>
@@ -133,6 +130,9 @@ function validateReferenceEmbeddingPlan(value: unknown): boolean {
       },
       {}
     ))(value)
+}
+function validateReferenceKind(value: unknown): boolean {
+  return oneOf('user', 'group', 'channel')(value)
 }
 function validateReferences(value: unknown): boolean {
   return ((value: unknown) =>
