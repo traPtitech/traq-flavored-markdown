@@ -1,4 +1,8 @@
 import {
+  DocumentContext,
+  DocumentValidationError
+} from '@traq-flavored-markdown/core'
+import {
   fields,
   object,
   string,
@@ -12,16 +16,16 @@ import {
   inputBytes,
   outputBytes
 } from '../generated/artifact.js'
-import type { Document } from '../generated/nodes.js'
+import { schema } from '../generated/nodes.js'
 import { type Extraction, isExtraction } from '../generated/processing.js'
 import { MarkdownError } from './errors.js'
-import type { ProcessedDocument } from './index.js'
 import { encodeRequest } from './json.js'
+import type { ParsedDocument, ProcessedDocument } from './types.js'
 
 type OperationName = keyof typeof operations
 type Results = {
   configuration: { contractId: string }
-  document: Document
+  document: ParsedDocument
   extraction: Extraction
   text: string
   processing: ProcessedDocument
@@ -35,6 +39,19 @@ type Wasm = WebAssembly.Exports & { memory: WebAssembly.Memory }
 type ExportFunction = (...args: number[]) => number
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
 const encoder = new TextEncoder()
+const inputSchema = schema.withUnknownNodes()
+const documentRequests = new WeakMap<DocumentContext, string>()
+
+function encodeDocument(input: unknown): string {
+  const context = inputSchema.document(
+    input as import('./types.js').DocumentInput
+  )
+  const cached = documentRequests.get(context)
+  if (cached !== undefined) return cached
+  const encoded = encodeRequest(context.document, inputBytes)
+  documentRequests.set(context, encoded)
+  return encoded
+}
 
 export interface Transport {
   call<N extends OperationName>(
@@ -45,7 +62,9 @@ export interface Transport {
   dispose(): void
 }
 
-const isDocument = (value: unknown): value is Document =>
+const isDocument = (
+  value: unknown
+): value is import('@traq-flavored-markdown/core').ReadonlyDocument =>
   fields(value, { source: string, children: Array.isArray })
 
 /** One independent Wasm instance, verified against the generated semantic contract. */
@@ -142,11 +161,24 @@ export function createTransport(
       source =
         descriptor.input === 'text'
           ? (input as string)
-          : encodeRequest(input, inputBytes)
+          : operation === 'extract' || operation === 'render'
+            ? encodeDocument(input)
+            : encodeRequest(input, inputBytes)
       if (typeof source !== 'string')
         throw new TypeError('Expected a serializable request')
     } catch (cause) {
       if (cause instanceof MarkdownError) throw cause.withOperation(operation)
+      if (cause instanceof DocumentValidationError)
+        throw new MarkdownError(
+          {
+            code: cause.code,
+            message: cause.message,
+            path: cause.path,
+            resource: cause.resource
+          },
+          operation,
+          cause
+        )
       throw new MarkdownError(
         { code: 'invalid_request', message: 'Invalid request input' },
         operation,
@@ -232,6 +264,21 @@ export function createTransport(
                     })
                   : typeof value === 'string'
         if (!valid) throw new Error('Malformed Wasm success value')
+        if (descriptor.result === 'document')
+          reply.ok = schema.document(
+            value as import('@traq-flavored-markdown/core').ReadonlyDocument
+          )
+        else if (descriptor.result === 'processing') {
+          const result = value as {
+            document: import('@traq-flavored-markdown/core').ReadonlyDocument
+            extraction: Extraction
+            plainText: string
+          }
+          reply.ok = Object.freeze({
+            ...result,
+            document: schema.document(result.document)
+          })
+        }
       }
     } catch (cause) {
       dispose()
@@ -257,7 +304,7 @@ export function createTransport(
         operation
       )
     }
-    // Rust validates documents before encoding; the contract identifies their node schema.
+    // Only complete, schema-validated successes escape the transport boundary.
     return envelope.ok as Result<N>
   }
 }

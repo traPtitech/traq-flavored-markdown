@@ -4,37 +4,36 @@ import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { definitions as extensionDefinitions } from '@traq-flavored-markdown/extensions-plugin/nodes'
 import { definitions as trapDefinitions } from '@traq-flavored-markdown/traq-plugin/nodes'
 
-import type { ResolvedOptions } from '../profiles/traq.js'
+import type { ResolvedOptions } from '../profile/options.js'
 
 function configureCommonCondensed(
   common: RenderPlugin,
   options: Pick<ResolvedOptions, 'validateLink'>
 ) {
   for (const definition of [definitions.Softbreak, definitions.Hardbreak])
-    common = common.replace(definition, () => ' ')
+    common = common.withReplacedHandler(definition, () => ' ')
 
-  common = common.replace(definitions.Paragraph, (n, ctx) =>
+  common = common.withReplacedHandler(definitions.Paragraph, (n, ctx) =>
     ctx.renderChildren()
   )
 
-  common = common.replace(
+  common = common.withReplacedHandler(
     definitions.Heading,
     (n, ctx) => '#'.repeat(n.data.level) + ' ' + ctx.renderChildren()
   )
 
-  common = common.replace(
+  common = common.withReplacedHandler(
     definitions.Blockquote,
     (_n, ctx) => '> ' + ctx.renderChildren(' ')
   )
 
-  common = common.replace(definitions.List, (_n, ctx) =>
+  common = common.withReplacedHandler(definitions.List, (_n, ctx) =>
     ctx.renderChildren(' ')
   )
 
-  common = common.replace(definitions.ListItem, (n, ctx) => {
-    const list = ctx.ancestors.at(-1)
-    if (!list || !definitions.List.is(list))
-      throw new TypeError('Expected list parent')
+  common = common.withReplacedHandler(definitions.ListItem, (n, ctx) => {
+    const list = ctx.parent(definitions.List)
+    if (!list) throw new TypeError('Expected list parent')
     const kind = list.data.kind
     const marker =
       kind.type === 'ordered'
@@ -44,22 +43,22 @@ function configureCommonCondensed(
     return marker + ' ' + ctx.renderChildren(' ')
   })
 
-  common = common.replace(
+  common = common.withReplacedHandler(
     definitions.ThematicBreak,
     n => ' ' + escapeHtml(n.data.marker) + ' '
   )
 
-  common = common.replace(
+  common = common.withReplacedHandler(
     definitions.CodeBlock,
     n => '<code>' + escapeHtml(n.data.literal) + '</code>'
   )
 
-  common = common.replace(definitions.HtmlBlock, n =>
+  common = common.withReplacedHandler(definitions.HtmlBlock, n =>
     escapeHtml(n.data.literal)
   )
 
-  common = common.replace(definitions.Image, (n, _ctx) => {
-    const label = escapeHtml(n.data.label_source)
+  common = common.withReplacedHandler(definitions.Image, (n, _ctx) => {
+    const label = escapeHtml(n.data.labelSource)
 
     if (!options.validateLink(n.data.destination)) return label
 
@@ -81,18 +80,19 @@ function configureCommonCondensed(
 }
 
 function configureExtensionsCondensed(extensions: RenderPlugin) {
-  extensions = extensions.replace(extensionDefinitions.Table, (_n, ctx) =>
-    ctx.renderChildren(' ')
+  extensions = extensions.withReplacedHandler(
+    extensionDefinitions.Table,
+    (_n, ctx) => ctx.renderChildren(' ')
   )
-  extensions = extensions.replace(
+  extensions = extensions.withReplacedHandler(
     extensionDefinitions.Row,
     (_n, ctx) => ctx.renderChildren(' ') + ' |'
   )
-  extensions = extensions.replace(
+  extensions = extensions.withReplacedHandler(
     extensionDefinitions.HeaderRow,
     (_n, ctx) => ctx.renderChildren(' ') + ' |'
   )
-  extensions = extensions.replace(
+  extensions = extensions.withReplacedHandler(
     extensionDefinitions.Cell,
     (_n, ctx) => '| ' + ctx.renderChildren()
   )
@@ -101,7 +101,7 @@ function configureExtensionsCondensed(extensions: RenderPlugin) {
 }
 
 function configureTrapCondensed(trap: RenderPlugin) {
-  trap = trap.replace(trapDefinitions.BlankLine, () => ' ')
+  trap = trap.withReplacedHandler(trapDefinitions.BlankLine, () => ' ')
 
   return trap
 }

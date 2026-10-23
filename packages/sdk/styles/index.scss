@@ -1,3 +1,9 @@
+@use '../../plugins/traq/styles/base';
+@use '../../plugins/extensions/styles/base' as extensions;
 @forward './markdown';
-@forward './stamp';
-@forward './stamp-effect';
+
+// Condensed views align large stamps and all of their effect wrappers.
+.markdown-inline-body {
+  --tfm-stamp-large-size: var(--tfm-stamp-normal-size, 24px);
+  --tfm-stamp-ex-large-size: var(--tfm-stamp-normal-size, 24px);
+}

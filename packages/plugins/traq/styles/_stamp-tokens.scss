@@ -1,0 +1,18 @@
+// Shared stamp/effect sizes inherit caller CSS custom properties.
+$sizes: (
+  normal: 24px,
+  ex-large: 48px,
+  large: 32px,
+  small: 16px
+);
+
+@mixin size {
+  font-size: var(--tfm-stamp-normal-size, 24px);
+  @each $name, $value in $sizes {
+    @if $name != normal {
+      &.#{$name} {
+        font-size: var(--tfm-stamp-#{$name}-size, #{$value});
+      }
+    }
+  }
+}

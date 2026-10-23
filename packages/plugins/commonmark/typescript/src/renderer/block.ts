@@ -1,40 +1,30 @@
 import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import {
-  isKnownNode,
-  names
-} from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
-import type { Node } from '@traq-flavored-markdown/core/renderer'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 
 import { codeLanguage } from '../semantics.js'
-import type { Options } from './options.js'
-
-function tightList(node?: Node) {
-  return (
-    !!node && isKnownNode(node) && node.kind === names.List && node.data.tight
-  )
-}
+import type { HtmlRendererOptions } from './options.js'
 
 type BlockOptions = Required<
-  Pick<Options, 'rawHtml' | 'xhtmlOut' | 'isBlockSpacing'>
+  Pick<HtmlRendererOptions, 'rawHtml' | 'xhtmlOut' | 'isBlockSpacing'>
 > &
-  Pick<Options, 'highlight'>
+  Pick<HtmlRendererOptions, 'highlight'>
 
 export function registerBlockHandlers(
   result: RenderPlugin,
   { highlight, rawHtml, xhtmlOut, isBlockSpacing }: BlockOptions
 ) {
-  result = result.on(definitions.Paragraph, (n, ctx) => {
+  result = result.withHandler(definitions.Paragraph, (n, ctx) => {
     const content = ctx.renderChildren()
 
     return ctx.ancestors.at(-1)?.kind === names.ListItem &&
-      tightList(ctx.ancestors.at(-2))
+      ctx.parent(definitions.List, 2)?.data.tight
       ? content
       : '<p>' + content + '</p>\n'
   })
 
-  result = result.on(
+  result = result.withHandler(
     definitions.Heading,
     (n, ctx) =>
       '<h' +
@@ -46,12 +36,12 @@ export function registerBlockHandlers(
       '>\n'
   )
 
-  result = result.on(
+  result = result.withHandler(
     definitions.Blockquote,
     (n, ctx) => '<blockquote>' + '\n' + ctx.renderChildren() + '</blockquote>\n'
   )
 
-  result = result.on(definitions.List, (n, ctx) => {
+  result = result.withHandler(definitions.List, (n, ctx) => {
     const kind = n.data.kind
     const tag = kind.type === 'ordered' ? 'ol' : 'ul'
     const attrs =
@@ -62,8 +52,8 @@ export function registerBlockHandlers(
     return '<' + tag + attrs + '>\n' + ctx.renderChildren() + '</' + tag + '>\n'
   })
 
-  result = result.on(definitions.ListItem, (n, ctx) => {
-    const tight = tightList(ctx.ancestors.at(-1))
+  result = result.withHandler(definitions.ListItem, (n, ctx) => {
+    const tight = ctx.parent(definitions.List)?.data.tight
     const content = ctx.renderChildren(children => {
       const lead =
         children.length && !(tight && children[0].node.kind === names.Paragraph)
@@ -90,7 +80,7 @@ export function registerBlockHandlers(
     return '<li>' + content + '</li>\n'
   })
 
-  result = result.on(definitions.CodeBlock, n => {
+  result = result.withHandler(definitions.CodeBlock, n => {
     const language = n.data.fenced ? codeLanguage(n.data.info) : ''
     const highlighted = n.data.fenced
       ? highlight?.(n.data.literal, language)
@@ -112,11 +102,11 @@ export function registerBlockHandlers(
     return '<pre><code' + attrs + '>' + content + '</code></pre>\n'
   })
 
-  result = result.on(definitions.ThematicBreak, () =>
+  result = result.withHandler(definitions.ThematicBreak, () =>
     xhtmlOut ? '<hr />\n' : '<hr>\n'
   )
 
-  result = result.on(definitions.HtmlBlock, n =>
+  result = result.withHandler(definitions.HtmlBlock, n =>
     rawHtml === 'escape'
       ? '<p>' + escapeHtml(n.data.literal) + '</p>\n'
       : n.data.literal

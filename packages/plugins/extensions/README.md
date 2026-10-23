@@ -13,7 +13,12 @@ The TypeScript package `@traq-flavored-markdown/extensions-plugin` exports
 `/nodes`, `/renderer`, and `/math`. `plugin({ math })` registers typed HTML
 handlers. Without a math adapter it preserves escaped source. `/math` supplies
 the optional KaTeX adapter; node-only and custom-renderer consumers do not need
-to load it.
+to install or load it. `katex` is an optional peer dependency.
+
+Import `@traq-flavored-markdown/extensions-plugin/index.css` for the base markup
+styles. KaTeX users also import `katex/dist/katex.min.css`. Generated `/nodes`
+exports `schema`; `createRenderer(preset, { schema })` validates raw trees
+independently of handler selection.
 
 Table column alignments belong to the table. Header rows and body rows are
 distinct node kinds, and cells derive their presentation from the table and

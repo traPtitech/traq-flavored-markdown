@@ -1,11 +1,12 @@
 import * as rendering from '@traq-flavored-markdown/sdk/renderer'
-import { renderer } from '@traq-flavored-markdown/core/renderer'
+import { createRenderer } from '@traq-flavored-markdown/core/renderer'
+import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
 import { expect, test } from 'bun:test'
 
-import { parser } from './setup.ts'
+import { parser } from './setup.js'
 
 test('traQ presentation combines tables, marks, spoilers, math, and highlighted code', () => {
-  const view = renderer(rendering.htmlPreset())
+  const view = createRenderer(rendering.createHtmlPreset(withDefaultAdapters()))
   const source =
     '| left | right |\n| :--- | ---: |\n| **a** | b |\n\n==mark== ~~strike~~ !!secret!! $x$\n\n```js:caption\nconst x = 1\n```'
   const html = view.render(parser.parse(source))
@@ -31,8 +32,8 @@ test('traQ presentation combines tables, marks, spoilers, math, and highlighted 
 
 test('stamp resolvers are isolated and unrecognized effects preserve escaped source', () => {
   const make = (origin: string) =>
-    renderer(
-      rendering.htmlPreset({
+    createRenderer(
+      rendering.createHtmlPreset({
         stamps: {
           resolve: ({ type, name }) =>
             type === 'normal' && name === 'wave'
@@ -55,16 +56,16 @@ test('stamp resolvers are isolated and unrecognized effects preserve escaped sou
     ':wave.unknown:'
   ).toBe(':wave.unknown:')
   expect(first.render(parser.parseInline(':missing:'))).toBe(':missing:')
-  const unsafe = renderer(
-    rendering.htmlPreset({
+  const unsafe = createRenderer(
+    rendering.createHtmlPreset({
       stamps: {
         resolve: () => ({ url: 'javascript:alert(1)' })
       }
     })
   )
   expect(unsafe.render(parser.parseInline(':wave:'))).toBe(':wave:')
-  const nonImage = renderer(
-    rendering.htmlPreset({
+  const nonImage = createRenderer(
+    rendering.createHtmlPreset({
       stamps: {
         resolve: () => ({ url: 'tel:+819012345678' })
       }
@@ -74,8 +75,8 @@ test('stamp resolvers are isolated and unrecognized effects preserve escaped sou
 })
 
 test('stamp presentation uses parsed kinds and effects without matching color substrings', () => {
-  const view = renderer(
-    rendering.htmlPreset({
+  const view = createRenderer(
+    rendering.createHtmlPreset({
       stamps: {
         resolve: ({ name }) =>
           ['foo0x123456', '0x1234567', 'wave'].includes(name)
@@ -108,8 +109,8 @@ test('stamp presentation uses parsed kinds and effects without matching color su
 })
 
 test('reference highlighting and link/image policies belong to each renderer', () => {
-  const view = renderer(
-    rendering.htmlPreset({
+  const view = createRenderer(
+    rendering.createHtmlPreset({
       references: {
         resolve: ({ type, id }) => ({
           href: '#' + type + '-' + id,
@@ -130,8 +131,8 @@ test('reference highlighting and link/image policies belong to each renderer', (
   expect(
     view.render(parser.parseInline('![x](https://trap.jp/x.png)'))
   ).toMatch(/<img/)
-  const custom = renderer(
-    rendering.htmlPreset({
+  const custom = createRenderer(
+    rendering.createHtmlPreset({
       images: { validate: () => true },
       links: { validate: () => false }
     })
@@ -146,8 +147,8 @@ test('reference highlighting and link/image policies belong to each renderer', (
 })
 
 test('reference rendering rejects script links and escapes labels', () => {
-  const view = renderer(
-    rendering.htmlPreset({
+  const view = createRenderer(
+    rendering.createHtmlPreset({
       references: {
         resolve: ({ id }) => ({ href: `javascript:openModal(${id})` })
       }
@@ -170,9 +171,9 @@ test('reference rendering rejects script links and escapes labels', () => {
 })
 
 test('table handlers reject forged alignment metadata', () => {
-  const view = renderer(rendering.htmlPreset())
-  const document = parser.parse('| a |\n| - |\n| b |')
+  const view = createRenderer(rendering.createHtmlPreset())
+  const document = parser.parse('| a |\n| - |\n| b |').toMutable()
   const table = document.children[0]
   table.data = { alignments: ['left;position:fixed'] } as never
-  expect(() => view.render(document)).toThrow(/Invalid render payload/)
+  expect(() => view.render(document)).toThrow(/Invalid node payload/)
 })

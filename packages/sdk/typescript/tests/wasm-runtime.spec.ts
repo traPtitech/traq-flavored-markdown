@@ -37,8 +37,8 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
   expect(captureError(() => core.parse(2))).toMatchObject({
     code: 'invalid_request'
   })
-  expect(core.parseInline('**x**').children[0].kind).toBe(names.Strong)
-  expect(core.parse('\ufefftext🦀').source).toBe('\ufefftext🦀')
+  expect(core.parseInline('**x**').document.children[0].kind).toBe(names.Strong)
+  expect(core.parse('\ufefftext🦀').document.source).toBe('\ufefftext🦀')
   const hostile = [
     '['.repeat(5000),
     '> '.repeat(300),
@@ -60,14 +60,14 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
   })
   for (const source of hostile) {
     try {
-      expect(core.parse(source).source).toBe(source)
+      expect(core.parse(source).document.source).toBe(source)
     } catch (e) {
       expect(e).toBeInstanceOf(Error)
       expect((e as { cause: { code: string } }).cause.code).toBe(
         'resource_limit'
       )
     }
-    const document = core.parse('after') as unknown as {
+    const document = core.parse('after').document as unknown as {
       children: [{ children: [{ data: { value: string } }] }]
     }
     expect(document.children[0].children[0].data.value).toBe('after')
@@ -83,7 +83,7 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
     )
   )
   expect(outputError).toMatchObject({ cause: { resource: 'output_bytes' } })
-  expect(core.parse('after').source).toBe('after')
+  expect(core.parse('after').document.source).toBe('after')
 })
 
 test('artifact pairing, preset selection, disposal and isolated results', async () => {
@@ -109,20 +109,25 @@ test('artifact pairing, preset selection, disposal and isolated results', async 
   let replacement: Parser
   try {
     const first = traq.parseInline(':stamp:')
-    expect(first.children[0].kind).toBe(names.Stamp)
-    expect(isKnownNode(first.children[0])).toBeTruthy()
+    expect(first.document.children[0].kind).toBe(names.Stamp)
+    expect(isKnownNode(first.document.children[0])).toBeTruthy()
     expect(
-      isKnownNode({ ...first.children[0], kind: 'future::Node' })
+      isKnownNode({
+        ...first.document.children[0],
+        kind: 'future::ReadonlyNode'
+      })
     ).toBeFalsy()
-    expect(common.parseInline(':stamp:').children[0].kind).toBe(names.Text)
+    expect(common.parseInline(':stamp:').document.children[0].kind).toBe(
+      names.Text
+    )
     traq.parse('another')
-    expect(first.source).toBe(':stamp:')
+    expect(first.document.source).toBe(':stamp:')
     traq.dispose()
     traq.dispose()
     expect(() => traq.parse('closed')).toThrow(/disposed/)
-    expect(common.parse('still open').source).toBe('still open')
+    expect(common.parse('still open').document.source).toBe('still open')
     replacement = runtime.createParser(presets.traq.v1)
-    expect(replacement.parseInline(':stamp:').children[0].kind).toBe(
+    expect(replacement.parseInline(':stamp:').document.children[0].kind).toBe(
       names.Stamp
     )
   } finally {
@@ -238,7 +243,7 @@ test('Wasm input views respect their byte range and are copied before async work
   const runtime = await pending
   const parser = runtime.createParser(presets.traq.v1)
   try {
-    expect(parser.parse('copied').source).toBe('copied')
+    expect(parser.parse('copied').document.source).toBe('copied')
   } finally {
     runtime.dispose()
   }

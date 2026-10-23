@@ -10,10 +10,10 @@ contracts, and validation; the SDK exposes the supported presets and host APIs.
 This package combines the core, CommonMark, extensions, and traQ plugin layers for
 traQ.
 
-The TypeScript `html()` renderer applies traQ display policy to CommonMark
+The TypeScript `createHtmlRenderer()` renderer applies traQ display policy to CommonMark
 nodes: raw HTML is escaped, links use a restricted scheme list (including
 `tel`, `sms`, and `geo`), and rejected links display their escaped Markdown
-source. The CommonMark plugin's `specHtml()` renderer is for specification output
+source. The CommonMark plugin's `createSpecHtmlRenderer()` renderer is for specification output
 and can emit unsafe HTML; it is not used for message display.
 
 traQ's `spacing` syntax preserves additional blank lines with their source spans
@@ -59,7 +59,9 @@ parser.dispose()
 `loadRuntime` fetches the packaged Wasm once and retains its shared runtime for
 the page. It deliberately exposes no runtime `dispose`; dispose individual
 parsers, extractors, and plain-text renderers when they are no longer needed.
-Node payload types and optional guards are exported by their plugin packages.
+Read the validated tree through `document.document` and source utilities through
+`document.source`. Use `document.toMutable()` for an independent editable draft.
+Node payload types and external-input guards are exported by their plugin packages.
 `@traq-flavored-markdown/sdk/nodes` exports the complete node-name catalog.
 
 ### Bun and other TypeScript hosts
@@ -150,7 +152,8 @@ validated native document in one Wasm call. Go exposes the same path through
 and plain-text renderers remain available for callers that only need one result.
 The `whitespace` policy defaults to `collapse`; `preserve` keeps rendered spacing.
 
-Parsing produces a `Document` that can be passed directly to other consumers;
+TypeScript parsing produces a `ParsedDocument` (`DocumentContext<NodeVariant>`)
+that can be passed directly to other consumers;
 none of them parses the Markdown source again. The TypeScript renderer works on
 the host, while the Go plain-text renderer and extractors call the native Rust
 implementation through the same runtime.
@@ -172,7 +175,8 @@ const html = rendered.html
 ```
 
 `messageRenderers` builds `standard` and `condensed` views. `prepare(document)`
-validates and analyzes an owned snapshot once, then shares it between both views.
+reuses a validated owner, analyzes semantic links once, then derives presentation
+plans for both views. `prepared.analysis` exposes the shared semantic result.
 `view.render(document)` returns both results; individual
 `view.standard.render(document)` and `view.condensed.render(document)` are also
 available. Preparation also accepts an existing core `DocumentContext`.
@@ -182,8 +186,8 @@ embedding plan. The two views apply presentation choices without rewriting the
 parsed AST. Complete Rust, Go, and TypeScript programs are in
 [examples](examples/README.md).
 
-For direct HTML, `html(options)` returns a renderer. `htmlPreset(options)`
-returns a preset for the core `renderer()` composition API. Both accept
+For direct HTML, `createHtmlRenderer(options)` returns a renderer. `createHtmlPreset(options)`
+returns a preset for the core `createRenderer()` composition API. Both accept
 third-party renderer plugins through `plugins`; `configurePlugins` can replace
 built-in handlers by returning updated plugin values:
 
@@ -191,18 +195,18 @@ built-in handlers by returning updated plugin values:
 import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { PluginDeclaration } from '@traq-flavored-markdown/core/definitions'
 import { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
-import { html } from '@traq-flavored-markdown/sdk/renderer'
+import { createHtmlRenderer } from '@traq-flavored-markdown/sdk/renderer'
 
-const annotation = new RenderPlugin(new PluginDeclaration('app')).on(
+const annotation = new RenderPlugin(new PluginDeclaration('app')).withHandler(
   'app::Annotation',
   (_node, context) => context.renderChildren()
 )
-const view = html({
+const view = createHtmlRenderer({
   plugins: [annotation],
   configurePlugins(plugins) {
     return {
       ...plugins,
-      common: plugins.common.replace(
+      common: plugins.common.withReplacedHandler(
         definitions.Strong,
         (_node, context) => '<b>' + context.renderChildren() + '</b>'
       )
@@ -212,20 +216,28 @@ const view = html({
 const rendered = view.render(document)
 ```
 
-The `renderer` entrypoint includes the default highlighter and KaTeX adapters.
-Import the same composition functions from
-`@traq-flavored-markdown/sdk/renderer/composition` to supply `code.highlight`
-and `math.render` without importing either default dependency. Without those
-adapters, composition emits escaped code and math content.
+The `renderer` entrypoint accepts optional adapters and does not load Highlight.js
+or KaTeX. Install `highlight.js` and `katex`, then explicitly select the bundled
+adapters when needed:
 
-`RenderPlugin.on()` and `RenderPlugin.replace()` return new values. Keep the returned
+```ts
+import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
+import { createHtmlRenderer } from '@traq-flavored-markdown/sdk/renderer'
+
+const view = createHtmlRenderer(withDefaultAdapters())
+```
+
+Custom `code.highlight` and `math.render` callbacks need neither dependency.
+Without adapters, code and math preserve escaped source.
+
+`RenderPlugin.withHandler()` and `RenderPlugin.withReplacedHandler()` return new values. Keep the returned
 plugin when composing a preset; existing plugins and presets are unchanged.
 
 Built-in plugin groups are `common`, `extensions`, and `traq`. Generated node
 definitions carry the node kind, payload validator, and child-structure contract,
 so handlers infer their data types and invalid known nodes fail before rendering.
 Custom nodes nested inside a known paragraph must use a definition with
-`role: 'inline'`; see the [core API guide](../core/README.md) for `defineNode`.
+`role: 'inline'` and extend the `schema` option independently of renderer plugins; see the [core API guide](../core/README.md) for `defineNode`.
 Unknown roots and children of unconstrained parents use the escaped-source
 fallback unless an application plugin handles them.
 
@@ -234,12 +246,16 @@ Display options are grouped by responsibility:
 | Option                                                                 | Purpose                                                |
 | ---------------------------------------------------------------------- | ------------------------------------------------------ |
 | `links.validate`, `links.attributes`                                   | Destination policy and anchor attributes               |
-| `images.validate`                                                      | Markdown image destination policy                      |
+| `images.validate`, `images.domains`                                    | Markdown image destination policy                      |
 | `code.highlight`                                                       | Optional trusted code HTML adapter                     |
-| `math.render`                                                          | Optional trusted math HTML adapter                     |
+| `math.render`, `math.renderCondensed`                                  | Optional trusted math HTML adapter                     |
 | `references.resolve`                                                   | Application reference labels, routes, and highlighting |
 | `stamps.resolve`, `stamps.validateUrl`                                 | Stamp lookup and resolved image policy                 |
 | `presentation.breaks`, `presentation.rawHtml`, `presentation.xhtmlOut` | Line breaks, raw HTML, and void-tag style              |
+
+`labels.file` and `labels.message` replace resource-card link text independently
+of URL classification. `images.domains` replaces the default HTTPS image domain
+list; `images.validate` supplies a complete custom policy.
 
 For example, `references.resolve(reference)` returns
 `{ href, label, highlight }`, while `stamps.resolve(stamp)` returns
@@ -248,7 +264,7 @@ not know application stores or API endpoint layouts. Custom HTML adapters are
 trusted code; escape document values before including them in generated HTML.
 
 Direct rendering also supports repeated views with
-`const session = html().createSession(document)`. Call `session.render(plan)`
+`const session = createHtmlRenderer().createSession(document)`. Call `session.render(plan)`
 with `roots`, `omittedNodes`, `childText`, or `rootSeparator` to change presentation
 without editing the source AST. A plan may reference original or snapshot nodes
 from that document; foreign nodes are rejected before handlers run.
@@ -270,15 +286,18 @@ the renderer entrypoint. Reference embedding is a separate source-editing API.
 The stylesheet shares stamp sizes through `--tfm-stamp-normal-size`,
 `--tfm-stamp-small-size`, `--tfm-stamp-large-size`, and
 `--tfm-stamp-ex-large-size`. Compact message views use the normal size for large
-stamps and their effects. Animation keyframes use the `tfm-stamp-` prefix.
+stamps and their effects. Animation keyframes use the `tfm-stamp-` prefix. Colors also use CSS properties,
+including `--tfm-link-color`, `--tfm-code-background-color`, and
+`--tfm-spoiler-background-color`. Plugin `index.css` exports provide standalone
+markup behavior; SDK `index.css` composes those bases with the traQ theme.
 
 ## Grammar versions
 
 Grammar versions identify the rules used to write a message. Store that value
 with the source and create a parser for the stored version when reading it back.
 Unknown versions fail rather than silently selecting a newer grammar.
-In TypeScript, check a stored string with `isPreset(version)` before passing it
-to `createParser`; the guard narrows it to the generated `Preset` type.
+In TypeScript, check a stored string with `isGrammarPresetId(version)` before passing it
+to `createParser`; the guard narrows it to the generated `GrammarPresetId` type.
 
 `presets.traq.v1` and `PresetTraqV1` are generated from the Rust preset catalog.
 Custom grammars are composed in Rust and published through that catalog; the

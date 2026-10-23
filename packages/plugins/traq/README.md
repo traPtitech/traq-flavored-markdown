@@ -12,18 +12,23 @@ application policies.
 | `markdown-trap-extraction` | Reference extraction                                    |
 
 Add the individual rule plugins to an application's `GrammarBuilder` or
-`PresetBuilder`. The caller selects their order and decides attachment and citation URL
+`RenderPresetBuilder`. The caller selects their order and decides attachment and citation URL
 display and how processing results are combined.
 
 ## Boundaries
 
-This package uses core and the CommonMark plugin from the same workspace. It
+The TypeScript package depends only on core. It
 does not depend on SDK composition or distribution code.
 
 The TypeScript package exports generated node types and HTML renderers. The Go
 module is `github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go`;
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
+
+Import `@traq-flavored-markdown/traq-plugin/index.css` for standalone spoilers,
+references, stamps, and animation styles. CSS custom properties control colors
+and stamp sizes. `/nodes` exports `schema`; pass it to
+`createRenderer(preset, { schema })` when rendering raw documents.
 
 The HTML plugin accepts `resolveReference(reference)` and
 `resolveStamp(namedStamp)` adapters. A reference resolver returns optional

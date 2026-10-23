@@ -1,8 +1,11 @@
-import type { Document, Node } from '@traq-flavored-markdown/core'
+import type {
+  ReadonlyDocument,
+  ReadonlyNode
+} from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
-import { names } from '../src/generated/commonmark.js'
-import { html } from '../src/renderer/index.js'
+import { names } from '../src/generated/nodes.js'
+import { createHtmlRenderer } from '../src/renderer/index.js'
 
 test('empty highlighted HTML is explicit while undefined selects escaped source', () => {
   const document = {
@@ -16,14 +19,18 @@ test('empty highlighted HTML is explicit while undefined selects escaped source'
     ]
   }
   expect(
-    html({ highlight: () => ({ kind: 'content', html: '' }) }).render(document)
+    createHtmlRenderer({
+      highlight: () => ({ kind: 'content', html: '' })
+    }).render(document)
   ).toBe('<pre><code class="language-text"></code></pre>\n')
   expect(
-    html({ highlight: () => ({ kind: 'block', html: '' }) }).render(document)
+    createHtmlRenderer({
+      highlight: () => ({ kind: 'block', html: '' })
+    }).render(document)
   ).toBe('\n')
-  expect(html({ highlight: () => undefined }).render(document)).toContain(
-    'source'
-  )
+  expect(
+    createHtmlRenderer({ highlight: () => undefined }).render(document)
+  ).toContain('source')
 })
 
 test('display defaults resolve undefined before HTML and link handlers run', () => {
@@ -38,7 +45,7 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
       }
     ]
   }
-  expect(html({ rawHtml: undefined }).render(raw)).toBe(
+  expect(createHtmlRenderer({ rawHtml: undefined }).render(raw)).toBe(
     '&lt;script&gt;evil()&lt;/script&gt;'
   )
   const unsafe = {
@@ -51,36 +58,36 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
       }
     ]
   }
-  expect(html({ validateLink: undefined }).render(unsafe)).toBe(
+  expect(createHtmlRenderer({ validateLink: undefined }).render(unsafe)).toBe(
     '[x](javascript:x)'
   )
 })
 
 test('list layout uses visible children and applies item replacement through renderChildren', () => {
-  const text = (start: number): Node => ({
+  const text = (start: number): ReadonlyNode => ({
     kind: names.Text,
     data: { value: start ? 'b' : 'a' },
     span: { start, end: start + 1 }
   })
-  const paragraph = (start: number): Node => ({
+  const paragraph = (start: number): ReadonlyNode => ({
     kind: names.Paragraph,
     data: {},
     span: { start, end: start + 1 },
     children: [text(start)]
   })
-  const first: Node = {
+  const first: ReadonlyNode = {
     kind: names.ListItem,
     data: {},
     span: { start: 0, end: 1 },
     children: [paragraph(0)]
   }
-  const second: Node = {
+  const second: ReadonlyNode = {
     kind: names.ListItem,
     data: {},
     span: { start: 1, end: 2 },
     children: [paragraph(1)]
   }
-  const document: Document = {
+  const document: ReadonlyDocument = {
     source: 'ab',
     children: [
       {
@@ -94,7 +101,7 @@ test('list layout uses visible children and applies item replacement through ren
       }
     ]
   }
-  const view = html()
+  const view = createHtmlRenderer()
   expect(view.render(document)).toBe(
     '<ol start="3">\n<li>a</li>\n<li>b</li>\n</ol>\n'
   )

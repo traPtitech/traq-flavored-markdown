@@ -3,15 +3,23 @@ import type { MutableNode } from '@traq-flavored-markdown/core'
 import { defineNode } from '@traq-flavored-markdown/core'
 import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
 import { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
-import type { Document, Node } from '@traq-flavored-markdown/core/renderer'
-import { html, messageRenderers } from '@traq-flavored-markdown/sdk/renderer'
+import type {
+  ReadonlyDocument,
+  ReadonlyNode
+} from '@traq-flavored-markdown/core/renderer'
+import {
+  createHtmlRenderer,
+  messageRenderers
+} from '@traq-flavored-markdown/sdk/renderer'
 import { expect, test } from 'bun:test'
 
+import { schema } from '../../src/generated/nodes.js'
 import {
   analyzeMessage,
   endsWithResourceCard,
   messageContext
-} from '../../src/messages/analysis.js'
+} from '../../src/traq/messages/analysis.js'
+import { messageRenderPlan } from '../../src/traq/views/plan.js'
 
 const origin = 'https://q.example.test'
 const id = '00000000-0000-0000-0000-000000000001'
@@ -26,7 +34,7 @@ test('empty quote presentation still honors a node-bound child replacement', () 
     children: []
   }
   expect(
-    html().render(
+    createHtmlRenderer().render(
       { source: '>', children: [quote] },
       { childText: new Map([[quote, '<replacement>']]) }
     )
@@ -34,13 +42,16 @@ test('empty quote presentation still honors a node-bound child replacement', () 
 })
 
 test('SDK composes returned built-in values with third-party plugins', () => {
-  const original = new RenderPlugin(new Declaration('annotation')).on(
+  const original = new RenderPlugin(new Declaration('annotation')).withHandler(
     'annotation',
     () => '<mark>original</mark>'
   )
-  const updated = original.replace('annotation', () => '<mark>updated</mark>')
+  const updated = original.withReplacedHandler(
+    'annotation',
+    () => '<mark>updated</mark>'
+  )
   const source = '*'
-  const document: Document = {
+  const document: ReadonlyDocument = {
     source,
     children: [
       {
@@ -50,18 +61,21 @@ test('SDK composes returned built-in values with third-party plugins', () => {
       }
     ]
   }
-  const customized = html({
+  const customized = createHtmlRenderer({
     plugins: [updated],
     configurePlugins(plugins) {
       return {
         ...plugins,
-        common: plugins.common.replace(names.Text, () => '<b>text</b>')
+        common: plugins.common.withReplacedHandler(
+          names.Text,
+          () => '<b>text</b>'
+        )
       }
     }
   })
 
   expect(customized.render(document)).toBe('<mark>updated</mark>')
-  expect(html({ plugins: [original] }).render(document)).toBe(
+  expect(createHtmlRenderer({ plugins: [original] }).render(document)).toBe(
     '<mark>original</mark>'
   )
   expect(
@@ -79,10 +93,9 @@ test('message preparation includes custom inline roles before validating builtin
     role: 'inline',
     children: { kind: 'leaf' }
   })
-  const plugin = new RenderPlugin(new Declaration('inline-annotation')).on(
-    annotation,
-    () => '<mark>custom</mark>'
-  )
+  const plugin = new RenderPlugin(
+    new Declaration('inline-annotation')
+  ).withHandler(annotation, () => '<mark>custom</mark>')
   const input = {
     source: '',
     children: [
@@ -96,12 +109,16 @@ test('message preparation includes custom inline roles before validating builtin
       }
     ]
   }
-  const rendered = messageRenderers({ origin, plugins: [plugin] }).render(input)
+  const rendered = messageRenderers({
+    origin,
+    plugins: [plugin],
+    schema: schema.extend([annotation])
+  }).render(input)
   expect(rendered.standard.html).toBe('<p><mark>custom</mark></p>\n')
   expect(rendered.condensed.html).toBe('<mark>custom</mark>')
 })
 
-function text(value: string, start: number): Node {
+function text(value: string, start: number): ReadonlyNode {
   return {
     kind: names.Text,
     data: { value },
@@ -114,7 +131,7 @@ function link(
   label: string,
   start: number,
   destination = file
-): Node {
+): ReadonlyNode {
   return {
     kind: names.Link,
     data: { destination, title: null, form },
@@ -153,7 +170,7 @@ test('resource identity includes its kind when file and message UUIDs coincide',
 
 test('message analysis suppresses trailing cards without changing the AST', () => {
   const source = `body\n${file}`
-  const paragraph: Node = {
+  const paragraph: ReadonlyNode = {
     kind: names.Paragraph,
     data: {},
     span: { start: 0, end: source.length },
@@ -163,7 +180,7 @@ test('message analysis suppresses trailing cards without changing the AST', () =
       link('linkify', file, 5)
     ]
   }
-  const document: Document = { source, children: [paragraph] }
+  const document: ReadonlyDocument = { source, children: [paragraph] }
   const original = structuredClone(document)
 
   const standard = views.standard.render(document)
@@ -177,7 +194,7 @@ test('message analysis suppresses trailing cards without changing the AST', () =
 
 test('rejected links remain visible and do not produce cards', () => {
   const source = `body\n${file}`
-  const document: Document = {
+  const document: ReadonlyDocument = {
     source,
     children: [
       {
@@ -209,7 +226,7 @@ test('rejected links remain visible and do not produce cards', () => {
 
 test('condensed labels come from an overlay while explicit links retain markup', () => {
   const source = `[file](${file})`
-  const document: Document = {
+  const document: ReadonlyDocument = {
     source,
     children: [
       {
@@ -227,14 +244,14 @@ test('condensed labels come from an overlay while explicit links retain markup',
   expect(condensed).not.toContain('>file</a>')
 
   const context = messageContext(document)
-  const analysis = analyzeMessage(context, origin)
+  const analysis = messageRenderPlan(analyzeMessage(context, origin))
   analysis.childText.set(
     context.node(document.children[0].children![0]),
     '<img src=x>'
   )
-  expect(html().createSession(context).render(analysis)).toContain(
-    '>&lt;img src=x&gt;</a>'
-  )
+  expect(
+    createHtmlRenderer().createSession(context).render(analysis)
+  ).toContain('>&lt;img src=x&gt;</a>')
 })
 
 test('both message views share an owned preparation and reject invalid trees before analysis', () => {

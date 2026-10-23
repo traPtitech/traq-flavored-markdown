@@ -1,18 +1,19 @@
 import { DocumentContext } from '@traq-flavored-markdown/core'
 import { type Extraction } from '@traq-flavored-markdown/sdk'
 import {
-  type Document,
-  type Node,
+  type ParsedDocument,
+  type ReadonlyDocument,
+  type ReadonlyNode,
   createRuntime,
+  isGrammarPresetId,
   isKnownNode,
-  isPreset,
   presets
 } from '@traq-flavored-markdown/sdk'
 import {
-  isPreset as isBrowserPreset,
+  isGrammarPresetId as isBrowserPreset,
   loadRuntime
 } from '@traq-flavored-markdown/sdk/browser'
-import { html as composeHtml } from '@traq-flavored-markdown/sdk/renderer/composition'
+import { createHtmlRenderer as composeHtml } from '@traq-flavored-markdown/sdk/renderer'
 import {
   type Reference,
   names
@@ -20,20 +21,21 @@ import {
 
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)
-const document: Document = parser.parse('text')
-for (const node of document.children)
+const document: ParsedDocument = parser.parse('text')
+for (const node of document.document.children)
   if (node.kind === names.Reference) {
     const reference: Reference = node.data
     const id: string = reference.id
     void id
   }
-declare const unknownNode: Node<true>
+declare const unknownNode: import('@traq-flavored-markdown/core').ReadonlyNode
 if (isKnownNode(unknownNode) && unknownNode.kind === names.Reference) {
   const id: string = unknownNode.data.id
   void id
 }
 declare const storedGrammarVersion: string
-if (isPreset(storedGrammarVersion)) runtime.createParser(storedGrammarVersion)
+if (isGrammarPresetId(storedGrammarVersion))
+  runtime.createParser(storedGrammarVersion)
 // @ts-expect-error Stored strings must be checked against the generated catalog.
 runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
@@ -42,7 +44,7 @@ const plainText: string = runtime.createPlainTextRenderer().render(document)
 const processed = runtime
   .createProcessor(presets.traq.v1, { whitespace: 'preserve' })
   .process('text')
-const processedDocument: Document = processed.document
+const processedDocument: ReadonlyDocument = processed.document.document
 const snapshot = new DocumentContext(processedDocument)
 runtime.createPlainTextRenderer().render(snapshot.document)
 const customHtml: string = composeHtml({ math: { render: tex => tex } }).render(
@@ -66,6 +68,6 @@ void [mentions, plainText, customHtml]
 browserRuntime.dispose()
 // @ts-expect-error Extractor has no host AST parsing API
 extractor.parse('x')
-// @ts-expect-error Options are generated from Rust
+// @ts-expect-error HtmlRendererOptions are generated from Rust
 runtime.createExtractor({ origin: 4 })
 runtime.dispose()

@@ -6,7 +6,7 @@ import type {
   LookupKind,
   ReferenceEmbeddingPlan,
   References
-} from '../generated/processing.js'
+} from '../../generated/processing.js'
 
 /** Resolves Rust's ordered AST-derived candidates and preserves all other source bytes. */
 export function embedReferences(

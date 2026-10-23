@@ -31,7 +31,7 @@ export class MarkdownError extends Error {
     this.span = detail.span ? Object.freeze({ ...detail.span }) : undefined
     this.phase = detail.phase ?? undefined
     this.rule = detail.rule ?? undefined
-    this.payloadType = detail.payload_type ?? undefined
+    this.payloadType = detail.payloadType ?? undefined
     this.#detail = Object.freeze({ ...detail, span: this.span })
   }
 

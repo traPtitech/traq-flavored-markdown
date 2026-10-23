@@ -1,7 +1,7 @@
 import { createHighlighter } from '@traq-flavored-markdown/commonmark-plugin/highlight'
 import { math } from '@traq-flavored-markdown/extensions-plugin/math'
 
-import type { Options } from './traq.js'
+import type { HtmlRendererOptions } from '../traq/profile/options.js'
 
 const highlight = createHighlighter({ preClass: 'traq-code traq-lang' })
 const condensedMath = (tex: string) =>
@@ -17,7 +17,9 @@ const condensedMath = (tex: string) =>
   })
 
 /** Heavy adapters are selected only by the default presentation entry point. */
-export function withDefaultAdapters(options: Options = {}): Options {
+export function withDefaultAdapters(
+  options: HtmlRendererOptions = {}
+): HtmlRendererOptions {
   const customMath = options.math?.render
   return {
     ...options,

@@ -3,7 +3,7 @@ import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 
 import { imageLabelText } from '../semantics.js'
-import type { Options } from './options.js'
+import type { HtmlRendererOptions } from './options.js'
 
 function titleAttribute(title: string | null) {
   return title === null ? '' : attributes([['title', title]])
@@ -11,7 +11,7 @@ function titleAttribute(title: string | null) {
 
 type InlineOptions = Required<
   Pick<
-    Options,
+    HtmlRendererOptions,
     | 'validateLink'
     | 'validateImage'
     | 'breaks'
@@ -34,32 +34,32 @@ export function registerInlineHandlers(
 ) {
   const linkAttrs = attributes(Object.entries(linkAttributes))
 
-  result = result.on(definitions.Text, n => escapeHtml(n.data.value))
+  result = result.withHandler(definitions.Text, n => escapeHtml(n.data.value))
 
-  result = result.on(
+  result = result.withHandler(
     definitions.InlineCode,
     n => '<code>' + escapeHtml(n.data.literal) + '</code>'
   )
 
-  result = result.on(definitions.Softbreak, () =>
+  result = result.withHandler(definitions.Softbreak, () =>
     breaks ? (xhtmlOut ? '<br />\n' : '<br>\n') : '\n'
   )
 
-  result = result.on(definitions.Hardbreak, () =>
+  result = result.withHandler(definitions.Hardbreak, () =>
     xhtmlOut ? '<br />\n' : '<br>\n'
   )
 
-  result = result.on(
+  result = result.withHandler(
     definitions.Emphasis,
     (n, ctx) => '<em>' + ctx.renderChildren() + '</em>'
   )
 
-  result = result.on(
+  result = result.withHandler(
     definitions.Strong,
     (n, ctx) => '<strong>' + ctx.renderChildren() + '</strong>'
   )
 
-  result = result.on(definitions.Link, (n, ctx) => {
+  result = result.withHandler(definitions.Link, (n, ctx) => {
     if (!validateLink(n.data.destination)) return ctx.fallback(n)
 
     const content = ctx.renderChildren()
@@ -75,21 +75,21 @@ export function registerInlineHandlers(
     )
   })
 
-  result = result.on(definitions.Image, (n, ctx) => {
+  result = result.withHandler(definitions.Image, (n, ctx) => {
     if (!validateImage(n.data.destination)) return ctx.fallback(n)
 
     return (
       '<img' +
       attributes([
         ['src', n.data.destination],
-        ['alt', imageLabelText(n.children, ctx.sourceSlice)]
+        ['alt', imageLabelText(n.children, ctx.sourceSlice, ctx.matches)]
       ]) +
       titleAttribute(n.data.title) +
       (xhtmlOut ? ' />' : '>')
     )
   })
 
-  result = result.on(definitions.HtmlInline, n =>
+  result = result.withHandler(definitions.HtmlInline, n =>
     rawHtml === 'escape' ? escapeHtml(n.data.literal) : n.data.literal
   )
 

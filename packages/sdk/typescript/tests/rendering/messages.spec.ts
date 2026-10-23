@@ -4,10 +4,11 @@ import {
   resourceCardFromUrl
 } from '@traq-flavored-markdown/sdk/renderer'
 import { expect, test } from 'bun:test'
+import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
 
 import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }
-import { classifyTraqLink } from '../../src/messages/cards.js'
-import { commonParser, parser } from './setup.ts'
+import { classifyTraqLink } from '../../src/traq/messages/cards.js'
+import { commonParser, parser } from './setup.js'
 
 const origin = 'https://q.example.test',
   fileId = '00000000-0000-0000-0000-000000000001',
@@ -15,7 +16,7 @@ const origin = 'https://q.example.test',
 
 const file = origin + '/files/' + fileId,
   quote = origin + '/messages/' + messageId
-const view = messageRenderers({ origin })
+const view = messageRenderers({ origin, ...withDefaultAdapters() })
 
 test('message renderers keep telephone links and show rejected autolinks with brackets', () => {
   for (const renderer of [view.standard, view.condensed]) {

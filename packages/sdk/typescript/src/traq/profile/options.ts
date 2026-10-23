@@ -1,8 +1,9 @@
+import type { HighlightResult } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import type { DocumentSchema } from '@traq-flavored-markdown/core'
 import {
   validateLink as defaultLinkPolicy,
   validateImage as defaultStampPolicy
-} from '@traq-flavored-markdown/commonmark-plugin/policy'
-import type { HighlightResult } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+} from '@traq-flavored-markdown/core/html'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { names } from '@traq-flavored-markdown/traq-plugin/nodes'
 import type {
@@ -10,6 +11,8 @@ import type {
   StampResolver
 } from '@traq-flavored-markdown/traq-plugin/renderer'
 
+import { schema } from '../../generated/nodes.js'
+import { resourceLabels } from '../messages/labels.js'
 import imageDomains from './image-domains.js'
 
 export interface HtmlPlugins {
@@ -18,12 +21,19 @@ export interface HtmlPlugins {
   traq: RenderPlugin
 }
 
-export interface Options {
+export interface HtmlRendererOptions {
+  /** Application node contracts, independent of HTML handlers. */
+  schema?: DocumentSchema
+  labels?: Partial<{ file: string; message: string }>
+
   links?: {
     validate?(destination: string): boolean
     attributes?: Readonly<Record<string, string>>
   }
-  images?: { validate?(destination: string): boolean }
+  images?: {
+    validate?(destination: string): boolean
+    domains?: readonly string[]
+  }
   code?: {
     highlight?(code: string, language: string): HighlightResult | undefined
   }
@@ -47,19 +57,25 @@ export interface Options {
   configurePlugins?: (plugins: HtmlPlugins) => HtmlPlugins
 }
 
-function validateImage(value: string) {
+function validateImage(value: string, domains: ReadonlySet<string>) {
   try {
     const url = new URL(value)
-    return url.protocol === 'https:' && imageDomains.includes(url.hostname)
+    return url.protocol === 'https:' && domains.has(url.hostname)
   } catch {
     return false
   }
 }
 
 /** Resolve display policy once; explicit undefined has the same meaning as omission. */
-export function resolveOptions(options: Options = {}) {
+export function resolveOptions(options: HtmlRendererOptions = {}) {
   const customMath = options.math?.render
+  const domains = new Set(options.images?.domains ?? imageDomains)
   return {
+    schema: options.schema ?? schema.withUnknownNodes(),
+    labels: {
+      file: options.labels?.file ?? resourceLabels.file,
+      message: options.labels?.message ?? resourceLabels.message
+    },
     plugins: options.plugins ?? [],
     configurePlugins: options.configurePlugins,
     breaks: options.presentation?.breaks ?? true,
@@ -67,7 +83,9 @@ export function resolveOptions(options: Options = {}) {
     xhtmlOut: options.presentation?.xhtmlOut ?? false,
     highlight: options.code?.highlight,
     validateLink: options.links?.validate ?? defaultLinkPolicy,
-    validateImage: options.images?.validate ?? validateImage,
+    validateImage:
+      options.images?.validate ??
+      ((value: string) => validateImage(value, domains)),
     validateStampImage: options.stamps?.validateUrl ?? defaultStampPolicy,
     resolveReference: options.references?.resolve,
     resolveStamp: options.stamps?.resolve,
