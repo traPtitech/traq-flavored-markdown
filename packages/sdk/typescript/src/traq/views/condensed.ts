@@ -84,14 +84,14 @@ function configureExtensionsCondensed(extensions: RenderPlugin) {
     extensionDefinitions.Table,
     (_n, ctx) => ctx.renderChildren(' ')
   )
-  extensions = extensions.withReplacedHandler(
+  for (const definition of [
     extensionDefinitions.Row,
-    (_n, ctx) => ctx.renderChildren(' ') + ' |'
-  )
-  extensions = extensions.withReplacedHandler(
-    extensionDefinitions.HeaderRow,
-    (_n, ctx) => ctx.renderChildren(' ') + ' |'
-  )
+    extensionDefinitions.HeaderRow
+  ])
+    extensions = extensions.withReplacedHandler(
+      definition,
+      (_n, ctx) => ctx.renderChildren(' ') + ' |'
+    )
   extensions = extensions.withReplacedHandler(
     extensionDefinitions.Cell,
     (_n, ctx) => '| ' + ctx.renderChildren()

@@ -30,6 +30,13 @@ references, stamps, and animation styles. CSS custom properties control colors
 and stamp sizes. `/nodes` exports `schema`; pass it to
 `createRenderer(preset, { schema })` when rendering raw documents.
 
+Spoilers render as `.spoiler` elements, concealed until the host adds the `shown`
+attribute. Hosts own pointer and keyboard activation, focus, and matching
+accessibility state for interactive spoilers. Reference classes use
+`.message-user-link`, `.message-group-link`, or `.message-channel-link`; highlighted
+users and groups add the corresponding `-highlight` class. Stamp `.emoji` elements
+and ordered `.emoji-effect` wrappers share the `--tfm-stamp-*-size` properties.
+
 The HTML plugin accepts `resolveReference(reference)` and
 `resolveStamp(namedStamp)` adapters. A reference resolver returns optional
 `href`, `label`, and `highlight`; a stamp resolver returns `url` and optional

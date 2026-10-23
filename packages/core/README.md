@@ -82,6 +82,10 @@ document. `ctx.renderChildren()` accepts a separator or joining callback,
 `ctx.matches(node, definition)` narrows validated nodes without rerunning payload
 guards. The default fallback emits escaped original source.
 
+Cached narrowing accepts snapshot nodes only. Resolve a caller's original mutable
+node with `context.node(original)` before calling `context.matches`; later edits
+to the caller's node do not acquire the snapshot's validation guarantees.
+
 Generic URL defaults `validateLink` and `validateImage` live in `core/html`.
 Applications and plugins can select policy without depending on CommonMark.
 
