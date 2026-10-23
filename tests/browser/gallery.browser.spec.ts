@@ -47,9 +47,9 @@ test('optional math and highlighting adapters work with the published browser mo
   page
 }) => {
   await expect(page.locator('#math .katex')).toBeVisible()
-  await expect(page.locator('#math .katex .katex-mathml')).toHaveCSS(
-    'position',
-    'absolute'
+  await expect(page.locator('#math .katex')).toHaveCSS(
+    'font-family',
+    /KaTeX_Main/
   )
   await expect(page.locator('#math pre code .hljs-keyword')).toHaveText('const')
   await expect(page.locator('#condensed')).toHaveText('hello')
