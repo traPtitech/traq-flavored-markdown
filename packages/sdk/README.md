@@ -229,6 +229,8 @@ const view = createHtmlRenderer(withDefaultAdapters())
 
 Custom `code.highlight` and `math.render` callbacks need neither dependency.
 Without adapters, code and math preserve escaped source.
+For browser display, import `katex/dist/katex.min.css` and a Highlight.js theme
+alongside the SDK stylesheet when using those adapters.
 
 `RenderPlugin.withHandler()` and `RenderPlugin.withReplacedHandler()` return new values. Keep the returned
 plugin when composing a preset; existing plugins and presets are unchanged.
@@ -238,8 +240,9 @@ definitions carry the node kind, payload validator, and child-structure contract
 so handlers infer their data types and invalid known nodes fail before rendering.
 Custom nodes nested inside a known paragraph must use a definition with
 `role: 'inline'` and extend the `schema` option independently of renderer plugins; see the [core API guide](../core/README.md) for `defineNode`.
-Unknown roots and children of unconstrained parents use the escaped-source
-fallback unless an application plugin handles them.
+Applications can opt into `schema.withUnknownNodes()` to preserve unknown roots
+and children of unconstrained parents; they use the escaped-source fallback
+unless an application plugin handles them.
 
 Display options are grouped by responsibility:
 

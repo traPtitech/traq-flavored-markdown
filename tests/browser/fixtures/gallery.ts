@@ -3,6 +3,8 @@ import { schema } from '../../../packages/sdk/dist/generated/nodes.js'
 import { withDefaultAdapters } from '../../../packages/sdk/dist/adapters/index.js'
 import { createHtmlRenderer, messageRenderers } from '../../../packages/sdk/dist/renderer/index.js'
 import '../../../packages/sdk/dist/index.css'
+import '../../../packages/plugins/extensions/node_modules/katex/dist/katex.min.css'
+import '../../../packages/plugins/commonmark/node_modules/highlight.js/styles/default.css'
 
 const response = await fetch('/packages/sdk/dist/parser.wasm')
 if (!response.ok) throw new Error('Wasm fixture unavailable')
