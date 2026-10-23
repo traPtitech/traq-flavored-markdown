@@ -1,16 +1,16 @@
-use super::{BuildError, Contribution, Grammar, Plugin, rule::Rule};
+use super::{BuildError, Contribution, Grammar, SyntaxPlugin, rule::Rule};
 use markdown_definitions::RegistrationHandle;
 
 #[derive(Clone, Default)]
 pub struct GrammarBuilder {
     registrations: Vec<RegisteredPlugin>,
-    pub(crate) rules: Vec<(Plugin, Contribution)>,
+    pub(crate) rules: Vec<(SyntaxPlugin, Contribution)>,
 }
 
 #[derive(Clone)]
 struct RegisteredPlugin {
     handle: RegistrationHandle,
-    implementation: Plugin,
+    implementation: SyntaxPlugin,
 }
 
 impl GrammarBuilder {
@@ -18,12 +18,12 @@ impl GrammarBuilder {
         Self::default()
     }
 
-    pub fn add(&mut self, plugin: &Plugin) -> Result<&mut Self, BuildError> {
+    pub fn add(&mut self, plugin: &SyntaxPlugin) -> Result<&mut Self, BuildError> {
         self.register(plugin)?;
         Ok(self)
     }
 
-    pub fn register(&mut self, plugin: &Plugin) -> Result<RegistrationHandle, BuildError> {
+    pub fn register(&mut self, plugin: &SyntaxPlugin) -> Result<RegistrationHandle, BuildError> {
         if self.plugins().any(|p| p.same(plugin)) {
             return Err(BuildError::Duplicate {
                 element: plugin.description(),
@@ -59,7 +59,7 @@ impl GrammarBuilder {
         Ok(handle)
     }
 
-    pub fn registration(&self, plugin: &Plugin) -> Option<RegistrationHandle> {
+    pub fn registration(&self, plugin: &SyntaxPlugin) -> Option<RegistrationHandle> {
         self.registrations
             .iter()
             .find(|existing| existing.implementation.declaration == plugin.declaration)
@@ -122,7 +122,7 @@ impl GrammarBuilder {
 
         Ok(self)
     }
-    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &Plugin> + Clone {
+    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &SyntaxPlugin> + Clone {
         self.registrations.iter().map(|entry| &entry.implementation)
     }
 

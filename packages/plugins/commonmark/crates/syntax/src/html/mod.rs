@@ -1,14 +1,11 @@
 mod block;
 mod tags;
 
-use markdown_parser::{
-    NodeKind,
-    engine::{
-        Plugin,
-        block::BlockRule,
-        inline::{InlineMatch, InlineRule},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::block::BlockRule;
+use markdown_parser::rules::inline::InlineMatch;
+use markdown_parser::rules::inline::InlineRule;
 
 pub fn block_rule() -> &'static BlockRule {
     static RULE: std::sync::LazyLock<BlockRule> = std::sync::LazyLock::new(|| {
@@ -32,7 +29,7 @@ pub fn inline_rule() -> &'static InlineRule {
 
             Ok(Some(InlineMatch::leaf(
                 input.position + end,
-                NodeKind::new(markdown_commonmark_contracts::HtmlInline {
+                AnyPayload::new(markdown_commonmark_contracts::HtmlInline {
                     literal: input.tail()[..end].into(),
                 }),
             )))
@@ -42,9 +39,9 @@ pub fn inline_rule() -> &'static InlineRule {
     &RULE
 }
 
-pub fn plugin() -> &'static Plugin {
-    static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_commonmark_contracts::declarations().html);
+pub fn plugin() -> &'static SyntaxPlugin {
+    static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
+        let mut plugin = SyntaxPlugin::new(&markdown_commonmark_contracts::declarations().html);
         plugin.add(block_rule());
         plugin.add(inline_rule());
         plugin

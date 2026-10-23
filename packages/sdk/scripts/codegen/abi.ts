@@ -1,17 +1,17 @@
 import {
   emitGoDeclarations,
   goFile
-} from '../../../../tools/contracts/typescript/go.ts'
-import { normalizeContracts } from '../../../../tools/contracts/typescript/ir.ts'
-import type { ArtifactManifest } from '../../../../tools/contracts/typescript/manifest.ts'
-import { emitContractValidators } from '../../../../tools/contracts/typescript/typescript-validators.ts'
-import { emitTypeScriptDeclarations } from '../../../../tools/contracts/typescript/typescript.ts'
+} from '../../../../tools/contracts/emitters/go.ts'
+import { emitContractValidators } from '../../../../tools/contracts/emitters/typescript-validators.ts'
+import { emitTypeScriptDeclarations } from '../../../../tools/contracts/emitters/typescript.ts'
+import { normalizeContracts } from '../../../../tools/contracts/model/ir.ts'
+import type { ArtifactManifest } from '../../../../tools/contracts/model/manifest.ts'
 
 export type {
   Abi,
   Operation,
   ArtifactManifest
-} from '../../../../tools/contracts/typescript/manifest.ts'
+} from '../../../../tools/contracts/model/manifest.ts'
 
 export function abiFiles(manifest: ArtifactManifest) {
   const error = { ...manifest.abi.error, title: 'WireError' }

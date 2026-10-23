@@ -1,5 +1,5 @@
 //! PlainText rendering policy for traQ messages.
-use markdown_ast::{Document, ValidatedDocument};
+
 use markdown_renderer::Renderer;
 use serde::{Deserialize, Serialize};
 
@@ -14,8 +14,8 @@ pub enum WhitespacePolicy {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
-pub struct RendererOptions {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PlainTextOptions {
     #[serde(default)]
     pub origin: String,
     #[serde(default)]
@@ -28,20 +28,20 @@ pub struct PlainTextRenderer {
 }
 
 impl PlainTextRenderer {
-    pub fn new(options: RendererOptions) -> crate::Result<Self> {
+    pub fn new(options: PlainTextOptions) -> crate::Result<Self> {
         Ok(Self {
             renderer: Renderer::new(&crate::presets::traq::plain_text::preset(&options.origin)?),
             whitespace: options.whitespace,
         })
     }
 
-    pub fn render(&self, document: &Document) -> crate::Result<String> {
-        self.render_validated(ValidatedDocument::new(document)?)
-    }
-
     /// Share one validation with other native consumers during this borrow.
-    pub fn render_validated(&self, document: ValidatedDocument<'_>) -> crate::Result<String> {
-        let text = self.renderer.render_validated(document)?;
+    pub fn render<'a>(
+        &self,
+        document: impl markdown_ast::DocumentInput<'a>,
+    ) -> crate::Result<String> {
+        let document = document.into_view()?;
+        let text = self.renderer.render(document)?;
         Ok(match self.whitespace {
             WhitespacePolicy::Preserve => text,
             WhitespacePolicy::Collapse => text.split_whitespace().collect::<Vec<_>>().join(" "),

@@ -1,7 +1,8 @@
 use super::buffers::IO;
 use crate::abi::{self, Error, ErrorCode};
 use std::cell::RefCell;
-use traq_markdown_grammar::{Grammar, bindings};
+use traq_markdown_grammar::Grammar;
+use traq_markdown_grammar::bindings;
 
 thread_local! { static GRAMMAR: RefCell<Option<Grammar>> = const { RefCell::new(None) }; }
 
@@ -9,15 +10,11 @@ pub fn get() -> Option<Grammar> {
     GRAMMAR.with_borrow(Clone::clone)
 }
 
-pub fn parse(
-    grammar: &Grammar,
-    source: &str,
-    mode: u32,
-) -> Result<markdown_ast::ValidatedDocumentBuf, Error> {
+pub fn parse(grammar: &Grammar, source: &str, mode: u32) -> Result<markdown_ast::Document, Error> {
     let parser = traq_markdown_grammar::Parser::new(grammar);
     match mode {
-        0 => parser.parse_validated(source).map_err(Error::from),
-        1 => parser.parse_inline_validated(source).map_err(Error::from),
+        0 => parser.parse(source).map_err(Error::from),
+        1 => parser.parse_inline(source).map_err(Error::from),
         _ => Err(Error::new(
             ErrorCode::InvalidMode,
             "parse mode must be 0 or 1",

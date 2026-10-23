@@ -1,6 +1,8 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_renderer::{Plugin, PresetBuilder, Renderer};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -36,8 +38,8 @@ impl NodeData for Other {
     }
 }
 
-fn document<T: NodeData>(value: T) -> Document {
-    Document {
+fn document<T: NodeData>(value: T) -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children: vec![Node::leaf(Span { start: 0, end: 0 }, value)],
     }
@@ -46,7 +48,7 @@ fn document<T: NodeData>(value: T) -> Document {
 #[test]
 fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
     let declaration = Declaration::new("shared text");
-    let mut syntax = markdown_parser::Plugin::new(&declaration);
+    let mut syntax = markdown_parser::SyntaxPlugin::new(&declaration);
     syntax.text(|_| Text);
 
     let mut grammar = markdown_parser::GrammarBuilder::new();
@@ -54,12 +56,12 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
 
     let parser = markdown_parser::Parser::new(&grammar.build().unwrap());
 
-    let mut rendering = Plugin::new(&declaration);
+    let mut rendering = RenderPlugin::new(&declaration);
     rendering
         .on::<Text>(|_, _, _, output| output.push("rendered"))
         .unwrap();
 
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&rendering).unwrap();
 
     let renderer = Renderer::new(&builder.build().unwrap());
@@ -72,7 +74,7 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
             .unwrap(),
         "rendered"
     );
-    assert_eq!(document.children[0].get::<Text>(), Some(&Text));
+    assert_eq!(document.children[0].payload::<Text>(), Some(&Text));
     assert_eq!(document.source, "hello");
 }
 
@@ -80,14 +82,14 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
 fn captured_configuration_is_shared_and_outlives_the_preset() {
     let calls = Arc::new(AtomicUsize::new(0));
     let weak = Arc::downgrade(&calls);
-    let mut plugin = Plugin::new(&Declaration::new("configured"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("configured"));
     plugin
         .on::<Text>(move |_, _, _, output| {
             output.push(&calls.fetch_add(1, Ordering::Relaxed).to_string())
         })
         .unwrap();
 
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
 
     let preset = builder.build().unwrap();
@@ -126,13 +128,13 @@ fn captured_configuration_is_shared_and_outlives_the_preset() {
 
 #[test]
 fn snapshots_are_isolated_and_failed_registration_is_atomic() {
-    let mut plugin = Plugin::new(&Declaration::new("first"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("first"));
     plugin
         .on::<Text>(|_, _, _, output| output.push("first"))
         .unwrap();
 
     let registered = plugin.clone();
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     let registration = builder.register(&plugin).unwrap();
 
     let renderer = Renderer::new(&builder.clone().build().unwrap());
@@ -179,7 +181,7 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
         "first"
     );
 
-    let mut conflict = Plugin::new(&Declaration::new("conflict"));
+    let mut conflict = RenderPlugin::new(&Declaration::new("conflict"));
     conflict
         .on::<Other>(|_, _, _, output| output.push("leaked"))
         .unwrap();
@@ -187,7 +189,7 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
         .on::<Text>(|_, _, _, output| output.push("wrong"))
         .unwrap();
 
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&registered).unwrap();
     assert!(builder.add(&conflict).is_err());
 
@@ -210,15 +212,15 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
 #[test]
 fn display_name_validation_uses_shared_group_identity() {
     let group = Declaration::group("generic");
-    let left = Plugin::new(&group.group("left").plugin("same"));
-    let right = Plugin::new(&group.group("right").plugin("same"));
-    let mut builder = PresetBuilder::new();
+    let left = RenderPlugin::new(&group.group("left").plugin("same"));
+    let right = RenderPlugin::new(&group.group("right").plugin("same"));
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&left).unwrap().add(&right).unwrap();
     assert!(builder.build().is_ok());
 
-    let first = Plugin::new(&group.plugin("same"));
-    let second = Plugin::new(&group.plugin("same"));
-    let mut builder = PresetBuilder::new();
+    let first = RenderPlugin::new(&group.plugin("same"));
+    let second = RenderPlugin::new(&group.plugin("same"));
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&first).unwrap().add(&second).unwrap();
     assert!(matches!(
         builder.build().map_err(|error| error.code()),
@@ -226,8 +228,8 @@ fn display_name_validation_uses_shared_group_identity() {
     ));
 
     let unrelated = Declaration::group("generic");
-    let other = Plugin::new(&unrelated.plugin("other"));
-    let mut builder = PresetBuilder::new();
+    let other = RenderPlugin::new(&unrelated.plugin("other"));
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&first).unwrap().add(&other).unwrap();
     assert!(matches!(
         builder.build().map_err(|error| error.code()),

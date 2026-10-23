@@ -11,6 +11,6 @@ order their implementations separately. Linkify reuses CommonMark `Link` and
 
 Each payload owns its `NodeData` validation and serde representation. The
 `node_catalog!` macro is the single source for its stable wire kind, such as
-`generic.inline_math`, and for contract export. The optional `contracts` feature
+`extensions.inline_math`, and for contract export. The optional `contracts` feature
 supports TypeScript type and JSON Schema generation; the standard Wasm
 distribution does not require it.

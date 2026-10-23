@@ -1,12 +1,9 @@
 use super::BlockMath;
-use markdown_parser::engine::block::LineIndex;
-use markdown_parser::{
-    ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch},
-    },
-};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::LineIndex;
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
@@ -32,7 +29,7 @@ pub(super) fn parse(
 
     Ok(Some(input.leaf(
         end,
-        markdown_parser::NodeKind::new(BlockMath { tex }),
+        markdown_parser::AnyPayload::new(BlockMath { tex }),
     )?))
 }
 

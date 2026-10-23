@@ -1,3 +1,4 @@
+import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
 import {
   endsWithResourceCard,
   messageRenderers,
@@ -6,8 +7,8 @@ import {
 import { expect, test } from 'bun:test'
 
 import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }
-import { classifyTraqLink } from '../../src/messages/cards.js'
-import { commonParser, parser } from './setup.ts'
+import { classifyTraqLink } from '../../src/traq/messages/cards.js'
+import { commonParser, parser } from './setup.js'
 
 const origin = 'https://q.example.test',
   fileId = '00000000-0000-0000-0000-000000000001',
@@ -15,7 +16,7 @@ const origin = 'https://q.example.test',
 
 const file = origin + '/files/' + fileId,
   quote = origin + '/messages/' + messageId
-const view = messageRenderers({ origin })
+const view = messageRenderers({ origin, ...withDefaultAdapters() })
 
 test('message renderers keep telephone links and show rejected autolinks with brackets', () => {
   for (const renderer of [view.standard, view.condensed]) {
@@ -52,7 +53,7 @@ test('URL meaning follows the shared Rust contract', () => {
 test('message rendering extracts cards, trims trailing bare links, and keeps the AST reusable', () => {
   const source = '本文\n' + file + '\n' + quote,
     document = parser.parse(source),
-    snapshot = structuredClone(document)
+    snapshot = document.toMutable()
   expect(Object.keys(view).sort()).toEqual([
     'condensed',
     'prepare',
@@ -71,7 +72,7 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
     { type: 'message', id: messageId }
   ])
   expect(condensed.cards).toEqual(normal.cards)
-  expect(document).toEqual(snapshot)
+  expect(document.document).toEqual(snapshot)
   expect(view.standard.render(document).html).toBe(normal.html)
   expect(
     view.standard
@@ -229,9 +230,35 @@ test('attachment spacing checks the complete AST instead of its final source lin
   ).toBe(false)
 })
 
-test('a card link attached to text remains in the rendered message', () => {
+test('trailing bare card links are omitted independently of attachment spacing', () => {
   const document = parser.parse('本文 ' + file)
   expect(endsWithResourceCard(document, origin)).toBe(false)
-  expect(view.standard.render(document).html).toContain(file)
-  expect(view.condensed.render(document).html).toContain('[[添付ファイル]]')
+  expect(view.standard.render(document).html).toBe('<p>本文 </p>\n')
+  expect(view.condensed.render(document).html).toBe('本文 ')
+})
+
+test('trailing resource URLs are omitted after inline text and both Markdown breaks', () => {
+  for (const [url, card] of [
+    [file, { type: 'file', id: fileId }],
+    [quote, { type: 'message', id: messageId }]
+  ] as const) {
+    for (const [separator, standard, condensed] of [
+      [' ', '<p>本文 </p>\n', '本文 '],
+      ['\n', '<p>本文</p>\n', '本文'],
+      ['  \n', '<p>本文<br>\n</p>\n', '本文 '],
+      ['\\\n', '<p>本文<br>\n</p>\n', '本文 ']
+    ]) {
+      const document = parser.parse('本文' + separator + url)
+      const original = document.toMutable()
+      const result = view.render(document)
+      expect(result.standard.html).toBe(standard)
+      expect(result.condensed.html).toBe(condensed)
+      expect(result.standard.cards).toEqual([card])
+      expect(result.condensed.cards).toEqual([card])
+      expect(document.document).toEqual(original)
+    }
+  }
+  expect(
+    view.standard.render(parser.parse('本文 ' + file + '\n' + quote)).html
+  ).toBe('<p>本文 </p>\n')
 })

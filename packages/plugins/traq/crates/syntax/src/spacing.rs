@@ -1,7 +1,8 @@
 //! Preserve source blank lines left after a block's paragraph separator.
-use markdown_parser::engine::{Plugin, block::BlockRule};
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::block::BlockRule;
 
-pub use markdown_trap_contracts::BlankLine;
+pub use markdown_traq_contracts::BlankLine;
 
 pub fn blank_rule() -> &'static BlockRule {
     static RULE: std::sync::LazyLock<BlockRule> = std::sync::LazyLock::new(|| {
@@ -10,7 +11,7 @@ pub fn blank_rule() -> &'static BlockRule {
                 return Ok(None);
             }
             let mut result = input.leaf(input.start + 1, BlankLine {}.into())?;
-            result.following = markdown_parser::engine::block::Following::Preserve;
+            result.following = markdown_parser::rules::block::Following::Preserve;
             Ok(Some(result))
         })
         .named("blank")
@@ -18,9 +19,9 @@ pub fn blank_rule() -> &'static BlockRule {
     &RULE
 }
 
-pub fn plugin() -> &'static Plugin {
-    static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_trap_contracts::declarations().spacing);
+pub fn plugin() -> &'static SyntaxPlugin {
+    static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
+        let mut plugin = SyntaxPlugin::new(&markdown_traq_contracts::declarations().spacing);
         plugin.add(blank_rule());
         plugin
     });

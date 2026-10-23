@@ -1,4 +1,4 @@
-//! Implementation of markdown_definitions::NodeType; use that crate's re-export.
+//! Implementation of markdown_definitions::WireTypeKey; use that crate's re-export.
 #![forbid(unsafe_code)]
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
@@ -30,8 +30,8 @@ pub fn payload(arguments: TokenStream, input: TokenStream) -> TokenStream {
         .into()
 }
 
-#[proc_macro_derive(NodeType, attributes(node_type))]
-pub fn node_type(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(WireTypeKey, attributes(wire_type))]
+pub fn wire_type(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     expand(input)
@@ -52,12 +52,12 @@ fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let name = &input.ident;
     let mut key: Option<LitStr> = None;
     for attribute in &input.attrs {
-        if !attribute.path().is_ident("node_type") {
+        if !attribute.path().is_ident("wire_type") {
             continue;
         }
         attribute.parse_nested_meta(|meta| {
             if !meta.path.is_ident("key") {
-                return Err(meta.error("expected node_type(key = \"stable.kind\")"));
+                return Err(meta.error("expected wire_type(key = \"stable.kind\")"));
             }
             let value: LitStr = meta.value()?.parse()?;
             if value.value().is_empty() {
@@ -72,7 +72,7 @@ fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let key = key.ok_or_else(|| {
         syn::Error::new_spanned(
             name,
-            "NodeType requires #[node_type(key = \"stable.kind\")]",
+            "WireTypeKey requires #[wire_type(key = \"stable.kind\")]",
         )
     })?;
     let base = quote!(#key);
@@ -105,13 +105,13 @@ fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
 
     let mut generics = input.generics.clone();
     for parameter in generics.type_params_mut() {
-        parameter.bounds.push(parse_quote!(#path::NodeType));
+        parameter.bounds.push(parse_quote!(#path::WireTypeKey));
     }
 
     let (implementation, arguments_type, clause) = generics.split_for_impl();
     Ok(quote! {
-        impl #implementation #path::NodeType for #name #arguments_type #clause {
-            fn type_key() -> ::std::string::String { #body }
+        impl #implementation #path::WireTypeKey for #name #arguments_type #clause {
+            fn wire_key() -> ::std::string::String { #body }
         }
     })
 }
@@ -123,7 +123,7 @@ fn generic_argument(
     match parameter {
         GenericParam::Type(parameter) => {
             let ty = &parameter.ident;
-            Some(quote!(<#ty as #path::NodeType>::type_key()))
+            Some(quote!(<#ty as #path::WireTypeKey>::wire_key()))
         }
 
         GenericParam::Const(parameter) => {

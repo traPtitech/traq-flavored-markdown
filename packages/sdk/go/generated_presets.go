@@ -1,9 +1,9 @@
 // Code generated from Rust preset exports. DO NOT EDIT.
 package markdown
 
-type Preset string
+type GrammarPresetID string
 
 const (
-	PresetCommonMark Preset = "commonmark"
-	PresetTraqV1     Preset = "traq.v1"
+	GrammarCommonMark GrammarPresetID = "commonmark"
+	GrammarTraqV1     GrammarPresetID = "traq.v1"
 )

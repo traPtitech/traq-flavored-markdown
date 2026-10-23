@@ -127,7 +127,7 @@ test('valid domain errors and host request errors leave the processor reusable',
     span: { start: 1, end: 2 },
     phase: 'inline',
     rule: 'custom',
-    payload_type: 'example.Text'
+    payloadType: 'example.Text'
   }
   const runtime = await createRuntime(
     moduleBytes(JSON.stringify({ error: detail }))
@@ -144,12 +144,12 @@ test('valid domain errors and host request errors leave the processor reusable',
       span: detail.span,
       phase: detail.phase,
       rule: detail.rule,
-      payloadType: detail.payload_type
+      payloadType: detail.payloadType
     })
     expect(error.withOperation('another')).toMatchObject({
       phase: detail.phase,
       rule: detail.rule,
-      payloadType: detail.payload_type,
+      payloadType: detail.payloadType,
       operation: 'another'
     })
     expect(error.cause).toEqual(detail)
@@ -162,7 +162,7 @@ test('successful values and contract mismatches are checked before reaching call
   const runtime = await createRuntime(
     moduleBytes('{"ok":{"source":"x","children":[]}}')
   )
-  expect(runtime.createParser('commonmark').parse('x')).toEqual({
+  expect(runtime.createParser('commonmark').parse('x').document).toEqual({
     source: 'x',
     children: []
   })
@@ -172,6 +172,45 @@ test('successful values and contract mismatches are checked before reaching call
     'contract_mismatch'
   )
   stale.dispose()
+})
+
+test('malformed successful documents are rejected before ownership and dispose the transport', async () => {
+  for (const document of [
+    {
+      source: 'x',
+      children: [
+        {
+          kind: 'commonmark.text',
+          data: { value: 42 },
+          span: { start: 0, end: 1 }
+        }
+      ]
+    },
+    {
+      source: 'x',
+      children: [
+        {
+          kind: 'commonmark.text',
+          data: { value: 'x' },
+          span: { start: 0, end: 2 }
+        }
+      ]
+    },
+    {
+      source: '',
+      children: [
+        { kind: 'future.unknown', data: {}, span: { start: 0, end: 0 } }
+      ]
+    }
+  ]) {
+    const runtime = await createRuntime(
+      moduleBytes(JSON.stringify({ ok: document }))
+    )
+    const parser = runtime.createParser('commonmark')
+    expect(thrown(() => parser.parse('x')).code).toBe('transport_error')
+    expect(thrown(() => parser.parse('x')).code).toBe('disposed')
+    runtime.dispose()
+  }
 })
 
 test('fused processing rejects malformed members before exposing a result', async () => {
@@ -195,7 +234,10 @@ test('fused processing rejects malformed members before exposing a result', asyn
   const runtime = await createRuntime(
     moduleBytes(JSON.stringify({ ok: result }))
   )
-  expect(runtime.createProcessor('commonmark').process('x')).toEqual(result)
+  const processed = runtime.createProcessor('commonmark').process('x')
+  expect({ ...processed, document: processed.document.document }).toEqual(
+    result
+  )
   runtime.dispose()
   for (const invalid of [
     { ...result, document: null },
@@ -225,13 +267,13 @@ test('host bounds requests before transport and preserves operation details on r
     }
   })
   expect(thrown(() => renderer.render(document as never))).toMatchObject({
-    code: 'invalid_request',
+    code: 'invalid_document',
     operation: 'render'
   })
   expect(reads).toBe(0)
   expect(
     thrown(() => renderer.render({ source: '\ud800', children: [] }))
-  ).toMatchObject({ code: 'invalid_utf8', operation: 'render' })
+  ).toMatchObject({ code: 'invalid_document', operation: 'render' })
   expect(renderer.render({ source: '', children: [] })).toBe('rendered')
   runtime.dispose()
 
@@ -248,6 +290,6 @@ test('host bounds requests before transport and preserves operation details on r
       resource: 'source_bytes',
       operation: 'parse'
     })
-  expect(parser.parse('')).toEqual({ source: '', children: [] })
+  expect(parser.parse('').document).toEqual({ source: '', children: [] })
   parsing.dispose()
 })

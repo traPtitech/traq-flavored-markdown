@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
 import sourceFixtures from '../../../../tests/fixtures/source-spans.json' with { type: 'json' }
-import type { Node } from '../src/ast.js'
+import type { MutableNode } from '../src/ast.js'
 import { DocumentContext } from '../src/document.js'
 import { SourceText } from '../src/source.js'
 
@@ -81,7 +81,7 @@ test('document contexts own snapshots without freezing or trusting mutable calle
 })
 
 test('document context validates the whole tree before a consumer can traverse it', () => {
-  const node: Node = {
+  const node: MutableNode = {
     kind: 'custom',
     span: { start: 0, end: 0 },
     data: {},
@@ -94,7 +94,7 @@ test('document context validates the whole tree before a consumer can traverse i
   expect(() => new DocumentContext({} as never)).toThrow(/source/)
   expect(
     () => new DocumentContext({ source: '', children: [{}] } as never)
-  ).toThrow(/span/)
+  ).toThrow(/node/)
   expect(
     () =>
       new DocumentContext({

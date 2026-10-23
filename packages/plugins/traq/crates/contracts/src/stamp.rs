@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[markdown_definitions::node(role = Inline)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Stamp {
     pub literal: String,
     pub kind: StampKind,
@@ -39,7 +39,7 @@ pub enum StampKind {
 #[markdown_definitions::payload]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StampEffects {
     #[constraint(length(max = 5))]
     pub animations: Vec<StampAnimation>,

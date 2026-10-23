@@ -3,24 +3,29 @@ import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'path'
 
-import { generateBindings } from '../../contracts/generate.ts'
 import {
   outputIndex,
   readOutputIndex
-} from '../../contracts/typescript/output-manifest.ts'
+} from '../../contracts/io/output-manifest.ts'
+import { generateBindings } from '../generate.ts'
 import { withTempDirectory } from '../infrastructure/temp-directory.ts'
-import { repositoryRoot } from '../paths.ts'
+import { type PackageName, repositoryRoot } from '../paths.ts'
 
 export type GeneratedTargets = {
   directories: string[]
   files: string[]
 }
 
-const indexedTargets = async (root: string): Promise<GeneratedTargets> => ({
+const indexedTargets = async (
+  root: string,
+  owner?: PackageName
+): Promise<GeneratedTargets> => ({
   directories: [],
   files: [
-    outputIndex,
-    ...(await readOutputIndex(root)).outputs.map(output => output.path)
+    ...(owner ? [] : [outputIndex]),
+    ...(await readOutputIndex(root)).outputs
+      .filter(output => !owner || output.owner === owner)
+      .map(output => output.path)
   ]
 })
 
@@ -77,25 +82,36 @@ export const generatedChanges = (
     )
 
 export async function checkGenerated(
-  generate: (outputRoot: string) => Promise<void> = outputRoot =>
+  generate: (outputRoot: string) => Promise<unknown> = outputRoot =>
     generateBindings(undefined, undefined, outputRoot),
   targets?: GeneratedTargets,
-  sourceRoot = repositoryRoot
+  sourceRoot = repositoryRoot,
+  owner?: PackageName
 ) {
   const source = await snapshot(
     sourceRoot,
-    targets ?? (await indexedTargets(sourceRoot))
+    targets ?? (await indexedTargets(sourceRoot, owner))
   )
   await withTempDirectory('generated-check-', async outputRoot => {
     await generate(outputRoot)
     const expected = await snapshot(
       outputRoot,
-      targets ?? (await indexedTargets(outputRoot))
+      targets ?? (await indexedTargets(outputRoot, owner))
     )
     const changes = generatedChanges(source, expected)
     if (changes.length)
       throw new Error(`Generated files are out of date:\n${changes.join('\n')}`)
   })
+}
+
+/** Check exactly one artifact owner, including added and retired outputs. */
+export function checkGeneratedOwner(owner: PackageName) {
+  return checkGenerated(
+    outputRoot => generateBindings(owner, undefined, outputRoot),
+    undefined,
+    repositoryRoot,
+    owner
+  )
 }
 
 if (Bun.main === Bun.fileURLToPath(import.meta.url)) await checkGenerated()

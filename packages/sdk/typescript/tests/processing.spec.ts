@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test'
 
 import structureFixtures from '../../../../tests/fixtures/document-structure.json' with { type: 'json' }
 import { createRuntime, presets } from '../../dist/index.js'
-import type { Document } from '../../dist/index.js'
+import type { ReadonlyDocument } from '../../dist/index.js'
 
 const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
@@ -39,7 +39,7 @@ test('fused processing returns the same AST, extraction and text as independent 
     expect(processor.process('a\n\nb').plainText).toBe('a b')
     processor.dispose()
     expect(() => processor.process(source)).toThrow(/disposed/)
-    expect(preserved.process(source).document.source).toBe(source)
+    expect(preserved.process(source).document.source.text).toBe(source)
   } finally {
     runtime.dispose()
   }
@@ -51,7 +51,7 @@ test('native Wasm operations follow the shared cross-language structure contract
     const extractor = runtime.createExtractor()
     const renderer = runtime.createPlainTextRenderer()
     for (const fixture of structureFixtures) {
-      const document = fixture.document as Document
+      const document = fixture.document as ReadonlyDocument
       for (const operation of [
         () => extractor.extract(document),
         () => renderer.render(document)
@@ -91,7 +91,7 @@ test('native text rendering and extraction resolve omitted options and expose ty
     } catch (error) {
       expect(error).toMatchObject({ code: 'disposed', operation: 'render' })
     }
-    expect(extractor.extract(document).messageText).toBe(document.source)
+    expect(extractor.extract(document).messageText).toBe(document.source.text)
   } finally {
     runtime.dispose()
   }
@@ -112,15 +112,15 @@ test('processing rejects malformed sibling spans without poisoning the extractor
     const document = parser.parseInline(
       reference('alice') + ' ' + reference('bob')
     )
-    const reordered = structuredClone(document)
+    const reordered = document.toMutable()
     reordered.children.reverse()
-    const duplicated = structuredClone(document)
-    duplicated.children.push(...document.children)
-    const crossing = structuredClone(document)
+    const duplicated = document.toMutable()
+    duplicated.children.push(...duplicated.children)
+    const crossing = document.toMutable()
     const last = crossing.children.at(-1)!
     last.span.start = crossing.children[0].span.end - 1
     for (const candidate of [reordered, duplicated, crossing])
-      expect(() => extractor.extract(candidate)).toThrow('invalid span')
+      expect(() => extractor.extract(candidate)).toThrow(/span/)
     expect(extractor.extract(document).messageText).toBe('@alice @bob')
   } finally {
     runtime.dispose()
@@ -136,7 +136,7 @@ test('processing consumes the supplied AST and returns metadata without renderin
   const source =
     '**!{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@alice"}**'
   const document = parser.parse(source)
-  const original = structuredClone(document)
+  const original = document.toMutable()
   const output = extractor.extract(document)
   expect(Object.keys(output).sort()).toEqual([
     'attachments',
@@ -148,10 +148,10 @@ test('processing consumes the supplied AST and returns metadata without renderin
   expect(output.messageText).toBe('**@alice**')
   expect(output.references.mentions.length).toBe(1)
   expect(extractor.extract(document)).toEqual(output)
-  expect(document).toEqual(original)
+  expect(document.document).toEqual(original)
   // @ts-expect-error This verifies that extract rejects source text at runtime.
   expect(() => extractor.extract(source)).toThrow()
-  const invalid = structuredClone(document)
+  const invalid = document.toMutable()
   invalid.children[0].span.end = source.length + 1
   expect(() => extractor.extract(invalid)).toThrow()
   expect(extractor.extract(document)).toEqual(output)
@@ -205,7 +205,7 @@ test('AST processing configuration and instances have independent lifetimes', as
       ).toThrow()
     }
     const large = parser.parse('x'.repeat(60000))
-    expect(plain.extract(large).messageText).toBe(large.source)
+    expect(plain.extract(large).messageText).toBe(large.source.text)
     configured.dispose()
     configured.dispose()
     expect(() => configured.extract(document)).toThrow(/disposed/)

@@ -1,4 +1,4 @@
-import { nodeGroup } from '../../../../tools/contracts/typescript/groups.ts'
+import { nodeGroup } from '../../../../tools/contracts/model/groups.ts'
 
 export function typescriptFiles(manifest: {
   nodes: Record<string, { group: string }>
@@ -9,7 +9,7 @@ export function typescriptFiles(manifest: {
   files.set(
     'typescript/src/generated/nodes.ts',
     '// Generated from Rust contracts. Do not edit.\n' +
-      "import type { Node as AstNode, Document as AstDocument, DeepReadonly } from '@traq-flavored-markdown/core';\n" +
+      "import { DocumentSchema, type MutableNode as AstMutableNode, type MutableDocument as AstMutableDocument, type ReadonlyNode as AstReadonlyNode, type ReadonlyDocument as AstReadonlyDocument, type DeepReadonly } from '@traq-flavored-markdown/core';\n" +
       owners
         .map(
           g =>
@@ -17,15 +17,15 @@ export function typescriptFiles(manifest: {
         )
         .join('\n') +
       '\n' +
-      `export type NodeKind = ${owners.map(g => `${g}.NodeKind`).join(' | ')};\n` +
-      'export type Node<AllowUnknown extends boolean = false> =\n' +
-      ' AstNode<NodeKind | (AllowUnknown extends true ? {kind:string;data:unknown} : never)>;\n' +
-      'export type Document<AllowUnknown extends boolean = false> = AstDocument<NodeKind | (AllowUnknown extends true ? {kind:string;data:unknown} : never)>;\n' +
+      `export type NodeVariant = ${owners.map(g => `${g}.NodeVariant`).join(' | ')};\n` +
+      'export type MutableNode = AstMutableNode<NodeVariant>;\n' +
+      'export type MutableDocument = AstMutableDocument<NodeVariant>;\n' +
+      'export type ReadonlyNode = AstReadonlyNode<NodeVariant>;\n' +
+      'export type ReadonlyDocument = AstReadonlyDocument<NodeVariant>;\n' +
       `export const names = Object.freeze({${owners.map(g => `...${g}.names`).join(',')}});\n` +
       `export const definitions = Object.freeze({${owners.map(g => `...${g}.definitions`).join(',')}});\n` +
-      'const validators = new Map<string,(data:unknown)=>boolean>(Object.values(definitions).map(definition => [definition.kind, definition.validateData]));\n' +
-      'export const nodes: ReadonlyMap<string,(data:unknown)=>boolean> = new Map(validators);\n' +
-      'export function isKnownNode<T extends {kind: string; data:unknown}>(node:T):node is T & DeepReadonly<NodeKind> {return validators.get(node.kind)?.(node.data) ?? false;}\n'
+      'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions));\n' +
+      'export function isKnownNode<T extends {kind: string; data:unknown}>(node:T):node is T & DeepReadonly<NodeVariant> {return schema.isKnownNode(node);}\n'
   )
   return files
 }

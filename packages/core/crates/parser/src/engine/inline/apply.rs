@@ -1,7 +1,7 @@
 use super::{brackets, scan::State, token::*};
 
 use crate::{
-    Node, NodeKind, ParseError,
+    AnyPayload, Node, ParseError,
     engine::{Budget, source::SourceView},
 };
 
@@ -27,13 +27,13 @@ pub(super) fn matched(
         InlineAction::Text(value) => state.push(start, end, TokenKind::Decoded(value))?,
 
         InlineAction::Node {
-            kind,
+            payload,
             children,
             inhibit_brackets,
-        } => apply_node(state, start, end, kind, children, inhibit_brackets)?,
+        } => apply_node(state, start, end, payload, children, inhibit_brackets)?,
 
-        InlineAction::TrimmedNode { trim, kind } => {
-            apply_trimmed_node(state, start, end, trim, kind)?
+        InlineAction::TrimmedNode { trim, payload } => {
+            apply_trimmed_node(state, start, end, trim, payload)?
         }
 
         InlineAction::Delimiter(pairing) => apply_delimiter(state, key, start, end, pairing)?,
@@ -44,9 +44,9 @@ pub(super) fn matched(
         } => open_bracket(state, start, end, tag, inhibit_on_inner)?,
 
         InlineAction::CloseBracket {
-            kind,
+            payload,
             inhibit_brackets,
-        } => brackets::close(state, end, kind, inhibit_brackets)?,
+        } => brackets::close(state, end, payload, inhibit_brackets)?,
 
         InlineAction::DiscardBracket => {
             state.brackets.pop();
@@ -67,13 +67,13 @@ fn apply_node(
     state: &mut State<'_, '_>,
     start: usize,
     end: usize,
-    kind: NodeKind,
+    payload: AnyPayload,
     children: Vec<Node>,
     inhibit_brackets: bool,
 ) -> Result<(), ParseError> {
     children_budget(&children, state.budget)?;
 
-    state.push(start, end, TokenKind::Atom(kind, children))?;
+    state.push(start, end, TokenKind::Atom(payload, children))?;
 
     if inhibit_brackets {
         brackets::inhibit(state);
@@ -87,7 +87,7 @@ fn apply_trimmed_node(
     start: usize,
     end: usize,
     trim: usize,
-    kind: NodeKind,
+    payload: AnyPayload,
 ) -> Result<(), ParseError> {
     let mut node_start = start;
 
@@ -110,7 +110,7 @@ fn apply_trimmed_node(
         node_start -= trim;
     }
 
-    state.push(node_start, end, TokenKind::Atom(kind, vec![]))
+    state.push(node_start, end, TokenKind::Atom(payload, vec![]))
 }
 
 fn apply_delimiter(

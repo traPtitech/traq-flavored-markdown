@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, NodeKind, NodeRole, Span};
+use markdown_ast::{AnyPayload, MutableDocument, Node, NodeData, NodeRole, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Score(f64);
@@ -38,7 +38,9 @@ impl NodeData for Container {
         0
     }
     fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
-        let valid = children.iter().all(|child| child.get::<Score>().is_some());
+        let valid = children
+            .iter()
+            .all(|child| child.payload::<Score>().is_some());
         if valid {
             Ok(())
         } else {
@@ -50,7 +52,7 @@ impl NodeData for Container {
 #[test]
 fn native_borrow_clone_validation_and_partial_equality() {
     fn send_sync<T: Send + Sync>() {}
-    send_sync::<Document>();
+    send_sync::<MutableDocument>();
 
     let span = Span { start: 0, end: 1 };
     let original = Node::new(span, Container, vec![Node::leaf(span, Score(1.5))]);
@@ -58,11 +60,11 @@ fn native_borrow_clone_validation_and_partial_equality() {
     assert!(original.validate().is_ok());
 
     let mut copy = original.clone();
-    copy.children[0].get_mut::<Score>().unwrap().0 = 2.5;
+    copy.children[0].payload_mut::<Score>().unwrap().0 = 2.5;
 
     assert_ne!(original, copy);
-    assert_eq!(original.children[0].get::<Score>(), Some(&Score(1.5)));
-    assert!(original.get::<Score>().is_none());
+    assert_eq!(original.children[0].payload::<Score>(), Some(&Score(1.5)));
+    assert!(original.payload::<Score>().is_none());
 
     copy.children.push(Node::leaf(span, Container));
     assert!(copy.validate().is_err());
@@ -70,7 +72,7 @@ fn native_borrow_clone_validation_and_partial_equality() {
     let nan = Node::leaf(span, Score(f64::NAN));
     assert_ne!(nan, nan.clone());
 
-    let boxed = NodeKind::new(Score(1.5));
+    let boxed = AnyPayload::new(Score(1.5));
     assert_eq!(Node::leaf(span, boxed), original.children[0]);
 }
 

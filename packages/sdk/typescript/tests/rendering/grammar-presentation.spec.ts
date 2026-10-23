@@ -1,23 +1,27 @@
 import * as common from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import * as traq from '@traq-flavored-markdown/sdk/renderer'
 import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
-import type { Node } from '@traq-flavored-markdown/core/renderer'
+import type { ReadonlyNode } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
-import { commonParser, parser } from './setup.ts'
+import { commonParser, parser } from './setup.js'
 
 test('empty quote visibility belongs to traQ presentation without synthetic AST children', () => {
   const document = parser.parse('>')
-  expect(document.children[0].kind).toBe(names.Blockquote)
-  expect(document.children[0].children ?? []).toEqual([])
-  expect(common.html().render(document)).toBe('<blockquote>\n</blockquote>\n')
-  expect(traq.html().render(document)).toBe(
+  expect(document.document.children[0].kind).toBe(names.Blockquote)
+  expect(document.document.children[0].children ?? []).toEqual([])
+  expect(common.createHtmlRenderer().render(document)).toBe(
+    '<blockquote>\n</blockquote>\n'
+  )
+  expect(traq.createHtmlRenderer().render(document)).toBe(
     '<blockquote>\n<br>\n</blockquote>\n'
   )
-  expect(traq.html({ presentation: { xhtmlOut: true } }).render(document)).toBe(
-    '<blockquote>\n<br />\n</blockquote>\n'
-  )
-  expect(traq.html().render(parser.parse('>\n'))).toBe(
+  expect(
+    traq
+      .createHtmlRenderer({ presentation: { xhtmlOut: true } })
+      .render(document)
+  ).toBe('<blockquote>\n<br />\n</blockquote>\n')
+  expect(traq.createHtmlRenderer().render(parser.parse('>\n'))).toBe(
     '<blockquote>\n<br>\n</blockquote>\n'
   )
   const view = traq.messageRenderers({ origin: 'https://q.example.test' })
@@ -27,10 +31,10 @@ test('empty quote visibility belongs to traQ presentation without synthetic AST 
   expect(view.condensed.render(document).html).toBe('> ')
   expect(
     traq
-      .html({
+      .createHtmlRenderer({
         configurePlugins: plugins => ({
           ...plugins,
-          common: plugins.common.replace(
+          common: plugins.common.withReplacedHandler(
             names.Blockquote,
             () => '<aside></aside>'
           )
@@ -47,16 +51,22 @@ test('direct and reference images share parsing and renderer-specific image poli
       `![alt][image]\n\n[image]: ${url}`
     ]) {
       const document = parser.parse(source)
-      const image = document.children[0].children![0]
+      const image = document.document.children[0].children![0]
       expect(image.kind).toBe(names.Image)
       const expectedImage = `<img src="${url}" alt="alt">`
       expect(
-        traq.html({ images: { validate: () => true } }).render(document)
+        traq
+          .createHtmlRenderer({ images: { validate: () => true } })
+          .render(document)
       ).toBe(`<p>${expectedImage}</p>\n`)
       expect(
-        traq.html({ images: { validate: () => false } }).render(document)
-      ).toBe(`<p>${source.split('\n')[0]}</p>\n`)
-      expect(traq.html().render(document).includes('<img')).toBe(
+        traq
+          .createHtmlRenderer({ images: { validate: () => false } })
+          .render(document)
+      ).toBe(
+        `<p>!<a href="${url}" target="_blank" rel="nofollow noopener noreferrer">alt</a></p>\n`
+      )
+      expect(traq.createHtmlRenderer().render(document).includes('<img')).toBe(
         url.startsWith('https://trap.jp/')
       )
     }
@@ -75,21 +85,21 @@ test('traQ uses CommonMark link nesting and keeps URL policy out of parsing', ()
   } finally {
     local.dispose()
   }
-  expect(parser.parseInline('[x](javascript:alert)').children[0].kind).toBe(
-    names.Link
-  )
+  expect(
+    parser.parseInline('[x](javascript:alert)').document.children[0].kind
+  ).toBe(names.Link)
   const nested = parser.parseInline(
     '[outer <https://inner.test>](https://outer.test)'
   )
-  const visit = (nodes: readonly Node[], insideLink = false) => {
+  const visit = (nodes: readonly ReadonlyNode[], insideLink = false) => {
     for (const node of nodes) {
       if (node.kind === names.Link) expect(insideLink).toBe(false)
       if (node.children)
         visit(node.children, insideLink || node.kind === names.Link)
     }
   }
-  visit(nested.children)
-  expect(nested.children[0].kind).toBe(names.Text)
+  visit(nested.document.children)
+  expect(nested.document.children[0].kind).toBe(names.Text)
 })
 
 test('omitted and undefined display options keep the same URL and raw HTML policies', () => {
@@ -106,8 +116,8 @@ test('omitted and undefined display options keep the same URL and raw HTML polic
     presentation: { rawHtml: undefined, xhtmlOut: undefined, breaks: undefined }
   }
   for (const [view, baseline] of [
-    [common.html(commonUndefined), common.html()],
-    [traq.html(undefinedOptions), traq.html()]
+    [common.createHtmlRenderer(commonUndefined), common.createHtmlRenderer()],
+    [traq.createHtmlRenderer(undefinedOptions), traq.createHtmlRenderer()]
   ]) {
     for (const source of [
       '[x](javascript:alert)',
@@ -126,14 +136,54 @@ test('omitted and undefined display options keep the same URL and raw HTML polic
   }
   expect(
     traq
-      .html(undefinedOptions)
+      .createHtmlRenderer(undefinedOptions)
       .render(parser.parseInline('![x](http://trap.jp/a.png)'))
-  ).toBe('![x](http://trap.jp/a.png)')
+  ).toBe(
+    '!<a href="http://trap.jp/a.png" target="_blank" rel="nofollow noopener noreferrer">x</a>'
+  )
   expect(
     traq
-      .html(undefinedOptions)
+      .createHtmlRenderer(undefinedOptions)
       .render(parser.parseInline('![x](https://unlisted.test/a.png)'))
-  ).toBe('![x](https://unlisted.test/a.png)')
+  ).toBe(
+    '!<a href="https://unlisted.test/a.png" target="_blank" rel="nofollow noopener noreferrer">x</a>'
+  )
+})
+
+test('rejected images remain safe links without creating nested anchors', () => {
+  const view = traq.createHtmlRenderer({ images: { validate: () => false } })
+  const attributes = ' target="_blank" rel="nofollow noopener noreferrer"'
+  expect(
+    view.render(
+      parser.parseInline(
+        '![**bold** `code` &quot;](https://example.test/a.png "title")'
+      )
+    )
+  ).toBe(
+    `!<a href="https://example.test/a.png"${attributes} title="title">bold code &quot;</a>`
+  )
+  expect(
+    view.render(
+      parser.parseInline(
+        '[![alt](https://example.test/a.png)](https://example.test/page)'
+      )
+    )
+  ).toBe(`<a href="https://example.test/page"${attributes}>!alt</a>`)
+  expect(
+    view.render(
+      parser.parseInline('![<https://inner.test>](https://outer.test/a.png)')
+    )
+  ).toBe(
+    `!<a href="https://outer.test/a.png"${attributes}>https://inner.test</a>`
+  )
+  for (const destination of [
+    'javascript:alert(1)',
+    'data:image/png;base64,eA=='
+  ]) {
+    const html = view.render(parser.parseInline(`![image](${destination})`))
+    expect(html).not.toContain('<a')
+    expect(html).not.toContain('<img')
+  }
 })
 
 test('image alt links never create message cards and rendering leaves the AST intact', () => {
@@ -146,30 +196,30 @@ test('image alt links never create message cards and rendering leaves the AST in
     const document = parser.parse(
       `![<${file}> [alt](https://example.test/card)](${imageUrl})`
     )
-    const snapshot = structuredClone(document)
+    const snapshot = document.toMutable()
     const views = traq.messageRenderers({ origin })
     for (const view of [views.standard, views.condensed]) {
       expect(view.render(document).cards).toEqual([])
     }
-    expect(document).toEqual(snapshot)
+    expect(document.document).toEqual(snapshot)
   }
 })
 
 test('additional blank lines retain source ranges and trailing-card presentation', () => {
   const document = parser.parse('a\n\n\nb')
-  expect(traq.html().render(document)).toBe('<p>a</p>\n<br>\n<p>b</p>\n')
-  const blanks: Node[] = []
-  const visit = (nodes: readonly Node[]) => {
+  expect(traq.createHtmlRenderer().render(document)).toBe(
+    '<p>a</p>\n<br>\n<p>b</p>\n'
+  )
+  const blanks: ReadonlyNode[] = []
+  const visit = (nodes: readonly ReadonlyNode[]) => {
     for (const node of nodes) {
       if (node.kind === 'traq.blank_line') blanks.push(node)
       if (node.children) visit(node.children)
     }
   }
-  visit(document.children)
+  visit(document.document.children)
   expect(blanks).toHaveLength(1)
-  expect(document.source.slice(blanks[0].span.start, blanks[0].span.end)).toBe(
-    '\n'
-  )
+  expect(document.source.slice(blanks[0].span)).toBe('\n')
   const origin = 'https://q.example.test'
   const file = origin + '/files/00000000-0000-0000-0000-000000000001'
   const view = traq.messageRenderers({ origin })

@@ -10,6 +10,48 @@ import {
   generatedChanges
 } from './generated.ts'
 
+test('owner checks ignore unrelated artifacts while detecting added and retired owned outputs', async () => {
+  await withTempDirectory('generated-owner-', async root => {
+    const write = async (directory: string, files: string[]) => {
+      await Bun.write(
+        path.join(directory, '.generated-outputs.json'),
+        JSON.stringify({
+          version: 1,
+          outputs: files.map(file => ({
+            owner: file.startsWith('core') ? 'core' : 'sdk',
+            path: file
+          }))
+        })
+      )
+      for (const file of files)
+        await Bun.write(path.join(directory, file), file)
+    }
+    await write(root, ['core.ts', 'sdk.ts'])
+    await checkGenerated(
+      output => write(output, ['core.ts']),
+      undefined,
+      root,
+      'core'
+    )
+    await expect(
+      checkGenerated(
+        output => write(output, ['core-new.ts']),
+        undefined,
+        root,
+        'core'
+      )
+    ).rejects.toThrow('- core.ts')
+    await expect(
+      checkGenerated(
+        output => write(output, ['core.ts', 'core-new.ts']),
+        undefined,
+        root,
+        'core'
+      )
+    ).rejects.toThrow('+ core-new.ts')
+  })
+})
+
 test('generated checks detect changed, added and removed files', () => {
   expect(
     generatedChanges(

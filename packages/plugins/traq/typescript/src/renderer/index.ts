@@ -1,15 +1,15 @@
-import { validateLink as defaultPolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
+import { validateLink as defaultPolicy } from '@traq-flavored-markdown/core/html'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
 import { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { definitions } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import { renderReference } from './reference.js'
 import { stampRenderer } from './stamp.js'
-import type { Options } from './types.js'
+import type { HtmlRendererOptions } from './types.js'
 
 export type {
-  Options,
+  HtmlRendererOptions,
   ReferenceResolver,
   ResolvedReference,
   StampResolver,
@@ -17,7 +17,7 @@ export type {
   NamedStamp
 } from './types.js'
 
-const declaration = Declaration.group('trap').plugin('presentation')
+const declaration = Declaration.group('traq').plugin('presentation')
 
 export function plugin({
   resolveReference,
@@ -25,29 +25,29 @@ export function plugin({
   validateStampImage,
   xhtmlOut = false,
   validateLink = defaultPolicy
-}: Options = {}) {
+}: HtmlRendererOptions = {}) {
   let result = new RenderPlugin(declaration)
 
-  result = result.on(definitions.Reference, node =>
+  result = result.withHandler(definitions.Reference, node =>
     renderReference(node, resolveReference, validateLink)
   )
 
-  result = result.on(
+  result = result.withHandler(
     definitions.Spoiler,
     (n, ctx) => '<span class="spoiler">' + ctx.renderChildren() + '</span>'
   )
 
-  result = result.on(definitions.BlankLine, () =>
+  result = result.withHandler(definitions.BlankLine, () =>
     xhtmlOut ? '<br />\n' : '<br>\n'
   )
 
-  result = result.on(definitions.Embedding, node =>
+  result = result.withHandler(definitions.Embedding, node =>
     escapeHtml(node.data.literal)
   )
 
   const stamp = stampRenderer({ resolveStamp, validateStampImage })
 
-  result = result.on(definitions.Stamp, node => stamp(node.data))
+  result = result.withHandler(definitions.Stamp, node => stamp(node.data))
 
   return result
 }

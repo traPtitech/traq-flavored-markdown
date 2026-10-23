@@ -1,4 +1,4 @@
-use crate::{Node, ValidatedDocument};
+use crate::{DocumentView, Node};
 
 /// One occurrence in validated document preorder.
 #[derive(Debug, Clone, Copy)]
@@ -18,7 +18,7 @@ struct Frame<'a> {
     index: usize,
 }
 
-impl<'a> ValidatedDocument<'a> {
+impl<'a> DocumentView<'a> {
     /// Every consumer uses the same source order and parent/index convention.
     pub fn walk(self) -> Walk<'a> {
         Walk {

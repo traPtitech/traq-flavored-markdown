@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
-	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
+	traq "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
 func TestRuntimeOwnership(t *testing.T) {
@@ -23,40 +23,40 @@ func TestRuntimeOwnership(t *testing.T) {
 	}
 	defer runtime.Close(ctx)
 
-	traq, err := runtime.NewParser(ctx, PresetTraqV1)
+	traqParser, err := runtime.NewParser(ctx, GrammarTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	common, err := runtime.NewParser(ctx, PresetCommonMark)
+	common, err := runtime.NewParser(ctx, GrammarCommonMark)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for parser, kind := range map[*Parser]string{
-		traq:   trap.StampName,
-		common: commonmark.TextName,
+		traqParser: traq.StampName,
+		common:     commonmark.TextName,
 	} {
 		doc, err := parser.ParseInline(ctx, ":stamp:")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if doc.Children[0].Kind != kind {
+		if doc.Children()[0].Kind() != kind {
 			t.Fatal("parser grammars were shared")
 		}
 	}
 
-	if _, err := runtime.NewParser(ctx, Preset("missing")); err == nil {
+	if _, err := runtime.NewParser(ctx, GrammarPresetID("missing")); err == nil {
 		t.Fatal("accepted invalid preset")
 	}
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
 
-	if parser, err := runtime.NewParser(canceled, PresetTraqV1); err == nil {
+	if parser, err := runtime.NewParser(canceled, GrammarTraqV1); err == nil {
 		parser.Close(ctx)
 		t.Fatal("accepted canceled creation")
 	}
-	if err := traq.Close(ctx); err != nil {
+	if err := traqParser.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := common.Parse(ctx, "still open"); err != nil {
@@ -69,7 +69,7 @@ func TestRuntimeOwnership(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			p, err := runtime.NewParser(ctx, PresetTraqV1)
+			p, err := runtime.NewParser(ctx, GrammarTraqV1)
 			if err != nil {
 				t.Error(err)
 				return
@@ -92,7 +92,7 @@ func TestRuntimeOwnership(t *testing.T) {
 	if _, err := common.Parse(ctx, "closed"); err == nil {
 		t.Fatal("Runtime.Close left a parser open")
 	}
-	if _, err := runtime.NewParser(ctx, PresetTraqV1); err == nil {
+	if _, err := runtime.NewParser(ctx, GrammarTraqV1); err == nil {
 		t.Fatal("closed Runtime created a parser")
 	}
 	if err := common.Close(ctx); err != nil {

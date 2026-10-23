@@ -8,6 +8,6 @@ fn main() -> Result<()> {
             $(exporter.register::<$payload>($group, $kind)?;)+
         };
     }
-    markdown_trap_contracts::node_catalog!(register);
+    markdown_traq_contracts::node_catalog!(register);
     write(directory, &exporter.finish()?)
 }

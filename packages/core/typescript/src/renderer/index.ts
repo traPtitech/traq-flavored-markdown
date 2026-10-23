@@ -1,19 +1,20 @@
 import { DocumentContext } from '../document.js'
+import type { DocumentSchema } from '../schema.js'
 import { escapeHtml } from './html.js'
 import { configuration } from './preset.js'
 import type {
-  Document,
-  Node,
-  Preset,
+  HtmlPreset,
+  ReadonlyDocument,
+  ReadonlyNode,
   RenderContext,
   RenderPlan,
   Renderer
 } from './types.js'
 
 export type {
-  Node,
-  Document,
-  Preset,
+  ReadonlyNode,
+  ReadonlyDocument,
+  HtmlPreset,
   Renderer,
   RenderContext,
   RenderPlan,
@@ -26,19 +27,25 @@ export { RenderPlugin } from './plugin.js'
 export { PresetBuilder } from './preset.js'
 export type { RegistrationHandle } from './preset.js'
 
-export function renderer(preset: Preset): Renderer {
+export function createRenderer(
+  preset: HtmlPreset,
+  { schema }: { schema?: DocumentSchema } = {}
+): Renderer {
   const {
     handlers,
-    definitions,
+    requiredContracts,
     fallback: renderFallback
   } = configuration(preset)
 
-  function createSession(document: Document | DocumentContext) {
-    const context =
-      document instanceof DocumentContext
+  function createSession(document: ReadonlyDocument | DocumentContext) {
+    const context = schema
+      ? schema.document(document)
+      : document instanceof DocumentContext
         ? document
-        : new DocumentContext(document, { definitions: definitions.values() })
-    context.validateDefinitions(definitions.values())
+        : new DocumentContext(document)
+    for (const [kind, definition] of requiredContracts)
+      if (!context.hasDefinition(definition))
+        throw new TypeError('Renderer requires a document schema for: ' + kind)
 
     function render(plan: RenderPlan = {}) {
       const roots = (plan.roots ?? context.document.children).map(node =>
@@ -60,7 +67,7 @@ export function renderer(preset: Preset): Renderer {
       )
         throw new TypeError('Root separator must be a string')
 
-      const fallback = (value: Node) => {
+      const fallback = (value: ReadonlyNode) => {
         const node = context.node(value)
         const output = renderFallback(
           escapeHtml(context.source.slice(node.span))
@@ -70,7 +77,7 @@ export function renderer(preset: Preset): Renderer {
         return output
       }
 
-      function renderNode(value: Node): string {
+      function renderNode(value: ReadonlyNode): string {
         const node = context.node(value)
         if (omitted.has(node)) return ''
         const handler = handlers.get(node.kind)
@@ -80,6 +87,13 @@ export function renderer(preset: Preset): Renderer {
           source: context.source.text,
           ancestors,
           index,
+          matches: (node, definition) => context.matches(node, definition),
+          parent: (definition, distance = 1) => {
+            const parent = ancestors.at(-distance)
+            return parent && context.matches(parent, definition)
+              ? parent
+              : undefined
+          },
           escape: escapeHtml,
           renderChildren: (join = '') => {
             const replacement = replacements.get(node)
@@ -118,7 +132,7 @@ export function renderer(preset: Preset): Renderer {
 
   return Object.freeze({
     createSession,
-    render: (document: Document, plan?: RenderPlan) =>
+    render: (document: ReadonlyDocument | DocumentContext, plan?: RenderPlan) =>
       createSession(document).render(plan)
   })
 }

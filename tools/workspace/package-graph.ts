@@ -61,6 +61,7 @@ export function dependencyGraph<Name extends string>(
 
 export type NpmManifest = {
   name: string
+  scripts?: Record<string, string>
   dependencies?: Record<string, string>
   peerDependencies?: Record<string, string>
 }

@@ -1,42 +1,40 @@
 import DiffTable from './DiffTable.tsx'
 import { ComparisonControls } from './components/ComparisonControls.tsx'
+import { ComparisonSummary } from './components/ComparisonSummary.tsx'
 import { ReportFooter } from './components/ReportFooter.tsx'
 import { ReportHeader } from './components/ReportHeader.tsx'
+import type { BootstrapResult } from './data/bootstrap.ts'
 import type { ReportRepository } from './data/repository.ts'
 import { useViewerController } from './hooks/useViewerController.ts'
 
-export default function App({
-  repository
-}: {
-  repository: ReportRepository | null
-}) {
+export default function App({ bootstrap }: { bootstrap: BootstrapResult }) {
+  return bootstrap.status === 'ready' ? (
+    <ReportViewer repository={bootstrap.repository} />
+  ) : (
+    <main className="bootstrap-error" data-reason={bootstrap.reason}>
+      <h1>レポートを読み込めません</h1>
+      <p role="alert">{bootstrap.message}</p>
+      {bootstrap.detail && <pre>{bootstrap.detail}</pre>}
+    </main>
+  )
+}
+
+function ReportViewer({ repository }: { repository: ReportRepository }) {
   const controller = useViewerController(repository)
-  if (!repository)
-    return (
-      <main style={{ padding: 20 }}>
-        <p id="status">
-          読込に失敗しました。新しい Chrome / Edge
-          で開いてください。（またはデータがありません）
-        </p>
-      </main>
-    )
   const metadata = repository.metadata
-  const rows = controller.result?.rows ?? []
   return (
     <>
       <ReportHeader metadata={metadata} />
       <main>
-        <ComparisonControls metadata={metadata} controller={controller} />
-        {rows.length > 0 ? (
-          <DiffTable rows={rows} outputView={controller.state.outputView} />
-        ) : (
-          <p
-            id="empty"
-            hidden={controller.loading || controller.totalHits !== 0}
-          >
-            該当する差分はありません。
-          </p>
+        <ComparisonSummary results={metadata.results} />
+        <ComparisonControls {...controller.controls} />
+        {controller.rows.length > 0 && (
+          <DiffTable
+            rows={controller.rows}
+            outputView={controller.outputView}
+          />
         )}
+        {controller.empty && <p id="empty">該当する差分はありません。</p>}
         <ReportFooter metadata={metadata} />
       </main>
     </>

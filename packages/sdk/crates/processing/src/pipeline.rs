@@ -2,14 +2,14 @@
 use crate::{
     Result,
     extraction::{Extraction, Extractor, ExtractorOptions},
-    rendering::{PlainTextRenderer, RendererOptions, WhitespacePolicy},
+    rendering::{PlainTextOptions, PlainTextRenderer, WhitespacePolicy},
 };
-use markdown_ast::ValidatedDocument;
+use markdown_ast::DocumentView;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProcessorOptions {
     #[serde(default)]
     pub origin: String,
@@ -36,17 +36,17 @@ impl Processor {
             extractor: Extractor::new(ExtractorOptions {
                 origin: options.origin.clone(),
             })?,
-            renderer: PlainTextRenderer::new(RendererOptions {
+            renderer: PlainTextRenderer::new(PlainTextOptions {
                 origin: options.origin,
                 whitespace: options.whitespace,
             })?,
         })
     }
 
-    pub fn process_validated(&self, document: ValidatedDocument<'_>) -> Result<ProcessingResult> {
+    pub fn process(&self, document: DocumentView<'_>) -> Result<ProcessingResult> {
         Ok(ProcessingResult {
-            extraction: self.extractor.extract_validated(document)?,
-            plain_text: self.renderer.render_validated(document)?,
+            extraction: self.extractor.extract(document)?,
+            plain_text: self.renderer.render(document)?,
         })
     }
 }

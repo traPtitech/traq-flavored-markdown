@@ -3,7 +3,7 @@ import path from 'node:path'
 import {
   outputIndex,
   readOutputIndex
-} from '../../contracts/typescript/output-manifest.ts'
+} from '../../contracts/io/output-manifest.ts'
 import { readGoPackageGraph, readNpmPackageGraph } from '../package-graph.ts'
 import { type PackageName, packageRoot, repositoryRoot } from '../paths.ts'
 import { type Version, goVersion } from './version.ts'

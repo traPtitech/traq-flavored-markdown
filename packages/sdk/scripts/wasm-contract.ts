@@ -3,7 +3,7 @@ import path from 'path'
 import {
   type ArtifactMetadata,
   parseArtifactMetadata
-} from '../../../tools/contracts/typescript/manifest.ts'
+} from '../../../tools/contracts/model/manifest.ts'
 import { sdkRoot } from '../../../tools/workspace/paths.ts'
 
 export async function readWasmMetadata(

@@ -1,13 +1,12 @@
-use markdown_parser::{
-    ParseError,
-    engine::{
-        Budget, Plugin,
-        inline::{InlineInput, InlineMatch, InlineRule},
-        source::ViewOffset,
-    },
-};
+use markdown_parser::ParseError;
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::inline::InlineInput;
+use markdown_parser::rules::inline::InlineMatch;
+use markdown_parser::rules::inline::InlineRule;
+use markdown_parser::source::ViewOffset;
 
-pub use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
+pub use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> =
@@ -15,9 +14,9 @@ pub fn inline_rule() -> &'static InlineRule {
     &RULE
 }
 
-pub fn plugin() -> &'static Plugin {
-    static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_trap_contracts::declarations().references);
+pub fn plugin() -> &'static SyntaxPlugin {
+    static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
+        let mut plugin = SyntaxPlugin::new(&markdown_traq_contracts::declarations().references);
         plugin.add(inline_rule());
         plugin
     });
@@ -88,13 +87,13 @@ fn json_end(
     Ok(None)
 }
 
-fn reference_data(text: &str) -> Option<markdown_parser::NodeKind> {
+fn reference_data(text: &str) -> Option<markdown_parser::AnyPayload> {
     let value = serde_json::from_str::<serde_json::Value>(text).ok()?;
     let target = value.get("type").and_then(|value| value.as_str())?;
     let id = value.get("id").and_then(|value| value.as_str())?;
 
     if let Some(kind) = embedding_kind(target) {
-        return Some(markdown_parser::NodeKind::new(Embedding {
+        return Some(markdown_parser::AnyPayload::new(Embedding {
             target: kind,
             id: id.into(),
             label: value
@@ -109,7 +108,7 @@ fn reference_data(text: &str) -> Option<markdown_parser::NodeKind> {
     let label = value.get("raw").and_then(|value| value.as_str())?;
     let target = reference_kind(target)?;
 
-    Some(markdown_parser::NodeKind::new(Reference {
+    Some(markdown_parser::AnyPayload::new(Reference {
         target,
         id: id.into(),
         label: label.into(),

@@ -15,7 +15,7 @@
     },
     {
       "owner": "commonmark-plugin",
-      "path": "packages/plugins/commonmark/typescript/src/generated/commonmark.ts"
+      "path": "packages/plugins/commonmark/typescript/src/generated/nodes.ts"
     },
     {
       "owner": "extensions-plugin",
@@ -31,7 +31,7 @@
     },
     {
       "owner": "traq-plugin",
-      "path": "packages/plugins/traq/typescript/src/generated/trap.ts"
+      "path": "packages/plugins/traq/typescript/src/generated/nodes.ts"
     },
     {
       "owner": "sdk",

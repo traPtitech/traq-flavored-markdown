@@ -6,11 +6,6 @@ license.workspace = true
 publish.workspace = true
 description = "Typed Markdown parsing mechanics, independent of syntax presets."
 
-[features]
-contracts = ["dep:schemars"]
-
 [dependencies]
 markdown-ast = { path = "../ast" }
 markdown-definitions = { path = "../definitions" }
-serde = { version = "=1.0.229", features = ["derive"] }
-schemars = { version = "=1.2.3", optional = true }

@@ -8,7 +8,7 @@ pub(crate) mod markers;
 mod paragraph;
 pub mod quote;
 
-use markdown_parser::engine::block::BlockRule;
+use markdown_parser::rules::block::BlockRule;
 
 pub struct Rules {
     pub definition: BlockRule,
@@ -28,7 +28,7 @@ pub(crate) fn rules() -> Rules {
 
         blank: BlockRule::new(|input, _| {
             Ok(markers::blank(input.current())
-                .then(|| markdown_parser::engine::block::BlockMatch::ignore(input.start + 1)))
+                .then(|| markdown_parser::rules::block::BlockMatch::ignore(input.start + 1)))
         })
         .named("blank")
         .interrupts(|probe| markers::blank(probe.line)),
@@ -64,7 +64,7 @@ pub(crate) fn rules() -> Rules {
 }
 
 impl Rules {
-    pub(crate) fn register(&self, plugin: &mut markdown_parser::engine::Plugin) {
+    pub(crate) fn register(&self, plugin: &mut markdown_parser::grammar::SyntaxPlugin) {
         plugin.add(&self.definition);
         plugin.add(&self.blank);
         plugin.add(&self.fence);

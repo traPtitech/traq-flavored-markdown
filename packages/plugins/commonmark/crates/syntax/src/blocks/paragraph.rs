@@ -1,14 +1,13 @@
 use super::Interrupt;
 use super::markers::*;
-use markdown_parser::engine::block::LineIndex;
+use markdown_parser::rules::block::LineIndex;
 
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch, DraftNode},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::DraftNode;
 
 fn setext(input: &BlockInput<'_>, line: LineIndex) -> Result<Option<u8>, ParseError> {
     if super::super::context::is_lazy(
@@ -62,22 +61,22 @@ pub(super) fn parse(
     let view = source.join(&[start..finish.max(start)])?;
 
     // A setext underline is consumed as part of the paragraph's heading.
-    let kind = if let Some(level) = if end < lines.end() {
+    let payload = if let Some(level) = if end < lines.end() {
         setext(input, end)?
     } else {
         None
     } {
         end += 1;
-        NodeKind::new(markdown_commonmark_contracts::Heading { level })
+        AnyPayload::new(markdown_commonmark_contracts::Heading { level })
     } else {
-        NodeKind::new(markdown_commonmark_contracts::Paragraph {})
+        AnyPayload::new(markdown_commonmark_contracts::Paragraph {})
     };
 
     Ok(Some(BlockMatch::node(
         end,
         DraftNode::inline(
             source.span_for(lines[first].start..lines[end - 1].end)?,
-            kind,
+            payload,
             view,
         ),
     )))

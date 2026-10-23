@@ -77,11 +77,11 @@ button:disabled {
   opacity: 0.4;
   cursor: default;
 }
-.modes {
+.profiles {
   display: flex;
   gap: 6px;
 }
-.modes button[aria-pressed='true'] {
+.profiles button[aria-pressed='true'] {
   background: #204f72;
   border-color: #204f72;
   color: #fff;
@@ -128,24 +128,24 @@ input {
 .source-col {
   width: 30%;
 }
-.comparison th {
+.comparison > thead > tr > th {
   background: #e7edf2;
   text-align: left;
   padding: 10px 12px;
   font-size: 12px;
   color: #475f73;
 }
-.comparison td {
+.comparison > tbody > tr > td {
   vertical-align: top;
   border-top: 1px solid #dce3e9;
   padding: 12px;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.comparison td + td {
+.comparison > tbody > tr > td + td {
   border-left: 1px solid #e3e8ed;
 }
-.comparison tbody tr:nth-child(even) {
+.comparison > tbody > tr:nth-child(even) {
   background: #fafcfd;
 }
 .comparison .case-label {
@@ -194,24 +194,24 @@ input {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.comparison .markdown-body .traq-code {
+.comparison .markdown-body .preview-traq-code {
   background: #edf2f6;
   color: #243549;
   padding: 8px;
 }
-.comparison .markdown-body .hljs-string {
+.comparison .markdown-body .preview-hljs-string {
   color: #28663c;
 }
-.comparison .markdown-body .hljs-keyword {
+.comparison .markdown-body .preview-hljs-keyword {
   color: #725396;
 }
-.comparison .markdown-body .spoiler,
-.comparison .markdown-body .message-spoiler {
+.comparison .markdown-body .preview-spoiler,
+.comparison .markdown-body .preview-message-spoiler {
   color: inherit !important;
   background: #e1e7ed !important;
 }
-.comparison .markdown-body .emoji,
-.comparison .markdown-body .message-emoji {
+.comparison .markdown-body .preview-emoji,
+.comparison .markdown-body .preview-message-emoji {
   background: none !important;
   color: #3d667e !important;
   font-size: 12px !important;
@@ -222,7 +222,7 @@ input {
   font-style: normal;
   vertical-align: baseline !important;
 }
-.comparison .markdown-body .emoji-effect {
+.comparison .markdown-body .preview-emoji-effect {
   display: inline !important;
   animation: none !important;
   transform: none !important;
@@ -302,10 +302,10 @@ footer {
     padding-left: 12px;
     padding-right: 12px;
   }
-  .comparison td {
+  .comparison > tbody > tr > td {
     padding: 8px;
   }
-  .modes {
+  .profiles {
     flex-wrap: wrap;
   }
 }
@@ -355,4 +355,45 @@ footer {
 }
 .filters input {
   accent-color: #204f72;
+}
+.result-summary {
+  overflow-x: auto;
+}
+.result-summary table {
+  border-collapse: collapse;
+  width: 100%;
+  background: white;
+}
+.result-summary caption {
+  text-align: left;
+  padding: 8px 0;
+  color: #586779;
+}
+.result-summary th,
+.result-summary td {
+  padding: 7px 12px;
+  border-bottom: 1px solid #dce3e9;
+  text-align: right;
+}
+.result-summary th:first-child {
+  text-align: left;
+}
+.has-errors,
+.output-error {
+  color: #9d2638;
+  background: #fff0f1;
+}
+.provenance {
+  margin-top: 12px;
+}
+.provenance dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 5px 16px;
+}
+.provenance dd {
+  margin: 0;
+}
+.bootstrap-error {
+  padding: 24px;
 }

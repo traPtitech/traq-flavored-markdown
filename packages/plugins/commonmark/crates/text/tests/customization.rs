@@ -1,16 +1,18 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Link, LinkForm, Text};
-use markdown_renderer::{Plugin, PresetBuilder, Renderer};
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 
-fn renderer(plugin: &Plugin) -> Renderer {
-    let mut builder = PresetBuilder::new();
+fn renderer(plugin: &RenderPlugin) -> Renderer {
+    let mut builder = RenderPresetBuilder::new();
     builder.add(plugin).unwrap();
     Renderer::new(&builder.build().unwrap())
 }
 
 #[test]
 fn factories_share_identity_and_customization_keeps_defaults_intact() {
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
 
     builder.add(&markdown_commonmark_text::plugin()).unwrap();
     assert!(builder.add(&markdown_commonmark_text::plugin()).is_err());
@@ -35,7 +37,7 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
         .replace::<Link>(|link, _, _, output| output.push(&link.destination))
         .unwrap();
 
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![Node::new(
             Span { start: 0, end: 0 },

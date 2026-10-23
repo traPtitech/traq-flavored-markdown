@@ -15,7 +15,7 @@ impl SourceOffset {
 /// this type until mapping the position back to the original source.
 ///
 /// ```compile_fail
-/// use markdown_parser::engine::{inline::InlineMatch, source::SourceOffset};
+/// use markdown_parser::{rules::inline::InlineMatch, source::SourceOffset};
 /// fn invalid_match(original: SourceOffset) -> InlineMatch {
 ///     InlineMatch::literal(original)
 /// }

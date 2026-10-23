@@ -29,13 +29,14 @@ handler type and display-name collisions. Each consumer owns invocation and tree
 traversal.
 
 ```rust
-use markdown_definitions::{NodeType, Plugin};
+use markdown_definitions::WireTypeKey;
+use markdown_definitions::PluginDeclaration;
 
-#[derive(NodeType)]
-#[node_type(key = "example.issue")]
+#[derive(WireTypeKey)]
+#[wire_type(key = "example.issue")]
 struct Issue { number: u32 }
 
-let generic = Plugin::group("Generic");
+let generic = PluginDeclaration::group("Generic");
 let github = generic.group("GitHub");
 let links = github.plugin("Links");
 assert_eq!(links.name(), "Links");
@@ -45,7 +46,7 @@ assert_eq!(github.parent(), Some(&generic));
 
 ## Plugin declarations
 
-`Plugin` and `PluginGroup` require a display name. Identity is instance-based:
+`PluginDeclaration` and `PluginGroup` require a display name. Identity is instance-based:
 two declarations with the same name are distinct. Parents are shared internally,
 so child declarations retain their hierarchy after local parent variables leave
 scope. Names are descriptive only; they do not form IDs or transport keys.
@@ -55,14 +56,14 @@ shared declaration or ancestor group. Same names under different parents are
 valid. A slash has no special hierarchy meaning. Builders remain responsible for
 rule, handler-type, and implementation-instance collisions.
 
-## `NodeType`
+## `WireTypeKey`
 
-`#[derive(NodeType)]` requires an explicit `#[node_type(key = "vendor.node")]`.
+`#[derive(WireTypeKey)]` requires an explicit `#[wire_type(key = "vendor.node")]`.
 For a plugin with several payloads, its contract catalog assigns the keys and
-implements `NodeType` from one list. Generic type and const arguments are
-included in a derived key; generic arguments must also be `NodeType`.
+implements `WireTypeKey` from one list. Generic type and const arguments are
+included in a derived key; generic arguments must also be `WireTypeKey`.
 
 Wire keys stay stable across Rust module and type renames. Codec registration
 rejects key collisions, while matching keys alone do not guarantee compatible
-payload semantics. Implement `NodeData`, `NodeType`, and serde traits to use a
+payload semantics. Implement `NodeData`, `WireTypeKey`, and serde traits to use a
 type in a native AST and register it with a codec.

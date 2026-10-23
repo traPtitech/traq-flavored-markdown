@@ -25,7 +25,7 @@ test('out-of-range page input becomes the navigation state, not only the display
   ).toBe(2)
 })
 
-test('search, mode, and whitespace changes reset pagination as one state transition', () => {
+test('search, profile, and whitespace changes reset pagination as one state transition', () => {
   let state = viewerReducer(initialViewerState, {
     type: 'page',
     page: 3,
@@ -36,7 +36,7 @@ test('search, mode, and whitespace changes reset pagination as one state transit
   expect(state.query.page).toBe(3)
   state = viewerReducer(state, { type: 'search' })
   expect(state.query).toEqual({
-    mode: 'render',
+    profile: 'render',
     search: 'find me',
     page: 1,
     ignoreWhitespace: false
@@ -44,10 +44,10 @@ test('search, mode, and whitespace changes reset pagination as one state transit
   state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
   state = viewerReducer(state, { type: 'whitespace', ignore: true })
   expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'mode', mode: 'plainText' })
+  state = viewerReducer(state, { type: 'profile', profile: 'plainText' })
   expect(state.searchDraft).toBe('')
   expect(state.query).toEqual({
-    mode: 'plainText',
+    profile: 'plainText',
     search: '',
     page: 1,
     ignoreWhitespace: true

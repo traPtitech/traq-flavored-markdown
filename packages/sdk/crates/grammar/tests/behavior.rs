@@ -1,12 +1,15 @@
 use markdown_commonmark_contracts::Link;
-use markdown_parser::{Limits, Node, ParseError, ValidationLimits};
-use markdown_trap_contracts::{Stamp, StampKind};
+use markdown_parser::Limits;
+use markdown_parser::Node;
+use markdown_parser::ParseError;
+use markdown_parser::ValidationLimits;
+use markdown_traq_contracts::{Stamp, StampKind};
 use traq_markdown_grammar::presets;
 
 fn has_link(nodes: &[Node]) -> bool {
     nodes
         .iter()
-        .any(|node| node.get::<Link>().is_some() || has_link(&node.children))
+        .any(|node| node.payload::<Link>().is_some() || has_link(&node.children))
 }
 
 #[test]
@@ -29,14 +32,17 @@ fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
     ] {
         let document = parser.parse_inline(source).unwrap();
         assert_eq!(document.children.len(), 1, "{source}");
-        assert_eq!(document.children[0].get::<Stamp>().unwrap().kind, expected);
+        assert_eq!(
+            document.children[0].payload::<Stamp>().unwrap().kind,
+            expected
+        );
     }
     let document = parser.parse_inline(":foohsl(0, 20%, 30%):").unwrap();
     assert!(
         document
             .children
             .iter()
-            .all(|node| node.get::<Stamp>().is_none())
+            .all(|node| node.payload::<Stamp>().is_none())
     );
 }
 
@@ -96,7 +102,7 @@ fn limits_cover_multibyte_input_and_nested_results() {
     ] {
         assert!(
             matches!(presets::traq::v1::parser().with_limits(limits).parse(source),
-            Err(ParseError::ResourceLimit { resource: actual }) if actual == resource)
+            Err(ParseError::ResourceLimit { resource: actual }) if actual.as_str() == resource)
         );
     }
 }
@@ -109,7 +115,7 @@ fn syntax_and_rendering_policy_are_separate() {
         let destinations: Vec<_> = document
             .children
             .iter()
-            .filter_map(|node| node.get::<Link>())
+            .filter_map(|node| node.payload::<Link>())
             .map(|link| link.destination.as_str())
             .collect();
         assert_eq!(destinations, ["javascript:alert", "file:///a"]);
@@ -162,7 +168,7 @@ fn intermediate_tokens_syntax_nesting_and_final_tree_limits_are_independent() {
             .with_limits(limits)
             .parse_inline(source);
         assert!(
-            matches!(result, Err(ParseError::ResourceLimit { resource: actual }) if actual == resource),
+            matches!(result, Err(ParseError::ResourceLimit { resource: actual }) if actual.as_str() == resource),
             "{source}: {resource}"
         );
     }

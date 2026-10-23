@@ -1,27 +1,6 @@
-$link-color: #0366d6 !default;
-$hr-color: #e1e4e8 !default;
-$h6-color: #6a737d !default;
-$quote-text-color: #6a737d !default;
-$quote-bar-color: #dfe2e5 !default;
-$code-background-color: #243342 !default;
-$code-file-name-background-color: rgba(0, 0, 0, 0.1) !default;
-$table-td-border-color: #dfe2e5 !default;
-$table-tr-border-color: #c6cbd1 !default;
-$table-tr-background-color: #fff !default;
-$table-tr-background-color2: #f6f8fa !default;
-$img-background-color: #fff !default;
-$mark-color: black !default;
-$mark-background-color: yellow !default;
-$spoiler-background-color: black !default;
-$spoiler-shown-background-color: rgba(0, 0, 0, 0.1) !default;
-$link-text-color: #005bac !default;
-$link-background-color: transparent !default;
-$link-highlight-text-color: #005bac !default;
-$link-highlight-background-color: #faffad !default;
-
 @mixin inline-content {
   a {
-    color: $link-color;
+    color: var(--tfm-link-color, #0366d6);
     background-color: initial;
     text-decoration: none;
     &:active,
@@ -34,47 +13,6 @@ $link-highlight-background-color: #faffad !default;
       text-decoration: none;
     }
   }
-
-  s > code {
-    text-decoration: line-through;
-  }
-
-  mark {
-    color: $mark-color;
-    background-color: $mark-background-color;
-  }
-
-  .spoiler {
-    color: transparent;
-    background-color: $spoiler-background-color;
-    user-select: none;
-    cursor: pointer;
-
-    &:not([shown]) {
-      * {
-        visibility: hidden;
-      }
-    }
-
-    &[shown] {
-      color: inherit;
-      background-color: $spoiler-shown-background-color;
-    }
-  }
-
-  .message-user-link,
-  .message-channel-link,
-  .message-group-link {
-    cursor: pointer;
-    color: $link-text-color;
-    background-color: $link-background-color;
-    font-weight: bold;
-  }
-  .message-user-link-highlight,
-  .message-group-link-highlight {
-    color: $link-highlight-text-color;
-    background-color: $link-highlight-background-color;
-  }
 }
 
 @mixin code-base {
@@ -86,7 +24,7 @@ $link-highlight-background-color: #faffad !default;
     monospace;
   font-size: 0.85em;
   border-radius: 4px;
-  background-color: $code-background-color;
+  background-color: var(--tfm-code-background-color, #243342);
 }
 
 .markdown-body {
@@ -113,7 +51,7 @@ $link-highlight-background-color: #faffad !default;
     padding: 0;
     margin: 12px 0;
     border: 0;
-    background-color: $hr-color;
+    background-color: var(--tfm-hr-color, #e1e4e8);
     overflow: hidden;
   }
 
@@ -146,13 +84,10 @@ $link-highlight-background-color: #faffad !default;
   }
   h5 {
     font-size: 0.875em;
-    // Retained legacy text-rasterization adjustment; changing it needs a browser visual comparison.
-    transform: rotate(0.03deg);
   }
   h6 {
     font-size: 0.85em;
-    transform: rotate(0.03deg);
-    color: $h6-color;
+    color: var(--tfm-h6-color, #6a737d);
   }
 
   p {
@@ -165,7 +100,7 @@ $link-highlight-background-color: #faffad !default;
     margin-top: 0;
     margin-bottom: 8px;
     padding: 0 12px;
-    color: $quote-text-color;
+    color: var(--tfm-quote-text-color, #6a737d);
     > :first-child {
       margin-top: 0;
     }
@@ -181,7 +116,7 @@ $link-highlight-background-color: #faffad !default;
       left: 0;
       width: 0.25em;
       height: 100%;
-      background: $quote-bar-color;
+      background: var(--tfm-quote-bar-color, #dfe2e5);
     }
   }
   > blockquote,
@@ -255,7 +190,10 @@ $link-highlight-background-color: #faffad !default;
       right: 0;
       padding: 0 4px;
       border-bottom-left-radius: 4px;
-      background-color: $code-file-name-background-color;
+      background-color: var(
+        --tfm-code-file-name-background-color,
+        rgba(0, 0, 0, 0.1)
+      );
     }
     code {
       display: block;
@@ -284,16 +222,16 @@ $link-highlight-background-color: #faffad !default;
   td,
   th {
     padding: 4px 12px;
-    border: 1px solid $table-td-border-color;
+    border: 1px solid var(--tfm-table-td-border-color, #dfe2e5);
   }
   th {
     font-weight: bold;
   }
   tr {
-    border-top: 1px solid $table-tr-border-color;
-    background-color: $table-tr-background-color;
+    border-top: 1px solid var(--tfm-table-tr-border-color, #c6cbd1);
+    background-color: var(--tfm-table-tr-background-color, #fff);
     &:nth-child(2n) {
-      background-color: $table-tr-background-color2;
+      background-color: var(--tfm-table-tr-background-color2, #f6f8fa);
     }
   }
 
@@ -301,11 +239,6 @@ $link-highlight-background-color: #faffad !default;
     max-width: 100%;
     border-style: none;
     box-sizing: initial;
-  }
-
-  .katex-block {
-    overflow: auto;
-    margin-bottom: 4px;
   }
 }
 

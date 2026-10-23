@@ -1,5 +1,9 @@
-import { DocumentContext, defineNode } from '@traq-flavored-markdown/core'
-import type { Node } from '@traq-flavored-markdown/core'
+import {
+  DocumentContext,
+  DocumentSchema,
+  defineNode
+} from '@traq-flavored-markdown/core'
+import type { MutableNode } from '@traq-flavored-markdown/core'
 import type { NodeStructure } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
@@ -40,14 +44,21 @@ const definitions = [
     children: { kind: 'roles', roles: ['inline'], nonempty: false }
   })
 ]
-const node = (kind: string, children?: Node[], data: unknown = {}): Node => ({
+const node = (
+  kind: string,
+  children?: MutableNode[],
+  data: unknown = {}
+): MutableNode => ({
   kind,
   span: { start: 0, end: 0 },
   data,
   ...(children ? { children } : {})
 })
-const context = (children: Node[]) =>
-  new DocumentContext({ source: '', children }, { definitions })
+const context = (children: MutableNode[]) =>
+  new DocumentContext(
+    { source: '', children },
+    { schema: new DocumentSchema(definitions).withUnknownNodes() }
+  )
 
 test('child sequences support multiple prefix entries without an arity constraint', () => {
   const sequence = defineNode('sequence', valid, {
@@ -65,7 +76,7 @@ test('child sequences support multiple prefix entries without an arity constrain
           )
         ]
       },
-      { definitions: [sequence] }
+      { schema: new DocumentSchema([sequence]).withUnknownNodes() }
     )
   expect(() => check(['first', 'second'])).not.toThrow()
   expect(() => check(['first', 'second', 'rest', 'rest'])).not.toThrow()
@@ -108,20 +119,32 @@ test('custom nodes declare roles and conflicting declarations do not poison a co
     children: { kind: 'leaf' }
   })
   const context = new DocumentContext(input, {
-    definitions: [...definitions, custom]
+    schema: new DocumentSchema([...definitions, custom]).withUnknownNodes()
   })
   const conflict = defineNode('custom', valid, {
     role: 'block',
     children: { kind: 'leaf' }
   })
-  expect(() => context.validateDefinitions([conflict])).toThrow(/Conflicting/)
-  expect(() => context.validateDefinitions([custom])).not.toThrow()
   expect(() =>
-    context.validateDefinitions([
-      defineNode('custom', () => false, custom.structure)
-    ])
+    context.withSchema(new DocumentSchema([conflict]).withUnknownNodes())
+  ).toThrow(/Conflicting/)
+  expect(() =>
+    context.withSchema(
+      new DocumentSchema([...definitions, custom]).withUnknownNodes()
+    )
+  ).not.toThrow()
+  expect(() =>
+    context.withSchema(
+      new DocumentSchema([
+        defineNode('custom', () => false, custom.structure)
+      ]).withUnknownNodes()
+    )
   ).toThrow(/payload/)
-  expect(() => context.validateDefinitions([custom])).not.toThrow()
+  expect(() =>
+    context.withSchema(
+      new DocumentSchema([...definitions, custom]).withUnknownNodes()
+    )
+  ).not.toThrow()
 })
 
 test('all source nodes are snapshotted before a user validator executes', () => {
@@ -138,7 +161,7 @@ test('all source nodes are snapshotted before a user validator executes', () => 
   )
   const context = new DocumentContext(
     { source: '', children: [parent] },
-    { definitions: [mutate, definitions[0]] }
+    { schema: new DocumentSchema([mutate, definitions[0]]) }
   )
   expect(context.document.children[0].children!.map(node => node.kind)).toEqual(
     ['text']
@@ -167,12 +190,14 @@ test('definition metadata is copied and mutable structural definitions are reval
   }
   const context = new DocumentContext(
     { source: '', children: [node('text')] },
-    { definitions: [external] }
+    { schema: new DocumentSchema([external]) }
   )
-  context.validateDefinitions([external])
+  context.withSchema(new DocumentSchema([external]))
   expect(calls).toBe(2)
   external.validateData = () => false
-  expect(() => context.validateDefinitions([external])).toThrow(/payload/)
+  expect(() => context.withSchema(new DocumentSchema([external]))).toThrow(
+    /payload/
+  )
 })
 
 test('reentrant validators cannot drop a structure while leaving its cached identity', () => {
@@ -185,19 +210,23 @@ test('reentrant validators cannot drop a structure while leaving its cached iden
     children: { kind: 'roles', roles: ['opaque'], nonempty: false }
   })
   const trigger = defineNode('trigger', () => {
-    context.validateDefinitions([parent])
+    context.withSchema(new DocumentSchema([parent]).withUnknownNodes())
     return true
   })
-  expect(() => context.validateDefinitions([trigger])).toThrow(/not reentrant/)
-  context.validateDefinitions([parent])
+  expect(() =>
+    context.withSchema(new DocumentSchema([trigger]).withUnknownNodes())
+  ).toThrow(/not reentrant/)
+  context.withSchema(new DocumentSchema([parent]).withUnknownNodes())
   const custom = defineNode('custom', valid, {
     role: 'inline',
     children: { kind: 'leaf' }
   })
-  expect(() => context.validateDefinitions([custom])).toThrow(
-    /Invalid node children/
-  )
-  expect(() => context.validateDefinitions([parent])).not.toThrow()
+  expect(() =>
+    context.withSchema(new DocumentSchema([parent, custom]).withUnknownNodes())
+  ).toThrow(/Invalid node children/)
+  expect(() =>
+    context.withSchema(new DocumentSchema([parent]).withUnknownNodes())
+  ).not.toThrow()
 })
 
 test('owned definitions retain the same metadata values that were checked', () => {

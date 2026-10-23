@@ -1,5 +1,5 @@
 use super::{
-    GrammarBuilder, Plugin,
+    GrammarBuilder, SyntaxPlugin,
     block::BlockRule,
     inline::{InlineRule, TextRule},
 };
@@ -25,7 +25,7 @@ impl Grammar {
         self.data.definition.clone()
     }
 
-    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &Plugin> + Clone {
+    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &SyntaxPlugin> + Clone {
         self.data.definition.plugins()
     }
 
@@ -34,8 +34,7 @@ impl Grammar {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "code", rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BuildError {
     Duplicate { element: String },
     Missing { element: String },

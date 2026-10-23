@@ -1,12 +1,12 @@
 //! Shared snapshot and registration rules; handler execution belongs to consumers.
 use crate::{
-    Plugin, RegistrationError, RegistrationErrorKind as ErrorKind, RegistrationHandle,
+    PluginDeclaration, RegistrationError, RegistrationErrorKind as ErrorKind, RegistrationHandle,
     validate_names,
 };
 use std::{any::TypeId, collections::HashMap, sync::Arc};
 
 pub struct Handlers<H> {
-    declaration: Plugin,
+    declaration: PluginDeclaration,
     entries: Arc<HashMap<TypeId, H>>,
     types: Arc<HashMap<TypeId, &'static str>>,
 }
@@ -22,7 +22,7 @@ impl<H> Clone for Handlers<H> {
 }
 
 impl<H: Clone> Handlers<H> {
-    pub fn new(declaration: &Plugin) -> Self {
+    pub fn new(declaration: &PluginDeclaration) -> Self {
         Self {
             declaration: declaration.clone(),
             entries: Arc::default(),

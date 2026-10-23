@@ -1,7 +1,7 @@
-use markdown_ast::{Document, Node, Span, ValidationLimits};
-use markdown_codec::{Codec, CodecLimits, DecodeLimits};
+use markdown_ast::{MutableDocument, Node, Span, ValidationLimits};
+use markdown_codec::{Codec, CodecLimits};
 mod support;
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use support::{Paragraph, Text};
 
 fn codec() -> Codec {
@@ -21,14 +21,14 @@ fn deep_json(depth: usize) -> String {
         json.push_str("]}");
     }
     json.push_str("]}");
-    json.replace("<paragraph>", &Paragraph::type_key())
+    json.replace("<paragraph>", &Paragraph::wire_key())
 }
 
 #[test]
 fn bounded_input_and_output_accept_the_boundary() {
     let codec = codec();
     let span = Span { start: 0, end: 3 };
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "猫".into(),
         children: vec![Node::leaf(
             span,
@@ -39,7 +39,7 @@ fn bounded_input_and_output_accept_the_boundary() {
     };
 
     let bytes = codec.encode(&document).unwrap();
-    let limits = DecodeLimits {
+    let limits = CodecLimits {
         json_bytes: bytes.len(),
         document: ValidationLimits {
             source_bytes: 3,
@@ -51,25 +51,25 @@ fn bounded_input_and_output_accept_the_boundary() {
     assert_eq!(codec.decode_with_limits(&bytes, limits).unwrap(), document);
 
     for lower in [
-        DecodeLimits {
+        CodecLimits {
             json_bytes: bytes.len() - 1,
             ..limits
         },
-        DecodeLimits {
+        CodecLimits {
             document: ValidationLimits {
                 source_bytes: 2,
                 ..limits.document
             },
             ..limits
         },
-        DecodeLimits {
+        CodecLimits {
             document: ValidationLimits {
                 nodes: 0,
                 ..limits.document
             },
             ..limits
         },
-        DecodeLimits {
+        CodecLimits {
             document: ValidationLimits {
                 depth: 0,
                 ..limits.document
@@ -103,7 +103,7 @@ fn bounded_input_and_output_accept_the_boundary() {
         );
     }
 
-    let mut too_deep = at_limit;
+    let mut too_deep = at_limit.into_mutable();
     too_deep.children = vec![Node::new(
         Span { start: 0, end: 0 },
         Paragraph {},
@@ -125,7 +125,7 @@ fn bounded_input_and_output_accept_the_boundary() {
 fn ambiguous_or_unknown_input_is_rejected() {
     let codec = codec();
     let doc = codec
-        .encode(&Document {
+        .encode(&MutableDocument {
             source: "".into(),
             children: vec![Node::leaf(
                 Span { start: 0, end: 0 },
@@ -141,7 +141,7 @@ fn ambiguous_or_unknown_input_is_rejected() {
         json.replace("\"value\":\"\"", "\"value\":\"\",\"unknown\":0"),
         json.replace("\"start\":0", "\"start\":0,\"start\":0"),
         json.replace("\"data\":", "\"unknown\":0,\"data\":"),
-        json.replace(&Text::type_key(), "unregistered::Missing"),
+        json.replace(&Text::wire_key(), "unregistered::Missing"),
         format!("{json} true"),
     ] {
         assert!(codec.decode(bad.as_bytes()).is_err());
@@ -153,7 +153,7 @@ fn ambiguous_or_unknown_input_is_rejected() {
 #[test]
 fn overlapping_siblings_are_rejected_at_both_codec_boundaries() {
     let codec = codec();
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "abc".into(),
         children: vec![
             Node::leaf(Span { start: 0, end: 2 }, Text { value: "ab".into() }),
@@ -178,7 +178,7 @@ fn overlapping_siblings_are_rejected_at_both_codec_boundaries() {
 fn custom_limits_round_trip_above_the_default_source_budget() {
     let codec = codec();
     let source = "x".repeat(ValidationLimits::default().source_bytes + 1);
-    let document = Document {
+    let document = MutableDocument {
         children: vec![Node::leaf(
             Span {
                 start: 0,
@@ -218,7 +218,7 @@ fn custom_limits_round_trip_above_the_default_source_budget() {
 #[test]
 fn payload_limit_is_enforced_by_both_codec_directions() {
     let codec = codec();
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![
             Node::leaf(
@@ -265,8 +265,8 @@ fn decode_failures_keep_field_contract_span_and_nested_path() {
     let codec = codec();
     let mut json = serde_json::json!({
         "source": "é",
-        "children": [{"kind": Paragraph::type_key(), "data": {}, "span": {"start":0,"end":2}, "children": [
-            {"kind": Text::type_key(), "data":{"value":"é"}, "span":{"start":1,"end":2}}
+        "children": [{"kind": Paragraph::wire_key(), "data": {}, "span": {"start":0,"end":2}, "children": [
+            {"kind": Text::wire_key(), "data":{"value":"é"}, "span":{"start":1,"end":2}}
         ]}]
     });
     let error = codec
@@ -284,7 +284,7 @@ fn decode_failures_keep_field_contract_span_and_nested_path() {
         matches!(error.kind, ErrorKind::UnknownContract { ref name } if name == "missing.payload")
     );
     assert_eq!(error.path, [0, 0]);
-    json["children"][0]["children"][0]["kind"] = Text::type_key().into();
+    json["children"][0]["children"][0]["kind"] = Text::wire_key().into();
     json["children"][0]["children"][0]
         .as_object_mut()
         .unwrap()

@@ -1,5 +1,8 @@
-use super::{Budget, Grammar, Limits, ParseError, ParseState, block, inline, source::SourceView};
-use markdown_ast::{Document, ValidatedDocumentBuf, ValidationErrorKind, ValidationLimits};
+use super::{
+    Budget, Grammar, Limits, ParseError, ParseResource, ParseState, block, inline,
+    source::SourceView,
+};
+use markdown_ast::{Document, MutableDocument, ValidationErrorKind, ValidationLimits};
 
 pub struct Parser {
     grammar: Grammar,
@@ -20,27 +23,17 @@ impl Parser {
     }
 
     pub fn parse(&self, source: &str) -> Result<Document, ParseError> {
-        self.parse_validated(source)
-            .map(ValidatedDocumentBuf::into_document)
-    }
-
-    pub fn parse_inline(&self, source: &str) -> Result<Document, ParseError> {
-        self.parse_inline_validated(source)
-            .map(ValidatedDocumentBuf::into_document)
-    }
-
-    pub fn parse_validated(&self, source: &str) -> Result<ValidatedDocumentBuf, ParseError> {
         self.run(source, false)
     }
 
-    pub fn parse_inline_validated(&self, source: &str) -> Result<ValidatedDocumentBuf, ParseError> {
+    pub fn parse_inline(&self, source: &str) -> Result<Document, ParseError> {
         self.run(source, true)
     }
 
-    fn run(&self, source: &str, inline_only: bool) -> Result<ValidatedDocumentBuf, ParseError> {
+    fn run(&self, source: &str, inline_only: bool) -> Result<Document, ParseError> {
         let grammar = &self.grammar;
         if source.len() > self.limits.document.source_bytes {
-            return Err(ParseError::limit("source_bytes"));
+            return Err(ParseError::limit(ParseResource::SourceBytes));
         }
 
         let view = SourceView::new(source);
@@ -53,14 +46,14 @@ impl Parser {
             block::parse(&view, grammar, &mut budget, &mut state)?
         };
 
-        let document = Document {
+        let document = MutableDocument {
             source: source.into(),
             children,
         };
 
         let remaining_work = budget.remaining_work();
 
-        let document = ValidatedDocumentBuf::with_limits(
+        let document = Document::with_limits(
             document,
             ValidationLimits {
                 nodes: self.limits.document.nodes.min(remaining_work),
@@ -68,26 +61,19 @@ impl Parser {
             },
         )
         .map_err(|error| match error.kind {
-            ValidationErrorKind::SourceBytes => ParseError::limit("source_bytes"),
-            ValidationErrorKind::PayloadBytes => ParseError::limit("payload_bytes"),
+            ValidationErrorKind::SourceBytes => ParseError::limit(ParseResource::SourceBytes),
+            ValidationErrorKind::PayloadBytes => ParseError::limit(ParseResource::PayloadBytes),
             ValidationErrorKind::Nodes if remaining_work <= self.limits.document.nodes => {
-                ParseError::limit("work")
+                ParseError::limit(ParseResource::Work)
             }
-            ValidationErrorKind::Nodes => ParseError::limit("nodes"),
-            ValidationErrorKind::Depth => ParseError::limit("depth"),
+            ValidationErrorKind::Nodes => ParseError::limit(ParseResource::Nodes),
+            ValidationErrorKind::Depth => ParseError::limit(ParseResource::Depth),
             ValidationErrorKind::InvalidSpan | ValidationErrorKind::InvalidNode => {
-                let reason = error.to_string();
-                ParseError::InvalidDocument {
-                    path: error.path,
-                    start: error.span.map(|span| span.start),
-                    end: error.span.map(|span| span.end),
-                    payload_type: error.payload_type.map(str::to_owned),
-                    reason,
-                }
+                ParseError::InvalidDocument(error)
             }
         })?;
 
-        budget.spend(document.validated().node_count())?;
+        budget.spend(document.as_view().node_count())?;
 
         Ok(document)
     }

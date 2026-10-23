@@ -46,10 +46,10 @@ markdown-commonmark-text = { path = "packages/plugins/commonmark/crates/text" }
 markdown-extensions-contracts = { path = "packages/plugins/extensions/crates/contracts" }
 markdown-extensions-syntax = { path = "packages/plugins/extensions/crates/syntax" }
 markdown-extensions-text = { path = "packages/plugins/extensions/crates/text" }
-markdown-trap-contracts = { path = "packages/plugins/traq/crates/contracts" }
-markdown-trap-extraction = { path = "packages/plugins/traq/crates/extraction" }
-markdown-trap-syntax = { path = "packages/plugins/traq/crates/syntax" }
-markdown-trap-text = { path = "packages/plugins/traq/crates/text" }
+markdown-traq-contracts = { path = "packages/plugins/traq/crates/contracts" }
+markdown-traq-extraction = { path = "packages/plugins/traq/crates/extraction" }
+markdown-traq-syntax = { path = "packages/plugins/traq/crates/syntax" }
+markdown-traq-text = { path = "packages/plugins/traq/crates/text" }
 traq-markdown-features = { path = "packages/sdk/crates/features", default-features = false }
 
 [profile.release]

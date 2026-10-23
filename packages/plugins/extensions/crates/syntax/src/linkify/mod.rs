@@ -3,13 +3,14 @@ use markdown_commonmark_contracts::LinkForm;
 mod path;
 mod recognize;
 
-use markdown_parser::{
-    Node, NodeKind,
-    engine::{
-        Plugin,
-        inline::{InlineAction, InlineMatch, InlineRule, TextMatch, TextRule},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::Node;
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::inline::InlineAction;
+use markdown_parser::rules::inline::InlineMatch;
+use markdown_parser::rules::inline::InlineRule;
+use markdown_parser::rules::inline::TextMatch;
+use markdown_parser::rules::inline::TextRule;
 
 fn inline_rule(recognizer: std::sync::Arc<recognize::Recognizer>) -> InlineRule {
     InlineRule::new(b"hHfF", move |input, budget| {
@@ -40,7 +41,7 @@ fn inline_rule(recognizer: std::sync::Arc<recognize::Recognizer>) -> InlineRule 
         Ok(Some(InlineMatch {
             end: range.end,
             action: InlineAction::Node {
-                kind: NodeKind::new(markdown_commonmark_contracts::Link {
+                payload: AnyPayload::new(markdown_commonmark_contracts::Link {
                     destination: found.destination,
                     title: None,
                     form: LinkForm::Linkify,
@@ -69,7 +70,7 @@ fn text_rule(recognizer: std::sync::Arc<recognize::Recognizer>) -> TextRule {
                 Ok(TextMatch {
                     start,
                     end,
-                    kind: NodeKind::new(markdown_commonmark_contracts::Link {
+                    payload: AnyPayload::new(markdown_commonmark_contracts::Link {
                         destination: found.destination,
                         title: None,
                         form: LinkForm::Linkify,
@@ -88,7 +89,7 @@ fn text_rule(recognizer: std::sync::Arc<recognize::Recognizer>) -> TextRule {
 /// A reusable recognizer and its typed grammar anchors. Product profiles supply
 /// the accepted top-level-domain pattern; this crate does not consult DNS.
 pub struct Syntax {
-    pub plugin: Plugin,
+    pub plugin: SyntaxPlugin,
     pub inline: InlineRule,
     pub text: TextRule,
 }
@@ -97,7 +98,7 @@ impl Syntax {
         let recognizer = std::sync::Arc::new(recognize::Recognizer::new(tld_pattern)?);
         let inline = inline_rule(recognizer.clone());
         let text = text_rule(recognizer);
-        let mut plugin = Plugin::new(&markdown_extensions_contracts::declarations().linkify);
+        let mut plugin = SyntaxPlugin::new(&markdown_extensions_contracts::declarations().linkify);
         plugin.add(&inline);
         plugin.add(&text);
         Ok(Self {

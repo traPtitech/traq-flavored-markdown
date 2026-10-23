@@ -101,8 +101,8 @@ func TestSourceTextChecksByteEdits(t *testing.T) {
 
 func TestSnapshotPreservesSourceAndOwnsItsBytes(t *testing.T) {
 	source := "\ufeffA\r\n\x00é😀"
-	document := &Document{Source: source, Children: []Node{{Kind: "text", Span: Span{End: uint32(len(source))}, Data: &testPayload{}}}}
-	validated, err := ValidateDocument(document, testFactory)
+	document := &MutableDocument{Source: source, Children: []MutableNode{{Kind: "text", Span: Span{End: uint32(len(source))}, Data: &testPayload{}}}}
+	validated, err := NewDocument(document, testFactory)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,22 +114,22 @@ func TestSnapshotPreservesSourceAndOwnsItsBytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if received.Source != source || received.Children[0].Span.End != uint32(len(source)) {
+	if received.Source() != source || received.Children()[0].Span().End != uint32(len(source)) {
 		t.Fatal("snapshot changed")
 	}
 	paired, err := DecodeDocument([]byte(`{"source":"\ud83d\ude00","children":[]}`), testFactory)
-	if err != nil || paired.Source != "😀" {
+	if err != nil || paired.Source() != "😀" {
 		t.Fatalf("%+v %v", paired, err)
 	}
 }
 
 func TestSnapshotRejectsCycleAndInvalidGoUTF8(t *testing.T) {
-	nodes := []Node{{Kind: "text", Span: Span{End: 1}, Data: &testPayload{}}}
+	nodes := []MutableNode{{Kind: "text", Span: Span{End: 1}, Data: &testPayload{}}}
 	nodes[0].Children = nodes
-	if _, err := ValidateDocument(&Document{Source: "x", Children: nodes}, testFactory); err == nil {
+	if _, err := NewDocument(&MutableDocument{Source: "x", Children: nodes}, testFactory); err == nil {
 		t.Fatal("accepted cycle")
 	}
-	if _, err := ValidateDocument(&Document{Source: string([]byte{255})}, testFactory); err == nil {
+	if _, err := NewDocument(&MutableDocument{Source: string([]byte{255})}, testFactory); err == nil {
 		t.Fatal("accepted invalid UTF-8")
 	}
 }

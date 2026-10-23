@@ -1,5 +1,5 @@
 use super::{BlockInput, BlockMatch, DraftContent, DraftNode, LineIndex};
-use crate::{NodeKind, ParseError, Span, engine::source::SourceView};
+use crate::{AnyPayload, ParseError, Span, engine::source::SourceView};
 use std::ops::Range;
 
 impl BlockInput<'_> {
@@ -34,25 +34,25 @@ impl BlockInput<'_> {
     pub fn matched(
         &self,
         end: LineIndex,
-        kind: NodeKind,
+        payload: AnyPayload,
         content: DraftContent,
     ) -> Result<BlockMatch, ParseError> {
         Ok(BlockMatch::node(
             end,
-            DraftNode::new(self.span_until(end)?, kind, content),
+            DraftNode::new(self.span_until(end)?, payload, content),
         ))
     }
 
-    pub fn leaf(&self, end: LineIndex, kind: NodeKind) -> Result<BlockMatch, ParseError> {
-        self.matched(end, kind, DraftContent::Leaf)
+    pub fn leaf(&self, end: LineIndex, payload: AnyPayload) -> Result<BlockMatch, ParseError> {
+        self.matched(end, payload, DraftContent::Leaf)
     }
 
     pub fn blocks(
         &self,
         end: LineIndex,
-        kind: NodeKind,
+        payload: AnyPayload,
         body: Range<LineIndex>,
     ) -> Result<BlockMatch, ParseError> {
-        self.matched(end, kind, DraftContent::Blocks(self.body(body)?))
+        self.matched(end, payload, DraftContent::Blocks(self.body(body)?))
     }
 }

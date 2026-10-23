@@ -40,21 +40,21 @@ func shapeFactory(kind string) Payload {
 	return &shapePayload{structure: shape}
 }
 
-func shapeNode(kind string, children ...Node) Node {
-	return Node{Kind: kind, Data: shapeFactory(kind), Children: children}
+func shapeNode(kind string, children ...MutableNode) MutableNode {
+	return MutableNode{Kind: kind, Data: shapeFactory(kind), Children: children}
 }
 
 func TestGeneratedChildPoliciesAtDecodeBoundary(t *testing.T) {
 	text := shapeNode("text")
 	paragraph := shapeNode("paragraph", text)
-	for _, node := range []Node{
+	for _, node := range []MutableNode{
 		text,
 		paragraph,
 		shapeNode("list", shapeNode("item", paragraph)),
 		shapeNode("any", shapeNode("opaque")),
 		shapeNode("opaque-parent", shapeNode("opaque")),
 	} {
-		raw, err := json.Marshal(Document{Children: []Node{node}})
+		raw, err := json.Marshal(MutableDocument{Children: []MutableNode{node}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -62,7 +62,7 @@ func TestGeneratedChildPoliciesAtDecodeBoundary(t *testing.T) {
 			t.Fatalf("valid %s: %v", node.Kind, err)
 		}
 	}
-	cases := map[string]Node{
+	cases := map[string]MutableNode{
 		"leaf children":                shapeNode("text", text),
 		"wrong role":                   shapeNode("paragraph", paragraph),
 		"unknown role":                 shapeNode("paragraph", shapeNode("opaque")),
@@ -73,7 +73,7 @@ func TestGeneratedChildPoliciesAtDecodeBoundary(t *testing.T) {
 	}
 	for name, node := range cases {
 		t.Run(name, func(t *testing.T) {
-			raw, err := json.Marshal(Document{Children: []Node{node}})
+			raw, err := json.Marshal(MutableDocument{Children: []MutableNode{node}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -93,22 +93,22 @@ func TestGeneratedSequencePolicyValidatesPrefixAndArity(t *testing.T) {
 	cases := []struct {
 		name     string
 		columns  []string
-		children []Node
+		children []MutableNode
 		valid    bool
 	}{
-		{"header only", []string{"left", "none"}, []Node{header}, true},
-		{"header and row", []string{"left", "none"}, []Node{header, row}, true},
-		{"zero columns", nil, []Node{header}, false},
-		{"missing header", []string{"left", "none"}, []Node{row}, false},
-		{"header after header", []string{"left", "none"}, []Node{header, header}, false},
-		{"narrow header", []string{"left", "none"}, []Node{shapeNode("header", cell)}, false},
-		{"narrow body", []string{"left", "none"}, []Node{header, shapeNode("row", cell)}, false},
+		{"header only", []string{"left", "none"}, []MutableNode{header}, true},
+		{"header and row", []string{"left", "none"}, []MutableNode{header, row}, true},
+		{"zero columns", nil, []MutableNode{header}, false},
+		{"missing header", []string{"left", "none"}, []MutableNode{row}, false},
+		{"header after header", []string{"left", "none"}, []MutableNode{header, header}, false},
+		{"narrow header", []string{"left", "none"}, []MutableNode{shapeNode("header", cell)}, false},
+		{"narrow body", []string{"left", "none"}, []MutableNode{header, shapeNode("row", cell)}, false},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
 			table := shapeNode("table", test.children...)
 			table.Data.(*shapePayload).Alignments = test.columns
-			raw, err := json.Marshal(Document{Children: []Node{table}})
+			raw, err := json.Marshal(MutableDocument{Children: []MutableNode{table}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -131,7 +131,7 @@ func TestSequenceWithoutArity(t *testing.T) {
 		{[]string{"second", "first"}, false},
 		{[]string{"first", "second", "first"}, false},
 	} {
-		var children []Node
+		var children []MutableNode
 		for _, kind := range test.kinds {
 			children = append(children, shapeNode(kind))
 		}

@@ -23,7 +23,7 @@ type StructuredPayload interface {
 	NodeStructure() NodeStructure
 }
 
-func validateStructure(node *Node, path string) error {
+func validateStructure(node *MutableNode, path string) error {
 	payload, known := node.Data.(StructuredPayload)
 	if !known {
 		return nil

@@ -1,12 +1,12 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Heading, Paragraph};
 use traq_markdown_grammar::bindings;
-use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
+use traq_markdown_processing::rendering::{PlainTextOptions, PlainTextRenderer};
 
 #[test]
 fn plain_text_renderer_preserves_all_plain_text_fixtures() {
     let parser = bindings::parser("traq.v1").unwrap();
-    let renderer = PlainTextRenderer::new(RendererOptions {
+    let renderer = PlainTextRenderer::new(PlainTextOptions {
         origin: "https://q.example.test".into(),
         ..Default::default()
     })
@@ -29,7 +29,7 @@ fn plain_text_renderer_preserves_all_plain_text_fixtures() {
 
 #[test]
 fn rendering_depends_on_the_supplied_ast_not_a_grammar_version() {
-    let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
+    let renderer = PlainTextRenderer::new(PlainTextOptions::default()).unwrap();
     for version in ["commonmark", "traq.v1", "commonmark"] {
         let document = bindings::parser(version)
             .unwrap()
@@ -48,7 +48,7 @@ fn rendering_depends_on_the_supplied_ast_not_a_grammar_version() {
 #[test]
 fn plain_text_renderer_keeps_math_delimiters_and_explicit_link_destinations() {
     let parser = bindings::parser("traq.v1").unwrap();
-    let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
+    let renderer = PlainTextRenderer::new(PlainTextOptions::default()).unwrap();
 
     for (source, expected) in [
         ("$x + y$ and $x$", "$x + y$ and $x$"),
@@ -66,7 +66,7 @@ fn plain_text_renderer_keeps_math_delimiters_and_explicit_link_destinations() {
 
 #[test]
 fn renderer_rejects_invalid_contract_children_before_rendering() {
-    let document = Document {
+    let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::new(
             Span { start: 0, end: 1 },
@@ -75,7 +75,7 @@ fn renderer_rejects_invalid_contract_children_before_rendering() {
         )],
     };
 
-    let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
+    let renderer = PlainTextRenderer::new(PlainTextOptions::default()).unwrap();
     assert_eq!(
         renderer.render(&document).map_err(|error| error.code()),
         Err("invalid_node")

@@ -1,7 +1,8 @@
 #[path = "support/html.rs"]
 mod html;
 use markdown_commonmark::{Syntax, html as syntax_html};
-use markdown_parser::{GrammarBuilder, Parser};
+use markdown_parser::GrammarBuilder;
+use markdown_parser::Parser;
 use serde_json::Value;
 
 fn parser() -> Parser {
@@ -58,7 +59,7 @@ fn code_info_is_decoded_once_before_rendering() {
     let source = "```a\\+b&amp;amp; extra\nbody\n```";
     let document = parser().parse(source).unwrap();
     let code = document.children[0]
-        .get::<markdown_commonmark_contracts::CodeBlock>()
+        .payload::<markdown_commonmark_contracts::CodeBlock>()
         .unwrap();
     assert_eq!(code.info, "a+b&amp; extra");
     assert_eq!(document.source, source);

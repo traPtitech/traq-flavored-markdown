@@ -185,7 +185,7 @@ func (value *HtmlInline) UnmarshalJSON(raw []byte) error {
 
 type Image struct {
 	Destination string  `json:"destination"`
-	LabelSource string  `json:"label_source"`
+	LabelSource string  `json:"labelSource"`
 	Title       *string `json:"title"`
 }
 
@@ -196,7 +196,7 @@ func (value *Image) UnmarshalJSON(raw []byte) error {
 	}
 	type wire Image
 	var decoded wire
-	if err := contract.Fields(object, "destination", "label_source", "title"); err != nil {
+	if err := contract.Fields(object, "destination", "labelSource", "title"); err != nil {
 		return err
 	}
 	if raw, present := object["destination"]; present {
@@ -206,12 +206,12 @@ func (value *Image) UnmarshalJSON(raw []byte) error {
 	} else {
 		return fmt.Errorf("missing required field %q", "destination")
 	}
-	if raw, present := object["label_source"]; present {
+	if raw, present := object["labelSource"]; present {
 		if err := (contract.Decode[string])(raw, &decoded.LabelSource); err != nil {
-			return fmt.Errorf("field %q: %w", "label_source", err)
+			return fmt.Errorf("field %q: %w", "labelSource", err)
 		}
 	} else {
-		return fmt.Errorf("missing required field %q", "label_source")
+		return fmt.Errorf("missing required field %q", "labelSource")
 	}
 	if raw, present := object["title"]; present {
 		if err := (func(raw json.RawMessage, value **string) error {

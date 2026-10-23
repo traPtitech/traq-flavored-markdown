@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
-	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
+	traq "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
-func parserFor(t *testing.T, preset Preset) *Parser {
+func parserFor(t *testing.T, preset GrammarPresetID) *Parser {
 	t.Helper()
 	bytes, err := os.ReadFile("../dist/parser.wasm")
 	if err != nil {
@@ -35,7 +35,7 @@ func parserFor(t *testing.T, preset Preset) *Parser {
 }
 
 func TestFixtureAST(t *testing.T) {
-	p := parserFor(t, PresetTraqV1)
+	p := parserFor(t, GrammarTraqV1)
 	raw, err := os.ReadFile("../../../tests/fixtures/commonmark-0.31.2.json")
 	if err != nil {
 		t.Fatal(err)
@@ -107,20 +107,20 @@ func TestFixtureAST(t *testing.T) {
 
 func TestLifecycleAndBounds(t *testing.T) {
 	ctx := context.Background()
-	p := parserFor(t, PresetTraqV1)
-	common := parserFor(t, PresetCommonMark)
+	p := parserFor(t, GrammarTraqV1)
+	common := parserFor(t, GrammarCommonMark)
 	first, err := p.ParseInline(ctx, ":stamp:")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := first.Children[0].Data.(*trap.Stamp); !ok {
-		t.Fatalf("wrong payload %T", first.Children[0].Data)
+	if err := first.Children()[0].DecodePayload(&traq.Stamp{}); err != nil {
+		t.Fatal(err)
 	}
 	plain, err := common.ParseInline(ctx, ":stamp:")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plain.Children[0].Kind != commonmark.TextName {
+	if plain.Children()[0].Kind() != commonmark.TextName {
 		t.Fatal("commonmark used traq grammar")
 	}
 	for _, source := range []string{
@@ -135,7 +135,7 @@ func TestLifecycleAndBounds(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if first.Source != ":stamp:" {
+	if first.Source() != ":stamp:" {
 		t.Fatal("result aliases Wasm memory")
 	}
 	canceled, cancel := context.WithCancel(ctx)
@@ -158,7 +158,7 @@ func TestLifecycleAndBounds(t *testing.T) {
 }
 
 func TestConcurrentCalls(t *testing.T) {
-	p := parserFor(t, PresetTraqV1)
+	p := parserFor(t, GrammarTraqV1)
 	var wg sync.WaitGroup
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
@@ -170,7 +170,7 @@ func TestConcurrentCalls(t *testing.T) {
 					t.Error(err)
 					return
 				}
-				if got.Source != "**hello** 日本語" {
+				if got.Source() != "**hello** 日本語" {
 					t.Error("wrong source")
 				}
 			}
@@ -192,7 +192,7 @@ func TestInitialization(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close(context.Background())
-	if _, err := r.NewParser(context.Background(), Preset("invalid")); err == nil {
+	if _, err := r.NewParser(context.Background(), GrammarPresetID("invalid")); err == nil {
 		t.Fatal("accepted invalid preset")
 	}
 }
@@ -211,7 +211,7 @@ func TestContractMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close(context.Background())
-	if _, err := r.NewParser(context.Background(), PresetTraqV1); err == nil ||
+	if _, err := r.NewParser(context.Background(), GrammarTraqV1); err == nil ||
 		!strings.Contains(err.Error(), "does not match") {
 		t.Fatal(err)
 	}

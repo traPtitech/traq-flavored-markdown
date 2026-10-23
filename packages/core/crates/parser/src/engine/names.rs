@@ -1,4 +1,4 @@
-use super::{BuildError, Plugin};
+use super::{BuildError, SyntaxPlugin};
 use std::collections::HashSet;
 
 fn duplicate(scope: String, name: &str) -> BuildError {
@@ -10,7 +10,7 @@ fn duplicate(scope: String, name: &str) -> BuildError {
 
 /// Only namespaces reached through the selected plugins participate.
 pub(super) fn validate<'a>(
-    plugins: impl Iterator<Item = &'a Plugin> + Clone,
+    plugins: impl Iterator<Item = &'a SyntaxPlugin> + Clone,
 ) -> Result<(), BuildError> {
     for plugin in plugins.clone() {
         let mut names = HashSet::new();

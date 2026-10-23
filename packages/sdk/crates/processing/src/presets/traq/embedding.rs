@@ -1,28 +1,19 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
-use markdown_ast::{Document, Node, Span, ValidatedDocument};
+use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Image, Link, Text};
-use markdown_trap_contracts::{Embedding, Reference};
+use markdown_traq_contracts::{Embedding, Reference, ReferenceKind};
 use serde::Serialize;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(rename_all = "snake_case")]
-pub enum LookupKind {
-    User,
-    Group,
-    Channel,
-}
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ReferenceEmbeddingCandidate {
     /// UTF-8 byte offsets into the original source, not rendered text.
     pub start: u32,
     pub end: u32,
     pub raw: String,
     pub name: String,
-    pub kind: LookupKind,
+    pub kind: ReferenceKind,
 }
 
 #[derive(Debug, Default, PartialEq, Serialize)]
@@ -36,14 +27,13 @@ pub struct ReferenceEmbeddingPlan {
     pub unembedded_text: String,
 }
 
-pub fn plan(document: &Document) -> crate::Result<ReferenceEmbeddingPlan> {
-    plan_validated(ValidatedDocument::new(document)?)
-}
-
 /// Reuse an immutable validation, including explicitly configured tree limits.
-pub fn plan_validated(document: ValidatedDocument<'_>) -> crate::Result<ReferenceEmbeddingPlan> {
+pub fn plan<'a>(
+    document: impl markdown_ast::DocumentInput<'a>,
+) -> crate::Result<ReferenceEmbeddingPlan> {
+    let document = document.into_view()?;
     let mut collector = Collector::default();
-    crate::collectors::collect(document, &mut collector)?;
+    markdown_extractor::collect(document, &mut collector)?;
     collector.finish(&document.document().source)
 }
 
@@ -57,20 +47,20 @@ impl Collector<'_> {
         finish(source, self.plan, self.edits)
     }
 }
-impl<'a> crate::collectors::Collector<'a> for Collector<'a> {
+impl<'a> markdown_extractor::Collector<'a> for Collector<'a> {
     type Scope = bool;
+    type Error = crate::Error;
     fn initial(&self) -> bool {
         true
     }
     fn observe(
         &mut self,
-        node: &'a Node,
-        source: &'a str,
+        context: markdown_extractor::AnalysisContext<'a>,
         allow_embedding: &bool,
     ) -> crate::Result<bool> {
         Ok(observe(
-            node,
-            source,
+            context.visit.node,
+            context.source,
             *allow_embedding,
             &mut self.plan,
             &mut self.edits,
@@ -85,11 +75,11 @@ pub(crate) fn observe<'a>(
     result: &mut ReferenceEmbeddingPlan,
     edits: &mut Vec<(Span, &'a str)>,
 ) -> bool {
-    if let Some(reference) = node.get::<Reference>() {
+    if let Some(reference) = node.payload::<Reference>() {
         edits.push((node.span, reference.label.as_str()));
-    } else if let Some(embedding) = node.get::<Embedding>() {
+    } else if let Some(embedding) = node.payload::<Embedding>() {
         edits.push((node.span, embedding.label.as_str()));
-    } else if allow_embedding && node.get::<Text>().is_some() {
+    } else if allow_embedding && node.payload::<Text>().is_some() {
         collect(
             source,
             node.span.start,
@@ -99,7 +89,7 @@ pub(crate) fn observe<'a>(
     }
 
     // Restore existing references in labels, but never look up new names inside links or images.
-    allow_embedding && node.get::<Link>().is_none() && node.get::<Image>().is_none()
+    allow_embedding && node.payload::<Link>().is_none() && node.payload::<Image>().is_none()
 }
 
 pub(crate) fn finish(
@@ -152,7 +142,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
                     position,
                     name_start,
                     name_start + length,
-                    LookupKind::Channel,
+                    ReferenceKind::Channel,
                     result,
                 );
             }
@@ -187,7 +177,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
             position,
             name_start,
             name_end,
-            LookupKind::User,
+            ReferenceKind::User,
             result,
         );
         push(
@@ -195,7 +185,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
             position,
             name_start,
             name_end,
-            LookupKind::Group,
+            ReferenceKind::Group,
             result,
         );
 
@@ -210,7 +200,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
                 position,
                 name_start,
                 name_start + prefix,
-                LookupKind::User,
+                ReferenceKind::User,
                 result,
             );
         }
@@ -222,7 +212,7 @@ fn push(
     start: usize,
     name_start: usize,
     end: usize,
-    kind: LookupKind,
+    kind: ReferenceKind,
     result: &mut Vec<ReferenceEmbeddingCandidate>,
 ) {
     result.push(ReferenceEmbeddingCandidate {

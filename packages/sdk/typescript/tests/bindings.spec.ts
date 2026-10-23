@@ -1,17 +1,19 @@
 import path from 'path'
 
+import { defineNode } from '@traq-flavored-markdown/core'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { goPayload } from '../../../../tools/contracts/typescript/go.ts'
+import { goPayload } from '../../../../tools/contracts/emitters/go.js'
+import { emitTypeScriptValidators } from '../../../../tools/contracts/emitters/typescript-validators.js'
+import { type Shape, shape } from '../../../../tools/contracts/model/schema.js'
 import {
-  type Shape,
-  shape
-} from '../../../../tools/contracts/typescript/schema.ts'
-import { emitTypeScriptValidators } from '../../../../tools/contracts/typescript/typescript-validators.ts'
-import { isKnownNode, names, nodes } from '../../dist/generated/nodes.js'
-import { isPreset, presets } from '../../dist/generated/presets.js'
-import { nodeContractsDirectory } from '../../scripts/node-contracts.ts'
+  definitions,
+  isKnownNode,
+  schema as sdkSchema
+} from '../../dist/generated/nodes.js'
+import { isGrammarPresetId, presets } from '../../dist/generated/presets.js'
+import { nodeContractsDirectory } from '../../scripts/node-contracts.js'
 
 const manifest = JSON.parse(
   await file(path.join(nodeContractsDirectory(), 'contracts.json')).text()
@@ -36,7 +38,9 @@ test('generated optional TypeScript guards enforce every exported payload shape'
     ([key, value]): [string, { required?: string[] }] => [key, value.schema]
   )) {
     const valid = example(shape(schema)) as Record<string, unknown>,
-      check = nodes.get(name)
+      check = Object.values(definitions).find(
+        definition => definition.kind === name
+      )?.validateData
     if (!check) throw new Error(`Missing generated validator: ${name}`)
     expect(check(valid)).toBeTruthy()
     expect(check({ ...valid, unexpected: true })).toBeFalsy()
@@ -48,9 +52,8 @@ test('generated optional TypeScript guards enforce every exported payload shape'
       expect(check({ ...valid, [field]: [] })).toBeFalsy()
     }
   }
-  const reference = nodes.get(names.Reference)
-  const cell = nodes.get(names.Cell)
-  if (!reference || !cell) throw new Error('Missing generated validator')
+  const reference = definitions.Reference.validateData
+  const cell = definitions.Cell.validateData
   expect(
     !reference({
       type: 'other',
@@ -61,25 +64,23 @@ test('generated optional TypeScript guards enforce every exported payload shape'
   expect(!cell({ alignment: 'other' })).toBeTruthy()
 })
 
-test('public node lookup cannot change the SDK type guard', () => {
+test('schema extensions cannot change the SDK type guard or public definitions', () => {
   const candidate = { kind: 'forged', data: {}, span: { start: 0, end: 0 } }
-  const publicNodes = nodes as Map<string, (data: unknown) => boolean>
   expect(isKnownNode(candidate)).toBe(false)
-  publicNodes.set(candidate.kind, () => true)
-  try {
-    expect(isKnownNode(candidate)).toBe(false)
-  } finally {
-    publicNodes.delete(candidate.kind)
-  }
+  const extended = sdkSchema.extend([defineNode('forged', () => true)])
+  expect(extended.isKnownNode(candidate)).toBe(true)
+  expect(isKnownNode(candidate)).toBe(false)
+  expect(Object.isFrozen(definitions)).toBe(true)
+  expect(Object.values(definitions).every(Object.isFrozen)).toBe(true)
 })
 
 test('published grammar preset values are immutable at runtime', () => {
   expect(Object.isFrozen(presets)).toBe(true)
   expect(Object.isFrozen(presets.traq)).toBe(true)
   expect(presets.traq.v1).toBe('traq.v1')
-  expect(isPreset(presets.commonmark)).toBe(true)
-  expect(isPreset(presets.traq.v1)).toBe(true)
-  expect(isPreset('traq.unknown')).toBe(false)
+  expect(isGrammarPresetId(presets.commonmark)).toBe(true)
+  expect(isGrammarPresetId(presets.traq.v1)).toBe(true)
+  expect(isGrammarPresetId('traq.unknown')).toBe(false)
 })
 
 test('unsupported schema constraints fail generation instead of weakening validation', () => {
@@ -112,6 +113,12 @@ test('unsupported schema constraints fail generation instead of weakening valida
     emitTypeScriptValidators([
       ['test/example@1', plain],
       ['other/example@1', { ...plain, title: 'ExampleData' }]
+    ])
+  ).not.toThrow()
+  expect(() =>
+    emitTypeScriptValidators([
+      ['test/example@1', plain],
+      ['other/example@1', plain]
     ])
   ).toThrow(/Duplicate generated payload type/)
 })

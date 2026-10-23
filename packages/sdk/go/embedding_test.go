@@ -35,7 +35,7 @@ func TestEmbeddingFixtures(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	identities := map[LookupKind]map[string]string{
+	identities := map[ReferenceKind]map[string]string{
 		"user": {
 			"a":                                "dfdff0c9-5de0-46ee-9721-2525e8bb3d44",
 			"takashi_trap":                     "dfdff0c9-5de0-46ee-9721-2525e8bb3d45",
@@ -52,12 +52,12 @@ func TestEmbeddingFixtures(t *testing.T) {
 		},
 	}
 
-	resolve := func(kind LookupKind, name string) (string, bool) {
+	resolve := func(kind ReferenceKind, name string) (string, bool) {
 		id, ok := identities[kind][name]
 		return id, ok
 	}
 
-	parser, err := runtime.NewParser(ctx, PresetTraqV1)
+	parser, err := runtime.NewParser(ctx, GrammarTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}

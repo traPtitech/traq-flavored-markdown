@@ -73,7 +73,7 @@
                   }
                 },
                 {
-                  "kind": "generic.strikethrough",
+                  "kind": "extensions.strikethrough",
                   "span": {
                     "end": 30,
                     "start": 20
@@ -103,7 +103,7 @@
                   }
                 },
                 {
-                  "kind": "generic.mark",
+                  "kind": "extensions.mark",
                   "span": {
                     "end": 39,
                     "start": 31
@@ -222,7 +222,7 @@
               }
             },
             {
-              "kind": "generic.strikethrough",
+              "kind": "extensions.strikethrough",
               "span": {
                 "end": 30,
                 "start": 20
@@ -252,7 +252,7 @@
               }
             },
             {
-              "kind": "generic.mark",
+              "kind": "extensions.mark",
               "span": {
                 "end": 39,
                 "start": 31
@@ -323,7 +323,7 @@
               "data": {},
               "children": [
                 {
-                  "kind": "generic.inline_math",
+                  "kind": "extensions.inline_math",
                   "span": {
                     "end": 7,
                     "start": 0
@@ -343,7 +343,7 @@
                   }
                 },
                 {
-                  "kind": "generic.inline_math",
+                  "kind": "extensions.inline_math",
                   "span": {
                     "end": 15,
                     "start": 12
@@ -362,7 +362,7 @@
         "Ok": {
           "children": [
             {
-              "kind": "generic.inline_math",
+              "kind": "extensions.inline_math",
               "span": {
                 "end": 7,
                 "start": 0
@@ -382,7 +382,7 @@
               }
             },
             {
-              "kind": "generic.inline_math",
+              "kind": "extensions.inline_math",
               "span": {
                 "end": 15,
                 "start": 12
@@ -405,7 +405,7 @@
         "Ok": {
           "children": [
             {
-              "kind": "generic.block_math",
+              "kind": "extensions.block_math",
               "span": {
                 "end": 15,
                 "start": 0
@@ -481,7 +481,7 @@
         "Ok": {
           "children": [
             {
-              "kind": "generic.table",
+              "kind": "extensions.table",
               "span": {
                 "end": 52,
                 "start": 0
@@ -494,7 +494,7 @@
               },
               "children": [
                 {
-                  "kind": "generic.table_header_row",
+                  "kind": "extensions.table_header_row",
                   "span": {
                     "end": 17,
                     "start": 0
@@ -502,7 +502,7 @@
                   "data": {},
                   "children": [
                     {
-                      "kind": "generic.cell",
+                      "kind": "extensions.cell",
                       "span": {
                         "end": 6,
                         "start": 2
@@ -522,7 +522,7 @@
                       ]
                     },
                     {
-                      "kind": "generic.cell",
+                      "kind": "extensions.cell",
                       "span": {
                         "end": 14,
                         "start": 9
@@ -544,7 +544,7 @@
                   ]
                 },
                 {
-                  "kind": "generic.row",
+                  "kind": "extensions.row",
                   "span": {
                     "end": 52,
                     "start": 33
@@ -552,7 +552,7 @@
                   "data": {},
                   "children": [
                     {
-                      "kind": "generic.cell",
+                      "kind": "extensions.cell",
                       "span": {
                         "end": 42,
                         "start": 35
@@ -582,7 +582,7 @@
                       ]
                     },
                     {
-                      "kind": "generic.cell",
+                      "kind": "extensions.cell",
                       "span": {
                         "end": 50,
                         "start": 45
@@ -590,7 +590,7 @@
                       "data": {},
                       "children": [
                         {
-                          "kind": "generic.inline_math",
+                          "kind": "extensions.inline_math",
                           "span": {
                             "end": 50,
                             "start": 45
@@ -689,7 +689,7 @@
               }
             },
             {
-              "kind": "generic.inline_math",
+              "kind": "extensions.inline_math",
               "span": {
                 "end": 50,
                 "start": 45
@@ -1748,7 +1748,7 @@
                   "data": {
                     "destination": "https://example.com/image.png",
                     "title": null,
-                    "label_source": "alt"
+                    "labelSource": "alt"
                   },
                   "children": [
                     {
@@ -1781,7 +1781,7 @@
               "data": {
                 "destination": "https://example.com/image.png",
                 "title": null,
-                "label_source": "alt"
+                "labelSource": "alt"
               },
               "children": [
                 {

@@ -1,10 +1,9 @@
 //! Source-preserving message text and attachment/citation extraction from one AST.
 use super::labels;
 use crate::links::{Target, TraqUrlClassifier};
-use markdown_ast::{Document, Node, Span, ValidatedDocument};
+use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Link, LinkForm};
-use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference};
-use markdown_trap_extraction::normalize_reference_id;
+use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Message {
@@ -24,14 +23,14 @@ impl Extractor {
         }
     }
 
-    pub fn extract(&self, document: &Document) -> crate::Result<Message> {
-        self.extract_validated(ValidatedDocument::new(document)?)
-    }
-
     /// Reuse an immutable validation, including explicitly configured tree limits.
-    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> crate::Result<Message> {
+    pub fn extract<'a>(
+        &self,
+        document: impl markdown_ast::DocumentInput<'a>,
+    ) -> crate::Result<Message> {
+        let document = document.into_view()?;
         let mut collector = Collector::new(self);
-        crate::collectors::collect(document, &mut collector)?;
+        markdown_extractor::collect(document, &mut collector)?;
         collector.finish(&document.document().source)
     }
 
@@ -42,20 +41,20 @@ impl Extractor {
         message: &mut Message,
         edits: &mut Vec<(Span, &'a str)>,
     ) {
-        if let Some(reference) = node.get::<Reference>() {
-            if normalize_reference_id(&reference.id).is_some() {
+        if let Some(reference) = node.payload::<Reference>() {
+            if reference.id.canonical().is_some() {
                 edits.push((node.span, reference.label.as_str()));
             }
-        } else if let Some(embedding) = node.get::<Embedding>() {
-            if let Some(id) = normalize_reference_id(&embedding.id) {
+        } else if let Some(embedding) = node.payload::<Embedding>() {
+            if let Some(id) = embedding.id.canonical() {
                 let label = labels::for_embedding(embedding.target);
                 match embedding.target {
-                    EmbeddingKind::File => message.attachments.push(id),
-                    EmbeddingKind::Message => message.citations.push(id),
+                    EmbeddingKind::File => message.attachments.push(id.to_string()),
+                    EmbeddingKind::Message => message.citations.push(id.to_string()),
                 }
                 edits.push((node.span, label));
             }
-        } else if let Some(link) = node.get::<Link>()
+        } else if let Some(link) = node.payload::<Link>()
             && let Some(target) = self.links.classify(&link.destination)
         {
             let label = labels::for_target(&target);
@@ -101,10 +100,16 @@ impl<'a, 'policy> Collector<'a, 'policy> {
     }
 }
 
-impl<'a> crate::collectors::Collector<'a> for Collector<'a, '_> {
+impl<'a> markdown_extractor::Collector<'a> for Collector<'a, '_> {
     type Scope = ();
+    type Error = crate::Error;
     fn initial(&self) {}
-    fn observe(&mut self, node: &'a Node, source: &'a str, _: &()) -> crate::Result<()> {
+    fn observe(
+        &mut self,
+        context: markdown_extractor::AnalysisContext<'a>,
+        _: &(),
+    ) -> crate::Result<()> {
+        let (node, source) = (context.visit.node, context.source);
         self.policy
             .observe(node, source, &mut self.message, &mut self.edits);
         Ok(())

@@ -1,8 +1,9 @@
 use markdown_parser::Parser;
-use traq_markdown_grammar::{
-    bindings::{Composition, bundled},
-    presets,
-};
+use traq_markdown_grammar::bindings::Composition;
+use traq_markdown_grammar::bindings::PresetId;
+use traq_markdown_grammar::bindings::RuleId;
+use traq_markdown_grammar::bindings::bundled;
+use traq_markdown_grammar::presets;
 
 #[test]
 fn bundled_compositions_preserve_presets_and_validate_untrusted_recipes() {
@@ -12,10 +13,10 @@ fn bundled_compositions_preserve_presets_and_validate_untrusted_recipes() {
         .enumerate()
     {
         assert_eq!(
-            catalog.describe()["presets"][index]["description"],
+            catalog.describe().presets[index].description,
             expected.describe()
         );
-        let recipe = catalog.preset_composition(index).unwrap();
+        let recipe = catalog.preset_composition(PresetId(index)).unwrap();
         let recipe: Composition =
             serde_json::from_str(&serde_json::to_string(&recipe).unwrap()).unwrap();
         let grammar = catalog.build(&recipe).unwrap();
@@ -38,7 +39,7 @@ fn bundled_compositions_preserve_presets_and_validate_untrusted_recipes() {
         duplicate.order[1] = duplicate.order[0];
         assert!(catalog.build(&duplicate).is_err());
         let mut unknown = recipe;
-        unknown.plugins[0].rules[0] = usize::MAX;
+        unknown.plugins[0].rules[0] = RuleId(usize::MAX);
         assert!(catalog.build(&unknown).is_err());
     }
 }
@@ -72,9 +73,9 @@ fn stored_grammar_names_select_independent_parsers_without_fallback() {
 #[test]
 fn named_grammars_share_native_compilations_and_sdk_names() {
     use traq_markdown_grammar::bindings;
-    assert_eq!(bindings::preset_exports(), bundled().exports["presets"]);
+    assert_eq!(bindings::preset_exports(), bundled().exports.presets);
     assert_eq!(
-        bindings::preset_exports(),
+        serde_json::to_value(bindings::preset_exports()).unwrap(),
         serde_json::json!({"commonmark": 0, "traq": {"v1": 1}})
     );
     let expected = [

@@ -17,7 +17,7 @@ pub enum ErrorCode {
 
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ErrorSpan {
     pub start: u32,
     pub end: u32,
@@ -25,7 +25,7 @@ pub struct ErrorSpan {
 
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Error {
     pub code: ErrorCode,
     pub message: String,
@@ -38,7 +38,7 @@ pub struct Error {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<ErrorSpan>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phase: Option<markdown_parser::engine::ParsePhase>,
+    pub phase: Option<ParsePhase>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -79,16 +79,19 @@ impl Error {
         } else {
             Self::new(ErrorCode::InvalidDocument, &error)
         };
-        reply.path = Some(
-            error
-                .path
-                .iter()
-                .fold(String::from("$"), |path, index| {
-                    format!("{path}.children[{index}]")
-                })
-                .into_boxed_str(),
-        );
+        reply.path = Some(wire_path(&error.path));
         reply.span = error.span.and_then(wire_span);
+        reply
+    }
+    pub fn encoding(error: markdown_codec::Error) -> Self {
+        if error.resource() == Some("json_bytes") {
+            return Self::limit("output_bytes");
+        }
+        let limited = error.resource().is_some();
+        let mut reply = Self::document(error);
+        if !limited {
+            reply.code = ErrorCode::InternalError;
+        }
         reply
     }
     pub fn processing(error: traq_markdown_processing::Error) -> Self {
@@ -119,21 +122,41 @@ impl Error {
         } else {
             Self::new(ErrorCode::InvalidDocument, validation)
         };
-        error.path = Some(
-            validation
-                .path
-                .iter()
-                .fold(String::from("$"), |path, index| {
-                    format!("{path}.children[{index}]")
-                })
-                .into_boxed_str(),
-        );
+        error.path = Some(wire_path(&validation.path));
         error.span = validation.span.and_then(wire_span);
         error.payload_type = validation.payload_type.map(Into::into);
         error
     }
     pub fn not_configured() -> Self {
         Self::new(ErrorCode::NotConfigured, "operation is not configured")
+    }
+}
+
+fn wire_path(indices: &[usize]) -> Box<str> {
+    indices
+        .iter()
+        .fold(String::from("$"), |path, index| {
+            format!("{path}.children[{index}]")
+        })
+        .into_boxed_str()
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ParsePhase {
+    Block,
+    Inline,
+    Text,
+}
+impl From<markdown_parser::ParsePhase> for ParsePhase {
+    fn from(phase: markdown_parser::ParsePhase) -> Self {
+        use markdown_parser::ParsePhase as Native;
+        match phase {
+            Native::Block => Self::Block,
+            Native::Inline => Self::Inline,
+            Native::Text => Self::Text,
+        }
     }
 }
 
@@ -148,10 +171,7 @@ impl From<traq_markdown_grammar::ParseError> for Error {
     fn from(error: traq_markdown_grammar::ParseError) -> Self {
         use traq_markdown_grammar::ParseError;
         match error {
-            ParseError::InvalidUtf8 => {
-                Self::new(ErrorCode::InvalidUtf8, "source is not valid UTF-8")
-            }
-            ParseError::ResourceLimit { resource } => Self::limit(&resource),
+            ParseError::ResourceLimit { resource } => Self::limit(resource.as_str()),
             ParseError::InternalError => {
                 Self::new(ErrorCode::InternalError, "parser invariant failed")
             }
@@ -162,30 +182,14 @@ impl From<traq_markdown_grammar::ParseError> for Error {
                 reason,
             } => {
                 let mut reply = Self::new(ErrorCode::InternalError, reason);
-                reply.phase = Some(phase);
+                reply.phase = Some(phase.into());
                 reply.rule = rule.map(String::into_boxed_str);
                 reply.offset = position.try_into().ok();
                 reply
             }
-            ParseError::InvalidDocument {
-                path,
-                start,
-                end,
-                payload_type,
-                reason,
-            } => {
-                let mut reply = Self::new(ErrorCode::InternalError, reason);
-                reply.path = Some(
-                    path.iter()
-                        .fold(String::from("$"), |path, index| {
-                            format!("{path}.children[{index}]")
-                        })
-                        .into_boxed_str(),
-                );
-                reply.span = start
-                    .zip(end)
-                    .and_then(|(start, end)| wire_span(markdown_ast::Span { start, end }));
-                reply.payload_type = payload_type.map(String::into_boxed_str);
+            ParseError::InvalidDocument(validation) => {
+                let mut reply = Self::validation(&validation);
+                reply.code = ErrorCode::InternalError;
                 reply
             }
         }
@@ -200,7 +204,7 @@ pub struct Configuration {
 
 #[derive(serde::Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProcessorConfiguration {
     pub preset: String,
     #[serde(default)]
@@ -246,7 +250,7 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                     vec![],
                     Output::Configuration,
                 )
-                .request_schema("RendererOptions"),
+                .request_schema("PlainTextOptions"),
             ),
             (
                 "parse",
@@ -306,7 +310,7 @@ mod tests {
         ] {
             let wire = serde_json::to_value(error).unwrap();
             assert_eq!(wire["code"], "invalid_document");
-            assert_eq!(wire["payload_type"], "example::Heading");
+            assert_eq!(wire["payloadType"], "example::Heading");
             assert_eq!(wire["path"], "$.children[1].children[2]");
             assert_eq!(wire["span"], serde_json::json!({"start": 3, "end": 7}));
         }

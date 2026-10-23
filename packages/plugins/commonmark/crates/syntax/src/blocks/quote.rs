@@ -1,13 +1,12 @@
 use super::Interrupt;
 use super::{markers::*, paragraph::paragraph_start};
 
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch, DraftNode},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::DraftNode;
 
 pub fn parse(
     input: &BlockInput<'_>,
@@ -50,7 +49,7 @@ pub fn parse(
         end,
         DraftNode::blocks(
             source.span_for(lines[first].start..lines[end - 1].end)?,
-            NodeKind::new(markdown_commonmark_contracts::Blockquote {}),
+            AnyPayload::new(markdown_commonmark_contracts::Blockquote {}),
             view,
         ),
     )))

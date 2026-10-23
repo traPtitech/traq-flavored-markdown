@@ -119,7 +119,7 @@ fn process_rule(
             result.push(Token {
                 start,
                 end,
-                kind: TokenKind::Atom(found.kind, found.children),
+                kind: TokenKind::Atom(found.payload, found.children),
             });
 
             begin = end;

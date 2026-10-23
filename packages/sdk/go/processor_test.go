@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"bytes"
 	"context"
 	"reflect"
 	"strings"
@@ -16,7 +17,7 @@ func TestFusedProcessing(t *testing.T) {
 	defer runtime.Close(ctx)
 	origin := "https://q.example.test"
 	source := "**hello**\n\n" + origin + "/files/00000000-0000-0000-0000-000000000001"
-	parser, err := runtime.NewParser(ctx, PresetTraqV1)
+	parser, err := runtime.NewParser(ctx, GrammarTraqV1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,11 +25,11 @@ func TestFusedProcessing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	renderer, err := runtime.NewPlainTextRenderer(ctx, RendererOptions{Origin: origin})
+	renderer, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{Origin: origin})
 	if err != nil {
 		t.Fatal(err)
 	}
-	processor, err := runtime.NewProcessor(ctx, PresetTraqV1, ProcessorOptions{Origin: origin})
+	processor, err := runtime.NewProcessor(ctx, GrammarTraqV1, ProcessorOptions{Origin: origin})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,11 +54,11 @@ func TestFusedProcessing(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(result.Document, document) || !reflect.DeepEqual(result.Extraction, *extraction) || result.PlainText != text {
+		if !bytes.Equal(result.Document.JSON(), document.JSON()) || !reflect.DeepEqual(result.Extraction, *extraction) || result.PlainText != text {
 			t.Fatalf("fused result differs: %+v", result)
 		}
 	}
-	preserved, err := runtime.NewProcessor(ctx, PresetTraqV1, ProcessorOptions{Whitespace: WhitespacePolicyPreserve})
+	preserved, err := runtime.NewProcessor(ctx, GrammarTraqV1, ProcessorOptions{Whitespace: WhitespacePolicyPreserve})
 	if err != nil {
 		t.Fatal(err)
 	}

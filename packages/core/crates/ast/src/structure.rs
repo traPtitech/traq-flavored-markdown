@@ -50,7 +50,7 @@ impl PayloadType {
         }
     }
     fn matches(self, node: &Node) -> bool {
-        (self.id)() == node.data_type_id()
+        (self.id)() == node.payload_type_id()
     }
 }
 
@@ -135,7 +135,7 @@ impl NodeStructure {
                 for (index, child) in children.iter().enumerate() {
                     if !types.iter().any(|kind| kind.matches(child)) {
                         return Err(PayloadError::new("children with allowed payload types")
-                            .actual(format!("child {index}: {}", child.data_type_name())));
+                            .actual(format!("child {index}: {}", child.payload_type_name())));
                     }
                 }
                 Ok(())
@@ -162,7 +162,7 @@ impl NodeStructure {
                     let expected = prefix.get(index).unwrap_or(rest);
                     if !expected.matches(child) {
                         return Err(PayloadError::new("children matching the declared sequence")
-                            .actual(format!("child {index}: {}", child.data_type_name())));
+                            .actual(format!("child {index}: {}", child.payload_type_name())));
                     }
                     if let Some(arity) = arity
                         && child.children.len() != arity

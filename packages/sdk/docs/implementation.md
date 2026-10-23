@@ -33,8 +33,9 @@ managed source files, so generation and stale-output checks use the same plan.
 
 Payload guards alone do not validate tree shape or source spans. TypeScript
 `DocumentContext` checks and owns an immutable snapshot before analysis or
-rendering. Rust has borrowed and owned validated documents; Go's validated owner
-retains a checked wire snapshot. These values allow consumers to reuse the
+rendering against an independent `DocumentSchema`. Parsing and processing return
+this owner by default. Rust uses `Document` and borrowed `DocumentView`; Go's
+`Document` retains a read-only tree and checked wire snapshot. These values allow consumers to reuse the
 boundary guarantee. User-owned mutable trees are not frozen or cached by identity.
 Known parent constraints apply to custom nodes as well; custom TypeScript nodes
 must declare their role before the context is validated. The Wasm wire codec
@@ -46,7 +47,7 @@ accepts the SDK's closed set of built-in contracts.
 shapes, success categories, required exports, and error codes. Generated host
 descriptors are consumed by [TypeScript transport](../typescript/src/runtime/transport.ts)
 and the core Go binding. Each reply has exactly one outcome: `{ ok: value }` or
-`{ error: { code, message, resource?, path?, offset?, span?, phase?, rule?, payload_type? } }`.
+`{ error: { code, message, resource?, path?, offset?, span?, phase?, rule?, payloadType? } }`.
 The generated error schema validates both host decoders; rule failures retain
 their parser phase, registered rule, payload type, and source location.
 
@@ -85,23 +86,26 @@ same native document to extraction and plain-text rendering before encoding the
 combined response. Host-side validated snapshots still serve repeated independent
 operations; they do not imply a persistent native document handle.
 
-Native collectors share one traversal for references, source-preserving message
+Core `Collector` and typed payload handlers share `AnalysisContext` with source,
+node position, parent, depth, and scoped state. SDK collectors share one traversal for references, source-preserving message
 text, source edits, and reference-embedding candidates. Native display plain text
-is a separate consumer. The bounded renderer writes into a sink and captures
+is a separate consumer. Canonical reference identity is parsed once in the native payload and reused by
+extraction, source text, and plain text; the authored ID is retained losslessly.
+The bounded renderer writes into a sink and captures
 children only for handlers that transform their output.
 Its named whitespace policy selects collapsed display text or preserved spacing.
 `TraqUrlClassifier` classifies absolute file and message URLs by a configured
 lexical prefix; an empty origin disables it. It does not resolve relative URLs.
 
-TypeScript separates [message analysis](../typescript/src/messages/analysis.ts),
-[resource-card classification](../typescript/src/messages/cards.ts),
-[reference embedding](../typescript/src/messages/reference-embedding.ts),
-[display policy](../typescript/src/profiles/traq.ts), and
-[renderer assembly](../typescript/src/renderer/composition.ts). The default renderer
-entrypoint adds standard highlighting and math adapters; composition does not
-import either adapter. `messageRenderers.prepare`
-shares one context and analysis between standard and condensed views. A render
-plan holds node selections, omissions, replacement child text, and separators.
+TypeScript separates [message analysis](../typescript/src/traq/messages/analysis.ts),
+[resource-card classification](../typescript/src/traq/messages/cards.ts),
+[reference embedding](../typescript/src/traq/messages/reference-embedding.ts),
+[display policy](../typescript/src/traq/profile/options.ts), and
+[renderer assembly](../typescript/src/renderer/index.ts). The renderer entrypoint has no highlighting or math dependencies;
+`adapters/withDefaultAdapters` explicitly injects those optional integrations. `messageRenderers.prepare`
+shares one context and analysis between standard and condensed views. Semantic analysis retains links and resource targets. Each view independently
+turns those facts into a render plan with node selections, omissions, replacement
+child text, and separators.
 
 Every visible node, including table rows and cells, passes through the same
 renderer dispatcher. `renderChildren` applies node-bound replacement before

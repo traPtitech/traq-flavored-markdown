@@ -29,31 +29,63 @@ export function allowsOwner(source: PackageName, destination: PackageName) {
   )
 }
 
-/** Capability boundaries inside an owner, independent of npm packaging. */
-export const crateRestrictions: Readonly<Record<string, readonly string[]>> = {
-  'traq-markdown-processing': [
-    'markdown-parser',
-    'markdown-codec',
-    'traq-markdown-grammar',
-    'traq-markdown-wasm'
-  ],
-  'markdown-trap-text': [
-    'markdown-parser',
-    'markdown-codec',
-    'traq-markdown-grammar',
-    'traq-markdown-wasm'
-  ],
-  'markdown-trap-extraction': [
-    'markdown-parser',
-    'markdown-codec',
-    'traq-markdown-grammar',
-    'traq-markdown-wasm'
-  ],
-  'markdown-trap-contracts': [
-    'markdown-parser',
-    'markdown-codec',
-    'traq-markdown-grammar',
-    'traq-markdown-wasm'
-  ],
-  'markdown-trap-syntax': ['traq-markdown-grammar', 'traq-markdown-wasm']
+/** Capability boundaries apply to every production crate, including plugin layers. */
+const engines = [
+  'markdown-parser',
+  'markdown-codec',
+  'markdown-renderer',
+  'markdown-extractor'
+] as const
+const assemblies = [
+  'traq-markdown-grammar',
+  'traq-markdown-processing',
+  'traq-markdown-wasm'
+] as const
+const without = (names: readonly string[], ...allowed: string[]) =>
+  names.filter(name => !allowed.includes(name))
+const restrictions: Record<string, readonly string[]> = {}
+for (const name of [
+  'markdown-ast',
+  'markdown-definitions',
+  'markdown-definitions-derive'
+])
+  restrictions[name] = [...engines, ...assemblies]
+for (const name of engines)
+  restrictions[name] = [...without(engines, name), ...assemblies]
+for (const plugin of ['commonmark', 'extensions', 'traq']) {
+  restrictions['markdown-' + plugin + '-contracts'] = [
+    ...engines,
+    ...assemblies
+  ]
+  restrictions['markdown-' + plugin + '-text'] = [
+    ...without(engines, 'markdown-renderer'),
+    ...assemblies
+  ]
+  restrictions[
+    plugin === 'commonmark'
+      ? 'markdown-commonmark'
+      : 'markdown-' + plugin + '-syntax'
+  ] = [...without(engines, 'markdown-parser'), ...assemblies]
 }
+restrictions['markdown-traq-extraction'] = [
+  ...without(engines, 'markdown-extractor'),
+  ...assemblies
+]
+restrictions['traq-markdown-features'] = [...engines, ...assemblies]
+restrictions['traq-markdown-grammar'] = [
+  'markdown-codec',
+  'markdown-renderer',
+  'markdown-extractor',
+  'traq-markdown-processing',
+  'traq-markdown-wasm'
+]
+restrictions['traq-markdown-processing'] = [
+  'markdown-parser',
+  'markdown-codec',
+  'traq-markdown-grammar',
+  'traq-markdown-wasm'
+]
+restrictions['traq-markdown-wasm'] = []
+restrictions['traq-markdown-example'] = []
+export const crateRestrictions: Readonly<Record<string, readonly string[]>> =
+  Object.freeze(restrictions)

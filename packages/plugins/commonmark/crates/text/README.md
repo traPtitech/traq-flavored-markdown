@@ -15,11 +15,12 @@ Use `plugin_with_options()` with
 ```rust
 use markdown_commonmark_contracts::Link;
 use markdown_commonmark_text as commonmark;
-use markdown_renderer::{PresetBuilder, Renderer};
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 
 let mut plugin = commonmark::plugin();
 plugin.replace::<Link>(|link, _, _, output| output.push(&link.destination))?;
-let mut builder = PresetBuilder::new();
+let mut builder = RenderPresetBuilder::new();
 builder.add(&plugin)?;
 builder.add(&commonmark::html::plugin())?;
 let renderer = Renderer::new(&builder.build()?);

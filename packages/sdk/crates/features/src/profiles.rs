@@ -2,27 +2,26 @@
 use crate::FeatureId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Profile {
+pub enum GrammarProfile {
     Commonmark,
     TraqV1,
-    TraqPlainText,
 }
 
-pub struct ProfileDefinition {
+pub struct GrammarProfileDefinition {
     pub features: &'static [FeatureId],
     #[cfg(feature = "syntax")]
-    precedence: Option<fn() -> Vec<Precedence>>,
+    precedence: fn() -> Vec<Precedence>,
 }
 
-impl Profile {
-    pub fn definition(self) -> &'static ProfileDefinition {
+impl GrammarProfile {
+    pub fn definition(self) -> &'static GrammarProfileDefinition {
         use FeatureId::*;
-        static COMMONMARK: ProfileDefinition = ProfileDefinition {
+        static COMMONMARK: GrammarProfileDefinition = GrammarProfileDefinition {
             features: &[Core, Html],
             #[cfg(feature = "syntax")]
-            precedence: Some(commonmark_precedence),
+            precedence: commonmark_precedence,
         };
-        static TRAQ_V1: ProfileDefinition = ProfileDefinition {
+        static TRAQ_V1: GrammarProfileDefinition = GrammarProfileDefinition {
             features: &[
                 Core,
                 Table,
@@ -36,28 +35,11 @@ impl Profile {
                 Spacing,
             ],
             #[cfg(feature = "syntax")]
-            precedence: Some(traq_precedence),
-        };
-        static PLAIN_TEXT: ProfileDefinition = ProfileDefinition {
-            features: &[
-                Core,
-                Html,
-                Math,
-                Mark,
-                Strikethrough,
-                Table,
-                References,
-                Stamp,
-                Spoiler,
-                Spacing,
-            ],
-            #[cfg(feature = "syntax")]
-            precedence: None,
+            precedence: traq_precedence,
         };
         match self {
             Self::Commonmark => &COMMONMARK,
             Self::TraqV1 => &TRAQ_V1,
-            Self::TraqPlainText => &PLAIN_TEXT,
         }
     }
 
@@ -66,13 +48,9 @@ impl Profile {
         self,
     ) -> Result<markdown_parser::GrammarBuilder, markdown_parser::BuildError> {
         let definition = self.definition();
-        let precedence = definition.precedence.ok_or_else(|| {
-            markdown_parser::BuildError::InvalidDefinition {
-                reason: "profile has no syntax capability".into(),
-            }
-        })?;
+        let precedence = definition.precedence;
         let mut builder = markdown_parser::GrammarBuilder::new();
-        for feature in crate::selected(self) {
+        for feature in crate::grammar_features(self) {
             builder.add((feature.syntax)())?;
         }
         for ordering in precedence() {
@@ -92,12 +70,12 @@ impl Profile {
 #[cfg(feature = "syntax")]
 enum Precedence {
     Inline(
-        &'static markdown_parser::engine::inline::InlineRule,
-        &'static markdown_parser::engine::inline::InlineRule,
+        &'static markdown_parser::rules::inline::InlineRule,
+        &'static markdown_parser::rules::inline::InlineRule,
     ),
     Block(
-        &'static markdown_parser::engine::block::BlockRule,
-        &'static markdown_parser::engine::block::BlockRule,
+        &'static markdown_parser::rules::block::BlockRule,
+        &'static markdown_parser::rules::block::BlockRule,
     ),
 }
 
@@ -117,7 +95,7 @@ fn commonmark_precedence() -> Vec<Precedence> {
 fn traq_precedence() -> Vec<Precedence> {
     use Precedence::{Block, Inline};
     use markdown_extensions_syntax as extensions;
-    use markdown_trap_syntax as traq;
+    use markdown_traq_syntax as traq;
     let base = crate::commonmark_syntax();
     vec![
         Inline(extensions::math::inline_rule(), &base.inline.code),
@@ -134,4 +112,31 @@ fn traq_precedence() -> Vec<Precedence> {
         Block(extensions::table::block_rule(), &base.block.fence),
         Block(extensions::math::block_rule(), &base.block.fence),
     ]
+}
+
+/// Rendering profiles cannot be passed to grammar construction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextProfile {
+    Traq,
+}
+
+#[cfg(feature = "text")]
+impl TextProfile {
+    pub fn features(self) -> &'static [crate::TextFeature] {
+        use crate::TextFeature::*;
+        match self {
+            Self::Traq => &[
+                Core,
+                Html,
+                Math,
+                Mark,
+                Strikethrough,
+                Table,
+                References,
+                Stamp,
+                Spoiler,
+                Spacing,
+            ],
+        }
+    }
 }

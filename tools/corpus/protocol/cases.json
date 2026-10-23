@@ -1,0 +1,44 @@
+[
+  { "schema": "source", "valid": true, "json": "{\"source\":\"\"}" },
+  {
+    "schema": "source",
+    "valid": true,
+    "json": "{\"source\":\"😀\\u2028text\",\"id\":\"sample\"}"
+  },
+  { "schema": "source", "valid": false, "json": "{}" },
+  { "schema": "source", "valid": false, "json": "{\"source\":null}" },
+  { "schema": "source", "valid": false, "json": "{\"source\":42}" },
+  { "schema": "source", "valid": false, "json": "null" },
+  { "schema": "source", "valid": false, "json": "[]" },
+  { "schema": "source", "valid": false, "json": "{\"source\":\"a\"} {}" },
+  {
+    "schema": "difference",
+    "valid": true,
+    "json": "{\"runId\":\"test\",\"index\":1.0,\"profile\":\"render\",\"source\":\"x\",\"before\":{\"kind\":\"html\",\"value\":\"same\"},\"after\":{\"kind\":\"error\",\"value\":\"same\"}}"
+  },
+  {
+    "schema": "difference",
+    "valid": true,
+    "json": "{\"runId\":\"test\",\"index\":1e0,\"profile\":\"plainText\",\"source\":\"x\",\"before\":{\"kind\":\"text\",\"value\":\"\"},\"after\":{\"kind\":\"text\",\"value\":\"x\"}}"
+  },
+  {
+    "schema": "difference",
+    "valid": false,
+    "json": "{\"runId\":\"test\",\"index\":-1,\"profile\":\"render\",\"source\":\"x\",\"before\":{\"kind\":\"html\",\"value\":\"same\"},\"after\":{\"kind\":\"error\",\"value\":\"same\"}}"
+  },
+  {
+    "schema": "difference",
+    "valid": false,
+    "json": "{\"runId\":\"test\",\"index\":0,\"profile\":\"render\",\"source\":\"x\",\"before\":{\"kind\":\"html\",\"value\":\"same\"},\"after\":{\"kind\":\"error\",\"value\":\"same\"},\"error\":false}"
+  },
+  {
+    "schema": "difference",
+    "valid": false,
+    "json": "{\"runId\":\"test\",\"index\":0,\"profile\":\"unknown\",\"source\":\"x\",\"before\":{\"kind\":\"html\",\"value\":\"same\"},\"after\":{\"kind\":\"error\",\"value\":\"same\"}}"
+  },
+  {
+    "schema": "difference",
+    "valid": false,
+    "json": "{\"runId\":\"test\",\"index\":9007199254740992,\"profile\":\"render\",\"source\":\"x\",\"before\":{\"kind\":\"html\",\"value\":\"same\"},\"after\":{\"kind\":\"error\",\"value\":\"same\"}}"
+  }
+]

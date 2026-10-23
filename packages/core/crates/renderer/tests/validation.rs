@@ -1,6 +1,8 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_renderer::{Plugin, PresetBuilder, Renderer};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::RenderPresetBuilder;
+use markdown_renderer::Renderer;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -79,7 +81,7 @@ fn leaf<T: NodeData>(value: T) -> Node {
 }
 
 fn renderer(calls: Arc<AtomicUsize>) -> Renderer {
-    let mut plugin = Plugin::new(&Declaration::new("validation"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("validation"));
     plugin
         .on::<Text>(|v, _, _, output| output.push(&v.0))
         .unwrap();
@@ -95,7 +97,7 @@ fn renderer(calls: Arc<AtomicUsize>) -> Renderer {
         .on::<Invalid>(|_, _, _, output| output.push("invalid"))
         .unwrap();
 
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
     Renderer::new(&builder.build().unwrap())
 }
@@ -113,7 +115,7 @@ fn suppressed_descendants_are_checked_before_running_any_handler() {
             "invalid_node",
         ),
     ] {
-        let doc = Document {
+        let doc = MutableDocument {
             source: "é".into(),
             children: vec![Node::new(Span { start: 0, end: 2 }, Hidden, vec![child])],
         };
@@ -131,7 +133,7 @@ fn suppressed_descendants_are_checked_before_running_any_handler() {
 fn resource_boundaries_and_per_render_budgets_are_preserved() {
     let renderer = renderer(Arc::new(AtomicUsize::new(0)));
 
-    let mut doc = Document {
+    let mut doc = MutableDocument {
         source: String::new(),
         children: vec![leaf(Text("x".repeat(1_048_576)))],
     };
@@ -202,14 +204,14 @@ fn resource_boundaries_and_per_render_budgets_are_preserved() {
 
 #[test]
 fn oversized_native_payload_is_rejected_before_a_handler_clones_it() {
-    let mut plugin = Plugin::new(&Declaration::new("payload boundary"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("payload boundary"));
     plugin
         .on::<Text>(|_, _, _, _| panic!("handler must not run"))
         .unwrap();
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
     let renderer = Renderer::new(&builder.build().unwrap());
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![leaf(Text(
             "x".repeat(markdown_ast::ValidationLimits::default().payload_bytes + 1),
@@ -225,20 +227,20 @@ fn oversized_native_payload_is_rejected_before_a_handler_clones_it() {
 #[test]
 fn writer_charges_each_byte_once_through_deep_wrappers_and_bounds_captures() {
     use markdown_renderer::{Error, RenderLimits};
-    let mut plugin = Plugin::new(&Declaration::new("streaming"));
+    let mut plugin = RenderPlugin::new(&Declaration::new("streaming"));
     plugin
         .on::<Text>(|text, _, _, output| output.push(&text.0))
         .unwrap();
     plugin
         .on::<Hidden>(|_, nodes, context, output| context.children(nodes, output))
         .unwrap();
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
     let mut root = leaf(Text("hello".into()));
     for _ in 1..64 {
         root = Node::new(Span { start: 0, end: 0 }, Hidden, vec![root]);
     }
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![root],
     };
@@ -254,7 +256,7 @@ fn writer_charges_each_byte_once_through_deep_wrappers_and_bounds_captures() {
             output.push(&context.capture_children(nodes)?)
         })
         .unwrap();
-    let mut builder = PresetBuilder::new();
+    let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
     let captured = Renderer::new(&builder.build().unwrap()).with_limits(limits);
     assert!(matches!(

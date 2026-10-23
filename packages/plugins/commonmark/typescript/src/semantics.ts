@@ -1,30 +1,28 @@
-import type { ReadonlyNode as Node, Span } from '@traq-flavored-markdown/core'
-
-import { isKnownNode, names } from './generated/commonmark.js'
+import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import type {
+  DocumentContext,
+  ReadonlyNode,
+  Span
+} from '@traq-flavored-markdown/core'
 
 /** Plain label projection defined by CommonMark, independent of HTML serialization. */
 export function imageLabelText(
-  nodes: readonly Node[] = [],
-  sourceSlice: (span: Span) => string
+  nodes: readonly ReadonlyNode[] = [],
+  sourceSlice: (span: Span) => string,
+  matches: DocumentContext['matches']
 ): string {
-  const collect = (children: readonly Node[] = []): string =>
+  const collect = (children: readonly ReadonlyNode[] = []): string =>
     children
       .map(node => {
-        if (!isKnownNode(node)) return sourceSlice(node.span)
-
-        switch (node.kind) {
-          case names.Text:
-            return node.data.value
-          case names.HtmlInline:
-            return node.data.literal
-          case names.Softbreak:
-          case names.Hardbreak:
-            return '\n'
-          case names.InlineCode:
-            return node.data.literal
-          default:
-            return collect(node.children)
-        }
+        if (matches(node, definitions.Text)) return node.data.value
+        if (matches(node, definitions.HtmlInline)) return node.data.literal
+        if (
+          matches(node, definitions.Softbreak) ||
+          matches(node, definitions.Hardbreak)
+        )
+          return '\n'
+        if (matches(node, definitions.InlineCode)) return node.data.literal
+        return node.children ? collect(node.children) : sourceSlice(node.span)
       })
       .join('')
 

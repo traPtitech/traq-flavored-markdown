@@ -13,11 +13,11 @@ mod node;
 mod validation;
 mod walk;
 
-pub use data::{NodeData, NodeKind, NodeRole, PayloadError};
+pub use data::{AnyPayload, NodeData, NodeRole, PayloadError};
 pub use node::Node;
 pub use validation::{
-    ValidatedDocument, ValidatedDocumentBuf, ValidationError, ValidationErrorKind,
-    ValidationLimits, ValidationStats,
+    Document, DocumentInput, DocumentView, ValidationError, ValidationErrorKind, ValidationLimits,
+    ValidationStats,
 };
 pub use walk::{Visit, Walk};
 
@@ -41,7 +41,7 @@ impl Span {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Document {
+pub struct MutableDocument {
     pub source: String,
     pub children: Vec<Node>,
 }

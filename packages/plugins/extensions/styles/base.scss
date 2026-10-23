@@ -1,0 +1,11 @@
+s > code {
+  text-decoration: line-through;
+}
+mark {
+  color: var(--tfm-mark-color, black);
+  background-color: var(--tfm-mark-background-color, yellow);
+}
+.katex-block {
+  overflow: auto;
+  margin-bottom: 4px;
+}

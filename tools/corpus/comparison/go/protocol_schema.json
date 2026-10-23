@@ -1,0 +1,364 @@
+{
+  "source": {
+    "kind": "object",
+    "name": "SourceRecord",
+    "properties": {
+      "source": {
+        "kind": "string"
+      }
+    },
+    "allowUnknown": true
+  },
+  "difference": {
+    "kind": "object",
+    "name": "DifferenceRow",
+    "properties": {
+      "runId": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "index": {
+        "kind": "number",
+        "integer": true,
+        "minimum": 0
+      },
+      "profile": {
+        "kind": "enum",
+        "name": "ProfileId",
+        "values": ["render", "inline", "plainText"]
+      },
+      "source": {
+        "kind": "string"
+      },
+      "before": {
+        "kind": "object",
+        "name": "Outcome",
+        "properties": {
+          "kind": {
+            "kind": "enum",
+            "name": "OutputKind",
+            "values": ["html", "text", "error"]
+          },
+          "value": {
+            "kind": "string"
+          }
+        },
+        "allowUnknown": false
+      },
+      "after": {
+        "kind": "object",
+        "name": "Outcome",
+        "properties": {
+          "kind": {
+            "kind": "enum",
+            "name": "OutputKind",
+            "values": ["html", "text", "error"]
+          },
+          "value": {
+            "kind": "string"
+          }
+        },
+        "allowUnknown": false
+      }
+    },
+    "allowUnknown": false
+  },
+  "plan": {
+    "kind": "object",
+    "name": "ComparisonPlan",
+    "properties": {
+      "format": {
+        "kind": "enum",
+        "name": "ProtocolVersion",
+        "values": ["1"]
+      },
+      "runId": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "corpus": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "corpusSha256": {
+        "kind": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "output": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "baselineDirectory": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "wasm": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "candidateDirectory": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "origin": {
+        "kind": "string"
+      },
+      "max": {
+        "kind": "number",
+        "integer": true,
+        "minimum": 1
+      },
+      "warmups": {
+        "kind": "number",
+        "integer": true,
+        "minimum": 0
+      },
+      "provenance": {
+        "kind": "object",
+        "name": "ComparisonProvenance",
+        "properties": {
+          "before": {
+            "kind": "record",
+            "values": {
+              "kind": "object",
+              "name": "Revision",
+              "properties": {
+                "label": {
+                  "kind": "string",
+                  "minLength": 1
+                },
+                "revision": {
+                  "kind": "string",
+                  "minLength": 1
+                },
+                "dirty": {
+                  "kind": "boolean"
+                }
+              },
+              "allowUnknown": false
+            },
+            "keys": ["render", "inline", "plainText"]
+          },
+          "after": {
+            "kind": "object",
+            "name": "Revision",
+            "properties": {
+              "label": {
+                "kind": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "kind": "string",
+                "minLength": 1
+              },
+              "dirty": {
+                "kind": "boolean"
+              }
+            },
+            "allowUnknown": false
+          },
+          "artifacts": {
+            "kind": "object",
+            "name": "CandidateArtifacts",
+            "properties": {
+              "wasmSha256": {
+                "kind": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "javascriptSha256": {
+                "kind": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "contractId": {
+                "kind": "string",
+                "minLength": 1
+              },
+              "sourceFingerprint": {
+                "kind": "string",
+                "minLength": 1
+              }
+            },
+            "allowUnknown": false
+          },
+          "dependencies": {
+            "kind": "record",
+            "values": {
+              "kind": "object",
+              "name": "DependencyVersions",
+              "properties": {
+                "before": {
+                  "kind": "string",
+                  "minLength": 1
+                },
+                "after": {
+                  "kind": "string",
+                  "minLength": 1
+                }
+              },
+              "allowUnknown": false
+            }
+          }
+        },
+        "allowUnknown": false
+      },
+      "environment": {
+        "kind": "object",
+        "name": "RunEnvironment",
+        "properties": {
+          "bun": {
+            "kind": "string",
+            "minLength": 1
+          },
+          "go": {
+            "kind": "string",
+            "minLength": 1
+          },
+          "platform": {
+            "kind": "string",
+            "minLength": 1
+          },
+          "arch": {
+            "kind": "string",
+            "minLength": 1
+          }
+        },
+        "allowUnknown": false
+      }
+    },
+    "allowUnknown": false
+  },
+  "results": {
+    "kind": "object",
+    "name": "WorkerResults",
+    "properties": {
+      "runId": {
+        "kind": "string",
+        "minLength": 1
+      },
+      "corpusSha256": {
+        "kind": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "results": {
+        "kind": "record",
+        "values": {
+          "kind": "object",
+          "name": "ProfileResult",
+          "properties": {
+            "messages": {
+              "kind": "number",
+              "integer": true,
+              "minimum": 0
+            },
+            "differences": {
+              "kind": "number",
+              "integer": true,
+              "minimum": 0
+            },
+            "embeddingDifferences": {
+              "kind": "number",
+              "integer": true,
+              "minimum": 0
+            },
+            "beforeErrors": {
+              "kind": "number",
+              "integer": true,
+              "minimum": 0
+            },
+            "afterErrors": {
+              "kind": "number",
+              "integer": true,
+              "minimum": 0
+            },
+            "before": {
+              "kind": "object",
+              "name": "Timing",
+              "properties": {
+                "calls": {
+                  "kind": "number",
+                  "integer": true,
+                  "minimum": 0
+                },
+                "totalMs": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "meanUs": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "p50Us": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "p95Us": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "p99Us": {
+                  "kind": "number",
+                  "minimum": 0
+                }
+              },
+              "allowUnknown": false
+            },
+            "after": {
+              "kind": "object",
+              "name": "Timing",
+              "properties": {
+                "calls": {
+                  "kind": "number",
+                  "integer": true,
+                  "minimum": 0
+                },
+                "totalMs": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "meanUs": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "p50Us": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "p95Us": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "p99Us": {
+                  "kind": "number",
+                  "minimum": 0
+                }
+              },
+              "allowUnknown": false
+            },
+            "initialization": {
+              "kind": "object",
+              "name": "Initialization",
+              "properties": {
+                "beforeMs": {
+                  "kind": "number",
+                  "minimum": 0
+                },
+                "afterMs": {
+                  "kind": "number",
+                  "minimum": 0
+                }
+              },
+              "allowUnknown": false
+            },
+            "actualWarmups": {
+              "kind": "number",
+              "integer": true,
+              "minimum": 0
+            }
+          },
+          "allowUnknown": false
+        }
+      }
+    },
+    "allowUnknown": false
+  }
+}

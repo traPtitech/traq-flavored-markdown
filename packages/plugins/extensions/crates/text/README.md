@@ -5,8 +5,8 @@ depends only on renderer core and the corresponding node contracts, not on a
 parser or a traQ implementation.
 
 Add `math::plugin()`, `table::plugin()`, `mark::plugin()`, or
-`strikethrough::plugin()` to a `PresetBuilder`. The factories return shareable
-plugins by value; callers do not need to clone them. Use `Plugin::replace` to
+`strikethrough::plugin()` to a `RenderPresetBuilder`. The factories return shareable
+plugins by value; callers do not need to clone them. Use `RenderPlugin::replace` to
 customize a handler for one plugin instance.
 
 Math renders its TeX source, tables render cells separated by `|` and rows with

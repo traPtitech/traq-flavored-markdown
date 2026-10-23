@@ -38,7 +38,7 @@ func run(path string) error {
 	}
 	defer runtime.Close(ctx)
 
-	parser, err := runtime.NewParser(ctx, markdown.PresetTraqV1)
+	parser, err := runtime.NewParser(ctx, markdown.GrammarTraqV1)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func run(path string) error {
 	}
 	fmt.Println(string(raw))
 
-	renderer, err := runtime.NewPlainTextRenderer(ctx, markdown.RendererOptions{Origin: "https://q.example.test"})
+	renderer, err := runtime.NewPlainTextRenderer(ctx, markdown.PlainTextOptions{Origin: "https://q.example.test"})
 	if err != nil {
 		return err
 	}

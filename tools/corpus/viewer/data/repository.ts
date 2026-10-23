@@ -1,10 +1,10 @@
 import {
   type DifferenceRow,
-  type Mode,
+  type ProfileId,
   type ReportMetadata,
   parseDifferenceRow
-} from '../../report-schema.ts'
-import { type ReportData, parseReport } from '../../shared/report-data.ts'
+} from '../../protocol/report.ts'
+import { type ReportData, parseReport } from '../../protocol/report.ts'
 import {
   type Progress,
   type Query,
@@ -12,7 +12,7 @@ import {
   normalizePage
 } from './query.ts'
 
-export { parseReport, type ReportData } from '../../shared/report-data.ts'
+export { parseReport, type ReportData } from '../../protocol/report.ts'
 
 type Hit = readonly [number, number]
 
@@ -46,20 +46,27 @@ export class ReportRepository {
     this.metadata = data.metadata
   }
 
-  async loadChunk(mode: Mode, index: number) {
-    const key = `${mode}:${index}`
+  async loadChunk(profile: ProfileId, index: number) {
+    const key = `${profile}:${index}`
     const previous = this.chunks.get(key)
     if (previous) return previous
-    const encoded = this.data.payload[mode][index]
-    if (encoded === undefined) throw new Error(`Missing ${mode} chunk ${index}`)
+    const encoded = this.data.payload[profile][index]
+    if (encoded === undefined)
+      throw new Error(`Missing ${profile} chunk ${index}`)
     const task = this.decode(encoded).then(value => {
       if (!Array.isArray(value)) throw new Error('Invalid report chunk')
       const rows = value.map(parseDifferenceRow)
       const expected = Math.min(
         this.metadata.pageSize,
-        this.metadata.counts[mode] - index * this.metadata.pageSize
+        this.metadata.counts[profile] - index * this.metadata.pageSize
       )
-      if (rows.length !== expected || rows.some(row => row.mode !== mode))
+      if (
+        rows.length !== expected ||
+        rows.some(
+          row =>
+            row.profile !== profile || row.runId !== this.metadata.run.runId
+        )
+      )
         throw new Error('Report chunk does not match metadata')
       return rows
     })
@@ -80,27 +87,27 @@ export class ReportRepository {
     progress: (value: Progress) => void = () => undefined
   ): Promise<QueryResult> {
     const search = query.search.trim().toLowerCase()
-    const key = JSON.stringify([query.mode, search, query.ignoreWhitespace])
+    const key = JSON.stringify([query.profile, search, query.ignoreWhitespace])
     let hits = this.filters.get(key)
     signal?.throwIfAborted()
     if (hits === undefined) {
       if (!search && !query.ignoreWhitespace) hits = null
       else {
         const found: Hit[] = [],
-          total = this.data.payload[query.mode].length
+          total = this.data.payload[query.profile].length
         for (let chunk = 0; chunk < total; chunk++) {
           const rows = search
-            ? await this.loadChunk(query.mode, chunk)
+            ? await this.loadChunk(query.profile, chunk)
             : undefined
           signal?.throwIfAborted()
           const length = Math.min(
             this.metadata.pageSize,
-            this.metadata.counts[query.mode] - chunk * this.metadata.pageSize
+            this.metadata.counts[query.profile] - chunk * this.metadata.pageSize
           )
           for (let index = 0; index < length; index++) {
             if (
               query.ignoreWhitespace &&
-              this.metadata.filters[query.mode][
+              this.metadata.filters[query.profile][
                 chunk * this.metadata.pageSize + index
               ] === '1'
             )
@@ -110,13 +117,14 @@ export class ReportRepository {
           }
           progress({ done: chunk + 1, total })
         }
-        hits = found.length === this.metadata.counts[query.mode] ? null : found
+        hits =
+          found.length === this.metadata.counts[query.profile] ? null : found
       }
       this.filters.set(key, hits)
       if (this.filters.size > 4)
         this.filters.delete(this.filters.keys().next().value!)
     }
-    const totalHits = hits?.length ?? this.metadata.counts[query.mode]
+    const totalHits = hits?.length ?? this.metadata.counts[query.profile]
     const totalPages = Math.max(
       1,
       Math.ceil(totalHits / this.metadata.pageSize)
@@ -125,13 +133,13 @@ export class ReportRepository {
     const rows: DifferenceRow[] = []
     if (totalHits) {
       if (hits === null)
-        rows.push(...(await this.loadChunk(query.mode, page - 1)))
+        rows.push(...(await this.loadChunk(query.profile, page - 1)))
       else
         for (const [chunk, index] of hits.slice(
           (page - 1) * this.metadata.pageSize,
           page * this.metadata.pageSize
         ))
-          rows.push((await this.loadChunk(query.mode, chunk))[index])
+          rows.push((await this.loadChunk(query.profile, chunk))[index])
     }
     signal?.throwIfAborted()
     return { rows, totalHits, totalPages, page, filtered: hits !== null }

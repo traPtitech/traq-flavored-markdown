@@ -33,6 +33,8 @@ const modules: WorkspaceModule[] = []
 for (const crate of metadata.packages) {
   const source = packageOwner(path.dirname(crate.manifest_path))
   if (!source) continue
+  if (!Object.hasOwn(crateRestrictions, crate.name))
+    throw new Error(crate.name + ': missing capability policy')
   modules.push({
     name: crate.name,
     owner: source,

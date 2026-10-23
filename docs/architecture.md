@@ -9,14 +9,17 @@ one shared version.
 | `packages/core`                                          | Grammar-independent AST, declarations, parsing, rendering, extraction, and codec |
 | `packages/plugins/commonmark`                            | CommonMark contracts, syntax, and rendering                                      |
 | `packages/plugins/extensions`                            | Optional math, table, mark, strikethrough, and linkify features                  |
-| `packages/plugins/traq`                                  | traP extension contracts, syntax, rendering, and extraction                      |
+| `packages/plugins/traq`                                  | traQ extension contracts, syntax, rendering, and extraction                      |
 | `packages/sdk/crates/features`                           | Feature capabilities and ordered profiles                                        |
 | `packages/sdk/crates/grammar`                            | Published grammar presets and their catalog                                      |
 | `packages/sdk/crates/processing`                         | traQ plain-text, message, and extraction policies                                |
 | `packages/sdk/crates/wasm`                               | Wasm ABI and exported contracts                                                  |
 | `packages/sdk/typescript/src/runtime`, `packages/sdk/go` | ABI transport, processor lifecycle, and artifact selection                       |
-| `packages/sdk/typescript/src/messages`                   | Message analysis, resource cards, and reference source edits                     |
-| `packages/sdk/typescript/src/profiles`                   | traQ display policy and application adapters                                     |
+| `packages/sdk/typescript/src/traq/messages`              | Message analysis, resource cards, and reference source edits                     |
+| `packages/sdk/typescript/src/traq/profile`               | traQ display policy                                                              |
+| `packages/sdk/typescript/src/traq/views`                 | Standard and condensed render plans                                              |
+| `packages/sdk/typescript/src/adapters`                   | Optional highlighting and math integration                                       |
+| `packages/plugins/*/styles`                              | CSS required by each plugin's markup                                             |
 | `packages/sdk/styles`                                    | traQ presentation CSS                                                            |
 | `packages/sdk/scripts`                                   | SDK artifact build and distribution-specific generation                          |
 | `tools/contracts`                                        | Typed Rust contract exports, shared Go/TypeScript generators, and tests          |
@@ -41,7 +44,7 @@ SDK
  └─ traq-plugin ────────> core and commonmark-plugin
 ```
 
-Core never depends on plugins or traQ. Plugins may depend on core; traP syntax
+Core never depends on plugins or traQ. Plugins may depend on core; traQ syntax
 also uses CommonMark syntax. The SDK composes the lower layers for traQ and owns
 application policy. Parsers, renderers, and extractors share a native AST without
 depending on the codec or the Wasm distribution.
@@ -50,10 +53,13 @@ Workspace descriptors declare owners and permitted dependency directions.
 Actual npm, Cargo, and Go graphs are read separately. Package ordering and npm
 peer dependencies do not implicitly define cross-language ownership rules.
 
-Feature definitions describe available syntax and processing capabilities.
-Profiles select their ordered features and precedence; adding a profile does not
-add selection fields to every feature. Text factories and block sequence policies
-are separate providers with independent uniqueness checks.
+Plugin-owned feature catalogs are the single source of payload membership and
+contract metadata. The SDK selects their public exports, factories, order, and
+precedence. `GrammarProfile` and `TextProfile` expose only their applicable
+capabilities; selected text features always carry a text factory. Text factories
+and block sequence policies remain separate providers with independent uniqueness
+checks. Every production crate has an explicit capability policy in addition to
+its package owner policy.
 
 ## Boundary vocabulary
 
@@ -64,7 +70,11 @@ are separate providers with independent uniqueness checks.
 | Plugin declaration                       | Names and identities without an execution implementation                                                       |
 | Syntax / render plugin                   | Rules or handlers implementing selected declarations                                                           |
 | Registration handle                      | A builder entry that survives replacement of the registered value                                              |
-| Validated document / document context    | Checked immutable ownership or borrowing for consumers                                                         |
+| `MutableDocument`                        | An editable draft that must cross a validation boundary before consumption                                     |
+| `Document` / `DocumentContext`           | Checked immutable ownership returned by parsing and decoding                                                   |
+| `DocumentView`                           | A borrowed native validation proof                                                                             |
+| `DocumentSchema`                         | Immutable TypeScript contracts independent of display handlers                                                 |
+| `NodeVariant`                            | The discriminated union of node kind and semantic payload                                                      |
 | Render session                           | Reusable context and rendering configuration                                                                   |
 | Render plan                              | Node selections, omissions, plain-text child replacements, and separators                                      |
 | Source-preserving message text           | Markdown source with semantic references restored to labels                                                    |
@@ -75,11 +85,12 @@ are separate providers with independent uniqueness checks.
 
 Source span operations preserve UTF-8 byte boundaries and original BOM, CRLF,
 and NUL characters. Immutable contexts support shared analysis and rendering;
-editing a caller-owned AST requires a new context. Unknown nodes remain usable
-through core fallback and extension traversal, while malformed known payloads
-fail validation. Custom inline or block nodes declare their role to participate in
-known parent structures. The SDK's Wasm codec uses a closed set of shipped wire
-contracts; core and TypeScript render plugins can register application nodes.
+editing explicitly creates a mutable draft and then a new validated owner.
+TypeScript schemas reject unknown nodes by default; `withUnknownNodes()` opts into
+preserving opaque application nodes while continuing to check known payloads.
+Custom inline or block nodes declare their role in a schema to participate in
+known parent structures. Render handlers are selected separately. The SDK's Wasm
+codec uses a closed set of shipped wire contracts.
 
 Native node roles come from their static structure contract. Validation always
 checks that structure before payload-specific validation. A small payload derive
@@ -94,15 +105,23 @@ retain readonly payload and ancestor types. Native parser APIs distinguish
 `SourceOffset` from `ViewOffset` through matching, slicing, and source joins;
 conversion to original byte spans occurs through the source map.
 
+Go `Document` exposes read-only source, node, span, and child accessors. Payload
+decoding and `ToMutable` return detached caller-owned values; the wire snapshot is
+reused by consumers. Rust consumers accept the document owner or borrowed view;
+drafts are validated at the boundary. There are no parallel `*Validated` consumer
+APIs.
+
 CommonMark parsing owns URL encoding, code language interpretation, and syntax recognition. Display profiles
 own URL acceptance, image domains, raw HTML, spacing, and presentation adapters.
 The traQ `spacing` feature retains additional source blank lines; empty quote
 visibility belongs to presentation. It is not a legacy API compatibility layer.
 
 The SDK's fused processor parses, validates, extracts, and produces plain text
-using one native document and one Wasm call. Separate operations support callers
-that need only one consumer. HTML composition has a lightweight entrypoint;
-standard highlighting and math adapters are supplied by the default entrypoint.
+using one native document and one Wasm call. The codec's serialization view writes
+that document directly into the bounded response without a JSON intermediate.
+Separate operations support callers that need only one consumer. The HTML
+entrypoint is lightweight; `sdk/adapters` explicitly supplies highlighting and
+math through `withDefaultAdapters`. These libraries are optional peer dependencies.
 
 The contract ID hashes wire semantics, including constraints, defaults, ordered
 ABI parameters, presets, and limits. Documentation and generated type display names
@@ -113,12 +132,16 @@ definitions; host limits and wire error decoders are generated from those contra
 ## Placement rules
 
 Code that knows traQ presets or SDK artifact metadata belongs in `packages/sdk`.
-Shared generators belong in `tools/contracts/typescript`; keep their tests beside the
-generator. Root entry points coordinate package-level tools rather than replacing
-their ownership.
+Shared generators belong in `tools/contracts/model`, `emitters`, and `io`; their
+tests live in `tools/contracts/tests`. `tools/workspace/generate.ts` assembles
+owner-specific targets. Contract generation, TypeScript, styles, Wasm, and artifact
+metadata are separate build tasks, and selected builds visit only their required
+owners. Root entry points coordinate package-level tools.
 
-Corpus commands construct a typed comparison plan shared by adapters, runners,
-and report assembly. Results have the same profile structure. The viewer query
+Corpus commands create a comparison run with immutable outputs, input/artifact
+digests, revision and environment metadata, and a completion manifest. A shared
+protocol defines TypeScript and Go outcomes; each side is either a typed success
+or a typed error. Baseline caches are separate from run outputs. The viewer query
 controller owns filter, search, mode, and normalized page transitions; components
 render those values without retaining a competing page state.
 

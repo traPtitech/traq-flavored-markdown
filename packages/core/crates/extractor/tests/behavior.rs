@@ -1,6 +1,8 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_extractor::{Extractor, Plugin, PresetBuilder};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_extractor::ExtractionPlugin;
+use markdown_extractor::ExtractionPresetBuilder;
+use markdown_extractor::Extractor;
 use std::{
     cell::Cell,
     rc::Rc,
@@ -75,17 +77,17 @@ fn node<T: NodeData>(value: T, children: Vec<Node>) -> Node {
     Node::new(Span { start: 0, end: 0 }, value, children)
 }
 
-fn document(children: Vec<Node>) -> Document {
-    Document {
+fn document(children: Vec<Node>) -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children,
     }
 }
 
-fn plugin(calls: Arc<AtomicUsize>) -> Plugin<Collected> {
-    let mut plugin = Plugin::new(&Declaration::new("references"));
+fn plugin(calls: Arc<AtomicUsize>) -> ExtractionPlugin<Collected> {
+    let mut plugin = ExtractionPlugin::new(&Declaration::new("references"));
     plugin
-        .on::<Reference>(move |value, result: &mut Collected| {
+        .on::<Reference>(move |value, _, result: &mut Collected| {
             calls.fetch_add(1, Ordering::Relaxed);
             if value.0 == 99 {
                 return Err(markdown_extractor::Error::Handler {
@@ -100,8 +102,8 @@ fn plugin(calls: Arc<AtomicUsize>) -> Plugin<Collected> {
     plugin
 }
 
-fn extractor(plugin: &Plugin<Collected>) -> Extractor<Collected> {
-    let mut builder = PresetBuilder::new();
+fn extractor(plugin: &ExtractionPlugin<Collected>) -> Extractor<Collected> {
+    let mut builder = ExtractionPresetBuilder::new();
     builder.add(plugin).unwrap();
     Extractor::new(&builder.build().unwrap())
 }
@@ -176,17 +178,17 @@ fn validation_precedes_all_handlers_and_failed_runs_do_not_leak_results() {
 #[test]
 fn snapshots_duplicate_rejection_and_removal_are_atomic() {
     let mut plugin = plugin(Arc::new(AtomicUsize::new(0)));
-    let mut builder = PresetBuilder::new();
+    let mut builder = ExtractionPresetBuilder::new();
 
     let registration = builder.register(&plugin).unwrap();
     let old = Extractor::new(&builder.clone().build().unwrap());
 
     assert!(builder.add(&plugin).is_err());
-    assert!(plugin.on::<Reference>(|_, _| Ok(())).is_err());
+    assert!(plugin.on::<Reference>(|_, _, _| Ok(())).is_err());
 
     builder.clone().remove(&registration).unwrap();
     plugin
-        .on::<Container>(|_, result| {
+        .on::<Container>(|_, _, result| {
             result.ids.push(3);
             Ok(())
         })
@@ -261,23 +263,27 @@ fn limits_also_apply_to_unregistered_nodes() {
 #[test]
 fn selected_names_are_checked_using_namespace_identity() {
     let group = Declaration::group("generic");
-    let mut builder = PresetBuilder::<Collected>::new();
+    let mut builder = ExtractionPresetBuilder::<Collected>::new();
 
-    builder.add(&Plugin::new(&group.plugin("same"))).unwrap();
-    builder.add(&Plugin::new(&group.plugin("same"))).unwrap();
+    builder
+        .add(&ExtractionPlugin::new(&group.plugin("same")))
+        .unwrap();
+    builder
+        .add(&ExtractionPlugin::new(&group.plugin("same")))
+        .unwrap();
     assert!(matches!(
         builder.build().map_err(|error| error.code()),
         Err("duplicate_name")
     ));
 
-    let mut builder = PresetBuilder::<Collected>::new();
+    let mut builder = ExtractionPresetBuilder::<Collected>::new();
 
     builder
-        .add(&Plugin::new(&group.group("one").plugin("same")))
+        .add(&ExtractionPlugin::new(&group.group("one").plugin("same")))
         .unwrap();
 
     builder
-        .add(&Plugin::new(&group.group("two").plugin("same")))
+        .add(&ExtractionPlugin::new(&group.group("two").plugin("same")))
         .unwrap();
 
     assert!(builder.build().is_ok());
