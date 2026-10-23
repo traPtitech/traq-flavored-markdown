@@ -3,7 +3,7 @@ use markdown_parser::Limits;
 use markdown_parser::Node;
 use markdown_parser::ParseError;
 use markdown_parser::ValidationLimits;
-use markdown_trap_contracts::{Stamp, StampKind};
+use markdown_traq_contracts::{Stamp, StampKind};
 use traq_markdown_grammar::presets;
 
 fn has_link(nodes: &[Node]) -> bool {

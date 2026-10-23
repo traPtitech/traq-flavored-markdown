@@ -1,7 +1,7 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
 use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Image, Link, Text};
-use markdown_trap_contracts::{Embedding, Reference, ReferenceKind};
+use markdown_traq_contracts::{Embedding, Reference, ReferenceKind};
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Serialize)]

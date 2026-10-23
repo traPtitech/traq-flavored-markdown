@@ -49,7 +49,7 @@ fn one_ast_supports_plain_text_and_reference_collection() {
 
     let mut builder = traq::references::builder().unwrap();
     let registration = builder
-        .registration(&markdown_trap_extraction::references::plugin())
+        .registration(&markdown_traq_extraction::references::plugin())
         .unwrap();
     builder.remove(&registration).unwrap();
     let empty = Extractor::new(&builder.build().unwrap());

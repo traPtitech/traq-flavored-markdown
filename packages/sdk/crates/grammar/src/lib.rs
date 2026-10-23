@@ -7,7 +7,7 @@ pub mod presets;
 pub mod syntax {
     pub use markdown_commonmark as commonmark;
     pub use markdown_extensions_syntax as extensions;
-    pub use markdown_trap_syntax as traq;
+    pub use markdown_traq_syntax as traq;
 }
 
 pub use markdown_parser::{

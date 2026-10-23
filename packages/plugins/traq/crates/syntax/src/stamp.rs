@@ -2,8 +2,8 @@ use markdown_parser::ParseError;
 use markdown_parser::grammar::SyntaxPlugin;
 use markdown_parser::rules::inline::InlineMatch;
 use markdown_parser::rules::inline::InlineRule;
-pub use markdown_trap_contracts::Stamp;
-use markdown_trap_contracts::{StampAnimation, StampEffects, StampKind, StampSize};
+pub use markdown_traq_contracts::Stamp;
+use markdown_traq_contracts::{StampAnimation, StampEffects, StampKind, StampSize};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -134,7 +134,7 @@ fn parse_effects(suffix: &str) -> Option<StampEffects> {
 
 pub fn plugin() -> &'static SyntaxPlugin {
     static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = SyntaxPlugin::new(&markdown_trap_contracts::declarations().stamp);
+        let mut plugin = SyntaxPlugin::new(&markdown_traq_contracts::declarations().stamp);
         plugin.add(inline_rule());
         plugin
     });

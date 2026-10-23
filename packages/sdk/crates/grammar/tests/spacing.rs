@@ -1,6 +1,6 @@
 use markdown_commonmark_contracts::{Blockquote, List, ListItem, Paragraph};
 use markdown_parser::Span;
-use markdown_trap_contracts::BlankLine;
+use markdown_traq_contracts::BlankLine;
 use traq_markdown_grammar::Parser;
 use traq_markdown_grammar::presets;
 use traq_markdown_grammar::syntax::traq;

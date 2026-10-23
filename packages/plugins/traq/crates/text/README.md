@@ -1,6 +1,6 @@
-# markdown-trap-text
+# markdown-traq-text
 
-Plain-text renderer plugins for traP nodes. They do not depend on parser or
+Plain-text renderer plugins for traQ nodes. They do not depend on parser or
 extractor implementations.
 
 Add `references::plugin()`, `stamp::plugin()`, `spoiler::plugin()`, or

@@ -11,12 +11,12 @@ pub struct PluginDeclarations {
 
 pub fn declarations() -> &'static PluginDeclarations {
     static CONTRACTS: LazyLock<PluginDeclarations> = LazyLock::new(|| {
-        let trap = PluginDeclaration::group("traq");
+        let traq = PluginDeclaration::group("traq");
         PluginDeclarations {
-            references: trap.plugin("references"),
-            stamp: trap.plugin("stamp"),
-            spoiler: trap.plugin("spoiler"),
-            spacing: trap.plugin("spacing"),
+            references: traq.plugin("references"),
+            stamp: traq.plugin("stamp"),
+            spoiler: traq.plugin("spoiler"),
+            spacing: traq.plugin("spacing"),
         }
     });
     &CONTRACTS

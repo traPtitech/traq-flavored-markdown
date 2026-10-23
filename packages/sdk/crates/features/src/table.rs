@@ -1,7 +1,7 @@
 use super::*;
 use markdown_commonmark_contracts as cm;
 use markdown_extensions_contracts as ext;
-use markdown_trap_contracts as traq;
+use markdown_traq_contracts as traq;
 
 pub(super) fn definitions() -> Vec<FeatureDefinition> {
     vec![
@@ -83,7 +83,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
             },
             contract: traq::Feature::Spoiler.contract(),
             #[cfg(feature = "syntax")]
-            syntax: markdown_trap_syntax::spoiler::plugin,
+            syntax: markdown_traq_syntax::spoiler::plugin,
         },
         FeatureDefinition {
             id: FeatureId::References,
@@ -93,7 +93,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
             },
             contract: traq::Feature::References.contract(),
             #[cfg(feature = "syntax")]
-            syntax: markdown_trap_syntax::references::plugin,
+            syntax: markdown_traq_syntax::references::plugin,
         },
         FeatureDefinition {
             id: FeatureId::Stamp,
@@ -103,7 +103,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
             },
             contract: traq::Feature::Stamp.contract(),
             #[cfg(feature = "syntax")]
-            syntax: markdown_trap_syntax::stamp::plugin,
+            syntax: markdown_traq_syntax::stamp::plugin,
         },
         FeatureDefinition {
             id: FeatureId::Spacing,
@@ -113,7 +113,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
             },
             contract: traq::Feature::Spacing.contract(),
             #[cfg(feature = "syntax")]
-            syntax: markdown_trap_syntax::spacing::plugin,
+            syntax: markdown_traq_syntax::spacing::plugin,
         },
     ]
 }

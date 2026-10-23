@@ -267,7 +267,7 @@ fn custom_parser_limits_flow_through_validated_consumers() {
 #[test]
 fn native_reference_payload_is_bounded_before_extraction() {
     use markdown_ast::{Node, Span, ValidationLimits};
-    use markdown_trap_contracts::{Reference, ReferenceKind};
+    use markdown_traq_contracts::{Reference, ReferenceKind};
     use traq_markdown_processing::presets::traq::{embedding, message};
 
     let document = MutableDocument {

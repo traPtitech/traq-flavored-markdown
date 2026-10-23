@@ -1,6 +1,6 @@
 use markdown_renderer::RenderPlugin;
 use markdown_renderer::Result;
-use markdown_trap_contracts::Stamp;
+use markdown_traq_contracts::Stamp;
 
 use std::sync::LazyLock;
 
@@ -11,7 +11,7 @@ pub fn plugin() -> RenderPlugin {
 }
 
 fn build() -> Result<RenderPlugin> {
-    let mut stamp = RenderPlugin::new(&markdown_trap_contracts::declarations().stamp);
+    let mut stamp = RenderPlugin::new(&markdown_traq_contracts::declarations().stamp);
     stamp.on::<Stamp>(|v, _, _, output| output.push(&v.literal))?;
     Ok(stamp)
 }

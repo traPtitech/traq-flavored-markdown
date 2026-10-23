@@ -4,7 +4,7 @@ use crate::links::TraqUrlClassifier;
 use markdown_commonmark_contracts::{Link, LinkForm};
 use markdown_renderer::RenderPreset;
 use markdown_renderer::RenderPresetBuilder;
-use markdown_trap_contracts::Embedding;
+use markdown_traq_contracts::Embedding;
 use traq_markdown_features::{TextFeature, TextOptions, TextProfile};
 
 /// Build editable plain-text rules. An empty origin leaves URLs as text.

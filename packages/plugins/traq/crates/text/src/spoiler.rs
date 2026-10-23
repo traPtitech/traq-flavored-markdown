@@ -1,6 +1,6 @@
 use markdown_renderer::RenderPlugin;
 use markdown_renderer::Result;
-use markdown_trap_contracts::Spoiler;
+use markdown_traq_contracts::Spoiler;
 
 use std::sync::LazyLock;
 
@@ -11,7 +11,7 @@ pub fn plugin() -> RenderPlugin {
 }
 
 fn build() -> Result<RenderPlugin> {
-    let mut spoiler = RenderPlugin::new(&markdown_trap_contracts::declarations().spoiler);
+    let mut spoiler = RenderPlugin::new(&markdown_traq_contracts::declarations().spoiler);
 
     spoiler.on::<Spoiler>(|_, nodes, ctx, output| {
         let content = ctx.capture_children(nodes)?;

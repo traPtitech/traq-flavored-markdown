@@ -21,7 +21,7 @@ export const nodeGroups = {
   traq: {
     wirePrefixes: ['traq'],
     owner: 'traq-plugin',
-    crate: 'markdown-trap-contracts',
+    crate: 'markdown-traq-contracts',
     typescriptNodes: 'traq-plugin/nodes',
     typescriptGeneratedPath: 'typescript/src/generated/nodes.ts',
     goPackage: 'plugins/traq/go',

@@ -334,7 +334,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "markdown-trap-contracts"
+name = "markdown-traq-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
@@ -346,35 +346,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "markdown-trap-extraction"
+name = "markdown-traq-extraction"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
  "markdown-extractor",
- "markdown-trap-contracts",
+ "markdown-traq-contracts",
  "schemars",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "markdown-trap-syntax"
+name = "markdown-traq-syntax"
 version = "0.1.0"
 dependencies = [
  "markdown-commonmark",
  "markdown-definitions",
  "markdown-parser",
- "markdown-trap-contracts",
+ "markdown-traq-contracts",
  "regex",
  "serde_json",
 ]
 
 [[package]]
-name = "markdown-trap-text"
+name = "markdown-traq-text"
 version = "0.1.0"
 dependencies = [
  "markdown-renderer",
- "markdown-trap-contracts",
+ "markdown-traq-contracts",
 ]
 
 [[package]]
@@ -648,9 +648,9 @@ dependencies = [
  "markdown-extensions-text",
  "markdown-parser",
  "markdown-renderer",
- "markdown-trap-contracts",
- "markdown-trap-syntax",
- "markdown-trap-text",
+ "markdown-traq-contracts",
+ "markdown-traq-syntax",
+ "markdown-traq-text",
 ]
 
 [[package]]
@@ -664,8 +664,8 @@ dependencies = [
  "markdown-extensions-contracts",
  "markdown-extensions-syntax",
  "markdown-parser",
- "markdown-trap-contracts",
- "markdown-trap-syntax",
+ "markdown-traq-contracts",
+ "markdown-traq-syntax",
  "serde",
  "serde_json",
  "traq-markdown-features",
@@ -681,9 +681,9 @@ dependencies = [
  "markdown-extensions-text",
  "markdown-extractor",
  "markdown-renderer",
- "markdown-trap-contracts",
- "markdown-trap-extraction",
- "markdown-trap-text",
+ "markdown-traq-contracts",
+ "markdown-traq-extraction",
+ "markdown-traq-text",
  "schemars",
  "serde",
  "serde_json",
@@ -702,7 +702,7 @@ dependencies = [
  "markdown-definitions",
  "markdown-extensions-contracts",
  "markdown-parser",
- "markdown-trap-contracts",
+ "markdown-traq-contracts",
  "schemars",
  "serde",
  "serde_json",

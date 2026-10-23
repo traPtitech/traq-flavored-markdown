@@ -113,7 +113,7 @@ mod tests {
         }
         markdown_commonmark_contracts::node_catalog!(register);
         markdown_extensions_contracts::node_catalog!(register);
-        markdown_trap_contracts::node_catalog!(register);
+        markdown_traq_contracts::node_catalog!(register);
         let mut actual = HashMap::new();
         let mut exports = HashSet::new();
         let mut ids = HashSet::new();

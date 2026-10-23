@@ -6,7 +6,7 @@ use markdown_extractor::Result;
 
 pub fn builder() -> Result<ExtractionPresetBuilder<References>> {
     let mut builder = ExtractionPresetBuilder::new();
-    builder.add(&markdown_trap_extraction::references::plugin())?;
+    builder.add(&markdown_traq_extraction::references::plugin())?;
     Ok(builder)
 }
 

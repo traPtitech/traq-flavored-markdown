@@ -1,6 +1,6 @@
 use markdown_renderer::RenderPresetBuilder;
 use markdown_renderer::Renderer;
-use markdown_trap_contracts::Spoiler;
+use markdown_traq_contracts::Spoiler;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = RenderPresetBuilder::new();
@@ -11,17 +11,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         markdown_extensions_text::table::plugin(),
         markdown_extensions_text::mark::plugin(),
         markdown_extensions_text::strikethrough::plugin(),
-        markdown_trap_text::references::plugin(),
-        markdown_trap_text::stamp::plugin(),
-        markdown_trap_text::spoiler::plugin(),
-        markdown_trap_text::spacing::plugin(),
+        markdown_traq_text::references::plugin(),
+        markdown_traq_text::stamp::plugin(),
+        markdown_traq_text::spoiler::plugin(),
+        markdown_traq_text::spacing::plugin(),
     ] {
         builder.add(&plugin)?;
     }
     let original = Renderer::new(&builder.clone().build()?);
 
     // Customize one type while keeping the original renderer valid.
-    let mut spoiler = markdown_trap_text::spoiler::plugin();
+    let mut spoiler = markdown_traq_text::spoiler::plugin();
     let registration = builder.registration(&spoiler).expect("preset spoiler");
     builder.remove(&registration)?;
     spoiler.replace::<Spoiler>(|_, _, _, output| output.push("[非表示]"))?;

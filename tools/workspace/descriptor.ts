@@ -52,7 +52,7 @@ for (const name of [
   restrictions[name] = [...engines, ...assemblies]
 for (const name of engines)
   restrictions[name] = [...without(engines, name), ...assemblies]
-for (const plugin of ['commonmark', 'extensions', 'trap']) {
+for (const plugin of ['commonmark', 'extensions', 'traq']) {
   restrictions['markdown-' + plugin + '-contracts'] = [
     ...engines,
     ...assemblies
@@ -67,7 +67,7 @@ for (const plugin of ['commonmark', 'extensions', 'trap']) {
       : 'markdown-' + plugin + '-syntax'
   ] = [...without(engines, 'markdown-parser'), ...assemblies]
 }
-restrictions['markdown-trap-extraction'] = [
+restrictions['markdown-traq-extraction'] = [
   ...without(engines, 'markdown-extractor'),
   ...assemblies
 ]

@@ -2,7 +2,7 @@
 
 Composes plain-text rendering and reference extraction for traQ. The crate
 does not normally depend on a parser or codec: implementations are supplied by
-`commonmark-text`, `extensions-text`, `trap-text`, and `trap-extraction` and consume
+`commonmark-text`, `extensions-text`, `traq-text`, and `traq-extraction` and consume
 the native AST directly.
 
 ```rust

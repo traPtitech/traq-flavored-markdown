@@ -6,7 +6,7 @@ use markdown_parser::rules::inline::InlineMatch;
 use markdown_parser::rules::inline::InlineRule;
 use markdown_parser::source::ViewOffset;
 
-pub use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
+pub use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> =
@@ -16,7 +16,7 @@ pub fn inline_rule() -> &'static InlineRule {
 
 pub fn plugin() -> &'static SyntaxPlugin {
     static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = SyntaxPlugin::new(&markdown_trap_contracts::declarations().references);
+        let mut plugin = SyntaxPlugin::new(&markdown_traq_contracts::declarations().references);
         plugin.add(inline_rule());
         plugin
     });

@@ -2,7 +2,7 @@
 use markdown_parser::grammar::SyntaxPlugin;
 use markdown_parser::rules::block::BlockRule;
 
-pub use markdown_trap_contracts::BlankLine;
+pub use markdown_traq_contracts::BlankLine;
 
 pub fn blank_rule() -> &'static BlockRule {
     static RULE: std::sync::LazyLock<BlockRule> = std::sync::LazyLock::new(|| {
@@ -21,7 +21,7 @@ pub fn blank_rule() -> &'static BlockRule {
 
 pub fn plugin() -> &'static SyntaxPlugin {
     static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = SyntaxPlugin::new(&markdown_trap_contracts::declarations().spacing);
+        let mut plugin = SyntaxPlugin::new(&markdown_traq_contracts::declarations().spacing);
         plugin.add(blank_rule());
         plugin
     });

@@ -47,10 +47,10 @@ impl TextFeature {
             Self::Mark => markdown_extensions_text::mark::plugin(),
             Self::Strikethrough => markdown_extensions_text::strikethrough::plugin(),
             Self::Table => markdown_extensions_text::table::plugin(),
-            Self::References => markdown_trap_text::references::plugin(),
-            Self::Stamp => markdown_trap_text::stamp::plugin(),
-            Self::Spoiler => markdown_trap_text::spoiler::plugin(),
-            Self::Spacing => markdown_trap_text::spacing::plugin(),
+            Self::References => markdown_traq_text::references::plugin(),
+            Self::Stamp => markdown_traq_text::stamp::plugin(),
+            Self::Spoiler => markdown_traq_text::spoiler::plugin(),
+            Self::Spacing => markdown_traq_text::spacing::plugin(),
         }
     }
 }

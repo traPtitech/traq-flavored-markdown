@@ -1,6 +1,6 @@
 //! Display labels shared by source-preserving extraction and plain-text rendering.
 use crate::links::Target;
-use markdown_trap_contracts::EmbeddingKind;
+use markdown_traq_contracts::EmbeddingKind;
 
 pub(super) fn for_embedding(kind: EmbeddingKind) -> &'static str {
     match kind {

@@ -1,8 +1,8 @@
 use markdown_ast::{MutableDocument, Node, Span};
 use markdown_extractor::ExtractionPresetBuilder;
 use markdown_extractor::Extractor;
-use markdown_trap_contracts::{Reference, ReferenceKind};
-use markdown_trap_extraction::{References, references};
+use markdown_traq_contracts::{Reference, ReferenceKind};
+use markdown_traq_extraction::{References, references};
 
 #[test]
 fn normalized_references_preserve_order_duplicates_and_categories() {

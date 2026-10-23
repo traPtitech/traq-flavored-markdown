@@ -1,6 +1,6 @@
 use markdown_extractor::ExtractionPlugin;
 use markdown_extractor::Result;
-use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
+use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -43,7 +43,7 @@ pub fn plugin() -> ExtractionPlugin<References> {
 
 fn build() -> Result<ExtractionPlugin<References>> {
     let mut plugin =
-        ExtractionPlugin::<References>::new(&markdown_trap_contracts::declarations().references);
+        ExtractionPlugin::<References>::new(&markdown_traq_contracts::declarations().references);
 
     plugin.on::<Reference>(|reference, _, result| {
         result.record_reference(reference);

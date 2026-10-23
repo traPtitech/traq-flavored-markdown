@@ -3,7 +3,7 @@ use super::labels;
 use crate::links::{Target, TraqUrlClassifier};
 use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Link, LinkForm};
-use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference};
+use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Message {

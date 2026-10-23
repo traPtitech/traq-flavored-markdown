@@ -13,7 +13,7 @@ test('core and every plugin layer reject capabilities belonging to another stage
     ['markdown-commonmark-text', 'markdown-parser'],
     ['markdown-extensions-text', 'markdown-codec'],
     ['markdown-extensions-syntax', 'markdown-renderer'],
-    ['markdown-trap-extraction', 'markdown-parser'],
+    ['markdown-traq-extraction', 'markdown-parser'],
     ['traq-markdown-grammar', 'traq-markdown-processing']
   ]) {
     expect(Object.hasOwn(crateRestrictions, root)).toBe(true)

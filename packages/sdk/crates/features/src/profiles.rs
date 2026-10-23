@@ -95,7 +95,7 @@ fn commonmark_precedence() -> Vec<Precedence> {
 fn traq_precedence() -> Vec<Precedence> {
     use Precedence::{Block, Inline};
     use markdown_extensions_syntax as extensions;
-    use markdown_trap_syntax as traq;
+    use markdown_traq_syntax as traq;
     let base = crate::commonmark_syntax();
     vec![
         Inline(extensions::math::inline_rule(), &base.inline.code),

@@ -1,6 +1,6 @@
 //! traQ URL meaning, independent of Markdown nodes and output formats.
 //! Exact lexical matching shared with TypeScript through traq-links.json.
-use markdown_trap_contracts::ReferenceId;
+use markdown_traq_contracts::ReferenceId;
 
 const MAX_ORIGIN_BYTES: usize = 2048;
 

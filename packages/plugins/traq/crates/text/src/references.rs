@@ -1,6 +1,6 @@
 use markdown_renderer::RenderPlugin;
 use markdown_renderer::Result;
-use markdown_trap_contracts::{Embedding, Reference};
+use markdown_traq_contracts::{Embedding, Reference};
 
 use std::sync::LazyLock;
 
@@ -11,7 +11,7 @@ pub fn plugin() -> RenderPlugin {
 }
 
 fn build() -> Result<RenderPlugin> {
-    let mut references = RenderPlugin::new(&markdown_trap_contracts::declarations().references);
+    let mut references = RenderPlugin::new(&markdown_traq_contracts::declarations().references);
 
     references.on::<Reference>(|v, _, _, output| output.push(&v.label))?;
 

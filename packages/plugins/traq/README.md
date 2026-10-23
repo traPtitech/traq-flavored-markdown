@@ -1,15 +1,15 @@
 # traQ plugin
 
-This package provides the traP-specific Markdown extensions used by traQ. The
+This package provides the traQ-specific Markdown extensions used by traQ. The
 SDK chooses their grammar order and ships the resulting presets, bindings, and
 application policies.
 
 | Crate                      | Purpose                                                 |
 | -------------------------- | ------------------------------------------------------- |
-| `markdown-trap-contracts`  | Nodes for stamps, references, spoilers, and blank lines |
-| `markdown-trap-syntax`     | traP syntax                                             |
-| `markdown-trap-text`       | Plain-text rendering for traP nodes                     |
-| `markdown-trap-extraction` | Reference extraction                                    |
+| `markdown-traq-contracts`  | Nodes for stamps, references, spoilers, and blank lines |
+| `markdown-traq-syntax`     | traQ syntax                                             |
+| `markdown-traq-text`       | Plain-text rendering for traQ nodes                     |
+| `markdown-traq-extraction` | Reference extraction                                    |
 
 Add the individual rule plugins to an application's `GrammarBuilder` or
 `RenderPresetBuilder`. The caller selects their order and decides attachment and citation URL
@@ -43,7 +43,3 @@ visibility. Stamps store semantic colors (numeric RGB or canonical HSL) and keep
 their literal source separately.
 
 The SDK processing crate owns the traQ composition and runnable native examples.
-
-Rust crate identifiers retain the organization name `markdown-trap-*`. Public
-feature namespaces, generated package groups, and serialized node kinds use
-`traq`, matching the application and this plugin directory.
