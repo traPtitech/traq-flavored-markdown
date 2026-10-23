@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import type * as CandidateAdapters from '../../../../packages/sdk/typescript/src/adapters/index.ts'
 import type * as CandidateSDK from '../../../../packages/sdk/typescript/src/index.ts'
 import type * as CandidateRenderer from '../../../../packages/sdk/typescript/src/renderer/index.ts'
 import type { ComparisonPlan } from '../../protocol/comparison.ts'
@@ -39,6 +40,9 @@ export async function frontendAdapters({
   const { messageRenderers }: typeof CandidateRenderer = await import(
     Bun.pathToFileURL(path.join(candidateDirectory, 'renderer/index.js')).href
   )
+  const { withDefaultAdapters }: typeof CandidateAdapters = await import(
+    Bun.pathToFileURL(path.join(candidateDirectory, 'adapters/index.js')).href
+  )
   const href = (type: string, id: string) =>
     '#' +
     ({ user: 'u', group: 'g', channel: 'c' }[type] ?? type) +
@@ -67,19 +71,21 @@ export async function frontendAdapters({
     const parser = runtime.createParser(presets.traq.v1)
     const views = messageRenderers({
       origin,
-      images: { validate: () => false },
-      references: {
-        resolve: (reference: { type: string; id: string }) => ({
-          href: href(reference.type, reference.id),
-          highlight: reference.type === 'user' && reference.id === 'viewer'
-        })
-      },
-      stamps: {
-        resolve: (stamp: { type: 'normal' | 'user'; name: string }) => ({
-          url: stampUrl(stamp.type === 'normal' ? 'stamp' : 'icon'),
-          title: stamp.type === 'user' ? '@' + stamp.name : stamp.name
-        })
-      }
+      ...withDefaultAdapters({
+        images: { validate: () => false },
+        references: {
+          resolve: (reference: { type: string; id: string }) => ({
+            href: href(reference.type, reference.id),
+            highlight: reference.type === 'user' && reference.id === 'viewer'
+          })
+        },
+        stamps: {
+          resolve: (stamp: { type: 'normal' | 'user'; name: string }) => ({
+            url: stampUrl(stamp.type === 'normal' ? 'stamp' : 'icon'),
+            title: stamp.type === 'user' ? '@' + stamp.name : stamp.name
+          })
+        }
+      })
     })
     const afterInitializationMs = performance.now() - started
     const baselineOutput = (value: {

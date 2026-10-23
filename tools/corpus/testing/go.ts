@@ -8,6 +8,7 @@ import { runFrontend } from '../comparison/frontend-worker.ts'
 import { createRun, executeRun } from '../comparison/run.ts'
 import { sha256 } from '../infrastructure/files.ts'
 import { applicationGoModule } from '../infrastructure/go-module.ts'
+import { parseDifferenceLine, readLines } from '../infrastructure/jsonl.ts'
 import { generateProtocol } from '../protocol/generate.ts'
 import { buildReport } from '../report/build.ts'
 import { fixturePlan } from './fixtures.ts'
@@ -50,11 +51,12 @@ try {
     'export class traQMarkdownIt { render(source) { return {renderedText: source, embeddings: []} } renderInline(source) { return this.render(source) } }'
   )
   const corpus = path.join(directory, 'input.jsonl')
+  const mathSource = '$x^2$'
+  const codeSource = '```js\nconst answer = 42\n```'
+  const sources = ['plain', '**bold**', ':stamp:', mathSource, codeSource]
   await Bun.write(
     corpus,
-    ['plain', '**bold**', ':stamp:']
-      .map(source => JSON.stringify({ source }))
-      .join('\n') + '\n'
+    sources.map(source => JSON.stringify({ source })).join('\n') + '\n'
   )
   const plan = await createRun(
     fixturePlan({
@@ -84,11 +86,29 @@ try {
     '<script type="application/json" id="metadata"></script><script type="application/json" id="payload"></script>'
   )
   if (
-    report.metadata.messages !== 3 ||
+    report.metadata.messages !== sources.length ||
     report.metadata.results.render.afterErrors !== 0 ||
+    report.metadata.results.inline.afterErrors !== 0 ||
     report.metadata.results.plainText.afterErrors !== 0
   )
     throw new Error('Synthetic SDK integration failed')
+  const differences = []
+  for await (const line of readLines(
+    path.join(plan.output, 'frontend-differences.jsonl')
+  ))
+    differences.push(parseDifferenceLine(line))
+  for (const [source, marker] of [
+    [mathSource, 'class="katex"'],
+    [codeSource, 'class="hljs-keyword"']
+  ] as const) {
+    const candidate = differences.find(
+      row => row.profile === 'render' && row.source === source
+    )?.after
+    if (candidate?.kind !== 'html' || !candidate.value.includes(marker))
+      throw new Error(
+        `Synthetic SDK integration omitted the default adapter output: ${marker}`
+      )
+  }
   process.stdout.write(
     'PASS Go protocol, both SDK adapters, complete run manifest, and report assembly\n'
   )
