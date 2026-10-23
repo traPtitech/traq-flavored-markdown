@@ -1,6 +1,6 @@
 //! The same collectors and scoped traversal power standalone and aggregate APIs.
 use crate::Result;
-use markdown_ast::{Node, ValidatedDocument};
+use markdown_ast::{DocumentView, Node};
 
 pub(crate) trait Collector<'a> {
     type Scope: Clone;
@@ -32,7 +32,7 @@ impl<'a, A: Collector<'a>, B: Collector<'a>> Collector<'a> for (A, B) {
 }
 
 pub(crate) fn collect<'a>(
-    document: ValidatedDocument<'a>,
+    document: DocumentView<'a>,
     collector: &mut impl Collector<'a>,
 ) -> Result<()> {
     document.try_visit(collector.initial(), |visit, scope| {

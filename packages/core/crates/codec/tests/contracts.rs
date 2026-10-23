@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 use markdown_definitions::NodeType;
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ impl NodeData for RenamedScore {
 #[test]
 fn shared_types_work_across_independent_registration_orders() {
     let mut producer = Codec::default();
-    let doc = Document {
+    let doc = MutableDocument {
         source: "猫".into(),
         children: vec![Node::leaf(Span { start: 0, end: 3 }, Score { value: 1.25 })],
     };
@@ -75,7 +75,7 @@ fn shared_types_work_across_independent_registration_orders() {
     assert_eq!(producer.encode(&doc).unwrap(), bytes);
 }
 
-fn first(codec: &mut Codec) -> Document {
+fn first(codec: &mut Codec) -> MutableDocument {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
     #[node_type(key = "test.collision")]
     struct Collision {
@@ -97,7 +97,7 @@ fn first(codec: &mut Codec) -> Document {
 
     codec.register::<Collision>().unwrap();
 
-    Document {
+    MutableDocument {
         source: "".into(),
         children: vec![Node::leaf(
             Span { start: 0, end: 0 },

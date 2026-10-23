@@ -1,4 +1,4 @@
-use traq_markdown_grammar::{Document, bindings};
+use traq_markdown_grammar::{Document, MutableDocument, bindings};
 use traq_markdown_processing::extraction::{Extractor, ExtractorOptions};
 
 fn parse(source: &str) -> Document {
@@ -67,7 +67,7 @@ fn invalid_ast_and_oversized_configuration_are_rejected() {
         .is_err()
     );
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
-    let mut invalid = parse("text");
+    let mut invalid = parse("text").into_mutable();
     invalid.children[0].span.end += 1;
     assert!(extractor.extract(&invalid).is_err());
     assert_eq!(
@@ -88,11 +88,11 @@ fn source_edit_consumers_require_a_canonical_ast() {
         .unwrap();
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
 
-    let mut reordered = original.clone();
+    let mut reordered = original.clone().into_mutable();
     reordered.children.reverse();
-    let mut duplicated = original.clone();
+    let mut duplicated = original.clone().into_mutable();
     duplicated.children.extend(original.children.clone());
-    let mut crossing = original.clone();
+    let mut crossing = original.clone().into_mutable();
     crossing.children.last_mut().unwrap().span.start = original.children[0].span.end - 1;
     for document in [reordered, duplicated, crossing] {
         assert_eq!(
@@ -159,7 +159,7 @@ fn aggregate_extraction_validates_each_node_once() {
         }
     }
     let calls = Arc::new(AtomicUsize::new(0));
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: String::new(),
         children: vec![Node::leaf(
             Span { start: 0, end: 0 },
@@ -224,7 +224,7 @@ fn aggregate_analysis_matches_the_standalone_policies() {
 
 #[test]
 fn custom_parser_limits_flow_through_validated_consumers() {
-    use markdown_ast::{ValidatedDocument, ValidationError, ValidationLimits};
+    use markdown_ast::{DocumentView, ValidationError, ValidationLimits};
     use traq_markdown_grammar::Limits;
     use traq_markdown_processing::presets::traq::{embedding, message};
     use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
@@ -240,34 +240,26 @@ fn custom_parser_limits_flow_through_validated_consumers() {
     });
     let document = parser.parse(&source).unwrap();
     assert!(matches!(
-        ValidatedDocument::new(&document),
+        DocumentView::new(&document),
         Err(ValidationError {
             kind: markdown_ast::ValidationErrorKind::SourceBytes,
             ..
         })
     ));
-    let validated = ValidatedDocument::with_limits(&document, document_limits).unwrap();
+    let validated = DocumentView::with_limits(&document, document_limits).unwrap();
 
     let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
-    assert_eq!(renderer.render_validated(validated).unwrap(), source);
-    assert_eq!(
-        extractor.extract_validated(validated).unwrap().message_text,
-        source
-    );
+    assert_eq!(renderer.render(validated).unwrap(), source);
+    assert_eq!(extractor.extract(validated).unwrap().message_text, source);
     assert_eq!(
         message::Extractor::new("")
-            .extract_validated(validated)
+            .extract(validated)
             .unwrap()
             .source_text,
         source
     );
-    assert_eq!(
-        embedding::plan_validated(validated)
-            .unwrap()
-            .unembedded_text,
-        source
-    );
+    assert_eq!(embedding::plan(validated).unwrap().unembedded_text, source);
 }
 
 #[test]
@@ -276,7 +268,7 @@ fn native_reference_payload_is_bounded_before_extraction() {
     use markdown_trap_contracts::{Reference, ReferenceKind};
     use traq_markdown_processing::presets::traq::{embedding, message};
 
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![Node::leaf(
             Span { start: 0, end: 0 },

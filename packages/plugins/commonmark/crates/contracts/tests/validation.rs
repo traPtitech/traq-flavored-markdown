@@ -1,5 +1,5 @@
 use markdown_ast::{
-    Document, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
+    MutableDocument, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
 };
 use markdown_commonmark_contracts::{
     Blockquote, Heading, Link, LinkForm, List, ListItem, ListKind, OrderedDelimiter, Paragraph,
@@ -47,7 +47,7 @@ fn paragraph() -> Node {
 #[test]
 fn lists_store_one_semantic_kind_and_validate_item_shape() {
     let item = || Node::new(span(), ListItem {}, vec![paragraph()]);
-    let list = |start, children| Document {
+    let list = |start, children| MutableDocument {
         source: String::new(),
         children: vec![Node::new(
             span(),

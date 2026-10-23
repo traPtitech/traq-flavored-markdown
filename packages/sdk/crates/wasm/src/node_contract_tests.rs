@@ -1,5 +1,5 @@
 use crate::nodes;
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Heading, Text};
 use markdown_definitions::NodeType;
 use serde_json::Value;
@@ -59,7 +59,7 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
 
 #[test]
 fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
-    let document = Document {
+    let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::leaf(Span { start: 0, end: 1 }, Heading { level: 7 })],
     };
@@ -75,7 +75,7 @@ fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
     );
 
     let child = Node::leaf(Span { start: 0, end: 1 }, Text { value: "x".into() });
-    let document = Document {
+    let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::new(
             Span { start: 0, end: 1 },

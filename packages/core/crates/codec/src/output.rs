@@ -1,19 +1,9 @@
 use super::{Codec, CodecLimits, Error, ErrorKind, Result as CodecResult};
-use markdown_ast::{Document, Node, ValidatedDocument};
+use markdown_ast::{DocumentView, MutableDocument, Node};
 use serde::{Serialize, Serializer};
 
 pub(super) fn encode(
-    document: &Document,
-    codec: &Codec,
-    limits: CodecLimits,
-) -> CodecResult<Vec<u8>> {
-    // Check before recursive serialization, including subtrees a renderer may hide.
-    let document = ValidatedDocument::with_limits(document, limits.document)?;
-    encode_validated(document, codec, limits)
-}
-
-pub(super) fn encode_validated(
-    document: ValidatedDocument<'_>,
+    document: DocumentView<'_>,
     codec: &Codec,
     limits: CodecLimits,
 ) -> CodecResult<Vec<u8>> {
@@ -72,7 +62,7 @@ impl std::io::Write for LimitedOutput {
 }
 
 pub(super) struct DocumentOutput<'a> {
-    pub document: &'a Document,
+    pub document: &'a MutableDocument,
     pub codec: &'a Codec,
 }
 

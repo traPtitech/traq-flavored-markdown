@@ -1,5 +1,5 @@
 //! PlainText rendering policy for traQ messages.
-use markdown_ast::{Document, ValidatedDocument};
+
 use markdown_renderer::Renderer;
 use serde::{Deserialize, Serialize};
 
@@ -35,13 +35,13 @@ impl PlainTextRenderer {
         })
     }
 
-    pub fn render(&self, document: &Document) -> crate::Result<String> {
-        self.render_validated(ValidatedDocument::new(document)?)
-    }
-
     /// Share one validation with other native consumers during this borrow.
-    pub fn render_validated(&self, document: ValidatedDocument<'_>) -> crate::Result<String> {
-        let text = self.renderer.render_validated(document)?;
+    pub fn render<'a>(
+        &self,
+        document: impl markdown_ast::DocumentInput<'a>,
+    ) -> crate::Result<String> {
+        let document = document.into_view()?;
+        let text = self.renderer.render(document)?;
         Ok(match self.whitespace {
             WhitespacePolicy::Preserve => text,
             WhitespacePolicy::Collapse => text.split_whitespace().collect::<Vec<_>>().join(" "),

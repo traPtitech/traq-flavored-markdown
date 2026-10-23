@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_extractor::{Extractor, PresetBuilder};
 use markdown_trap_contracts::{Reference, ReferenceKind};
 use markdown_trap_extraction::{References, references};
@@ -24,7 +24,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
         "あ".repeat(12),
     ];
 
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "x".repeat(forms.len() * 3),
         children: vec![],
     };

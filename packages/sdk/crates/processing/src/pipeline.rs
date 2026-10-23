@@ -4,7 +4,7 @@ use crate::{
     extraction::{Extraction, Extractor, ExtractorOptions},
     rendering::{PlainTextRenderer, RendererOptions, WhitespacePolicy},
 };
-use markdown_ast::ValidatedDocument;
+use markdown_ast::DocumentView;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -43,10 +43,10 @@ impl Processor {
         })
     }
 
-    pub fn process_validated(&self, document: ValidatedDocument<'_>) -> Result<ProcessingResult> {
+    pub fn process(&self, document: DocumentView<'_>) -> Result<ProcessingResult> {
         Ok(ProcessingResult {
-            extraction: self.extractor.extract_validated(document)?,
-            plain_text: self.renderer.render_validated(document)?,
+            extraction: self.extractor.extract(document)?,
+            plain_text: self.renderer.render(document)?,
         })
     }
 }

@@ -1,6 +1,6 @@
 //! Message meaning is collected independently of rendering and response formatting.
 use crate::{References, Result, presets::traq};
-use markdown_ast::{Document, Node, ValidatedDocument};
+use markdown_ast::Node;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -55,16 +55,18 @@ impl Extractor {
             references: markdown_extractor::Extractor::new(&traq::references::preset()?),
         })
     }
-    pub fn extract(&self, document: &Document) -> Result<Extraction> {
-        self.extract_validated(ValidatedDocument::new(document)?)
+    pub fn extract<'a>(
+        &self,
+        document: impl markdown_ast::DocumentInput<'a>,
+    ) -> Result<Extraction> {
+        let document = document.into_view()?;
+        self.analyze(document).map(Into::into)
     }
-    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> Result<Extraction> {
-        self.analyze_validated(document).map(Into::into)
-    }
-    pub fn analyze(&self, document: &Document) -> Result<MessageAnalysis> {
-        self.analyze_validated(ValidatedDocument::new(document)?)
-    }
-    pub fn analyze_validated(&self, document: ValidatedDocument<'_>) -> Result<MessageAnalysis> {
+    pub fn analyze<'a>(
+        &self,
+        document: impl markdown_ast::DocumentInput<'a>,
+    ) -> Result<MessageAnalysis> {
+        let document = document.into_view()?;
         let mut collectors = (
             ReferenceCollector {
                 extractor: &self.references,

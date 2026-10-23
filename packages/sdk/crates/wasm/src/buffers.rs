@@ -16,10 +16,10 @@ pub struct Buffers {
 thread_local! { pub static IO: RefCell<Buffers> = RefCell::default(); }
 
 impl Buffers {
-    pub fn document(&self) -> Result<markdown_ast::ValidatedDocumentBuf, Error> {
+    pub fn document(&self) -> Result<markdown_ast::Document, Error> {
         let source = self.source()?;
         crate::nodes::codec()
-            .decode_validated_with_limits(
+            .decode_with_limits(
                 source.as_bytes(),
                 markdown_codec::DecodeLimits {
                     json_bytes: MAX_INPUT,
@@ -29,7 +29,7 @@ impl Buffers {
             .map_err(Error::document)
     }
 
-    pub fn reply_document(&mut self, result: &Result<markdown_ast::ValidatedDocumentBuf, Error>) {
+    pub fn reply_document(&mut self, result: &Result<markdown_ast::Document, Error>) {
         let result = match result {
             Ok(document) => self.encode_document(document),
             Err(error) => Err(error.clone()),
@@ -42,11 +42,11 @@ impl Buffers {
 
     pub(crate) fn encode_document(
         &self,
-        document: &markdown_ast::ValidatedDocumentBuf,
+        document: &markdown_ast::Document,
     ) -> Result<Vec<u8>, Error> {
         let bytes = crate::nodes::codec()
-            .encode_validated_with_limits(
-                document.validated(),
+            .encode_with_limits(
+                document.as_view(),
                 markdown_codec::CodecLimits {
                     json_bytes: MAX_OUTPUT - 7,
                     ..Default::default()
@@ -198,9 +198,7 @@ mod tests {
     #[test]
     fn parsed_documents_reuse_the_validated_owner() {
         let parser = traq_markdown_grammar::presets::traq::v1::parser();
-        let result = parser
-            .parse_validated("\u{feff}é\r\n\0😀")
-            .map_err(Error::from);
+        let result = parser.parse("\u{feff}é\r\n\0😀").map_err(Error::from);
         let mut io = Buffers::default();
         io.reply_document(&result);
         let reply: serde_json::Value = serde_json::from_slice(&io.output).unwrap();

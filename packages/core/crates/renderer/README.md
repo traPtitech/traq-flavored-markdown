@@ -5,7 +5,7 @@ depends only on the AST and shared declarations, not on CommonMark, traQ, a
 parser, or a codec.
 
 ```rust
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 
@@ -30,7 +30,7 @@ plugin.on::<Text>(move |text, _, _, output| {
 let mut builder = PresetBuilder::new();
 builder.add(&plugin)?;
 let renderer = Renderer::new(&builder.build()?);
-let document = Document {
+let document = MutableDocument {
     source: "world".into(),
     children: vec![Node::leaf(Span { start: 0, end: 5 }, Text("world".into()))],
 };
@@ -55,5 +55,5 @@ output and work limits. Handlers write through `Output`; ordinary wrappers call
 `builder.register(&plugin)` returns a `RegistrationHandle`. Removal uses that
 handle, so editing the plugin never changes which registration is removed.
 
-Use `render_validated(ValidatedDocument)` to reuse a shared immutable tree
+Use `render(&Document)` or `render(DocumentView)` to reuse a shared immutable tree
 validation. It still checks handler coverage and per-render output limits.

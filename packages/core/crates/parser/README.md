@@ -42,7 +42,7 @@ uses the same `ValidationLimits` as codecs and AST consumers. Its defaults are
 65,536 source bytes, 8 MiB of payload, 16,384 nodes, and depth 64;
 `Limits::work` is specific to parsing. A parser configured with
 `Parser::with_limits` can pass its document to consumers through
-`ValidatedDocument::with_limits` using the same `Limits::document` value.
+`DocumentView::with_limits` using the same `Limits::document` value.
 
 Inline and text rules exchange `ViewOffset` and `ViewRange`; block rules receive
 `LineIndex` values and typed view ranges for their lines. `SourceView::span_for`

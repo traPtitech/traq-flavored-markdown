@@ -1,5 +1,5 @@
 use crate::{Preset, Result};
-use markdown_ast::{Document, Node, ValidatedDocument};
+use markdown_ast::Node;
 
 pub struct Extractor<R> {
     preset: Preset<R>,
@@ -14,18 +14,12 @@ impl<R> Extractor<R> {
 
     /// Start a fresh result and visit every node in document preorder. Unknown
     /// types are not collected, but their validation and descendants still count.
-    pub fn extract(&self, document: &Document) -> Result<R>
-    where
-        R: Default,
-    {
-        self.extract_validated(ValidatedDocument::new(document)?)
-    }
-
     /// Reuse validation when several consumers share one immutable document.
-    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> Result<R>
+    pub fn extract<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<R>
     where
         R: Default,
     {
+        let document = document.into_view()?;
         let mut result = R::default();
         for visit in document.walk() {
             self.observe(visit.node, &mut result)?;

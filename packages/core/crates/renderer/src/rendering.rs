@@ -1,5 +1,5 @@
 use crate::{Error, Preset, Result};
-use markdown_ast::{Document, Node, ValidatedDocument};
+use markdown_ast::Node;
 use std::cell::Cell;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,11 +32,9 @@ impl Renderer {
         self.limits = limits;
         self
     }
-    pub fn render(&self, document: &Document) -> Result<String> {
-        self.render_validated(ValidatedDocument::new(document)?)
-    }
     /// Validation and handler support cover even descendants hidden by a handler.
-    pub fn render_validated(&self, document: ValidatedDocument<'_>) -> Result<String> {
+    pub fn render<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<String> {
+        let document = document.into_view()?;
         for visit in document.walk() {
             if !self
                 .preset

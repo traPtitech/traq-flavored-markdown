@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Heading, Paragraph};
 use traq_markdown_grammar::bindings;
 use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
@@ -66,7 +66,7 @@ fn plain_text_renderer_keeps_math_delimiters_and_explicit_link_destinations() {
 
 #[test]
 fn renderer_rejects_invalid_contract_children_before_rendering() {
-    let document = Document {
+    let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::new(
             Span { start: 0, end: 1 },

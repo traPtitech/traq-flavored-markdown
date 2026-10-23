@@ -9,18 +9,18 @@ fn processing_reuses_the_tree_and_names_its_whitespace_policy() {
         rendering::WhitespacePolicy,
     };
     let document = traq_markdown_grammar::presets::traq::v1::parser()
-        .parse_validated("hello\n\nworld")
+        .parse("hello\n\nworld")
         .unwrap();
     let collapsed = Processor::new(ProcessorOptions::default())
         .unwrap()
-        .process_validated(document.validated())
+        .process(document.as_view())
         .unwrap();
     let preserved = Processor::new(ProcessorOptions {
         whitespace: WhitespacePolicy::Preserve,
         ..Default::default()
     })
     .unwrap()
-    .process_validated(document.validated())
+    .process(document.as_view())
     .unwrap();
     assert_eq!(collapsed.plain_text, "hello world");
     assert!(preserved.plain_text.contains('\n'));

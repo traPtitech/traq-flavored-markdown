@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span, ValidationLimits};
+use markdown_ast::{MutableDocument, Node, Span, ValidationLimits};
 use markdown_codec::{Codec, CodecLimits, DecodeLimits};
 mod support;
 use markdown_definitions::NodeType;
@@ -28,7 +28,7 @@ fn deep_json(depth: usize) -> String {
 fn bounded_input_and_output_accept_the_boundary() {
     let codec = codec();
     let span = Span { start: 0, end: 3 };
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "猫".into(),
         children: vec![Node::leaf(
             span,
@@ -103,7 +103,7 @@ fn bounded_input_and_output_accept_the_boundary() {
         );
     }
 
-    let mut too_deep = at_limit;
+    let mut too_deep = at_limit.into_mutable();
     too_deep.children = vec![Node::new(
         Span { start: 0, end: 0 },
         Paragraph {},
@@ -125,7 +125,7 @@ fn bounded_input_and_output_accept_the_boundary() {
 fn ambiguous_or_unknown_input_is_rejected() {
     let codec = codec();
     let doc = codec
-        .encode(&Document {
+        .encode(&MutableDocument {
             source: "".into(),
             children: vec![Node::leaf(
                 Span { start: 0, end: 0 },
@@ -153,7 +153,7 @@ fn ambiguous_or_unknown_input_is_rejected() {
 #[test]
 fn overlapping_siblings_are_rejected_at_both_codec_boundaries() {
     let codec = codec();
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "abc".into(),
         children: vec![
             Node::leaf(Span { start: 0, end: 2 }, Text { value: "ab".into() }),
@@ -178,7 +178,7 @@ fn overlapping_siblings_are_rejected_at_both_codec_boundaries() {
 fn custom_limits_round_trip_above_the_default_source_budget() {
     let codec = codec();
     let source = "x".repeat(ValidationLimits::default().source_bytes + 1);
-    let document = Document {
+    let document = MutableDocument {
         children: vec![Node::leaf(
             Span {
                 start: 0,
@@ -218,7 +218,7 @@ fn custom_limits_round_trip_above_the_default_source_budget() {
 #[test]
 fn payload_limit_is_enforced_by_both_codec_directions() {
     let codec = codec();
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![
             Node::leaf(

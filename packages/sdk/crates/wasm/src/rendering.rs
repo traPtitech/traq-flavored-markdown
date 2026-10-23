@@ -28,7 +28,7 @@ pub extern "C" fn render() -> u32 {
                 renderer
                     .as_ref()
                     .ok_or_else(Error::not_configured)?
-                    .render_validated(document.validated())
+                    .render(document.as_view())
                     .map_err(Error::processing)
             })
         });

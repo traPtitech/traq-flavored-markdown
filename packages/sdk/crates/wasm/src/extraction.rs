@@ -28,7 +28,7 @@ pub extern "C" fn extract() -> u32 {
                 extractor
                     .as_ref()
                     .ok_or_else(Error::not_configured)?
-                    .extract_validated(document.validated())
+                    .extract(document.as_view())
                     .map_err(Error::processing)
             })
         });

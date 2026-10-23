@@ -1,4 +1,4 @@
-use crate::{Document, Node, PayloadError, Span};
+use crate::{MutableDocument, Node, PayloadError, Span};
 
 /// Shared source and tree limits for parsers, codecs, and AST consumers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,29 +135,29 @@ impl ValidationStats {
 /// again after editing. Payload implementations must preserve their invariants.
 ///
 /// ```compile_fail
-/// use markdown_ast::{Document, ValidatedDocument};
-/// let mut document = Document { source: String::new(), children: vec![] };
-/// let validated = ValidatedDocument::new(&document).unwrap();
+/// use markdown_ast::{MutableDocument, DocumentView};
+/// let mut document = MutableDocument { source: String::new(), children: vec![] };
+/// let validated = DocumentView::new(&document).unwrap();
 /// document.source.push('x');
 /// let _ = validated.document();
 /// ```
-#[derive(Debug, Clone, Copy)]
-pub struct ValidatedDocument<'a> {
-    document: &'a Document,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DocumentView<'a> {
+    document: &'a MutableDocument,
     stats: ValidationStats,
 }
-impl<'a> ValidatedDocument<'a> {
-    pub fn new(document: &'a Document) -> Result<Self, ValidationError> {
+impl<'a> DocumentView<'a> {
+    pub fn new(document: &'a MutableDocument) -> Result<Self, ValidationError> {
         Self::with_limits(document, ValidationLimits::default())
     }
     pub fn with_limits(
-        document: &'a Document,
+        document: &'a MutableDocument,
         limits: ValidationLimits,
     ) -> Result<Self, ValidationError> {
         let stats = validate(document, limits)?;
         Ok(Self { document, stats })
     }
-    pub fn document(self) -> &'a Document {
+    pub fn document(self) -> &'a MutableDocument {
         self.document
     }
     pub fn stats(self) -> ValidationStats {
@@ -173,43 +173,78 @@ impl<'a> ValidatedDocument<'a> {
 
 /// An immutable owner carrying validation across parser, codec, and consumer
 /// boundaries. Mutable access consumes the owner and discards its proof.
-#[derive(Debug, Clone)]
-pub struct ValidatedDocumentBuf {
-    document: Document,
+///
+/// ```compile_fail
+/// let mut document = markdown_ast::MutableDocument { source: String::new(), children: vec![] }.finish().unwrap();
+/// document.source.push('x');
+/// ```
+#[derive(Debug, Clone, PartialEq)]
+pub struct Document {
+    document: MutableDocument,
     stats: ValidationStats,
 }
-impl ValidatedDocumentBuf {
-    pub fn new(document: Document) -> Result<Self, ValidationError> {
+impl Document {
+    pub fn new(document: MutableDocument) -> Result<Self, ValidationError> {
         Self::with_limits(document, ValidationLimits::default())
     }
     pub fn with_limits(
-        document: Document,
+        document: MutableDocument,
         limits: ValidationLimits,
     ) -> Result<Self, ValidationError> {
         let stats = validate(&document, limits)?;
         Ok(Self { document, stats })
     }
-    pub fn validated(&self) -> ValidatedDocument<'_> {
-        ValidatedDocument {
+    pub fn as_view(&self) -> DocumentView<'_> {
+        DocumentView {
             document: &self.document,
             stats: self.stats,
         }
     }
-    pub fn document(&self) -> &Document {
+    pub fn document(&self) -> &MutableDocument {
         &self.document
     }
-    pub fn into_document(self) -> Document {
+    pub fn into_mutable(self) -> MutableDocument {
         self.document
     }
 }
-impl Document {
-    /// Validate the complete native tree, including hidden or unknown node types.
-    pub fn validate(&self, limits: ValidationLimits) -> Result<usize, ValidationError> {
-        validate(self, limits).map(|stats| stats.nodes)
+impl MutableDocument {
+    /// Validate an immutable borrow without taking ownership.
+    pub fn validate(&self, limits: ValidationLimits) -> Result<DocumentView<'_>, ValidationError> {
+        DocumentView::with_limits(self, limits)
+    }
+    /// Finish editing and retain the checked document for every consumer.
+    pub fn finish(self) -> Result<Document, ValidationError> {
+        Document::new(self)
+    }
+    pub fn finish_with_limits(self, limits: ValidationLimits) -> Result<Document, ValidationError> {
+        Document::with_limits(self, limits)
     }
 }
+impl std::ops::Deref for Document {
+    type Target = MutableDocument;
+    fn deref(&self) -> &Self::Target {
+        &self.document
+    }
+}
+impl std::ops::Deref for DocumentView<'_> {
+    type Target = MutableDocument;
+    fn deref(&self) -> &Self::Target {
+        self.document
+    }
+}
+impl<'a> From<&'a Document> for DocumentView<'a> {
+    fn from(document: &'a Document) -> Self {
+        document.as_view()
+    }
+}
+impl PartialEq<MutableDocument> for Document {
+    fn eq(&self, other: &MutableDocument) -> bool {
+        self.document == *other
+    }
+}
+
 fn validate(
-    document: &Document,
+    document: &MutableDocument,
     limits: ValidationLimits,
 ) -> Result<ValidationStats, ValidationError> {
     let mut stats = ValidationStats {
@@ -275,4 +310,42 @@ fn validate(
         }
     }
     Ok(stats)
+}
+
+/// A consumer input. Checked owners and views reuse their proof; an editable
+/// draft crosses the validation boundary before any consumer is invoked.
+pub trait DocumentInput<'a> {
+    fn into_view(self) -> Result<DocumentView<'a>, ValidationError>;
+    fn into_view_with_limits(
+        self,
+        limits: ValidationLimits,
+    ) -> Result<DocumentView<'a>, ValidationError>
+    where
+        Self: Sized,
+    {
+        let view = self.into_view()?;
+        view.check_limits(limits)?;
+        Ok(view)
+    }
+}
+impl<'a> DocumentInput<'a> for DocumentView<'a> {
+    fn into_view(self) -> Result<DocumentView<'a>, ValidationError> {
+        Ok(self)
+    }
+}
+impl<'a> DocumentInput<'a> for &'a Document {
+    fn into_view(self) -> Result<DocumentView<'a>, ValidationError> {
+        Ok(self.as_view())
+    }
+}
+impl<'a> DocumentInput<'a> for &'a MutableDocument {
+    fn into_view_with_limits(
+        self,
+        limits: ValidationLimits,
+    ) -> Result<DocumentView<'a>, ValidationError> {
+        DocumentView::with_limits(self, limits)
+    }
+    fn into_view(self) -> Result<DocumentView<'a>, ValidationError> {
+        DocumentView::new(self)
+    }
 }

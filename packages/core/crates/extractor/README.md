@@ -5,7 +5,7 @@ the AST and shared declarations, not on a grammar, parser, renderer, codec, or
 traQ-specific result type.
 
 ```rust
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_extractor::{Extractor, Plugin, PresetBuilder};
 
@@ -29,7 +29,7 @@ plugin.on::<Reference>(|reference, result| {
 let mut builder = PresetBuilder::new();
 builder.add(&plugin)?;
 let extractor = Extractor::new(&builder.build()?);
-let document = Document {
+let document = MutableDocument {
     source: String::new(),
     children: vec![Node::leaf(Span { start: 0, end: 0 }, Reference("id".into()))],
 };
@@ -46,11 +46,12 @@ an existing builder, preset, or extractor. Duplicate handlers are rejected.
 `register` returns a stable registration handle; `remove` consumes its identity
 independently of later edits to the original plugin.
 
-`extract` validates the whole tree and visits every node in document order
+`extract` reuses a checked document or validates an editable draft before
+visiting every node in document order
 (parent, descendants, next sibling). Unhandled nodes are still validated and
 traversed. The default validation limits are 65,536 source bytes, 8 MiB of payload, 16,384 nodes,
 and depth 64. Handlers own the limits of their work and result sizes.
 
-Use `extract_validated(ValidatedDocument)` to avoid repeating validation when
+Use `extract(DocumentView)` to avoid repeating validation when
 sharing an immutable document with other consumers. It still creates a fresh
 result and traverses all nodes.

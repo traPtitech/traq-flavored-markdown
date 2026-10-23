@@ -60,15 +60,20 @@ the custom `validate_payload` hook, so a custom validator cannot bypass it.
 The `markdown_definitions::node` attribute derives the ordinary implementation
 and field accounting; `markdown_definitions::payload` handles nested data.
 
-AST construction and editing do not validate automatically. Validation is not
-cached, so validate again after an edit. `ValidatedDocument::new(&document)` uses
-the default limits; `ValidatedDocument::with_limits(&document, limits)` carries
-a successful check with the limits chosen by a parser or codec. Either can
-share one validation across immutable renderer and extractor borrows without
-copying or persisting the AST. Consumers still enforce their own codec, handler,
-and output rules.
+Use `MutableDocument { source, children }` while constructing or editing a tree.
+`finish()` or `finish_with_limits(limits)` checks it and returns an immutable
+`Document`. Parsers and codecs return this checked owner by default. Its
+`as_view()` borrows a copyable `DocumentView` carrying the existing validation
+facts; repeated consumers do not rerun payload validation. `into_mutable()`
+consumes the owner to begin another edit and discards those facts.
 
-`Node` and `Document` implement `Clone`, `PartialEq`, `Send`, and `Sync`. They do
-not promise `Eq`, since a payload may contain values such as `NaN`. JSON is the
-responsibility of `markdown-codec`; the AST types do not implement
-`Serialize`/`Deserialize`.
+Consumer methods have one `DocumentInput` entry point. Passing `&Document` or
+`DocumentView` reuses the proof. Passing `&MutableDocument` explicitly crosses
+the validation boundary, with default limits, before handlers run. To select
+custom limits for a draft, call `validate(limits)` and pass the returned view.
+Consumers still enforce codec registrations, handler support, and output limits.
+
+`Node`, `MutableDocument`, and `Document` implement `Clone`, `PartialEq`,
+`Send`, and `Sync`. They do not promise `Eq`, since a payload may contain
+values such as `NaN`. JSON belongs to `markdown-codec`; AST types do not
+implement `Serialize`/`Deserialize`.

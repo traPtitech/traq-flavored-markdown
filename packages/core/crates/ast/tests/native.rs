@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, NodeKind, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeKind, NodeRole, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Score(f64);
@@ -50,7 +50,7 @@ impl NodeData for Container {
 #[test]
 fn native_borrow_clone_validation_and_partial_equality() {
     fn send_sync<T: Send + Sync>() {}
-    send_sync::<Document>();
+    send_sync::<MutableDocument>();
 
     let span = Span { start: 0, end: 1 };
     let original = Node::new(span, Container, vec![Node::leaf(span, Score(1.5))]);

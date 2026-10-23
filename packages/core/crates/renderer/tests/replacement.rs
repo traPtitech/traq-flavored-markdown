@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 use std::sync::Arc;
@@ -33,8 +33,8 @@ impl NodeData for Other {
     }
 }
 
-fn document<T: NodeData>(value: T) -> Document {
-    Document {
+fn document<T: NodeData>(value: T) -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children: vec![Node::leaf(Span { start: 0, end: 0 }, value)],
     }

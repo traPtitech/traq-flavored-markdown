@@ -1,5 +1,5 @@
 use markdown_ast::{
-    Document, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
+    MutableDocument, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
 };
 use markdown_extensions_contracts::{
     Alignment, BlockMath, Cell, HeaderRow, InlineMath, Row, Table,
@@ -25,8 +25,8 @@ fn row(header: bool, cells: Vec<Node>) -> Node {
     )
 }
 
-fn table(rows: Vec<Node>) -> Document {
-    Document {
+fn table(rows: Vec<Node>) -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children: vec![Node::new(
             span(),

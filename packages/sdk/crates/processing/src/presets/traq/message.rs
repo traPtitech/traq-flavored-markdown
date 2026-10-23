@@ -1,7 +1,7 @@
 //! Source-preserving message text and attachment/citation extraction from one AST.
 use super::labels;
 use crate::links::{Target, TraqUrlClassifier};
-use markdown_ast::{Document, Node, Span, ValidatedDocument};
+use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Link, LinkForm};
 use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference};
 use markdown_trap_extraction::normalize_reference_id;
@@ -24,12 +24,12 @@ impl Extractor {
         }
     }
 
-    pub fn extract(&self, document: &Document) -> crate::Result<Message> {
-        self.extract_validated(ValidatedDocument::new(document)?)
-    }
-
     /// Reuse an immutable validation, including explicitly configured tree limits.
-    pub fn extract_validated(&self, document: ValidatedDocument<'_>) -> crate::Result<Message> {
+    pub fn extract<'a>(
+        &self,
+        document: impl markdown_ast::DocumentInput<'a>,
+    ) -> crate::Result<Message> {
+        let document = document.into_view()?;
         let mut collector = Collector::new(self);
         crate::collectors::collect(document, &mut collector)?;
         collector.finish(&document.document().source)

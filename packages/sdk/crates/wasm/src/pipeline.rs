@@ -49,7 +49,7 @@ pub extern "C" fn process(mode: u32) -> u32 {
                 let document = grammar::parse(&pipeline.grammar, source, mode)?;
                 let processing = pipeline
                     .processor
-                    .process_validated(document.validated())
+                    .process(document.as_view())
                     .map_err(Error::processing)?;
                 // Encode the original validated tree once for host HTML and editing consumers.
                 let document = serde_json::from_slice(&io.encode_document(&document)?)

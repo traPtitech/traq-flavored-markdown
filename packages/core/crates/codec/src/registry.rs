@@ -1,6 +1,6 @@
 use crate::{CodecLimits, Error, ErrorKind, Result, fields::Fields};
 
-use markdown_ast::{Document, NodeData, NodeKind, ValidatedDocument, ValidatedDocumentBuf};
+use markdown_ast::{Document, NodeData, NodeKind};
 use markdown_definitions::NodeType;
 
 use serde::{
@@ -60,53 +60,30 @@ impl Codec {
         Ok(())
     }
 
-    pub fn encode(&self, document: &Document) -> Result<Vec<u8>> {
+    pub fn encode<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<Vec<u8>> {
         self.encode_with_limits(document, CodecLimits::default())
     }
-
-    /// Encode a document with explicit JSON and tree limits.
-    pub fn encode_with_limits(&self, document: &Document, limits: CodecLimits) -> Result<Vec<u8>> {
-        crate::output::encode(document, self, limits)
-    }
-
-    pub fn encode_validated(&self, document: ValidatedDocument<'_>) -> Result<Vec<u8>> {
-        self.encode_validated_with_limits(document, CodecLimits::default())
-    }
-
-    pub fn encode_validated_with_limits(
+    pub fn encode_with_limits<'a>(
         &self,
-        document: ValidatedDocument<'_>,
+        document: impl markdown_ast::DocumentInput<'a>,
         limits: CodecLimits,
     ) -> Result<Vec<u8>> {
-        crate::output::encode_validated(document, self, limits)
+        crate::output::encode(
+            document.into_view_with_limits(limits.document)?,
+            self,
+            limits,
+        )
     }
-
     pub fn decode(&self, json: &[u8]) -> Result<Document> {
         self.decode_with_limits(json, CodecLimits::default())
     }
-
     pub fn decode_with_limits(&self, json: &[u8], limits: CodecLimits) -> Result<Document> {
-        self.decode_validated_with_limits(json, limits)
-            .map(ValidatedDocumentBuf::into_document)
-    }
-
-    pub fn decode_validated(&self, json: &[u8]) -> Result<ValidatedDocumentBuf> {
-        self.decode_validated_with_limits(json, CodecLimits::default())
-    }
-
-    pub fn decode_validated_with_limits(
-        &self,
-        json: &[u8],
-        limits: CodecLimits,
-    ) -> Result<ValidatedDocumentBuf> {
         crate::receive::decode(json, limits, &|name, mut fields| {
             let id = self
                 .names
                 .get(name)
                 .ok_or_else(|| Error::new(ErrorKind::UnknownContract { name: name.into() }))?;
-
             let raw = fields.take("data")?;
-
             fields.end()?;
             Ok((self.entries[id].decode)(Deserialize::deserialize(raw)?)?)
         })

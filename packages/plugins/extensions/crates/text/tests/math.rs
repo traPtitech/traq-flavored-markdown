@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_extensions_contracts::{BlockMath, InlineMath};
 use markdown_extensions_text::math::{self, Options, Style};
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
@@ -9,8 +9,8 @@ fn renderer(plugin: &Plugin) -> Renderer {
     Renderer::new(&builder.build().unwrap())
 }
 
-fn document() -> Document {
-    Document {
+fn document() -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children: vec![
             Node::leaf(Span { start: 0, end: 0 }, InlineMath { tex: "x".into() }),

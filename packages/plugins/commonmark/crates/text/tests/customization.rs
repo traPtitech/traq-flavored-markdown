@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Link, LinkForm, Text};
 use markdown_renderer::{Plugin, PresetBuilder, Renderer};
 
@@ -35,7 +35,7 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
         .replace::<Link>(|link, _, _, output| output.push(&link.destination))
         .unwrap();
 
-    let document = Document {
+    let document = MutableDocument {
         source: String::new(),
         children: vec![Node::new(
             Span { start: 0, end: 0 },

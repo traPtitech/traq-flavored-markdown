@@ -11,6 +11,6 @@ pub mod syntax {
 }
 
 pub use markdown_parser::{
-    Document, Grammar, GrammarBuilder, Limits, Node, NodeKind, NodeRole, ParseError, Parser, Span,
-    ValidationLimits, engine,
+    Document, DocumentView, Grammar, GrammarBuilder, Limits, MutableDocument, Node, NodeKind,
+    NodeRole, ParseError, Parser, Span, ValidationLimits, engine,
 };

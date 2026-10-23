@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
 mod support;
 use markdown_definitions::NodeType;
@@ -47,7 +47,7 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
 
     let span = Span { start: 0, end: 1 };
 
-    let mut doc = Document {
+    let mut doc = MutableDocument {
         source: "x".into(),
         children: vec![Node::new(
             span,
@@ -64,17 +64,11 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
 
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
 
-    let validated = codec.decode_validated(&bytes).unwrap();
+    let validated = codec.decode(&bytes).unwrap();
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
-    assert_eq!(validated.validated().node_count(), 3);
-    assert_eq!(
-        codec.encode_validated(validated.validated()).unwrap(),
-        bytes
-    );
-    assert_eq!(
-        codec.encode_validated(validated.validated()).unwrap(),
-        bytes
-    );
+    assert_eq!(validated.as_view().node_count(), 3);
+    assert_eq!(codec.encode(validated.as_view()).unwrap(), bytes);
+    assert_eq!(codec.encode(validated.as_view()).unwrap(), bytes);
     assert_eq!(
         CHECKS.load(Ordering::Relaxed),
         0,
@@ -90,7 +84,7 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     };
     assert!(
         codec
-            .encode_validated_with_limits(validated.validated(), limited)
+            .encode_with_limits(validated.as_view(), limited)
             .is_err()
     );
     assert_eq!(
@@ -98,7 +92,7 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
         0,
         "tightening limits uses validation facts"
     );
-    assert_eq!(validated.into_document(), doc);
+    assert_eq!(validated.into_mutable(), doc);
     assert_eq!(codec.decode(&bytes).unwrap(), doc);
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
 

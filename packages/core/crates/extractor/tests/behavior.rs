@@ -1,4 +1,4 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_definitions::Plugin as Declaration;
 use markdown_extractor::{Extractor, Plugin, PresetBuilder};
 use std::{
@@ -75,8 +75,8 @@ fn node<T: NodeData>(value: T, children: Vec<Node>) -> Node {
     Node::new(Span { start: 0, end: 0 }, value, children)
 }
 
-fn document(children: Vec<Node>) -> Document {
-    Document {
+fn document(children: Vec<Node>) -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children,
     }

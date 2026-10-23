@@ -1,5 +1,5 @@
 use super::{Budget, Grammar, Limits, ParseError, ParseState, block, inline, source::SourceView};
-use markdown_ast::{Document, ValidatedDocumentBuf, ValidationErrorKind, ValidationLimits};
+use markdown_ast::{Document, MutableDocument, ValidationErrorKind, ValidationLimits};
 
 pub struct Parser {
     grammar: Grammar,
@@ -20,24 +20,14 @@ impl Parser {
     }
 
     pub fn parse(&self, source: &str) -> Result<Document, ParseError> {
-        self.parse_validated(source)
-            .map(ValidatedDocumentBuf::into_document)
-    }
-
-    pub fn parse_inline(&self, source: &str) -> Result<Document, ParseError> {
-        self.parse_inline_validated(source)
-            .map(ValidatedDocumentBuf::into_document)
-    }
-
-    pub fn parse_validated(&self, source: &str) -> Result<ValidatedDocumentBuf, ParseError> {
         self.run(source, false)
     }
 
-    pub fn parse_inline_validated(&self, source: &str) -> Result<ValidatedDocumentBuf, ParseError> {
+    pub fn parse_inline(&self, source: &str) -> Result<Document, ParseError> {
         self.run(source, true)
     }
 
-    fn run(&self, source: &str, inline_only: bool) -> Result<ValidatedDocumentBuf, ParseError> {
+    fn run(&self, source: &str, inline_only: bool) -> Result<Document, ParseError> {
         let grammar = &self.grammar;
         if source.len() > self.limits.document.source_bytes {
             return Err(ParseError::limit("source_bytes"));
@@ -53,14 +43,14 @@ impl Parser {
             block::parse(&view, grammar, &mut budget, &mut state)?
         };
 
-        let document = Document {
+        let document = MutableDocument {
             source: source.into(),
             children,
         };
 
         let remaining_work = budget.remaining_work();
 
-        let document = ValidatedDocumentBuf::with_limits(
+        let document = Document::with_limits(
             document,
             ValidationLimits {
                 nodes: self.limits.document.nodes.min(remaining_work),
@@ -87,7 +77,7 @@ impl Parser {
             }
         })?;
 
-        budget.spend(document.validated().node_count())?;
+        budget.spend(document.as_view().node_count())?;
 
         Ok(document)
     }

@@ -1,5 +1,5 @@
 //! traQ editing policy over a parsed document. Identity lookup belongs to the caller.
-use markdown_ast::{Document, Node, Span, ValidatedDocument};
+use markdown_ast::{Node, Span};
 use markdown_commonmark_contracts::{Image, Link, Text};
 use markdown_trap_contracts::{Embedding, Reference};
 use serde::Serialize;
@@ -36,12 +36,11 @@ pub struct ReferenceEmbeddingPlan {
     pub unembedded_text: String,
 }
 
-pub fn plan(document: &Document) -> crate::Result<ReferenceEmbeddingPlan> {
-    plan_validated(ValidatedDocument::new(document)?)
-}
-
 /// Reuse an immutable validation, including explicitly configured tree limits.
-pub fn plan_validated(document: ValidatedDocument<'_>) -> crate::Result<ReferenceEmbeddingPlan> {
+pub fn plan<'a>(
+    document: impl markdown_ast::DocumentInput<'a>,
+) -> crate::Result<ReferenceEmbeddingPlan> {
+    let document = document.into_view()?;
     let mut collector = Collector::default();
     crate::collectors::collect(document, &mut collector)?;
     collector.finish(&document.document().source)
