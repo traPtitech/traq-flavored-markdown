@@ -77,11 +77,12 @@ export default [
       'scripts/**/*.{mjs,ts}',
       'tools/workspace/**/*.{mjs,ts}',
       'tools/contracts/**/*.{mjs,ts}',
-      'tools/corpus/scripts/**/*.{mjs,ts}',
+      'tools/corpus/{cli,collection,comparison,infrastructure,protocol,report,testing}/**/*.{mjs,ts}',
+      'tests/browser/**/*.{mjs,ts}',
       'packages/**/scripts/**/*.{js,mjs,ts,mts}'
     ],
     languageOptions: {
-      globals: { ...globals.node, Bun: 'readonly' }
+      globals: { ...globals.node, ...globals.browser, Bun: 'readonly' }
     },
     rules: {
       'no-console': 'off',

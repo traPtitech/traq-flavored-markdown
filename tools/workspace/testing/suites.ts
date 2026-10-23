@@ -36,6 +36,7 @@ export const suites = {
     timeout: 30000,
     resources: 'Built TypeScript packages, exported contracts, Sass',
     include: [
+      'packages/plugins/traq/scripts/styles.spec.ts',
       'packages/sdk/scripts/styles.spec.ts',
       'packages/sdk/typescript/tests/bindings.spec.ts'
     ]

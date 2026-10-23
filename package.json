@@ -39,7 +39,7 @@
     "lint:check": "eslint --cache --max-warnings=0 .",
     "lint:rust": "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
     "release": "bun run scripts/release.ts",
-    "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go",
+    "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go && bun run test:corpus:go && bun run test:browser",
     "test:corpus": "bun run --cwd tools/corpus test",
     "test:go": "bun run scripts/testing/go.ts",
     "test:rust": "cargo test --locked --workspace --all-features",
@@ -49,10 +49,14 @@
     "test:codegen": "bun run scripts/testing/run.ts codegen",
     "test:workspace": "bun run scripts/testing/run.ts workspace",
     "test:wasm": "bun run scripts/testing/run.ts wasm",
-    "typecheck": "bun run scripts/typecheck.ts"
+    "typecheck": "bun run scripts/typecheck.ts",
+    "test:browser": "playwright test --config tests/browser/playwright.config.ts",
+    "test:browser:serve": "bun run --cwd tools/corpus vite ../.. --config ../../tests/browser/vite.config.ts --port 4178 --host 127.0.0.1",
+    "test:corpus:go": "bun run --cwd tools/corpus test:go"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
     "@stylistic/eslint-plugin": "5.10.0",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
     "@types/bun": "1.4.3",

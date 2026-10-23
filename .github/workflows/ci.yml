@@ -98,6 +98,10 @@ jobs:
       - run: bun run check:package
         timeout-minutes: 5
       - run: bun run check:go-consumer
+      - run: bunx playwright install --with-deps chromium
+        if: runner.os == 'Linux'
+      - run: bun run test:browser
+        if: runner.os == 'Linux'
 
   rust:
     name: Rust
@@ -123,6 +127,7 @@ jobs:
       - run: bun ci
       - run: bun run build
       - run: bun run test:go
+      - run: bun run test:corpus:go
 
   generated:
     name: Validate generated bindings
