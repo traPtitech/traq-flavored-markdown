@@ -1,9 +1,9 @@
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import { createJsonlSink } from '../infrastructure/jsonl.ts'
 import { type Fetch, createApiClient } from './client.ts'
 import { observeSource, sampleMessages } from './sampling.ts'
-import { createJsonlSink } from './sink.ts'
 
 export async function collect({
   baseUrl,

@@ -1,10 +1,10 @@
 import {
   type DifferenceRow,
-  type Mode,
+  type ProfileId,
   type ReportMetadata,
   parseDifferenceRow
-} from '../../report-schema.ts'
-import { type ReportData, parseReport } from '../../shared/report-data.ts'
+} from '../../protocol/report.ts'
+import { type ReportData, parseReport } from '../../protocol/report.ts'
 import {
   type Progress,
   type Query,
@@ -12,7 +12,7 @@ import {
   normalizePage
 } from './query.ts'
 
-export { parseReport, type ReportData } from '../../shared/report-data.ts'
+export { parseReport, type ReportData } from '../../protocol/report.ts'
 
 type Hit = readonly [number, number]
 
@@ -46,7 +46,7 @@ export class ReportRepository {
     this.metadata = data.metadata
   }
 
-  async loadChunk(mode: Mode, index: number) {
+  async loadChunk(mode: ProfileId, index: number) {
     const key = `${mode}:${index}`
     const previous = this.chunks.get(key)
     if (previous) return previous
@@ -59,7 +59,12 @@ export class ReportRepository {
         this.metadata.pageSize,
         this.metadata.counts[mode] - index * this.metadata.pageSize
       )
-      if (rows.length !== expected || rows.some(row => row.mode !== mode))
+      if (
+        rows.length !== expected ||
+        rows.some(
+          row => row.profile !== mode || row.runId !== this.metadata.run.runId
+        )
+      )
         throw new Error('Report chunk does not match metadata')
       return rows
     })

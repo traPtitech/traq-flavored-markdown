@@ -1,6 +1,6 @@
-import { type ReportMetadata, modes } from '../../report-schema.ts'
-import { profileDefinitions } from '../../shared/comparison.ts'
+import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
 import type { ViewerController } from '../hooks/useViewerController.ts'
+import { profileLabels } from '../profiles.ts'
 import type { OutputView } from '../state.ts'
 
 const number = (value: number) => value.toLocaleString('ja-JP')
@@ -40,14 +40,14 @@ export function ComparisonControls({
   return (
     <>
       <nav className="toolbar">
-        <div id="modes" className="modes">
-          {modes.map(mode => (
+        <div id="profileIds" className="profileIds">
+          {profileIds.map(mode => (
             <button
               key={mode}
               aria-pressed={query.mode === mode}
               onClick={() => dispatch({ type: 'mode', mode })}
             >
-              {profileDefinitions[mode].label} {number(metadata.counts[mode])}
+              {profileLabels[mode]} {number(metadata.counts[mode])}
             </button>
           ))}
           <select

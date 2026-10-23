@@ -1,4 +1,4 @@
-import type { Mode } from '../report-schema.ts'
+import type { ProfileId } from '../protocol/report.ts'
 import { type Query, normalizePage } from './data/query.ts'
 
 export type OutputView = 'rendered' | 'raw'
@@ -13,7 +13,7 @@ export const initialViewerState: ViewerState = {
   outputView: 'rendered'
 }
 export type ViewerAction =
-  | { type: 'mode'; mode: Mode }
+  | { type: 'mode'; mode: ProfileId }
   | { type: 'draft'; text: string }
   | { type: 'search' }
   | { type: 'whitespace'; ignore: boolean }

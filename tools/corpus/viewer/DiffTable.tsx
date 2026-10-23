@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 
-import type { DifferenceRow, OutputKind } from '../report-schema.ts'
+import type { Outcome } from '../protocol/comparison.ts'
+import type { DifferenceRow } from '../protocol/report.ts'
 import { outputDiff } from './data/diff.ts'
 import { renderHTML } from './preview/html.ts'
 import type { OutputView } from './state.ts'
@@ -33,8 +34,8 @@ export default function DiffTable({ rows, outputView }: DiffTableProps) {
               <RawDiffCells row={row} />
             ) : (
               <>
-                <RenderCell text={row.before} kind={row.beforeType} />
-                <RenderCell text={row.after} kind={row.afterType} />
+                <RenderCell outcome={row.before} />
+                <RenderCell outcome={row.after} />
               </>
             )}
           </tr>
@@ -60,13 +61,18 @@ function SourceCell({ row }: { row: DifferenceRow }) {
   )
 }
 
-function RenderCell({ text, kind }: { text: string; kind: OutputKind }) {
+function RenderCell({ outcome }: { outcome: Outcome }) {
   return (
     <td>
-      {kind === 'html' ? (
-        <HtmlPreview html={text} />
+      {outcome.kind === 'html' ? (
+        <HtmlPreview html={outcome.value} />
       ) : (
-        <pre className="cell-content plain-text">{text}</pre>
+        <pre
+          className={`cell-content plain-text${outcome.kind === 'error' ? ' output-error' : ''}`}
+        >
+          {outcome.kind === 'error' && <strong>実行エラー: </strong>}
+          {outcome.value}
+        </pre>
       )}
     </td>
   )
@@ -81,7 +87,7 @@ function HtmlPreview({ html }: { html: string }) {
 }
 
 function RawDiffCells({ row }: { row: DifferenceRow }) {
-  const { parts, coarse } = outputDiff(row.before, row.after)
+  const { parts, coarse } = outputDiff(row.before.value, row.after.value)
 
   const title = coarse
     ? '長い出力のため、共通の先頭・末尾を除いた変更範囲をまとめて強調しています。文字列は省略していません。'

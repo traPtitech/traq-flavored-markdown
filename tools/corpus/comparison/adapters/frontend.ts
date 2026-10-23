@@ -1,26 +1,43 @@
 import path from 'node:path'
 
-import { sdkRoot } from '../../../../tools/workspace/paths.ts'
-import type { ComparisonPlan } from '../../shared/comparison.ts'
+import type * as CandidateSDK from '../../../../packages/sdk/typescript/src/index.ts'
+import type * as CandidateRenderer from '../../../../packages/sdk/typescript/src/renderer/index.ts'
+import type { ComparisonPlan } from '../../protocol/comparison.ts'
 import type { Profile } from '../runner.ts'
 
 export async function frontendAdapters({
   baselineDirectory,
   origin,
-  wasm
-}: Pick<ComparisonPlan, 'baselineDirectory' | 'origin' | 'wasm'>) {
+  wasm,
+  candidateDirectory
+}: Pick<
+  ComparisonPlan,
+  'baselineDirectory' | 'origin' | 'wasm' | 'candidateDirectory'
+>) {
   const baselinePackage = Bun.resolveSync(
     '@traptitech/traq-markdown-it',
     path.resolve(baselineDirectory)
   )
-  const { traQMarkdownIt } = await import(
-    Bun.pathToFileURL(baselinePackage).href
+  const {
+    traQMarkdownIt
+  }: {
+    traQMarkdownIt: new (
+      store: unknown,
+      domains: string[],
+      origin: string
+    ) => {
+      render(source: string): { renderedText: string; embeddings?: unknown }
+      renderInline(source: string): {
+        renderedText: string
+        embeddings?: unknown
+      }
+    }
+  } = await import(Bun.pathToFileURL(baselinePackage).href)
+  const { createRuntime, presets }: typeof CandidateSDK = await import(
+    Bun.pathToFileURL(path.join(candidateDirectory, 'index.js')).href
   )
-  const { createRuntime, presets } = await import(
-    Bun.pathToFileURL(path.join(sdkRoot, 'dist/index.js')).href
-  )
-  const { messageRenderers } = await import(
-    Bun.pathToFileURL(path.join(sdkRoot, 'dist/renderer/index.js')).href
+  const { messageRenderers }: typeof CandidateRenderer = await import(
+    Bun.pathToFileURL(path.join(candidateDirectory, 'renderer/index.js')).href
   )
   const href = (type: string, id: string) =>
     '#' +
@@ -43,7 +60,7 @@ export async function frontendAdapters({
   let started = performance.now()
   const baseline = new traQMarkdownIt(store, [], origin)
   const beforeInitializationMs = performance.now() - started
-  const bytes = await Bun.file(wasm).arrayBuffer()
+  const bytes = new Uint8Array(await Bun.file(wasm).arrayBuffer())
   started = performance.now()
   const runtime = await createRuntime(bytes)
   try {
@@ -69,24 +86,22 @@ export async function frontendAdapters({
       renderedText: string
       embeddings?: unknown
     }) => ({
-      kind: 'html' as const,
-      value: value.renderedText,
+      outcome: { kind: 'html' as const, value: value.renderedText },
       embeddings: value.embeddings
     })
     const candidateOutput = (value: { html: string; cards?: unknown }) => ({
-      kind: 'html' as const,
-      value: value.html,
+      outcome: { kind: 'html' as const, value: value.html },
       embeddings: value.cards
     })
     const profiles: Profile[] = [
       {
-        mode: 'render',
+        id: 'render',
         before: source => baselineOutput(baseline.render(source)),
         after: source =>
           candidateOutput(views.standard.render(parser.parse(source)))
       },
       {
-        mode: 'inline',
+        id: 'inline',
         before: source => baselineOutput(baseline.renderInline(source)),
         after: source =>
           candidateOutput(views.condensed.render(parser.parse(source)))
@@ -96,7 +111,7 @@ export async function frontendAdapters({
       profiles,
       beforeInitializationMs,
       afterInitializationMs,
-      dispose: () => runtime.dispose()
+      [Symbol.dispose]: () => runtime.dispose()
     }
   } catch (error) {
     runtime.dispose()

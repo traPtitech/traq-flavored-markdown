@@ -1,5 +1,5 @@
-import { type ReportMetadata, modes } from '../../report-schema.ts'
-import { profileDefinitions } from '../../shared/comparison.ts'
+import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
+import { profileLabels } from '../profiles.ts'
 
 const number = (value: number) =>
   value.toLocaleString('ja-JP', { maximumFractionDigits: 2 })
@@ -24,9 +24,9 @@ export function ReportHeader({ metadata }: { metadata: ReportMetadata }) {
             件のウォームアップ後に計測。before / after
             の実行順は交互。収集・ファイル出力・画面表示の時間は含みません。各モードを順に実行した際の参考値です。
           </p>
-          {modes.map(mode => (
+          {profileIds.map(mode => (
             <p key={mode}>
-              {profileDefinitions[mode].label} 初期化: before{' '}
+              {profileLabels[mode]} 初期化: before{' '}
               {number(metadata.results[mode].initialization.beforeMs)} ms /
               after {number(metadata.results[mode].initialization.afterMs)} ms。
             </p>
@@ -55,11 +55,11 @@ function SpeedTable({ metadata }: { metadata: ReportMetadata }) {
         </tr>
       </thead>
       <tbody>
-        {modes.map(mode => {
+        {profileIds.map(mode => {
           const data = metadata.results[mode]
           return (
             <tr key={mode}>
-              <td>{profileDefinitions[mode].label}</td>
+              <td>{profileLabels[mode]}</td>
               <td>
                 {number(data.before.meanUs)} / {number(data.after.meanUs)}
               </td>

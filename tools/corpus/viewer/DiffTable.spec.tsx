@@ -1,18 +1,17 @@
 import { expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import type { DifferenceRow } from '../report-schema.ts'
+import type { DifferenceRow } from '../protocol/report.ts'
 import DiffTable from './DiffTable.tsx'
 
 test('text and error results render their full content without mounting DOM effects', () => {
   const row: DifferenceRow = {
+    runId: 'synthetic-run',
     index: 0,
-    mode: 'plainText',
+    profile: 'plainText',
     source: 'source',
-    before: '<b>literal</b>',
-    after: 'failure & details',
-    beforeType: 'text',
-    afterType: 'error'
+    before: { kind: 'text', value: '<b>literal</b>' },
+    after: { kind: 'error', value: 'failure & details' }
   }
   const html = renderToStaticMarkup(
     <DiffTable rows={[row]} outputView="rendered" />

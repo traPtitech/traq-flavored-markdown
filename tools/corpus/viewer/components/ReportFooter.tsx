@@ -1,14 +1,14 @@
-import { type ReportMetadata, modes } from '../../report-schema.ts'
-import { profileDefinitions } from '../../shared/comparison.ts'
+import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
+import { profileLabels } from '../profiles.ts'
 
 export function ReportFooter({ metadata }: { metadata: ReportMetadata }) {
   return (
     <footer id="footer">
       生成 {new Date(metadata.generated).toLocaleString('ja-JP')}
-      {modes.map(mode => (
+      {profileIds.map(mode => (
         <span key={mode}>
           {' · '}
-          {profileDefinitions[mode].label} before{' '}
+          {profileLabels[mode]} before{' '}
           {metadata.run.provenance.before[mode].revision.slice(0, 10)}
         </span>
       ))}

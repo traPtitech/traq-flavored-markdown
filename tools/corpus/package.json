@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "build": "vite build viewer",
-    "collect": "bun run --bun scripts/fetch.ts",
-    "compare": "bun run --bun scripts/compare.ts",
-    "report": "bun run build && bun run --bun scripts/report.ts",
-    "test": "bun test scripts collection comparison report viewer",
+    "collect": "bun run --bun cli/collect.ts",
+    "compare": "bun run --bun cli/compare.ts",
+    "report": "bun run build && bun run --bun cli/report.ts",
+    "test": "bun run testing/run.ts",
+    "test:go": "bun run testing/go.ts",
+    "generate:protocol": "bun run protocol/generate.ts",
+    "check:protocol": "bun run protocol/generate.ts --check",
     "typecheck": "bun run --bun ../../scripts/tsc.ts -p tsconfig.browser.json && bun run --bun ../../scripts/tsc.ts -p tsconfig.json"
   },
   "dependencies": {
