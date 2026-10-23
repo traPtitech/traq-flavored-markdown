@@ -92,7 +92,7 @@ export function emitTypeScriptValidators(
 
   return (
     '// Generated from Rust node payload types. Do not edit.\n' +
-    `import { defineNode, type DeepReadonly } from ${q(definitionImport)}\n` +
+    `import { defineNode, DocumentSchema, type DeepReadonly } from ${q(definitionImport)}\n` +
     emitContractValidators(module, fieldsImport) +
     'export const names = Object.freeze(' +
     q(
@@ -108,18 +108,18 @@ export function emitTypeScriptValidators(
       )
       .join('\n') +
     '\n])\n' +
-    'export const nodes: ReadonlyMap<string, (data: unknown) => boolean> = new Map(validators)\n' +
     'export const definitions = Object.freeze({\n' +
     entries
       .map(([key, schema]) => {
         const name = typeName(schema)
-        return `${name}: defineNode<Extract<NodeKind, { kind: typeof names.${name} }>>(names.${name}, validators.get(names.${name})!${structures[key] ? ', ' + q(structures[key]) : ''})`
+        return `${name}: defineNode<Extract<NodeVariant, { kind: typeof names.${name} }>>(names.${name}, validators.get(names.${name})!${structures[key] ? ', ' + q(structures[key]) : ''})`
       })
       .join(',\n') +
     '\n})\n' +
+    'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions))\n' +
     '// Check this payload only; children can still contain unknown nodes.\n' +
-    'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & DeepReadonly<NodeKind> {\n' +
-    '  return validators.get(node.kind)?.(node.data) ?? false\n' +
+    'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & DeepReadonly<NodeVariant> {\n' +
+    '  return schema.isKnownNode(node)\n' +
     '}\n'
   )
 }

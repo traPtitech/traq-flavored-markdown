@@ -2,23 +2,27 @@ import { expect, test } from 'bun:test'
 
 import { assertNodeGroup } from '../model/groups.ts'
 
-test('contract groups accept their independently named legacy wire kinds', () => {
+test('contract groups use their plugin-owned wire namespaces', () => {
   expect(() =>
     assertNodeGroup('commonmark', {
       'commonmark.text': { group: 'commonmark' }
     })
   ).not.toThrow()
   expect(() =>
-    assertNodeGroup('extensions', { 'generic.table': { group: 'extensions' } })
+    assertNodeGroup('extensions', {
+      'extensions.table': { group: 'extensions' }
+    })
   ).not.toThrow()
   expect(() =>
-    assertNodeGroup('trap', { 'traq.blank_line': { group: 'trap' } })
+    assertNodeGroup('traq', { 'traq.blank_line': { group: 'traq' } })
   ).not.toThrow()
 })
 
 test('contract ownership rejects mismatched groups and undeclared wire namespaces', () => {
   expect(() =>
-    assertNodeGroup('extensions', { 'generic.table': { group: 'commonmark' } })
+    assertNodeGroup('extensions', {
+      'extensions.table': { group: 'commonmark' }
+    })
   ).toThrow('contract group')
   expect(() =>
     assertNodeGroup('extensions', {
@@ -26,7 +30,7 @@ test('contract ownership rejects mismatched groups and undeclared wire namespace
     })
   ).toThrow('wire namespace')
   expect(() =>
-    assertNodeGroup('trap', { 'trap.blank_line': { group: 'trap' } })
+    assertNodeGroup('traq', { 'trap.blank_line': { group: 'traq' } })
   ).toThrow('wire namespace')
   expect(() =>
     assertNodeGroup('extensions', {

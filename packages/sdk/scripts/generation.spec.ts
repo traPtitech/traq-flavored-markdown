@@ -17,16 +17,16 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
   const key = 'custom::BadgeData'
 
   const manifest = {
-    nodes: { [key]: { schema, group: 'trap' } }
+    nodes: { [key]: { schema, group: 'traq' } }
   }
   const generated = typescriptFiles(manifest)
   expect(generated.get('typescript/src/generated/nodes.ts')).toMatch(
-    /trap.NodeKind/
+    /traq.NodeVariant/
   )
   expect(generated.get('typescript/src/generated/nodes.ts')).toMatch(
-    /return validators\.get\(node\.kind\)/
+    /return schema\.isKnownNode\(node\)/
   )
-  expect(sdkGoNodes({ nodes: { [key]: { group: 'trap' } } })).toContain(
+  expect(sdkGoNodes({ nodes: { [key]: { group: 'traq' } } })).toContain(
     'packages/plugins/traq/go'
   )
   expect(() =>
@@ -43,10 +43,10 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
     /Object\.freeze\(\{ "compact": "custom.compact" \} as const\)/
   )
   expect(presets.get('typescript/src/generated/presets.ts')).toContain(
-    'export function isPreset(value: string): value is Preset'
+    'export function isGrammarPresetId(value: string): value is GrammarPresetId'
   )
   expect(presets.get('go/generated_presets.go')).toMatch(
-    /PresetCustomCompact Preset = "custom.compact"/
+    /GrammarCustomCompact GrammarPresetID = "custom.compact"/
   )
 })
 

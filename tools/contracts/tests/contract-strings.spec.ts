@@ -63,9 +63,8 @@ test('generated string validators count Unicode scalars rather than bytes, UTF-1
     pathToFileURL(
       path.join(packageRoot('core'), 'typescript', 'src', 'validation.ts')
     ).href,
-    pathToFileURL(
-      path.join(packageRoot('core'), 'typescript', 'src', 'nodes.ts')
-    ).href
+    pathToFileURL(path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts'))
+      .href
   )
   const compiled = ts.transpileModule(generated, {
     compilerOptions: {
@@ -76,8 +75,8 @@ test('generated string validators count Unicode scalars rather than bytes, UTF-1
   await withTempDirectory('traq-string-', async directory => {
     const filename = path.join(directory, 'text.mjs')
     await write(filename, compiled)
-    const { nodes } = await import(pathToFileURL(filename).href)
-    const validate = nodes.get('example::Text')
+    const { definitions } = await import(pathToFileURL(filename).href)
+    const validate = definitions.Text.validateData
     const fields = { lower: '日😀字', upper: '', empty: '' }
     for (const value of ['ab', '日😀', 'e\u0301'])
       expect(validate({ ...fields, value })).toBe(true)

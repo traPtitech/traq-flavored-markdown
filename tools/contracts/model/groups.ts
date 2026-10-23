@@ -5,13 +5,12 @@ export const nodeGroups = {
     owner: 'commonmark-plugin',
     crate: 'markdown-commonmark-contracts',
     typescriptNodes: 'commonmark-plugin/nodes',
-    typescriptGeneratedPath: 'typescript/src/generated/commonmark.ts',
+    typescriptGeneratedPath: 'typescript/src/generated/nodes.ts',
     goPackage: 'plugins/commonmark/go',
     goGeneratedPath: 'go/generated_nodes.go'
   },
   extensions: {
-    // Historical serialized node kinds keep their independent wire namespace.
-    wirePrefixes: ['generic'],
+    wirePrefixes: ['extensions'],
     owner: 'extensions-plugin',
     crate: 'markdown-extensions-contracts',
     typescriptNodes: 'extensions-plugin/nodes',
@@ -19,12 +18,12 @@ export const nodeGroups = {
     goPackage: 'plugins/extensions/go',
     goGeneratedPath: 'go/generated_nodes.go'
   },
-  trap: {
+  traq: {
     wirePrefixes: ['traq'],
     owner: 'traq-plugin',
     crate: 'markdown-trap-contracts',
     typescriptNodes: 'traq-plugin/nodes',
-    typescriptGeneratedPath: 'typescript/src/generated/trap.ts',
+    typescriptGeneratedPath: 'typescript/src/generated/nodes.ts',
     goPackage: 'plugins/traq/go',
     goGeneratedPath: 'go/generated_nodes.go'
   }

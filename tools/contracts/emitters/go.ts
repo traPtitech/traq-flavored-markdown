@@ -10,7 +10,7 @@ import type { NodeStructure } from '../model/structure.ts'
 
 type Definitions = ContractModule['definitions']
 
-const typeName = (name: string) => name.replace(/Data$/, '')
+const typeName = (name: string) => name
 const fieldName = (name: string) =>
   name === 'id'
     ? 'ID'

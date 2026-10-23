@@ -58,9 +58,8 @@ test('tagged Rust unions validate their discriminators and variant fields', asyn
     pathToFileURL(
       path.join(packageRoot('core'), 'typescript', 'src', 'validation.ts')
     ).href,
-    pathToFileURL(
-      path.join(packageRoot('core'), 'typescript', 'src', 'nodes.ts')
-    ).href
+    pathToFileURL(path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts'))
+      .href
   )
   const compiled = ts.transpileModule(source, {
     compilerOptions: {
@@ -71,8 +70,8 @@ test('tagged Rust unions validate their discriminators and variant fields', asyn
   await withTempDirectory('traq-union-', async directory => {
     const module = `${directory}/union.mjs`
     await write(module, compiled)
-    const { nodes } = await import(pathToFileURL(module).href)
-    const validate = nodes.get('example::StampData')
+    const { definitions } = await import(pathToFileURL(module).href)
+    const validate = definitions.StampData.validateData
     expect(
       validate({ kind: { type: 'normal', name: 'x' }, animations: [] })
     ).toBe(true)

@@ -279,7 +279,7 @@ export function shape(
 }
 
 export function typeName(schema: RawSchema) {
-  const name = schema.title?.replace(/Data$/, '')
+  const name = schema.title
   if (!name || !/^[A-Z][A-Za-z0-9_]*$/.test(name))
     throw new Error('Expected an exported payload type name')
   return name

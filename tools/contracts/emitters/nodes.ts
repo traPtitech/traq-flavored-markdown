@@ -25,7 +25,7 @@ export function nodeFiles(manifest: Manifest) {
       `${group}.ts`,
       '// Generated from Rust contracts. Do not edit.\n' +
         [...types.values()].join('\n') +
-        '\nexport type NodeKind =\n' +
+        '\nexport type NodeVariant =\n' +
         entries
           .map(([key, s]) => ` | { kind: ${q(key)}; data: ${s.title} }`)
           .join('\n') +

@@ -30,7 +30,7 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       [['example::Numeric', schema]],
       validationModule,
       pathToFileURL(
-        path.join(packageRoot('core'), 'typescript', 'src', 'nodes.ts')
+        path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts')
       ).href
     )
     const compiled = ts.transpileModule(generated, {
@@ -42,8 +42,8 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
     await withTempDirectory('traq-numeric-', async directory => {
       const generatedModule = `${directory}/numeric.mjs`
       await write(generatedModule, compiled)
-      const { nodes } = await import(pathToFileURL(generatedModule).href)
-      const validate = nodes.get('example::Numeric')
+      const { definitions } = await import(pathToFileURL(generatedModule).href)
+      const validate = definitions.Numeric.validateData
       for (const value of [0, 1, maximum])
         expect(validate({ value })).toBe(true)
       for (const value of [
@@ -92,9 +92,8 @@ test('generated payload validators check array items', async () => {
   const source = emitTypeScriptValidators(
     [['example::EffectsData', schema]],
     validationModule,
-    pathToFileURL(
-      path.join(packageRoot('core'), 'typescript', 'src', 'nodes.ts')
-    ).href
+    pathToFileURL(path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts'))
+      .href
   )
   const compiled = ts.transpileModule(source, {
     compilerOptions: {
@@ -105,8 +104,8 @@ test('generated payload validators check array items', async () => {
   await withTempDirectory('traq-array-', async directory => {
     const module = `${directory}/array.mjs`
     await write(module, compiled)
-    const { nodes } = await import(pathToFileURL(module).href)
-    const validate = nodes.get('example::EffectsData')
+    const { definitions } = await import(pathToFileURL(module).href)
+    const validate = definitions.EffectsData.validateData
     expect(validate({ animations: [] })).toBe(true)
     expect(validate({ animations: ['rotate', 'rotate-inv'] })).toBe(true)
     expect(validate({ animations: ['unexpected'] })).toBe(false)

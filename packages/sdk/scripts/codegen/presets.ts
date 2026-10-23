@@ -34,7 +34,7 @@ export function presetFiles(tree: PresetTree): Map<string, string> {
     [
       'typescript/src/generated/presets.ts',
       '// Generated from Rust preset exports. Do not edit.\n' +
-        'export type Preset = ' +
+        'export type GrammarPresetId = ' +
         paths.map(p => q(p.join('.'))).join(' | ') +
         ';\n' +
         'export const presets = ' +
@@ -43,15 +43,18 @@ export function presetFiles(tree: PresetTree): Map<string, string> {
         'const knownPresets: ReadonlySet<string> = new Set([' +
         paths.map(path => q(path.join('.'))).join(', ') +
         ']);\n' +
-        'export function isPreset(value: string): value is Preset { return knownPresets.has(value); }\n'
+        'export function isGrammarPresetId(value: string): value is GrammarPresetId { return knownPresets.has(value); }\n'
     ],
     [
       'go/generated_presets.go',
-      '// Code generated from Rust preset exports. DO NOT EDIT.\npackage markdown\ntype Preset string\nconst (\n' +
+      '// Code generated from Rust preset exports. DO NOT EDIT.\npackage markdown\ntype GrammarPresetID string\nconst (\n' +
         paths
           .map(
             p =>
-              'Preset' + p.map(goName).join('') + ' Preset = ' + q(p.join('.'))
+              'Grammar' +
+              p.map(goName).join('') +
+              ' GrammarPresetID = ' +
+              q(p.join('.'))
           )
           .join('\n') +
         '\n)\n'

@@ -24,7 +24,7 @@ test('Rust-exported schemas generate shared host contracts', () => {
   for (const expected of [
     /Label string/,
     /Active bool/,
-    /case BadgeName: return &Badge\{\}/
+    /case BadgeDataName: return &BadgeData\{\}/
   ])
     expect(go).toMatch(expected)
   expect(() =>

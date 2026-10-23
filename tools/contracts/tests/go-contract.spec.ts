@@ -128,7 +128,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     await writeModule(directory)
     await write(`${directory}/contract.go`, source)
     await write(`${directory}/contract_test.go`, testSource)
-    await runCommand(['go', 'test', '../typescript/...'], directory)
+    await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
 
@@ -175,7 +175,7 @@ test('tagged Rust unions generate typed Go variants and strict round trips', asy
     goContract({ ...schema.$defs!.StampKind, title: 'StampKind' }, schema) +
       goContract(schema)
   )
-  expect(goNodes([['example::StampData', schema]], 'trap')).toContain(
+  expect(goNodes([['example::StampData', schema]], 'traq')).toContain(
     'type StampKindHexColor struct'
   )
   const testSource = `package contract
@@ -187,9 +187,9 @@ func TestStampKind(t *testing.T) {
   "{\\"kind\\":{\\"type\\":\\"normal\\",\\"name\\":\\"x\\",\\"rgb\\":0}}",
   "{\\"kind\\":{\\"type\\":\\"hex_color\\",\\"name\\":\\"x\\",\\"rgb\\":4294967296}}",
  } {
-  if err := json.Unmarshal([]byte(raw), new(Stamp)); err == nil { t.Errorf("accepted %s", raw) }
+  if err := json.Unmarshal([]byte(raw), new(StampData)); err == nil { t.Errorf("accepted %s", raw) }
  }
- var stamp Stamp
+ var stamp StampData
  if err := json.Unmarshal([]byte("{\\"kind\\":{\\"type\\":\\"hex_color\\",\\"name\\":\\"x\\",\\"rgb\\":0}}"), &stamp); err != nil { t.Fatal(err) }
  if stamp.Kind.HexColor == nil || stamp.Kind.HexColor.Rgb != 0 { t.Fatalf("unexpected variant: %#v", stamp.Kind) }
  raw, err := json.Marshal(stamp)
@@ -201,7 +201,7 @@ func TestStampKind(t *testing.T) {
     await writeModule(directory)
     await write(`${directory}/contract.go`, source)
     await write(`${directory}/contract_test.go`, testSource)
-    await runCommand(['go', 'test', '../typescript/...'], directory)
+    await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
 
@@ -274,7 +274,7 @@ func TestRequest(t *testing.T) {
 }
 `
     )
-    await runCommand(['go', 'test', '../typescript/...'], directory)
+    await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
 
@@ -323,7 +323,7 @@ func TestDirectDecoder(t *testing.T) {
 }
 `
     )
-    await runCommand(['go', 'test', '../typescript/...'], directory)
+    await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
 
@@ -376,6 +376,6 @@ test('generated Go string bounds count Unicode scalars and preserve one-sided an
       goFile('contract', goContract(schema))
     )
     await write(directory + '/contract_test.go', testSource)
-    await runCommand(['go', 'test', '../typescript/...'], directory)
+    await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
