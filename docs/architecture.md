@@ -9,7 +9,7 @@ one shared version.
 | `packages/core`                                          | Grammar-independent AST, declarations, parsing, rendering, extraction, and codec |
 | `packages/plugins/commonmark`                            | CommonMark contracts, syntax, and rendering                                      |
 | `packages/plugins/extensions`                            | Optional math, table, mark, strikethrough, and linkify features                  |
-| `packages/plugins/traq`                                  | traP extension contracts, syntax, rendering, and extraction                      |
+| `packages/plugins/traq`                                  | traQ extension contracts, syntax, rendering, and extraction                      |
 | `packages/sdk/crates/features`                           | Feature capabilities and ordered profiles                                        |
 | `packages/sdk/crates/grammar`                            | Published grammar presets and their catalog                                      |
 | `packages/sdk/crates/processing`                         | traQ plain-text, message, and extraction policies                                |
@@ -44,7 +44,7 @@ SDK
  └─ traq-plugin ────────> core and commonmark-plugin
 ```
 
-Core never depends on plugins or traQ. Plugins may depend on core; traP syntax
+Core never depends on plugins or traQ. Plugins may depend on core; traQ syntax
 also uses CommonMark syntax. The SDK composes the lower layers for traQ and owns
 application policy. Parsers, renderers, and extractors share a native AST without
 depending on the codec or the Wasm distribution.
