@@ -60,19 +60,33 @@ impl Codec {
         Ok(())
     }
 
-    pub fn encode<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<Vec<u8>> {
+    pub fn encode<'a>(&'a self, document: impl markdown_ast::DocumentInput<'a>) -> Result<Vec<u8>> {
         self.encode_with_limits(document, CodecLimits::default())
     }
     pub fn encode_with_limits<'a>(
-        &self,
+        &'a self,
         document: impl markdown_ast::DocumentInput<'a>,
         limits: CodecLimits,
     ) -> Result<Vec<u8>> {
-        crate::output::encode(
-            document.into_view_with_limits(limits.document)?,
-            self,
-            limits,
-        )
+        let mut output = Vec::new();
+        self.encode_to_writer(document, &mut output, limits)?;
+        Ok(output)
+    }
+    pub fn serialization_view<'a>(
+        &'a self,
+        document: impl markdown_ast::DocumentInput<'a>,
+        limits: markdown_ast::ValidationLimits,
+    ) -> Result<crate::SerializableDocument<'a>> {
+        crate::SerializableDocument::new(self, document, limits)
+    }
+    pub fn encode_to_writer<'a>(
+        &'a self,
+        document: impl markdown_ast::DocumentInput<'a>,
+        writer: impl std::io::Write,
+        limits: CodecLimits,
+    ) -> Result<()> {
+        let document = self.serialization_view(document, limits.document)?;
+        crate::write_json(writer, &document, limits.json_bytes)
     }
     pub fn decode(&self, json: &[u8]) -> Result<Document> {
         self.decode_with_limits(json, CodecLimits::default())

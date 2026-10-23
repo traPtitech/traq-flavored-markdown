@@ -69,6 +69,18 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     assert_eq!(validated.as_view().node_count(), 3);
     assert_eq!(codec.encode(validated.as_view()).unwrap(), bytes);
     assert_eq!(codec.encode(validated.as_view()).unwrap(), bytes);
+    let view = codec
+        .serialization_view(&validated, Default::default())
+        .unwrap();
+    let mut streamed = vec![];
+    markdown_codec::write_json(&mut streamed, &view, bytes.len()).unwrap();
+    assert_eq!(streamed, bytes);
+    assert_eq!(
+        markdown_codec::write_json(Vec::new(), &view, bytes.len() - 1)
+            .unwrap_err()
+            .resource(),
+        Some("json_bytes")
+    );
     assert_eq!(
         CHECKS.load(Ordering::Relaxed),
         0,

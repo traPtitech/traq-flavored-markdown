@@ -1,5 +1,5 @@
 use markdown_ast::{MutableDocument, Node, Span, ValidationLimits};
-use markdown_codec::{Codec, CodecLimits, DecodeLimits};
+use markdown_codec::{Codec, CodecLimits};
 mod support;
 use markdown_definitions::NodeType;
 use support::{Paragraph, Text};
@@ -39,7 +39,7 @@ fn bounded_input_and_output_accept_the_boundary() {
     };
 
     let bytes = codec.encode(&document).unwrap();
-    let limits = DecodeLimits {
+    let limits = CodecLimits {
         json_bytes: bytes.len(),
         document: ValidationLimits {
             source_bytes: 3,
@@ -51,25 +51,25 @@ fn bounded_input_and_output_accept_the_boundary() {
     assert_eq!(codec.decode_with_limits(&bytes, limits).unwrap(), document);
 
     for lower in [
-        DecodeLimits {
+        CodecLimits {
             json_bytes: bytes.len() - 1,
             ..limits
         },
-        DecodeLimits {
+        CodecLimits {
             document: ValidationLimits {
                 source_bytes: 2,
                 ..limits.document
             },
             ..limits
         },
-        DecodeLimits {
+        CodecLimits {
             document: ValidationLimits {
                 nodes: 0,
                 ..limits.document
             },
             ..limits
         },
-        DecodeLimits {
+        CodecLimits {
             document: ValidationLimits {
                 depth: 0,
                 ..limits.document

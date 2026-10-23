@@ -44,3 +44,10 @@ larger tree budget. Pass `CodecLimits::document` to
 `DocumentView::with_limits` before rendering or extraction. The
 `DecodeLimits` name remains an alias for `CodecLimits`. Grammar selection and
 parser or renderer lifecycle management are outside this crate.
+
+`encode_to_writer(document, writer, limits)` streams JSON into a caller-owned
+sink. `serialization_view(document, validation_limits)` returns a borrowed
+`SerializableDocument` that can be a field of another serializable response.
+It checks registered payload support once without constructing a JSON tree.
+`write_json(writer, value, byte_limit)` bounds the whole response, including
+its envelope, and distinguishes byte limits from payload or writer failures.

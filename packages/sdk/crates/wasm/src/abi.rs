@@ -91,6 +91,17 @@ impl Error {
         reply.span = error.span.and_then(wire_span);
         reply
     }
+    pub fn encoding(error: markdown_codec::Error) -> Self {
+        if error.resource() == Some("json_bytes") {
+            return Self::limit("output_bytes");
+        }
+        let limited = error.resource().is_some();
+        let mut reply = Self::document(error);
+        if !limited {
+            reply.code = ErrorCode::InternalError;
+        }
+        reply
+    }
     pub fn processing(error: traq_markdown_processing::Error) -> Self {
         if let Some(validation) = error.validation() {
             return Self::validation(validation);

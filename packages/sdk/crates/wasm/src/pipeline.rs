@@ -16,8 +16,8 @@ struct Pipeline {
 thread_local! { static PIPELINE: RefCell<Option<Pipeline>> = const { RefCell::new(None) }; }
 
 #[derive(Serialize)]
-struct ProcessedDocument {
-    document: serde_json::Value,
+struct ProcessedDocument<'a> {
+    document: markdown_codec::SerializableDocument<'a>,
     #[serde(flatten)]
     processing: ProcessingResult,
 }
@@ -51,16 +51,24 @@ pub extern "C" fn process(mode: u32) -> u32 {
                     .processor
                     .process(document.as_view())
                     .map_err(Error::processing)?;
-                // Encode the original validated tree once for host HTML and editing consumers.
-                let document = serde_json::from_slice(&io.encode_document(&document)?)
-                    .map_err(|error| Error::new(ErrorCode::InternalError, error))?;
-                Ok::<_, Error>(ProcessedDocument {
-                    document,
-                    processing,
-                })
+                Ok::<_, Error>((document, processing))
             })
         })();
-        io.reply(&result);
+        match result {
+            Ok((document, processing)) => {
+                let result = crate::nodes::codec()
+                    .serialization_view(&document, Default::default())
+                    .map_err(Error::encoding)
+                    .map(|document| ProcessedDocument {
+                        document,
+                        processing,
+                    });
+                io.reply(&result);
+            }
+            Err(error) => {
+                io.reply::<()>(&Err(error));
+            }
+        }
         io.output.len() as u32
     })
 }
