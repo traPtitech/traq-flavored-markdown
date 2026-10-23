@@ -17,6 +17,7 @@ From the repository root, install dependencies and prepare all artifacts:
 ```sh
 bun install --frozen-lockfile
 bun run build
+bunx playwright install chromium
 ```
 
 ## Commit hooks
@@ -44,7 +45,8 @@ After that, commit as usual.
 | `bun run build:typescript`            | Build TypeScript from checked-in bindings without Cargo or Wasm |
 | `bun run test:unit`                   | Run pure TypeScript and contract unit tests                     |
 | `bun run typecheck`                   | Type-check all TypeScript packages                              |
-| `bun run test`                        | Run TypeScript, Rust, and Go tests                              |
+| `bun run test`                        | Run TypeScript, Rust, Go, corpus integration, and browser tests |
+| `bun run test:browser`                | Check rendered DOM, CSS, and corpus viewer behavior in Chromium |
 | `bun run check`                       | Run the complete local CI suite                                 |
 | `bun run --cwd packages/sdk examples` | Run all public API examples                                     |
 
@@ -81,13 +83,15 @@ path, and source text. One writer formats outputs before replacement and records
 managed paths in `.generated-outputs.json`. Replacing an owner's outputs removes
 only its retired managed files; unrelated files are preserved. The generated
 check emits into an isolated directory and compares the complete output sets
-without writing to the checkout. Build tasks share this contract prerequisite
-and visit each dependency once.
+without writing to the checkout. Each package has its own contract prerequisite.
+TypeScript, styles, SDK Wasm, and artifact metadata have separate tasks, and each
+dependency is visited once. Selecting `core` never generates the SDK or plugins.
 
 Use the following commands when working on contracts or generated bindings:
 
 ```sh
 bun run generate:bindings
+bun run scripts/generate-bindings.ts core
 bun run scripts/generate-bindings.ts commonmark-plugin
 bun run scripts/generate-bindings.ts extensions-plugin
 bun run scripts/generate-bindings.ts traq-plugin

@@ -16,6 +16,7 @@ and Windows; the remaining checks run on Ubuntu.
 | Go concurrency             | `go -C packages/sdk/go test -race ./...` with a supported C compiler |
 | Published API or packaging | `bun run check:package`                                              |
 | Parser compatibility       | Fixture tests and, where appropriate, corpus comparison              |
+| HTML, CSS, or viewer state | `bun run test:browser` after building all packages                   |
 
 `check:package` packs all five public packages into a temporary consumer and
 verifies public declarations, AST parsing, HTML, CSS, and the Wasm digest. It
@@ -56,11 +57,22 @@ a new compiler or workspace test.
 | `bun run test:workspace` | Go module commands and temporary workspaces                                     |
 | `bun run test:wasm`      | Fresh SDK Wasm and built SDK                                                    |
 | `bun run test:corpus`    | Synthetic streams and injected adapters; no credentials or application checkout |
+| `bun run test:corpus:go` | Independent Go worker plus synthetic SDK comparison after building Wasm         |
+| `bun run test:browser`   | Built packages and Chromium; DOM, CSS, adapter and viewer interactions          |
 
 For the shortest independent loop, run `bun run build:typescript` and then
 `bun run test:unit`. CI runs that loop in a separate job that does not install
 Rust or Go. Compiler, workspace, and Wasm suites have explicit process budgets
 and are not mixed into the pure runner.
+
+Install Chromium once with `bunx playwright install chromium`. On Windows the
+browser runner can also use an installed Edge or Chrome for local development.
+CI installs Playwright's Chromium on Ubuntu. Browser fixtures use local synthetic
+data and the built package modules; retained failure traces and screenshots live
+in the ignored `test-results/` directory. The gallery checks plugin layout,
+spoiler visibility, images, stamps, math/highlighting adapters, safe rendering,
+and independent editing drafts. The corpus tests exercise query controls,
+bootstrap failures, and resource-isolated preview behavior in a real DOM.
 
 ## Fixtures and corpus
 

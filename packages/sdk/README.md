@@ -92,7 +92,7 @@ runtime, err := markdown.NewBundledRuntime(ctx)
 if err != nil { return err }
 defer runtime.Close(ctx)
 
-parser, err := runtime.NewParser(ctx, markdown.PresetTraqV1)
+parser, err := runtime.NewParser(ctx, markdown.GrammarTraqV1)
 if err != nil { return err }
 defer parser.Close(ctx)
 
@@ -107,15 +107,15 @@ version as the npm packages; install the SDK with
 `go get github.com/traPtitech/traq-flavored-markdown/packages/sdk/go@v0.1.4`
 for the first Go release, then use the matching version for later releases.
 
-`Parse` and `ParseInline` return `*markdown.Document`; concrete `Node.Data`
-types are generated from Rust contracts. Calls to one parser are serialized. For
+`Parse` and `ParseInline` return an immutable `markdown.Document`. Read nodes with
+`Children`, `Kind`, `Span`, and `DecodePayload`; concrete payload types are
+generated from Rust contracts. Calls to one parser are serialized. For
 parallel parsing, create multiple parsers from the same runtime. Closing a
 runtime closes all of its parsers, extractors, and renderers.
 
-For repeated processing, `ParseValidated` and `ParseInlineValidated` return an
-immutable `ValidatedDocument`. Pass it to `ExtractValidated` and
-`RenderValidated` to reuse the owned wire snapshot. `ValidateDocument` snapshots
-a mutable document after checking its complete tree and payloads. Invalid UTF-8,
+Pass the document to `Extract` and `Render` to reuse its validated snapshot.
+Call `ToMutable` to edit a detached draft, then `NewDocument` to validate and own
+the resulting tree and payloads. Invalid UTF-8,
 missing wire fields, unordered or overlapping sibling spans, and spans that
 split a UTF-8 character are rejected before consumers run. Source bytes,
 including a leading BOM, CRLF, and NUL, are preserved.
@@ -290,6 +290,8 @@ stamps and their effects. Animation keyframes use the `tfm-stamp-` prefix. Color
 including `--tfm-link-color`, `--tfm-code-background-color`, and
 `--tfm-spoiler-background-color`. Plugin `index.css` exports provide standalone
 markup behavior; SDK `index.css` composes those bases with the traQ theme.
+Sass consumers can load `styles/index` with the Node package importer
+(`sass --pkg-importer=node`) so plugin styles resolve through their package exports.
 
 ## Grammar versions
 
