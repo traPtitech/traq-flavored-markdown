@@ -41,9 +41,9 @@ func TestDecodeDocumentValidatesStructuralLimits(t *testing.T) {
 		{"JSON bytes", []byte(strings.Repeat(" ", maxJSONBytes+1)), "json_bytes limit"},
 	}
 	longSource, err := json.Marshal(struct {
-		Source   string `json:"source"`
-		Children []Node `json:"children"`
-	}{Source: strings.Repeat("x", maxSourceBytes+1), Children: []Node{}})
+		Source   string        `json:"source"`
+		Children []MutableNode `json:"children"`
+	}{Source: strings.Repeat("x", maxSourceBytes+1), Children: []MutableNode{}})
 	if err != nil {
 		t.Fatal(err)
 	}
