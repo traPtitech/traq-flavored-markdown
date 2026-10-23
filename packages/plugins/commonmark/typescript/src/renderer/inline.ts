@@ -33,6 +33,14 @@ export function registerInlineHandlers(
   }: InlineOptions
 ) {
   const linkAttrs = attributes(Object.entries(linkAttributes))
+  const link = (destination: string, title: string | null, content: string) =>
+    '<a' +
+    attributes([['href', destination]]) +
+    linkAttrs +
+    titleAttribute(title) +
+    '>' +
+    content +
+    '</a>'
 
   result = result.withHandler(definitions.Text, n => escapeHtml(n.data.value))
 
@@ -62,27 +70,27 @@ export function registerInlineHandlers(
   result = result.withHandler(definitions.Link, (n, ctx) => {
     if (!validateLink(n.data.destination)) return ctx.fallback(n)
 
-    const content = ctx.renderChildren()
-
-    return (
-      '<a' +
-      attributes([['href', n.data.destination]]) +
-      linkAttrs +
-      titleAttribute(n.data.title) +
-      '>' +
-      content +
-      '</a>'
-    )
+    return link(n.data.destination, n.data.title, ctx.renderChildren())
   })
 
   result = result.withHandler(definitions.Image, (n, ctx) => {
-    if (!validateImage(n.data.destination)) return ctx.fallback(n)
+    const label = imageLabelText(n.children, ctx.sourceSlice, ctx.matches)
+    if (!validateImage(n.data.destination)) {
+      if (!validateLink(n.data.destination)) return ctx.fallback(n)
+      const content = escapeHtml(label)
+      return (
+        '!' +
+        (ctx.ancestors.some(node => node.kind === definitions.Link.kind)
+          ? content
+          : link(n.data.destination, n.data.title, content))
+      )
+    }
 
     return (
       '<img' +
       attributes([
         ['src', n.data.destination],
-        ['alt', imageLabelText(n.children, ctx.sourceSlice, ctx.matches)]
+        ['alt', label]
       ]) +
       titleAttribute(n.data.title) +
       (xhtmlOut ? ' />' : '>')

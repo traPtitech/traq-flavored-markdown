@@ -2,7 +2,6 @@ import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import type { ReadonlyNode } from '@traq-flavored-markdown/core'
 import { names as traq } from '@traq-flavored-markdown/traq-plugin/nodes'
 
-import { isStandaloneLink } from '../messages/analysis.js'
 import type { MessageAnalysis } from '../messages/analysis.js'
 import { resourceLabels } from '../messages/labels.js'
 
@@ -33,12 +32,7 @@ export function messageRenderPlan(
         continue
       }
       const link = analysis.links.get(node)
-      if (
-        !link ||
-        link.card.type === 'url' ||
-        !isStandaloneLink(node, previous, analysis.links)
-      )
-        break
+      if (!link || link.card.type === 'url' || link.form !== 'linkify') break
       removed = true
       end -= previous?.kind === names.Softbreak ? 2 : 1
     }

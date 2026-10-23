@@ -38,7 +38,9 @@ The `createHtmlRenderer(options)` link policy accepts relative URLs and the `htt
 `mailto`, `ftp`, `tel`, `sms`, and `geo` schemes. Images accept relative, `http`,
 and `https` URLs. A rejected link renders as escaped Markdown source, so its
 destination and any autolink angle brackets remain visible. Hosts can override
-these defaults with `validateLink` and `validateImage`.
+these defaults with `validateLink` and `validateImage`. A rejected image becomes
+a link prefixed with `!` when its destination passes the link policy; otherwise
+the escaped Markdown source remains visible.
 
 A custom `highlight` callback returns `{ kind: 'content', html }` for HTML to
 place inside `<code>`, `{ kind: 'block', html }` for a complete `<pre>` block, or

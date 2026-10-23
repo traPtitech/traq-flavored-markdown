@@ -63,6 +63,42 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
   )
 })
 
+test('rejected images use the link policy and escape their labels and attributes', () => {
+  const destination = 'https://example.test/a.png?a=1&b=2'
+  const source = `![<image>&](${destination})`
+  const document = {
+    source,
+    children: [
+      {
+        kind: names.Image,
+        data: { destination, title: 'a"b', labelSource: '<image>&' },
+        span: { start: 0, end: source.length },
+        children: [
+          {
+            kind: names.Text,
+            data: { value: '<image>&' },
+            span: { start: 2, end: 10 }
+          }
+        ]
+      }
+    ]
+  }
+  expect(
+    createHtmlRenderer({
+      validateImage: () => false,
+      linkAttributes: { target: '_blank', rel: 'noopener' }
+    }).render(document)
+  ).toBe(
+    '!<a href="https://example.test/a.png?a=1&amp;b=2" target="_blank" rel="noopener" title="a&quot;b">&lt;image&gt;&amp;</a>'
+  )
+  expect(
+    createHtmlRenderer({
+      validateImage: () => false,
+      validateLink: () => false
+    }).render(document)
+  ).toBe('![&lt;image&gt;&amp;](https://example.test/a.png?a=1&amp;b=2)')
+})
+
 test('list layout uses visible children and applies item replacement through renderChildren', () => {
   const text = (start: number): ReadonlyNode => ({
     kind: names.Text,

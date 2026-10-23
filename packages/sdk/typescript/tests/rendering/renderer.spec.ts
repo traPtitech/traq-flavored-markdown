@@ -294,7 +294,7 @@ test('default link policy allows communication and location schemes while preser
       '[x](javascript:alert)'
     )
     expect(view.render(commonmark.parseInline('![x](tel:+819012345678)'))).toBe(
-      '![x](tel:+819012345678)'
+      '!<a href="tel:+819012345678">x</a>'
     )
   } finally {
     commonmark.dispose()

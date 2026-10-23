@@ -22,7 +22,8 @@ standard traQ renderer supplies a line break without inserting an AST node.
 Links and both direct and reference images use CommonMark parsing. URL encoding
 belongs to parsing; URL scheme and image domain restrictions belong to each
 renderer. The standard traQ view displays HTTPS images from its allowed domains
-and preserves escaped source for rejected images. Applications can supply
+and renders rejected images as links when the link policy allows their URL.
+If both policies reject the URL, the escaped source remains visible. Applications can supply
 `images.validate` and `links.validate` independently. Explicit `undefined` options
 use the same display defaults as omitted options.
 

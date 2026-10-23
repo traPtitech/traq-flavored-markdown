@@ -63,7 +63,9 @@ test('direct and reference images share parsing and renderer-specific image poli
         traq
           .createHtmlRenderer({ images: { validate: () => false } })
           .render(document)
-      ).toBe(`<p>${source.split('\n')[0]}</p>\n`)
+      ).toBe(
+        `<p>!<a href="${url}" target="_blank" rel="nofollow noopener noreferrer">alt</a></p>\n`
+      )
       expect(traq.createHtmlRenderer().render(document).includes('<img')).toBe(
         url.startsWith('https://trap.jp/')
       )
@@ -136,12 +138,52 @@ test('omitted and undefined display options keep the same URL and raw HTML polic
     traq
       .createHtmlRenderer(undefinedOptions)
       .render(parser.parseInline('![x](http://trap.jp/a.png)'))
-  ).toBe('![x](http://trap.jp/a.png)')
+  ).toBe(
+    '!<a href="http://trap.jp/a.png" target="_blank" rel="nofollow noopener noreferrer">x</a>'
+  )
   expect(
     traq
       .createHtmlRenderer(undefinedOptions)
       .render(parser.parseInline('![x](https://unlisted.test/a.png)'))
-  ).toBe('![x](https://unlisted.test/a.png)')
+  ).toBe(
+    '!<a href="https://unlisted.test/a.png" target="_blank" rel="nofollow noopener noreferrer">x</a>'
+  )
+})
+
+test('rejected images remain safe links without creating nested anchors', () => {
+  const view = traq.createHtmlRenderer({ images: { validate: () => false } })
+  const attributes = ' target="_blank" rel="nofollow noopener noreferrer"'
+  expect(
+    view.render(
+      parser.parseInline(
+        '![**bold** `code` &quot;](https://example.test/a.png "title")'
+      )
+    )
+  ).toBe(
+    `!<a href="https://example.test/a.png"${attributes} title="title">bold code &quot;</a>`
+  )
+  expect(
+    view.render(
+      parser.parseInline(
+        '[![alt](https://example.test/a.png)](https://example.test/page)'
+      )
+    )
+  ).toBe(`<a href="https://example.test/page"${attributes}>!alt</a>`)
+  expect(
+    view.render(
+      parser.parseInline('![<https://inner.test>](https://outer.test/a.png)')
+    )
+  ).toBe(
+    `!<a href="https://outer.test/a.png"${attributes}>https://inner.test</a>`
+  )
+  for (const destination of [
+    'javascript:alert(1)',
+    'data:image/png;base64,eA=='
+  ]) {
+    const html = view.render(parser.parseInline(`![image](${destination})`))
+    expect(html).not.toContain('<a')
+    expect(html).not.toContain('<img')
+  }
 })
 
 test('image alt links never create message cards and rendering leaves the AST intact', () => {
