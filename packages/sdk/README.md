@@ -301,7 +301,7 @@ Unknown versions fail rather than silently selecting a newer grammar.
 In TypeScript, check a stored string with `isGrammarPresetId(version)` before passing it
 to `createParser`; the guard narrows it to the generated `GrammarPresetId` type.
 
-`presets.traq.v1` and `PresetTraqV1` are generated from the Rust preset catalog.
+`presets.traq.v1` and `GrammarTraqV1` are generated from the Rust preset catalog.
 Custom grammars are composed in Rust and published through that catalog; the
 TypeScript and Go APIs intentionally do not mirror the Rust grammar builder.
 The v1 grammar is currently unreleased; its APIs and behavior can still change

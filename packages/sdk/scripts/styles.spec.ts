@@ -1,6 +1,6 @@
-import { expect, test } from 'bun:test'
 import { fileURLToPath } from 'node:url'
 
+import { expect, test } from 'bun:test'
 import { NodePackageImporter, compile } from 'sass'
 
 test('the SDK theme composes plugin CSS and supplies compact stamp overrides', () => {

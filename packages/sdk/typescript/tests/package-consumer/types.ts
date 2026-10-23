@@ -68,6 +68,6 @@ void [mentions, plainText, customHtml]
 browserRuntime.dispose()
 // @ts-expect-error Extractor has no host AST parsing API
 extractor.parse('x')
-// @ts-expect-error HtmlRendererOptions are generated from Rust
+// @ts-expect-error ExtractorOptions are generated from Rust
 runtime.createExtractor({ origin: 4 })
 runtime.dispose()
