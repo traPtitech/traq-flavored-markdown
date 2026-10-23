@@ -52,9 +52,9 @@ export function schemaTypes() {
     source: '',
     children: []
   })
-  // @ts-expect-error Limits cannot replace a specific node union's schema.
   new DocumentContext<{ kind: 'text'; data: string }>(
     { source: '', children: [] },
+    // @ts-expect-error Limits cannot replace a specific node union's schema.
     {}
   )
   // @ts-expect-error Open schemas must widen their node union through withUnknownNodes.
