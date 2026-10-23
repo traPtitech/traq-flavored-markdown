@@ -45,7 +45,7 @@ impl Catalog {
 
     pub fn plugin(&mut self, plugin: &Plugin) -> PluginId {
         if let Some(index) = self.plugins.iter().position(|p| p.same(plugin)) {
-            return index;
+            return PluginId(index);
         }
 
         if let Some(group) = plugin.namespace() {

@@ -82,11 +82,11 @@ fn main() -> markdown_contract_export::Result<()> {
 
 fn preset_entry(
     entry: traq_markdown_grammar::bindings::ExportEntry<traq_markdown_grammar::bindings::PresetId>,
-) -> Result<markdown_contracts::PresetEntry, Box<dyn std::error::Error>> {
+) -> Result<markdown_contract_export::PresetEntry, Box<dyn std::error::Error>> {
     use traq_markdown_grammar::bindings::ExportEntry;
     Ok(match entry {
-        ExportEntry::Id(id) => markdown_contracts::PresetEntry::Id(id.0.try_into()?),
-        ExportEntry::Group(group) => markdown_contracts::PresetEntry::Group(
+        ExportEntry::Id(id) => markdown_contract_export::PresetEntry::Id(id.0.try_into()?),
+        ExportEntry::Group(group) => markdown_contract_export::PresetEntry::Group(
             group
                 .into_iter()
                 .map(|(name, entry)| Ok((name, preset_entry(entry)?)))

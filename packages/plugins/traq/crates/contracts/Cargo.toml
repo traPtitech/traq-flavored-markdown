@@ -20,6 +20,6 @@ markdown-contract-export.workspace = true
 serde_json = "=1.0.154"
 
 [[example]]
-name = "export-trap-types"
+name = "export-traq-types"
 path = "examples/export-types.rs"
 required-features = ["contracts"]

@@ -4,7 +4,7 @@ use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
 };
-use traq_markdown_grammar::bindings::Catalog;
+use traq_markdown_grammar::bindings::{Catalog, Composition, GroupId, PluginId};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
@@ -76,19 +76,19 @@ fn composition_keeps_group_identity_separate_from_names_and_rejects_bad_referenc
     let preset = catalog.preset(&builder).unwrap();
     let composition = catalog.preset_composition(preset).unwrap();
     let mut renamed = composition.clone();
-    renamed.groups[0].name = Some("renamed".into());
+    renamed.groups[0].name = "renamed".into();
     let grammar = catalog.build(&renamed).unwrap();
     assert!(grammar.describe().contains("renamed/nested/text"));
     assert_eq!(plugin.namespace(), Some(&nested));
     assert_eq!(root.name(), "root");
 
     let mut broken = composition.clone();
-    broken.groups[0].parent = Some(0);
+    broken.groups[0].parent = Some(GroupId(0));
     assert!(catalog.build(&broken).is_err());
     let mut broken = composition.clone();
-    broken.plugins[0].text_provider = Some(usize::MAX);
+    broken.plugins[0].text_provider = Some(PluginId(usize::MAX));
     assert!(catalog.build(&broken).is_err());
-    let mut broken = composition;
-    broken.plugins[0].name = None;
-    assert!(catalog.build(&broken).is_err());
+    let mut broken = serde_json::to_value(composition).unwrap();
+    broken["plugins"][0]["name"] = serde_json::Value::Null;
+    assert!(serde_json::from_value::<Composition>(broken).is_err());
 }
