@@ -1,9 +1,33 @@
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { createJsonlSink } from '../infrastructure/jsonl.ts'
 import { type Fetch, createApiClient } from './client.ts'
-import { observeSource, sampleMessages } from './sampling.ts'
+import { createMessageGateway } from './gateway.ts'
+import { type SampleProgress, sampleMessages } from './sampling.ts'
+import { observeSource } from './statistics.ts'
+
+export type CollectionProgress = {
+  channels: number
+  messages: number
+  requests: number
+}
+export type CollectionManifest = SampleProgress & {
+  format: 1
+  status: 'running' | 'complete' | 'failed'
+  fetchedAt: string
+  until: string
+  maxMessages: number
+  maxChannels: number
+  perChannel: number
+  channelOffset: number
+  requests: number
+  messages: number
+  bytes: number
+  lengths: Record<string, number>
+  contains: Record<string, number>
+  rawText: true
+}
 
 export async function collect({
   baseUrl,
@@ -16,7 +40,7 @@ export async function collect({
   delayMs = 300,
   until = new Date().toISOString(),
   fetchImpl = fetch,
-  progress = (_value: unknown) => undefined
+  progress = () => undefined
 }: {
   baseUrl: string
   token: string
@@ -28,8 +52,8 @@ export async function collect({
   delayMs?: number
   until?: string
   fetchImpl?: Fetch
-  progress?: (value: unknown) => void
-}) {
+  progress?: (value: CollectionProgress) => void
+}): Promise<CollectionManifest> {
   for (const count of [maxMessages, maxChannels, perChannel])
     if (!Number.isSafeInteger(count) || count <= 0)
       throw new Error('Sampling bounds must be positive integers')
@@ -44,7 +68,7 @@ export async function collect({
   const salt = crypto.getRandomValues(new Uint8Array(32))
   const anonymous = (id: string) =>
     new Bun.CryptoHasher('sha256', salt).update(id).digest('hex').slice(0, 24)
-  const report = {
+  const report: CollectionManifest = {
     format: 1,
     status: 'running',
     fetchedAt: new Date().toISOString(),
@@ -57,8 +81,8 @@ export async function collect({
     inaccessibleChannels: 0,
     messages: 0,
     bytes: 0,
-    lengths: {} as Record<string, number>,
-    contains: {} as Record<string, number>,
+    lengths: {},
+    contains: {},
     rawText: true,
     channelOffset,
     availableChannels: 0
@@ -70,13 +94,23 @@ export async function collect({
     fetchImpl,
     requested: () => report.requests++
   })
-  const sink = await createJsonlSink(path.join(output, 'messages.jsonl'))
+  await mkdir(output, { recursive: true })
+  const manifestPath = path.join(output, 'manifest.json')
+  await writeFile(manifestPath, JSON.stringify(report, null, 2) + '\n', {
+    mode: 0o600,
+    flag: 'wx'
+  })
   try {
+    await using sink = await createJsonlSink(
+      path.join(output, 'messages.jsonl')
+    )
     for await (const message of sampleMessages(
-      client,
+      createMessageGateway(client),
       { maxMessages, maxChannels, channelOffset, perChannel, until },
       state => {
-        Object.assign(report, state)
+        report.availableChannels = state.availableChannels
+        report.sampledChannels = state.sampledChannels
+        report.inaccessibleChannels = state.inaccessibleChannels
         if (state.sampledChannels > 0 && state.sampledChannels % 10 === 0)
           progress({
             channels: report.sampledChannels,
@@ -98,17 +132,15 @@ export async function collect({
         report.contains
       )
     }
+    await sink.close()
     report.status = 'complete'
     return report
   } catch (error) {
     report.status = 'failed'
     throw error
   } finally {
-    await sink.close()
-    await writeFile(
-      path.join(output, 'manifest.json'),
-      JSON.stringify(report, null, 2) + '\n',
-      { mode: 0o600 }
-    )
+    await writeFile(manifestPath, JSON.stringify(report, null, 2) + '\n', {
+      mode: 0o600
+    })
   }
 }

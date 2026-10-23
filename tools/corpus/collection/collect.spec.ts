@@ -1,16 +1,13 @@
-import path from 'path'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 
-import { $ } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { collect } from '../collection/collect.ts'
+import { collect } from './collect.ts'
 
 test('corpus collection respects bounds, credentials, and no-overwrite behavior', async () => {
-  const directory = path.join(
-    Bun.env.TEMP ?? Bun.env.TMPDIR ?? '.',
-    `traq-corpus-check-${crypto.randomUUID()}`
-  )
-  await $`mkdir -p ${directory}`
+  const directory = await mkdtemp(path.join(tmpdir(), 'traq-corpus-check-'))
   try {
     const calls: string[] = [],
       logs: unknown[] = []
@@ -73,6 +70,28 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
       })
     ).rejects.toMatchObject({ code: 'EEXIST' })
   } finally {
-    await $`rm -rf ${directory}`
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('failed collection records its status and preserves the original error', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'traq-corpus-failure-'))
+  try {
+    await expect(
+      collect({
+        baseUrl: 'https://traq.example/',
+        token: 'test-token',
+        output: directory,
+        delayMs: 0,
+        fetchImpl: async () => Response.json({ public: [null] })
+      })
+    ).rejects.toThrow('Invalid channel fields')
+    const manifest = await Bun.file(
+      path.join(directory, 'manifest.json')
+    ).json()
+    expect(manifest.status).toBe('failed')
+    expect(manifest.messages).toBe(0)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
   }
 })

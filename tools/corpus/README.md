@@ -23,7 +23,11 @@ Credentials come from an env file containing `TRAQ_API_BASE_URL` and
 contains only the token. Collection makes GET requests, samples public channels
 in deterministic order, and defaults to 100,000 messages with at most 2,000 per
 channel. `--until`, `--max-channels`, `--channel-offset`, and `--per-channel`
-control sampling. Existing `messages.jsonl` files are never overwritten.
+control sampling. `--per-channel` bounds the inspected message window, including
+duplicates, so repeated pages cannot make collection unbounded. Message IDs are
+deduplicated across that window and across channels. Existing `messages.jsonl`
+and manifest files are never overwritten. The manifest records `running`,
+`complete`, or `failed`, including failures during output cleanup.
 
 Each UTF-8 JSONL row requires a string `source`. Collection also writes
 pseudonymous `id` and `channel` fields and a sampling manifest. Original message
