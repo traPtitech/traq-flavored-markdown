@@ -1,15 +1,15 @@
 import { documentLimits as coreDocumentLimits } from '@traq-flavored-markdown/core'
 import { expect, test } from 'bun:test'
 
-import { abiExports } from '../../generated/abi.js'
+import { abiExports } from '../../src/generated/abi.js'
 import {
   contractId,
   documentLimits,
   inputBytes,
   outputBytes
-} from '../../generated/artifact.js'
-import { MarkdownError } from '../../runtime/errors.js'
-import { createRuntime } from '../../runtime/index.js'
+} from '../../src/generated/artifact.js'
+import { MarkdownError } from '../../src/runtime/errors.js'
+import { createRuntime } from '../../src/runtime/index.js'
 
 // A tiny real module makes malformed replies and traps independent of Rust builds.
 function moduleBytes(reply: string | 'trap', id = contractId): Uint8Array {
@@ -124,7 +124,10 @@ test('valid domain errors and host request errors leave the processor reusable',
     code: 'invalid_document',
     message: 'Invalid node',
     path: '$.children[0]',
-    span: { start: 1, end: 2 }
+    span: { start: 1, end: 2 },
+    phase: 'inline',
+    rule: 'custom',
+    payload_type: 'example.Text'
   }
   const runtime = await createRuntime(
     moduleBytes(JSON.stringify({ error: detail }))
@@ -138,7 +141,16 @@ test('valid domain errors and host request errors leave the processor reusable',
     expect(error).toMatchObject({
       code: detail.code,
       path: detail.path,
-      span: detail.span
+      span: detail.span,
+      phase: detail.phase,
+      rule: detail.rule,
+      payloadType: detail.payload_type
+    })
+    expect(error.withOperation('another')).toMatchObject({
+      phase: detail.phase,
+      rule: detail.rule,
+      payloadType: detail.payload_type,
+      operation: 'another'
     })
     expect(error.cause).toEqual(detail)
   }
@@ -162,10 +174,48 @@ test('successful values and contract mismatches are checked before reaching call
   stale.dispose()
 })
 
+test('fused processing rejects malformed members before exposing a result', async () => {
+  const extraction = {
+    attachments: [],
+    citations: [],
+    messageText: 'x',
+    referenceEmbedding: { candidates: [], unembeddedText: 'x' },
+    references: {
+      channelLinks: [],
+      embeddings: [],
+      groupMentions: [],
+      mentions: []
+    }
+  }
+  const result = {
+    document: { source: 'x', children: [] },
+    extraction,
+    plainText: 'x'
+  }
+  const runtime = await createRuntime(
+    moduleBytes(JSON.stringify({ ok: result }))
+  )
+  expect(runtime.createProcessor('commonmark').process('x')).toEqual(result)
+  runtime.dispose()
+  for (const invalid of [
+    { ...result, document: null },
+    { ...result, extraction: {} },
+    { ...result, plainText: null }
+  ]) {
+    const runtime = await createRuntime(
+      moduleBytes(JSON.stringify({ ok: invalid }))
+    )
+    const processor = runtime.createProcessor('commonmark')
+    expect(thrown(() => processor.process('x')).code).toBe('transport_error')
+    expect(thrown(() => processor.process('x')).code).toBe('disposed')
+    runtime.dispose()
+  }
+})
+
 test('host bounds requests before transport and preserves operation details on reusable instances', async () => {
   expect(coreDocumentLimits).toEqual(documentLimits)
   const runtime = await createRuntime(moduleBytes('{"ok":"rendered"}'))
-  const renderer = runtime.createRenderer()
+  const renderer = runtime.createPlainTextRenderer()
   let reads = 0
   const document = Object.defineProperty({ children: [] }, 'source', {
     enumerable: true,

@@ -1,30 +1,26 @@
 import path from 'path'
 
-import { readManifest } from '../../../scripts/codegen/io.ts'
-import type { Direction } from '../../../scripts/codegen/ir.ts'
+import { readManifest } from '../../../tools/contracts/typescript/io.ts'
+import {
+  type ArtifactManifest,
+  parseArtifactManifest
+} from '../../../tools/contracts/typescript/manifest.ts'
 import {
   OutputManifest,
   applyOutputManifest
-} from '../../../scripts/codegen/output-manifest.ts'
-import type { RawSchema } from '../../../scripts/codegen/schema.ts'
-import { packageOutputRoot, repositoryRoot } from '../../../scripts/paths.ts'
-import { type ArtifactManifest, abiFiles } from './codegen/abi.ts'
+} from '../../../tools/contracts/typescript/output-manifest.ts'
+import {
+  packageOutputRoot,
+  repositoryRoot
+} from '../../../tools/workspace/paths.ts'
+import { abiFiles } from './codegen/abi.ts'
 import { goNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
 import { presetFiles } from './codegen/presets.ts'
-import type { PresetTree } from './codegen/presets.ts'
 import { processingFiles } from './codegen/processing.ts'
 import { exportNodeContracts } from './node-contracts.ts'
 
-type Manifest = ArtifactManifest & {
-  nodes: Record<string, { group: string; schema: RawSchema }>
-  parseError: RawSchema
-  presets: PresetTree
-  processing: Record<string, RawSchema>
-  directions: Record<string, Direction>
-}
-
-export function sdkOutputManifest(manifest: Manifest) {
+export function sdkOutputManifest(manifest: ArtifactManifest) {
   const files = typescriptFiles(manifest)
   files.set('go/generated_nodes.go', goNodes(manifest))
   for (const [name, source] of presetFiles(manifest.presets))
@@ -47,7 +43,7 @@ export function sdkOutputManifest(manifest: Manifest) {
 
 export async function generateSdk(input?: string, outputRoot = repositoryRoot) {
   const contracts = input ?? (await exportNodeContracts())
-  const manifest = await readManifest<Manifest>(contracts)
+  const manifest = await readManifest(contracts, parseArtifactManifest)
   const plan = sdkOutputManifest(manifest)
   await applyOutputManifest(outputRoot, plan)
   console.log(

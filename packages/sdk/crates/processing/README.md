@@ -2,7 +2,7 @@
 
 Composes plain-text rendering and reference extraction for traQ. The crate
 does not normally depend on a parser or codec: implementations are supplied by
-`commonmark-text`, `generic-text`, `trap-text`, and `trap-extraction` and consume
+`commonmark-text`, `extensions-text`, `trap-text`, and `trap-extraction` and consume
 the native AST directly.
 
 ```rust
@@ -61,7 +61,7 @@ The public Rust APIs are `extraction::Extractor::extract(&Document)` and
 or reparse source. `extract_validated` and `render_validated` can share one
 immutable AST validation. By default, validation allows 65,536 source bytes,
 8 MiB of plugin-owned payload, 16,384 nodes, and depth 64. External plugin
-nodes must declare `NodeData::role` and `NodeData::payload_bytes`; validation
+nodes must declare `NodeData::structure` and `NodeData::payload_bytes`; validation
 checks these contracts before any handler clones or renders the payload. Use
 `ValidatedDocument::with_limits(&document, parser_limits.document)` or the
 equivalent codec limits to pass a document produced with custom limits to these

@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { repositoryRoot } from '../../../scripts/paths.ts'
+import { repositoryRoot } from '../../../tools/workspace/paths.ts'
 
 type Option =
   | { type: 'string'; default?: string }

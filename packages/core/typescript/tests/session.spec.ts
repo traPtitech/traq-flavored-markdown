@@ -9,8 +9,9 @@ import {
   RenderPlugin,
   renderer
 } from '@traq-flavored-markdown/core/renderer'
-import type { Node } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
+
+import type { MutableNode } from '../src/ast.js'
 
 test('every render plan node must belong to the validated document before any handler runs', () => {
   let calls = 0
@@ -142,7 +143,7 @@ test('fallback preserves leading BOM and cyclic documents fail before rendering'
       children: [{ kind: 'unknown', data: {}, span: { start: 0, end: 4 } }]
     })
   ).toBe('\uFEFFx')
-  const node: Node = {
+  const node: MutableNode = {
     kind: 'cycle',
     data: {},
     span: { start: 0, end: 0 },

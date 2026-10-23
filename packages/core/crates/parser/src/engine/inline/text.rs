@@ -7,7 +7,7 @@ use super::{
 
 use crate::{
     ParseError,
-    engine::{Budget, Grammar, source::SourceView},
+    engine::{Budget, Grammar, ParsePhase, source::SourceView},
 };
 
 pub(super) fn process(
@@ -75,29 +75,41 @@ fn process_rule(
 
         let input = TextInput {
             source,
-            range: token.start..token.end,
+            range: source.range(token.start..token.end)?,
             after_decoded_text: special,
         };
 
-        let matches = (entry.data.implementation.parse)(&input, budget)?;
+        let position = source.source_offset(input.range.start)?.get();
+        let matches = (entry.data.implementation.parse)(&input, budget)
+            .map_err(|error| error.at_rule(ParsePhase::Text, entry.name(), position))?;
         let mut begin = token.start;
 
         for found in matches {
-            if found.start < begin
-                || found.start >= found.end
-                || found.end > token.end
-                || !source.text().is_char_boundary(found.start)
-                || !source.text().is_char_boundary(found.end)
+            let start = found.start.get();
+            let end = found.end.get();
+            if start < begin
+                || start >= end
+                || end > token.end
+                || !source.text().is_char_boundary(start)
+                || !source.text().is_char_boundary(end)
             {
-                return Err(ParseError::InternalError);
+                return Err(ParseError::invalid_rule(
+                    ParsePhase::Text,
+                    entry.name(),
+                    position,
+                    format!(
+                        "text match {}..{} must follow {begin}, stay within {}, and use UTF-8 boundaries",
+                        start, end, token.end
+                    ),
+                ));
             }
 
-            if found.start > begin {
+            if start > begin {
                 budget.token()?;
                 result.push(Token {
                     start: begin,
-                    end: found.start,
-                    kind: TokenKind::Text(source.text()[begin..found.start].into()),
+                    end: start,
+                    kind: TokenKind::Text(source.text()[begin..start].into()),
                 });
             }
 
@@ -105,12 +117,12 @@ fn process_rule(
             children_budget(&found.children, budget)?;
 
             result.push(Token {
-                start: found.start,
-                end: found.end,
+                start,
+                end,
                 kind: TokenKind::Atom(found.kind, found.children),
             });
 
-            begin = found.end;
+            begin = end;
         }
 
         if begin < token.end {

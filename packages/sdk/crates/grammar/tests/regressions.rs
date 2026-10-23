@@ -1,5 +1,5 @@
 use markdown_commonmark_contracts::{Link, Text};
-use markdown_generic_contracts::Table;
+use markdown_extensions_contracts::Table;
 use traq_markdown_grammar::presets;
 
 #[test]

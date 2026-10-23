@@ -17,7 +17,39 @@ pub enum Error {
         previous_end: usize,
     },
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErrorCategory {
+    InvalidDocument,
+    ResourceLimit,
+    Internal,
+}
 impl Error {
+    pub fn category(&self) -> ErrorCategory {
+        use markdown_extractor::Error as Extract;
+        use markdown_renderer::Error as Render;
+        match self {
+            Self::Validation(error)
+            | Self::Rendering(Render::Validation(error))
+            | Self::Extraction(Extract::Validation(error)) => {
+                if error.resource().is_some() {
+                    ErrorCategory::ResourceLimit
+                } else {
+                    ErrorCategory::InvalidDocument
+                }
+            }
+            Self::ResourceLimit { .. } | Self::Rendering(Render::ResourceLimit { .. }) => {
+                ErrorCategory::ResourceLimit
+            }
+            Self::InvalidEdit { .. }
+            | Self::OverlappingEdits { .. }
+            | Self::Rendering(Render::InvalidPayload { .. } | Render::UnsupportedNode { .. })
+            | Self::Extraction(Extract::InvalidPayload { .. }) => ErrorCategory::InvalidDocument,
+            Self::Rendering(Render::Registration(_) | Render::Handler { .. })
+            | Self::Extraction(Extract::Registration(_) | Extract::Handler { .. }) => {
+                ErrorCategory::Internal
+            }
+        }
+    }
     pub fn validation(&self) -> Option<&ValidationError> {
         match self {
             Self::Validation(error)

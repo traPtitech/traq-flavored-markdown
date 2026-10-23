@@ -14,8 +14,12 @@ use std::{
 struct Reference(u32);
 
 impl NodeData for Reference {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
@@ -25,8 +29,12 @@ impl NodeData for Reference {
 struct Container;
 
 impl NodeData for Container {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
@@ -36,13 +44,17 @@ impl NodeData for Container {
 struct Invalid;
 
 impl NodeData for Invalid {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = false;
         if valid {
             Ok(())

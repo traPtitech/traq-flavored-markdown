@@ -1,4 +1,7 @@
 export type ApiClient = { get(relative: string): Promise<unknown> }
+export type Fetch = (
+  ...args: Parameters<typeof fetch>
+) => ReturnType<typeof fetch>
 
 /** Read-only client; errors intentionally omit credentials and response bodies. */
 export function createApiClient({
@@ -12,7 +15,7 @@ export function createApiClient({
   baseUrl: string
   token: string
   delayMs?: number
-  fetchImpl?: typeof fetch
+  fetchImpl?: Fetch
   sleep?: (ms: number) => Promise<unknown>
   requested?: () => void
 }): ApiClient {

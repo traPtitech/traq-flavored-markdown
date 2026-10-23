@@ -29,7 +29,8 @@ try {
   )
   const extractor = runtime.createExtractor({ origin: '' })
   check(
-    runtime.createRenderer().render(parser.parse('**hello**')) === 'hello',
+    runtime.createPlainTextRenderer().render(parser.parse('**hello**')) ===
+      'hello',
     'Packed native text renderer failed'
   )
   deepStrictEqual(

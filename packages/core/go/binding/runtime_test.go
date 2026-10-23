@@ -2,6 +2,7 @@ package binding
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -44,7 +45,11 @@ func TestRepliesHaveOneTypedOutcome(t *testing.T) {
 			t.Fatalf("%s: %v", raw, err)
 		}
 	}
-	_, err := decodeReply([]byte(`{"error":{"code":"invalid_document","message":"bad span","path":"$.children[0]","span":{"start":0,"end":1}}}`), Operation{}, "id", map[string]bool{"invalid_document": true})
+	_, err := decodeReply([]byte(`{"error":{"code":"invalid_document","message":"bad span","path":"$.children[0]","span":{"start":0,"end":1}}}`), Operation{}, "id", func(raw json.RawMessage) (*Error, error) {
+		var value Error
+		err := json.Unmarshal(raw, &value)
+		return &value, err
+	})
 	var typed *Error
 	if !errors.As(err, &typed) || typed.Code != "invalid_document" || typed.Path != "$.children[0]" || typed.Span == nil {
 		t.Fatal(err)

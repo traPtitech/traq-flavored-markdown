@@ -1,0 +1,49 @@
+name: Set up declared toolchains
+description: Read repository version declarations and install the requested build tools
+inputs:
+  bun:
+    description: Install Bun
+    default: 'true'
+  go:
+    description: Install Go
+    default: 'false'
+  rust:
+    description: Install Rust with declared components and targets
+    default: 'false'
+outputs:
+  npm:
+    description: Declared npm version for publishing
+    value: ${{ steps.versions.outputs.npm }}
+  rust-cachekey:
+    description: Rust toolchain cache identity
+    value: ${{ steps.rust.outputs.cachekey }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: .node-version
+        package-manager-cache: false
+    - name: Read repository toolchain declarations
+      id: versions
+      shell: bash
+      run: node tools/workspace/toolchains.ts
+    - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      if: inputs.bun == 'true'
+      with:
+        bun-version: ${{ steps.versions.outputs.bun }}
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      if: inputs.go == 'true'
+      with:
+        go-version: ${{ steps.versions.outputs.go }}
+        cache-dependency-path: |
+          go.work
+          packages/**/go.mod
+          packages/**/go.sum
+    - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # v1
+      if: inputs.rust == 'true'
+      id: rust
+      with:
+        toolchain: ${{ steps.versions.outputs.rust }}
+        targets: ${{ steps.versions.outputs.rust-targets }}
+        components: ${{ steps.versions.outputs.rust-components }}

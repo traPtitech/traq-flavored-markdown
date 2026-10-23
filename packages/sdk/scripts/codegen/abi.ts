@@ -1,37 +1,17 @@
-import { normalizeContracts } from '../../../../scripts/codegen/ir.ts'
-import type { RawSchema } from '../../../../scripts/codegen/schema.ts'
-import { emitContractValidators } from '../../../../scripts/codegen/typescript-validators.ts'
-import { emitTypeScriptDeclarations } from '../../../../scripts/codegen/typescript.ts'
+import {
+  emitGoDeclarations,
+  goFile
+} from '../../../../tools/contracts/typescript/go.ts'
+import { normalizeContracts } from '../../../../tools/contracts/typescript/ir.ts'
+import type { ArtifactManifest } from '../../../../tools/contracts/typescript/manifest.ts'
+import { emitContractValidators } from '../../../../tools/contracts/typescript/typescript-validators.ts'
+import { emitTypeScriptDeclarations } from '../../../../tools/contracts/typescript/typescript.ts'
 
-export type Operation = {
-  export: string
-  input: 'text' | 'json'
-  params: string[]
-  result: string
-  configuration: boolean
-}
-export type Abi = {
-  version: number
-  operations: Record<string, Operation>
-  exports: Record<string, { params: string[]; results: string[] }>
-  error: RawSchema
-}
-export type ArtifactManifest = {
-  contractId: string
-  provenance: { sourceFingerprint: string }
-  limits: {
-    inputBytes: number
-    outputBytes: number
-    memoryBytes: number
-    document: {
-      sourceBytes: number
-      payloadBytes: number
-      nodes: number
-      depth: number
-    }
-  }
-  abi: Abi
-}
+export type {
+  Abi,
+  Operation,
+  ArtifactManifest
+} from '../../../../tools/contracts/typescript/manifest.ts'
 
 export function abiFiles(manifest: ArtifactManifest) {
   const error = { ...manifest.abi.error, title: 'WireError' }
@@ -41,7 +21,7 @@ export function abiFiles(manifest: ArtifactManifest) {
     throw new Error('ABI must define ErrorCode as a string enum')
   const files = new Map<string, string>()
   files.set(
-    'typescript/generated/abi.ts',
+    'typescript/src/generated/abi.ts',
     [
       '// Generated from the Rust ABI contract. Do not edit.',
       [...emitTypeScriptDeclarations(contracts).values()].join('\n'),
@@ -56,7 +36,7 @@ export function abiFiles(manifest: ArtifactManifest) {
     ].join('\n')
   )
   files.set(
-    'typescript/generated/artifact.ts',
+    'typescript/src/generated/artifact.ts',
     [
       '// Generated from the Rust ABI contract. Do not edit.',
       `export const contractId = ${JSON.stringify(manifest.contractId)}`,
@@ -82,7 +62,6 @@ export function abiFiles(manifest: ArtifactManifest) {
       `const outputBytes = ${manifest.limits.outputBytes}`,
       `const memoryPages = ${manifest.limits.memoryBytes / 65536}`,
       `var documentLimits = ast.Limits{SourceBytes:${manifest.limits.document.sourceBytes},PayloadBytes:${manifest.limits.document.payloadBytes},Nodes:${manifest.limits.document.nodes},Depth:${manifest.limits.document.depth}}`,
-      `var wireErrorCodes = map[string]bool{${codes.values.map(code => `${JSON.stringify(code)}: true`).join(',')}}`,
       ...Object.entries(manifest.abi.operations).map(
         ([name, operation]) =>
           `var operation${name[0].toUpperCase() + name.slice(1)} = binding.Operation{Export:${JSON.stringify(operation.export)}, Input:${JSON.stringify(operation.input)}, Params:${strings(operation.params)}, Result:${JSON.stringify(operation.result)}, Configuration:${operation.configuration}}`
@@ -95,6 +74,28 @@ export function abiFiles(manifest: ArtifactManifest) {
       '}',
       ''
     ].join('\n')
+  )
+  files.set(
+    'go/generated_errors.go',
+    goFile(
+      'markdown',
+      emitGoDeclarations(contracts) +
+        `
+func decodeWireError(raw json.RawMessage) (*binding.Error, error) {
+  var value WireError
+  if err := json.Unmarshal(raw, &value); err != nil { return nil, err }
+  result := &binding.Error{Code:string(value.Code), Message:value.Message}
+  if value.Offset != nil { result.Offset = *value.Offset }
+  if value.Resource != nil && *value.Resource != nil { result.Resource = **value.Resource }
+  if value.Path != nil && *value.Path != nil { result.Path = **value.Path }
+  if value.Phase != nil && *value.Phase != nil { result.Phase = string(**value.Phase) }
+  if value.Rule != nil && *value.Rule != nil { result.Rule = **value.Rule }
+  if value.PayloadType != nil && *value.PayloadType != nil { result.PayloadType = **value.PayloadType }
+  if value.Span != nil && *value.Span != nil { result.Span = &ast.Span{Start:(*value.Span).Start, End:(*value.Span).End} }
+  return result, nil
+}
+`
+    )
   )
   return files
 }

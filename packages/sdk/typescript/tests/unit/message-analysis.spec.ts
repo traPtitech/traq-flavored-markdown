@@ -1,4 +1,5 @@
 import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
+import type { MutableNode } from '@traq-flavored-markdown/core'
 import { defineNode } from '@traq-flavored-markdown/core'
 import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
 import { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
@@ -10,7 +11,7 @@ import {
   analyzeMessage,
   endsWithResourceCard,
   messageContext
-} from '../../messages/analysis.js'
+} from '../../src/messages/analysis.js'
 
 const origin = 'https://q.example.test'
 const id = '00000000-0000-0000-0000-000000000001'
@@ -96,8 +97,8 @@ test('message preparation includes custom inline roles before validating builtin
     ]
   }
   const rendered = messageRenderers({ origin, plugins: [plugin] }).render(input)
-  expect(rendered.standard.renderedText).toBe('<p><mark>custom</mark></p>\n')
-  expect(rendered.condensed.renderedText).toBe('<mark>custom</mark>')
+  expect(rendered.standard.html).toBe('<p><mark>custom</mark></p>\n')
+  expect(rendered.condensed.html).toBe('<mark>custom</mark>')
 })
 
 function text(value: string, start: number): Node {
@@ -111,15 +112,44 @@ function text(value: string, start: number): Node {
 function link(
   form: 'explicit' | 'linkify',
   label: string,
-  start: number
+  start: number,
+  destination = file
 ): Node {
   return {
     kind: names.Link,
-    data: { destination: file, title: null, form },
+    data: { destination, title: null, form },
     span: { start, end: start + label.length },
     children: [text(label, start)]
   }
 }
+
+test('resource identity includes its kind when file and message UUIDs coincide', () => {
+  const message = `${origin}/messages/${id}`
+  const source = `${file}\n${message}`
+  const document = messageContext({
+    source,
+    children: [
+      {
+        kind: names.Paragraph,
+        data: {},
+        span: { start: 0, end: source.length },
+        children: [
+          link('linkify', file, 0),
+          {
+            kind: names.Softbreak,
+            data: {},
+            span: { start: file.length, end: file.length + 1 }
+          },
+          link('linkify', message, file.length + 1, message)
+        ]
+      }
+    ]
+  })
+  expect(analyzeMessage(document, origin).cards).toEqual([
+    { type: 'file', id },
+    { type: 'message', id }
+  ])
+})
 
 test('message analysis suppresses trailing cards without changing the AST', () => {
   const source = `body\n${file}`
@@ -138,8 +168,8 @@ test('message analysis suppresses trailing cards without changing the AST', () =
 
   const standard = views.standard.render(document)
   const condensed = views.condensed.render(document)
-  expect(standard.renderedText).toBe('<p>body</p>\n')
-  expect(condensed.renderedText).toBe('body')
+  expect(standard.html).toBe('<p>body</p>\n')
+  expect(condensed.html).toBe('body')
   expect(standard.cards).toEqual([{ type: 'file', id }])
   expect(condensed.cards).toEqual(standard.cards)
   expect(document).toEqual(original)
@@ -170,7 +200,7 @@ test('rejected links remain visible and do not produce cards', () => {
 
   for (const view of [rejected.standard, rejected.condensed]) {
     const result = view.render(document)
-    expect(result.renderedText).toContain(file)
+    expect(result.html).toContain(file)
     expect(result.cards).toEqual([])
   }
   expect(endsWithResourceCard(document, origin, () => false)).toBe(false)
@@ -190,8 +220,8 @@ test('condensed labels come from an overlay while explicit links retain markup',
       }
     ]
   }
-  const standard = views.standard.render(document).renderedText
-  const condensed = views.condensed.render(document).renderedText
+  const standard = views.standard.render(document).html
+  const condensed = views.condensed.render(document).html
   expect(standard).toContain('>file</a>')
   expect(condensed).toContain('>[[添付ファイル]]</a>')
   expect(condensed).not.toContain('>file</a>')
@@ -212,13 +242,13 @@ test('both message views share an owned preparation and reject invalid trees bef
   const document = { source: 'before', children: [node] }
   const prepared = views.prepare(document)
   ;(node.data as { value: string }).value = 'after'
-  expect(prepared.standard().renderedText).toBe('before')
-  expect(prepared.condensed().renderedText).toBe('before')
+  expect(prepared.standard().html).toBe('before')
+  expect(prepared.condensed().html).toBe('before')
   expect(views.render(document)).toEqual({
     standard: views.standard.render(document),
     condensed: views.condensed.render(document)
   })
-  const cycle: Node = {
+  const cycle: MutableNode = {
     kind: 'custom',
     data: {},
     span: { start: 0, end: 0 },

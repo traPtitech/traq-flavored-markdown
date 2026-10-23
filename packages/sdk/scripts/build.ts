@@ -3,8 +3,8 @@ import path from 'path'
 
 import { $ } from 'bun'
 
-import { cleanBuildOutput } from '../../../scripts/build/outputs.ts'
-import { sdkRoot } from '../../../scripts/paths.ts'
+import { cleanBuildOutput } from '../../../tools/workspace/build/outputs.ts'
+import { sdkRoot } from '../../../tools/workspace/paths.ts'
 import { assertNoHostPaths, buildWasm } from './node-contracts.ts'
 import { assertBundledWasmMatches, writeWasmContract } from './wasm-contract.ts'
 
@@ -36,6 +36,7 @@ export async function assembleSdk({ checkGenerated = false } = {}) {
 }
 
 if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
-  const { buildWorkspace } = await import('../../../scripts/build/workspace.ts')
+  const { buildWorkspace } =
+    await import('../../../tools/workspace/build/workspace.ts')
   await buildWorkspace({ packages: ['sdk'] })
 }

@@ -8,9 +8,9 @@ pub(super) fn ascii_space(ch: char) -> bool {
 
 pub(super) fn content<'a>(
     source: &'a markdown_parser::engine::source::SourceView,
-    line: &std::ops::Range<usize>,
+    line: &markdown_parser::engine::source::ViewRange,
 ) -> &'a str {
-    source.text()[line.clone()].trim_end_matches('\n')
+    source[line.clone()].trim_end_matches('\n')
 }
 
 pub(super) fn underline(line: &str) -> Option<u8> {

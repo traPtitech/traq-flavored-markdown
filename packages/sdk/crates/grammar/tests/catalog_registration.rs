@@ -10,8 +10,12 @@ use traq_markdown_grammar::bindings::Catalog;
 struct Text(String);
 
 impl NodeData for Text {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.0.len()
@@ -82,7 +86,7 @@ fn composition_keeps_group_identity_separate_from_names_and_rejects_bad_referenc
     broken.groups[0].parent = Some(0);
     assert!(catalog.build(&broken).is_err());
     let mut broken = composition.clone();
-    broken.plugins[0].text = vec![usize::MAX];
+    broken.plugins[0].text_provider = Some(usize::MAX);
     assert!(catalog.build(&broken).is_err());
     let mut broken = composition;
     broken.plugins[0].name = None;

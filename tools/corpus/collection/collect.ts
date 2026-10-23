@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { createApiClient } from './client.ts'
+import { type Fetch, createApiClient } from './client.ts'
 import { observeSource, sampleMessages } from './sampling.ts'
 import { createJsonlSink } from './sink.ts'
 
@@ -27,7 +27,7 @@ export async function collect({
   perChannel?: number
   delayMs?: number
   until?: string
-  fetchImpl?: typeof fetch
+  fetchImpl?: Fetch
   progress?: (value: unknown) => void
 }) {
   for (const count of [maxMessages, maxChannels, perChannel])

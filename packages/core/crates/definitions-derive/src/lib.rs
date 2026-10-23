@@ -4,6 +4,31 @@ use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
 use quote::quote;
 use syn::{DeriveInput, GenericParam, LitStr, parse_macro_input, parse_quote};
+mod payload;
+
+/// Derive field accounting and native/schema constraints for a node payload.
+#[proc_macro_attribute]
+pub fn node(arguments: TokenStream, input: TokenStream) -> TokenStream {
+    let options = parse_macro_input!(arguments as payload::NodeOptions);
+    let input = parse_macro_input!(input as DeriveInput);
+    payload::expand(input, Some(options))
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Derive field accounting and native/schema constraints for nested payload data.
+#[proc_macro_attribute]
+pub fn payload(arguments: TokenStream, input: TokenStream) -> TokenStream {
+    if !arguments.is_empty() {
+        return syn::Error::new(proc_macro2::Span::call_site(), "payload takes no arguments")
+            .into_compile_error()
+            .into();
+    }
+    let input = parse_macro_input!(input as DeriveInput);
+    payload::expand(input, None)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
 
 #[proc_macro_derive(NodeType, attributes(node_type))]
 pub fn node_type(input: TokenStream) -> TokenStream {

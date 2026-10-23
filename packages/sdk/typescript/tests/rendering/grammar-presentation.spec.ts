@@ -21,10 +21,10 @@ test('empty quote visibility belongs to traQ presentation without synthetic AST 
     '<blockquote>\n<br>\n</blockquote>\n'
   )
   const view = traq.messageRenderers({ origin: 'https://q.example.test' })
-  expect(view.standard.render(document).renderedText).toBe(
+  expect(view.standard.render(document).html).toBe(
     '<blockquote>\n<br>\n</blockquote>\n'
   )
-  expect(view.condensed.render(document).renderedText).toBe('> ')
+  expect(view.condensed.render(document).html).toBe('> ')
   expect(
     traq
       .html({
@@ -81,7 +81,7 @@ test('traQ uses CommonMark link nesting and keeps URL policy out of parsing', ()
   const nested = parser.parseInline(
     '[outer <https://inner.test>](https://outer.test)'
   )
-  const visit = (nodes: Node[], insideLink = false) => {
+  const visit = (nodes: readonly Node[], insideLink = false) => {
     for (const node of nodes) {
       if (node.kind === names.Link) expect(insideLink).toBe(false)
       if (node.children)
@@ -159,7 +159,7 @@ test('additional blank lines retain source ranges and trailing-card presentation
   const document = parser.parse('a\n\n\nb')
   expect(traq.html().render(document)).toBe('<p>a</p>\n<br>\n<p>b</p>\n')
   const blanks: Node[] = []
-  const visit = (nodes: Node[]) => {
+  const visit = (nodes: readonly Node[]) => {
     for (const node of nodes) {
       if (node.kind === 'traq.blank_line') blanks.push(node)
       if (node.children) visit(node.children)
@@ -173,7 +173,7 @@ test('additional blank lines retain source ranges and trailing-card presentation
   const origin = 'https://q.example.test'
   const file = origin + '/files/00000000-0000-0000-0000-000000000001'
   const view = traq.messageRenderers({ origin })
-  expect(
-    view.standard.render(parser.parse('a\n' + file + '\n\n\n')).renderedText
-  ).toBe('<p>a</p>\n')
+  expect(view.standard.render(parser.parse('a\n' + file + '\n\n\n')).html).toBe(
+    '<p>a</p>\n'
+  )
 })

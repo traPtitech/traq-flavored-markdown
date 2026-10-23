@@ -4,6 +4,25 @@ Shared plugin declarations and node-type metadata for parser and renderer
 implementations. This crate does not depend on parser, renderer, AST, or serde;
 the derive dependency is compile-time only.
 
+`#[node(role = Inline)]` derives a leaf node's structural contract, heap-byte
+accounting, and payload validation. Use `children = Inline` for allowed child
+roles, `child_type = Item, nonempty` for typed children, or `structure = function`
+for an explicit Rust structural contract. `#[payload]` derives field accounting
+and validation for nested structs and enums. Consumers of these attributes
+depend on `markdown-ast`; the declarations crate retains no runtime AST dependency.
+
+Field attributes `#[constraint(range(min = 1, max = 6))]` and
+`#[constraint(length(max = 5))]` generate both native checks and Schemars metadata
+under the consumer's `contracts` feature. Bounds use Rust expressions of the
+field's type, including floating-point bounds for floating-point fields.
+Length constraints count Unicode scalar values in strings and elements in
+vectors or arrays. Floating-point fields must be finite even without a range
+constraint, matching their JSON number contract.
+Nested strings, options, vectors, arrays, and boxes participate in heap accounting
+and validation automatically. Custom payload field types implement
+`markdown_ast::PayloadFields`; handwritten `NodeData` implementations remain
+available for invariants outside these basic constraints.
+
 The `handlers` module supplies the registration snapshots shared by renderers
 and extractors. It manages atomic add, replace, and remove operations plus
 handler type and display-name collisions. Each consumer owns invocation and tree

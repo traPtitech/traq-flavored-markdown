@@ -1,14 +1,20 @@
-export const modes = ['render', 'inline', 'plainText'] as const
-export type Mode = (typeof modes)[number]
+import {
+  type ComparisonPlan,
+  type ComparisonResult,
+  type Mode,
+  isMode
+} from './shared/comparison.ts'
+
+export {
+  byMode,
+  isMode,
+  modes,
+  type Mode,
+  type Timing
+} from './shared/comparison.ts'
 export type OutputKind = 'html' | 'text' | 'error'
 
 export const pageSize = 50
-
-export const byMode = <T>(create: () => T): Record<Mode, T> => ({
-  render: create(),
-  inline: create(),
-  plainText: create()
-})
 
 export type DifferenceRow = {
   index: number
@@ -21,39 +27,17 @@ export type DifferenceRow = {
   error?: boolean
 }
 
-export type Timing = {
-  meanUs: number
-  p50Us: number
-  p95Us: number
-}
-
-type Comparison = { before: Timing; after: Timing }
-
 export type ReportMetadata = {
   messages: number
   counts: Record<Mode, number>
   filters: Record<Mode, string>
-  sui: {
-    messages: number
-    modes: Record<'render' | 'inline', Comparison & { differences: number }>
-    beforeInitializationMs: number
-    afterInitializationMs: number
-  }
-  traq: Comparison & {
-    messages: number
-    differences: number
-    afterInitializationMs: number
-  }
-  revisions: Record<string, string>
+  results: Record<Mode, ComparisonResult>
+  run: Pick<ComparisonPlan, 'warmups' | 'provenance'>
   generated: string
   pageSize: number
 }
 
 export type ReportPayload = Record<Mode, string[]>
-
-export function isMode(value: unknown): value is Mode {
-  return modes.some(mode => mode === value)
-}
 
 export function parseDifferenceRow(value: unknown): DifferenceRow {
   if (typeof value !== 'object' || value === null) {

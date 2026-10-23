@@ -1,7 +1,7 @@
 mod block;
 mod inline;
 
-pub use markdown_generic_contracts::{BlockMath, InlineMath};
+pub use markdown_extensions_contracts::{BlockMath, InlineMath};
 use markdown_parser::engine::{Plugin, block::BlockRule, inline::InlineRule};
 
 /// The legacy dollar grammar has its own fixed implementation and contract.
@@ -22,7 +22,7 @@ pub fn block_rule() -> &'static BlockRule {
 
 pub fn plugin() -> &'static Plugin {
     static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_generic_contracts::declarations().math);
+        let mut plugin = Plugin::new(&markdown_extensions_contracts::declarations().math);
         plugin.add(inline_rule());
         plugin.add(block_rule());
         plugin

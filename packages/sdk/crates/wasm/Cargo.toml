@@ -13,8 +13,9 @@ crate-type = ["cdylib"]
 contracts = [
     "markdown-parser/contracts",
     "dep:schemars",
+    "dep:markdown-contract-export",
     "markdown-commonmark-contracts/contracts",
-    "markdown-generic-contracts/contracts",
+    "markdown-extensions-contracts/contracts",
     "markdown-trap-contracts/contracts",
     "traq-markdown-processing/contracts",
 ]
@@ -30,9 +31,10 @@ markdown-parser.workspace = true
 traq-markdown-grammar = { path = "../grammar" }
 markdown-codec.workspace = true
 markdown-ast.workspace = true
+markdown-contract-export = { workspace = true, optional = true }
 markdown-definitions.workspace = true
 markdown-commonmark-contracts.workspace = true
-markdown-generic-contracts.workspace = true
+markdown-extensions-contracts.workspace = true
 markdown-trap-contracts.workspace = true
 schemars = { version = "=1.2.3", optional = true }
 serde = { version = "=1.0.229", features = ["derive"] }

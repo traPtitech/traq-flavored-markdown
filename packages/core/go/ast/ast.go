@@ -5,16 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
 	"reflect"
 	"strings"
 	"unicode/utf8"
-)
-
-const (
-	maxJSONBytes     = 8 * 1024 * 1024
-	maxSourceBytes   = 65_536
-	maxDocumentNodes = 16_384
-	maxDocumentDepth = 64
 )
 
 // Limits describes the default tree boundary shared with native consumers.
@@ -78,7 +72,7 @@ func DecodeDocument(raw []byte, factory func(string) Payload) (*Document, error)
 	if len(raw) > maxJSONBytes {
 		return nil, limit("$", "json_bytes")
 	}
-	if err := ValidateJSON(raw); err != nil {
+	if err := contract.ValidateJSON(raw); err != nil {
 		return nil, invalid("$", err.Error())
 	}
 	var wire struct {

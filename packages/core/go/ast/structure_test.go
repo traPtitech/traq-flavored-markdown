@@ -13,6 +13,7 @@ type shapePayload struct {
 
 func (*shapePayload) NodePayload()                   {}
 func (p *shapePayload) NodeStructure() NodeStructure { return p.structure }
+func (p *shapePayload) ChildArity() int              { return len(p.Alignments) }
 
 func shapeFactory(kind string) Payload {
 	shape := NodeStructure{Role: "structural", Children: ChildStructure{Kind: "any"}}
@@ -28,7 +29,9 @@ func shapeFactory(kind string) Payload {
 	case "item":
 		shape.Children = ChildStructure{Kind: "roles", Roles: []string{"block"}, Nonempty: true}
 	case "table":
-		shape.Children = ChildStructure{Kind: "table", Header: "header", Row: "row", ColumnsField: "alignments"}
+		shape.Children = ChildStructure{Kind: "sequence", Prefix: []string{"header"}, Rest: "row", HasArity: true}
+	case "sequence":
+		shape.Children = ChildStructure{Kind: "sequence", Prefix: []string{"first", "second"}, Rest: "rest"}
 	case "header", "row":
 		shape.Children = ChildStructure{Kind: "types", Types: []string{"cell"}, Nonempty: true}
 	case "opaque":
@@ -83,7 +86,7 @@ func TestGeneratedChildPoliciesAtDecodeBoundary(t *testing.T) {
 	}
 }
 
-func TestGeneratedTablePolicyValidatesHeaderAndAllWidths(t *testing.T) {
+func TestGeneratedSequencePolicyValidatesPrefixAndArity(t *testing.T) {
 	cell := shapeNode("cell")
 	header := shapeNode("header", cell, cell)
 	row := shapeNode("row", cell, cell)
@@ -114,5 +117,27 @@ func TestGeneratedTablePolicyValidatesHeaderAndAllWidths(t *testing.T) {
 				t.Fatalf("valid=%t: %v", test.valid, err)
 			}
 		})
+	}
+}
+
+func TestSequenceWithoutArity(t *testing.T) {
+	for _, test := range []struct {
+		kinds []string
+		valid bool
+	}{
+		{[]string{"first", "second"}, true},
+		{[]string{"first", "second", "rest", "rest"}, true},
+		{[]string{"first"}, false},
+		{[]string{"second", "first"}, false},
+		{[]string{"first", "second", "first"}, false},
+	} {
+		var children []Node
+		for _, kind := range test.kinds {
+			children = append(children, shapeNode(kind))
+		}
+		parent := shapeNode("sequence", children...)
+		if err := validateStructure(&parent, "$"); (err == nil) != test.valid {
+			t.Fatalf("%v: valid=%v: %v", test.kinds, test.valid, err)
+		}
 	}
 }

@@ -10,8 +10,12 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct Paragraph {}
 impl NodeData for Paragraph {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Block,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
@@ -25,13 +29,17 @@ pub struct Text {
     pub value: String,
 }
 impl NodeData for Text {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.value.len()
     }
-    fn validate(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = children.is_empty();
         if valid {
             Ok(())
@@ -48,13 +56,17 @@ pub struct Heading {
     pub level: u8,
 }
 impl NodeData for Heading {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Block,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = (1..=6).contains(&self.level);
         if valid {
             Ok(())

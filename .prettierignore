@@ -5,5 +5,5 @@
 **/vendor
 **/testdata
 **/fixtures/**
-**/typescript/generated
+**/typescript/src/generated
 /bun.lock

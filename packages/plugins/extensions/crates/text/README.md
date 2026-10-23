@@ -1,4 +1,4 @@
-# markdown-generic-text
+# markdown-extensions-text
 
 Plain-text renderer plugins for math, tables, mark, and strikethrough. The crate
 depends only on renderer core and the corresponding node contracts, not on a

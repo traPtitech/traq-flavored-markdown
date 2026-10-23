@@ -76,7 +76,14 @@ impl Parser {
             ValidationErrorKind::Nodes => ParseError::limit("nodes"),
             ValidationErrorKind::Depth => ParseError::limit("depth"),
             ValidationErrorKind::InvalidSpan | ValidationErrorKind::InvalidNode => {
-                ParseError::InternalError
+                let reason = error.to_string();
+                ParseError::InvalidDocument {
+                    path: error.path,
+                    start: error.span.map(|span| span.start),
+                    end: error.span.map(|span| span.end),
+                    payload_type: error.payload_type.map(str::to_owned),
+                    reason,
+                }
             }
         })?;
 

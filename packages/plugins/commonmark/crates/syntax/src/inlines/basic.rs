@@ -15,10 +15,10 @@ pub(super) fn escape(
     let pos = input.position;
     let bytes = input.source.text().as_bytes();
 
-    match bytes.get(pos + 1).copied() {
+    match bytes.get((pos + 1).get()).copied() {
         Some(b'\n') => {
             let mut end = pos + 2;
-            while matches!(bytes.get(end), Some(b' ' | b'\t')) {
+            while matches!(bytes.get(end.get()), Some(b' ' | b'\t')) {
                 budget.spend(1)?;
                 end += 1;
             }
@@ -44,7 +44,10 @@ pub(super) fn newline(
     let trim = input.trailing_text.len() - input.trailing_text.trim_end_matches(' ').len();
     let mut end = input.position + 1;
 
-    while matches!(input.source.text().as_bytes().get(end), Some(b' ' | b'\t')) {
+    while matches!(
+        input.source.text().as_bytes().get(end.get()),
+        Some(b' ' | b'\t')
+    ) {
         budget.spend(1)?;
         end += 1;
     }
@@ -84,23 +87,23 @@ pub(super) fn code(
 
     let mut open_end = pos;
 
-    while bytes.get(open_end) == Some(&b'`') {
+    while bytes.get(open_end.get()) == Some(&b'`') {
         budget.spend(1)?;
         open_end += 1;
     }
 
-    let Some((start, end)) = closing_code(bytes, open_end, open_end - pos, budget)? else {
+    let Some((start, end)) = closing_code(bytes, open_end.get(), open_end - pos, budget)? else {
         return Ok(Some(InlineMatch::literal(open_end)));
     };
 
-    let mut literal = source[open_end..start].replace('\n', " ");
+    let mut literal = source[open_end.get()..start].replace('\n', " ");
 
     if literal.starts_with(' ') && literal.ends_with(' ') && literal.bytes().any(|b| b != b' ') {
         literal = literal[1..literal.len() - 1].into();
     }
 
     Ok(Some(InlineMatch::leaf(
-        end,
+        input.source.offset(end)?,
         NodeKind::new(markdown_commonmark_contracts::InlineCode { literal }),
     )))
 }

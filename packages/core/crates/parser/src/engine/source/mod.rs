@@ -3,7 +3,7 @@ use std::{any::Any, borrow::Cow, ops::Range, sync::Arc};
 
 mod context;
 mod cursor;
-pub use cursor::{Cursor, SourceOffset, ViewOffset};
+pub use cursor::{Cursor, SourceOffset, ViewOffset, ViewRange};
 #[cfg(test)]
 mod tests;
 
@@ -33,6 +33,13 @@ impl SourceView {
             Err(ParseError::InternalError)
         }
     }
+    /// Convert checked scanner byte indexes into view coordinates.
+    pub fn range(&self, range: Range<usize>) -> Result<ViewRange, ParseError> {
+        if range.start > range.end {
+            return Err(ParseError::InternalError);
+        }
+        Ok(self.offset(range.start)?..self.offset(range.end)?)
+    }
     pub fn source_offset(&self, position: ViewOffset) -> Result<SourceOffset, ParseError> {
         self.offset(position.get())?;
         Ok(SourceOffset(self.offsets()[position.get()]))
@@ -42,7 +49,7 @@ impl SourceView {
         position: ViewOffset,
         budget: &'b mut crate::engine::Budget,
     ) -> Result<Cursor<'a, 'b>, ParseError> {
-        Cursor::new(self.text(), position.get(), budget)
+        Cursor::new(self.text(), position, budget)
     }
     pub fn text(&self) -> &str {
         &self.backing.text[self.range.clone()]
@@ -70,7 +77,8 @@ impl SourceView {
         }
     }
 
-    pub fn span_for(&self, range: Range<usize>) -> Result<Span, ParseError> {
+    pub fn span_for(&self, range: ViewRange) -> Result<Span, ParseError> {
+        let range = range.start.get()..range.end.get();
         if range.start > range.end
             || !self.text().is_char_boundary(range.start)
             || !self.text().is_char_boundary(range.end)
@@ -80,7 +88,7 @@ impl SourceView {
         Ok(self.span(range.start, range.end))
     }
 
-    pub fn join(&self, ranges: &[Range<usize>]) -> Result<Self, ParseError> {
+    pub fn join(&self, ranges: &[ViewRange]) -> Result<Self, ParseError> {
         for range in ranges {
             self.span_for(range.clone())?;
         }
@@ -92,15 +100,15 @@ impl SourceView {
         self.text().len() + self.tabs_in(&(0..self.text().len())).count() * 2 + self.context.len()
     }
 
-    pub(crate) fn select(&self, ranges: &[std::ops::Range<usize>]) -> Self {
+    fn select(&self, ranges: &[ViewRange]) -> Self {
         if let Some(first) = ranges.first()
             && ranges.windows(2).all(|pair| pair[0].end == pair[1].start)
         {
             return Self {
                 context: self.context.clone(),
                 backing: self.backing.clone(),
-                range: self.range.start + first.start
-                    ..self.range.start + ranges.last().unwrap().end,
+                range: self.range.start + first.start.get()
+                    ..self.range.start + ranges.last().unwrap().end.get(),
             };
         }
         let mut text = String::new();
@@ -108,6 +116,7 @@ impl SourceView {
         let mut tabs = vec![];
 
         for range in ranges {
+            let range = &(range.start.get()..range.end.get());
             let start = text.len();
             tabs.extend(
                 self.tabs_in(range)
@@ -155,7 +164,8 @@ impl SourceView {
         Self::mapped(self.context.clone(), text, offsets, tabs)
     }
 
-    pub fn literal(&self, range: Range<usize>) -> Cow<'_, str> {
+    pub fn literal(&self, range: ViewRange) -> Cow<'_, str> {
+        let range = range.start.get()..range.end.get();
         let mut tabs = self.tabs_in(&range).peekable();
 
         if tabs.peek().is_none() {
@@ -242,5 +252,12 @@ impl SourceView {
             start: self.offsets()[start],
             end: self.offsets()[end],
         }
+    }
+}
+
+impl std::ops::Index<ViewRange> for SourceView {
+    type Output = str;
+    fn index(&self, range: ViewRange) -> &Self::Output {
+        &self.text()[range.start.get()..range.end.get()]
     }
 }

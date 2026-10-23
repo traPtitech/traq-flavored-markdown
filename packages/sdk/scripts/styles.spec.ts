@@ -6,7 +6,7 @@ import { compile } from 'sass'
 import type {
   StampAnimation,
   StampSize
-} from '../../plugins/traq/typescript/generated/trap.js'
+} from '../../plugins/traq/typescript/src/generated/trap.js'
 
 // This type-checked inventory ties the CSS contract to the generated Rust enums.
 const effects: Record<StampAnimation, true> = {

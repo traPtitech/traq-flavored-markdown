@@ -3,6 +3,7 @@ use markdown_parser::{
     engine::{
         Budget, Plugin,
         inline::{InlineInput, InlineMatch, InlineRule},
+        source::ViewOffset,
     },
 };
 
@@ -33,7 +34,7 @@ fn parse(input: &InlineInput<'_>, budget: &mut Budget) -> Result<Option<InlineMa
     };
     budget.spend(end - input.position)?;
 
-    let text = &input.source.text()[input.position + 1..end];
+    let text = &input.source[input.position + 1..end];
 
     let Some(data) = reference_data(text) else {
         return Ok(None);
@@ -42,14 +43,17 @@ fn parse(input: &InlineInput<'_>, budget: &mut Budget) -> Result<Option<InlineMa
     Ok(Some(InlineMatch::leaf(end, data)))
 }
 
-fn json_end(input: &InlineInput<'_>, budget: &mut Budget) -> Result<Option<usize>, ParseError> {
+fn json_end(
+    input: &InlineInput<'_>,
+    budget: &mut Budget,
+) -> Result<Option<ViewOffset>, ParseError> {
     let bytes = input.source.text().as_bytes();
 
     let mut stack = vec![];
     let mut quote = false;
     let mut escaped = false;
 
-    for (index, &byte) in bytes.iter().enumerate().skip(input.position + 1) {
+    for (index, &byte) in bytes.iter().enumerate().skip((input.position + 1).get()) {
         budget.spend(1)?;
 
         if quote {
@@ -74,7 +78,7 @@ fn json_end(input: &InlineInput<'_>, budget: &mut Budget) -> Result<Option<usize
                     return Ok(None);
                 }
                 if stack.is_empty() {
-                    return Ok(Some(index + 1));
+                    return Ok(Some(input.source.offset(index + 1)?));
                 }
             }
             _ => {}

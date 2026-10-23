@@ -16,11 +16,6 @@ pub enum NodeRole {
 
 /// A concrete payload, defined and validated by its owning contract package.
 pub trait NodeData: Any + Clone + PartialEq + Debug + Send + Sync {
-    /// Declare the role used by other plugins' parent-node validation.
-    fn role(&self) -> NodeRole {
-        Self::structure().role
-    }
-
     /// Count bytes owned by this payload, including all dynamic string fields.
     /// Every payload implementation must account for its own heap content.
     fn payload_bytes(&self) -> usize;
@@ -35,15 +30,10 @@ pub trait NodeData: Any + Clone + PartialEq + Debug + Send + Sync {
         &STRUCTURE
     }
 
-    /// Width metadata used by the declarative table child contract.
-    fn column_count(&self) -> Option<usize> {
-        None
-    }
-
-    /// Checks only this payload and its immediate children. Tree locations and
-    /// limits are attached by document validation.
-    fn validate(&self, children: &[Node]) -> Result<(), PayloadError> {
-        Self::structure().validate(children, self.column_count())
+    /// Additional payload invariants, including semantic relationships with
+    /// immediate children. Structural validation always runs before this hook.
+    fn validate_payload(&self, _children: &[Node]) -> Result<(), PayloadError> {
+        Ok(())
     }
 }
 
@@ -97,7 +87,8 @@ impl<T: NodeData> Payload for T {
     }
 
     fn validate(&self, children: &[Node]) -> Result<(), PayloadError> {
-        NodeData::validate(self, children)
+        T::structure().validate(self, children)?;
+        self.validate_payload(children)
     }
 
     fn type_name(&self) -> &'static str {
@@ -105,7 +96,7 @@ impl<T: NodeData> Payload for T {
     }
 
     fn role(&self) -> NodeRole {
-        NodeData::role(self)
+        T::structure().role
     }
 
     fn payload_bytes(&self) -> usize {

@@ -90,7 +90,7 @@ pub struct BlockInput<'a> {
 
 impl BlockInput<'_> {
     pub fn line(&self, index: LineIndex) -> &str {
-        self.source.text()[self.lines[index].clone()].trim_end_matches('\n')
+        self.source[self.lines[index].clone()].trim_end_matches('\n')
     }
 
     pub fn current(&self) -> &str {

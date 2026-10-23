@@ -5,23 +5,15 @@ import {
   parseDifferenceRow
 } from '../../report-schema.ts'
 import { type ReportData, parseReport } from '../../shared/report-data.ts'
+import {
+  type Progress,
+  type Query,
+  type QueryResult,
+  normalizePage
+} from './query.ts'
 
 export { parseReport, type ReportData } from '../../shared/report-data.ts'
 
-export type Query = {
-  mode: Mode
-  search: string
-  ignoreWhitespace: boolean
-  page: number
-}
-export type QueryResult = {
-  rows: DifferenceRow[]
-  totalHits: number
-  totalPages: number
-  page: number
-  filtered: boolean
-}
-export type Progress = { done: number; total: number }
 type Hit = readonly [number, number]
 
 export function readEmbeddedReport(
@@ -129,7 +121,7 @@ export class ReportRepository {
       1,
       Math.ceil(totalHits / this.metadata.pageSize)
     )
-    const page = Math.min(totalPages, Math.max(1, query.page))
+    const page = normalizePage(query.page, totalPages)
     const rows: DifferenceRow[] = []
     if (totalHits) {
       if (hits === null)

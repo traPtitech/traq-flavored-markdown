@@ -1,4 +1,4 @@
-import { nodeGroup } from '../../../../scripts/codegen/groups.ts'
+import { nodeGroup } from '../../../../tools/contracts/typescript/groups.ts'
 
 export function goNodes(manifest: {
   nodes: Record<string, { group: string }>

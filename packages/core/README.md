@@ -39,6 +39,11 @@ render sessions supply their registered definitions automatically. It never free
 the caller's mutable document. Create a
 new context after editing that document.
 
+`MutableDocument` and `MutableNode` name the editable input types. Snapshot
+documents and nodes use `ReadonlyDocument` and `ReadonlyNode`; their spans,
+children, and typed payloads are deeply readonly. Handler arguments, location
+ancestors, traversal, and render plans preserve that distinction.
+
 `RenderPlugin.on(definition, handler)` infers the payload type and registers its
 validator and structure. A definition declares whether its node is inline, block,
 structural, or opaque, plus the allowed children. Custom nodes used inside a known
@@ -77,5 +82,5 @@ escaped source without markup. `renderer.render(document, plan)` creates a
 session for one render.
 
 The Go module `github.com/traPtitech/traq-flavored-markdown/packages/core/go`
-owns the shared `ast` and Wasm `binding` packages. It has no CommonMark or traQ
+owns the shared `ast`, JSON `contract`, and Wasm `binding` packages. It has no CommonMark or traQ
 preset dependency; extension modules provide node payload types.

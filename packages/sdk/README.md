@@ -119,7 +119,8 @@ split a UTF-8 character are rejected before consumers run. Source bytes,
 including a leading BOM, CRLF, and NUL, are preserved.
 
 Go failures expose `*markdown.Error` with a stable `Code` and optional
-`Resource`, `Path`, `Offset`, and `Span`. Use `errors.As` to inspect them.
+`Resource`, `Path`, `Offset`, `Span`, `Phase`, `Rule`, and `PayloadType`.
+Use `errors.As` to inspect them.
 Domain errors leave an instance usable; a Wasm trap or malformed response
 closes that instance. A later call reports `disposed`.
 
@@ -130,6 +131,24 @@ the semantic contract ID. Build through the shared SDK pipeline to pair Wasm
 with the generated TypeScript and Go descriptors.
 
 ## Render and extract a document
+
+For parsing, extraction, and display plain text together, create a processor:
+
+```ts
+const processor = runtime.createProcessor(presets.traq.v1, {
+  origin: 'https://q.example.test',
+  whitespace: 'collapse'
+})
+const { document, extraction, plainText } =
+  processor.process('**hello** :stamp:')
+processor.dispose()
+```
+
+`process` and `processInline` parse once and run both consumers against the same
+validated native document in one Wasm call. Go exposes the same path through
+`NewProcessor`, `Process`, and `ProcessInline`. Independent parsers, extractors,
+and plain-text renderers remain available for callers that only need one result.
+The `whitespace` policy defaults to `collapse`; `preserve` keeps rendered spacing.
 
 Parsing produces a `Document` that can be passed directly to other consumers;
 none of them parses the Markdown source again. The TypeScript renderer works on
@@ -149,7 +168,7 @@ const extraction = extractor.extract(document)
 const prepared = view.prepare(document)
 const rendered = prepared.standard()
 const condensed = prepared.condensed()
-const html = rendered.renderedText
+const html = rendered.html
 ```
 
 `messageRenderers` builds `standard` and `condensed` views. `prepare(document)`
@@ -157,7 +176,7 @@ validates and analyzes an owned snapshot once, then shares it between both views
 `view.render(document)` returns both results; individual
 `view.standard.render(document)` and `view.condensed.render(document)` are also
 available. Preparation also accepts an existing core `DocumentContext`.
-Each result contains `rawText`, `renderedText`, and `cards`; the extractor returns
+Each result contains `rawText`, `html`, and `cards`; the extractor returns
 source-preserving message text, references, attachment and citation IDs, and an
 embedding plan. The two views apply presentation choices without rewriting the
 parsed AST. Complete Rust, Go, and TypeScript programs are in
@@ -192,6 +211,12 @@ const view = html({
 })
 const rendered = view.render(document)
 ```
+
+The `renderer` entrypoint includes the default highlighter and KaTeX adapters.
+Import the same composition functions from
+`@traq-flavored-markdown/sdk/renderer/composition` to supply `code.highlight`
+and `math.render` without importing either default dependency. Without those
+adapters, composition emits escaped code and math content.
 
 `RenderPlugin.on()` and `RenderPlugin.replace()` return new values. Keep the returned
 plugin when composing a preset; existing plugins and presets are unchanged.
@@ -229,14 +254,15 @@ without editing the source AST. A plan may reference original or snapshot nodes
 from that document; foreign nodes are rejected before handlers run.
 
 TypeScript runtime failures are `MarkdownError` values with `code`, `operation`,
-and optional `resource`, `path`, `offset`, and `span`. Invalid requests and native
+and optional `resource`, `path`, `offset`, `span`, `phase`, `rule`, and
+`payloadType`. Invalid requests and native
 domain errors leave an instance reusable. A trap or malformed Wasm response
 closes the instance; later calls report `disposed`. `contract_mismatch` identifies
 an artifact whose semantic contract differs from the generated SDK. The original
 wire details are also retained in `cause`.
 
-`runtime.createRenderer()` exposes native display plain text, independently of
-host HTML. `createExtractor()` and `createRenderer()` accept omitted options;
+`runtime.createPlainTextRenderer()` exposes native display plain text, independently of
+host HTML. `createExtractor()` and `createPlainTextRenderer()` accept omitted options;
 their `origin` defaults to an empty string. Card presentation uses the
 `ResourceCard` type, `resourceCardFromUrl()`, and `endsWithResourceCard()` from
 the renderer entrypoint. Reference embedding is a separate source-editing API.
@@ -257,5 +283,6 @@ to `createParser`; the guard narrows it to the generated `Preset` type.
 `presets.traq.v1` and `PresetTraqV1` are generated from the Rust preset catalog.
 Custom grammars are composed in Rust and published through that catalog; the
 TypeScript and Go APIs intentionally do not mirror the Rust grammar builder.
-When behavior changes, preserve the existing preset and add a new version rather
-than changing how stored content is interpreted.
+The v1 grammar is currently unreleased; its APIs and behavior can still change
+after explicit review. Released presets preserve their interpretation of stored
+content, with behavior changes assigned a new version.

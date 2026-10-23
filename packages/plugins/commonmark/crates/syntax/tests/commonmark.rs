@@ -52,3 +52,18 @@ fn atx_heading_preserves_unicode_whitespace() {
         assert_eq!(html::render(&document.children), expected);
     }
 }
+
+#[test]
+fn code_info_is_decoded_once_before_rendering() {
+    let source = "```a\\+b&amp;amp; extra\nbody\n```";
+    let document = parser().parse(source).unwrap();
+    let code = document.children[0]
+        .get::<markdown_commonmark_contracts::CodeBlock>()
+        .unwrap();
+    assert_eq!(code.info, "a+b&amp; extra");
+    assert_eq!(document.source, source);
+    assert_eq!(
+        html::render(&document.children),
+        "<pre><code class=\"language-a+b&amp;amp;\">body\n</code></pre>\n"
+    );
+}

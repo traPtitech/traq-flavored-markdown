@@ -1,6 +1,7 @@
 import type { DifferenceRow, Mode, OutputKind } from '../report-schema.ts'
+import { defaultWarmups } from '../shared/comparison.ts'
+import type { SourceRecord } from '../shared/protocol.ts'
 
-export type SourceRecord = { source: string }
 export type AdapterOutput = {
   kind: Exclude<OutputKind, 'error'>
   value: string
@@ -54,7 +55,7 @@ export async function compareSources({
   input,
   profiles,
   max = Infinity,
-  warmups = 200,
+  warmups = defaultWarmups,
   difference,
   embeddingDifference = async () => undefined,
   progress = () => undefined,

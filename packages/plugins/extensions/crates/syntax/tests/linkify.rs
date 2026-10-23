@@ -3,7 +3,7 @@ use markdown_parser::{GrammarBuilder, Parser};
 
 fn parser(tld_pattern: &str) -> Parser {
     let commonmark = markdown_commonmark::Syntax::new();
-    let linkify = markdown_generic_syntax::linkify::Syntax::new(tld_pattern).unwrap();
+    let linkify = markdown_extensions_syntax::linkify::Syntax::new(tld_pattern).unwrap();
     let mut builder = GrammarBuilder::new();
     builder.add(&commonmark.plugin).unwrap();
     builder.add(&linkify.plugin).unwrap();
@@ -27,5 +27,5 @@ fn top_level_domain_policy_belongs_to_the_selected_profile() {
         assert_eq!(links.len(), 1);
         assert_eq!(links[0].destination, expected);
     }
-    assert!(markdown_generic_syntax::linkify::Syntax::new("[").is_err());
+    assert!(markdown_extensions_syntax::linkify::Syntax::new("[").is_err());
 }

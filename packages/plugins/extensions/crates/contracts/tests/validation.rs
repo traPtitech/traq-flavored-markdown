@@ -1,7 +1,9 @@
 use markdown_ast::{
     Document, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
 };
-use markdown_generic_contracts::{Alignment, BlockMath, Cell, HeaderRow, InlineMath, Row, Table};
+use markdown_extensions_contracts::{
+    Alignment, BlockMath, Cell, HeaderRow, InlineMath, Row, Table,
+};
 
 fn span() -> Span {
     Span { start: 0, end: 0 }
@@ -92,8 +94,12 @@ fn math_nodes_are_leaves() {
 #[derive(Clone, Debug, PartialEq)]
 struct ExternalInline;
 impl NodeData for ExternalInline {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
@@ -103,8 +109,12 @@ impl NodeData for ExternalInline {
 #[derive(Clone, Debug, PartialEq)]
 struct ExternalBlock;
 impl NodeData for ExternalBlock {
-    fn role(&self) -> NodeRole {
-        NodeRole::Block
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Block,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0

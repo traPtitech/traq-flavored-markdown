@@ -14,8 +14,12 @@ struct CustomState(Option<String>);
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
 impl NodeData for Text {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         self.0.len()
@@ -25,13 +29,17 @@ impl NodeData for Text {
 #[derive(Debug, Clone, PartialEq)]
 struct Invalid;
 impl NodeData for Invalid {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
     }
-    fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = false;
         if valid {
             Ok(())
@@ -55,35 +63,81 @@ fn parser(plugin: &Plugin) -> Parser {
 
 #[test]
 fn invalid_plugin_results_never_return_partial_documents() {
-    for action in [
-        InlineMatch::literal(0),
-        InlineMatch::literal(1),
-        InlineMatch::literal(99),
-        InlineMatch::leaf(3, Invalid.into()),
-        InlineMatch {
-            end: 3,
-            action: InlineAction::Node {
-                kind: Text("parent".into()).into(),
-                inhibit_brackets: false,
-                children: vec![Node::leaf(
-                    Span { start: 1, end: 2 },
-                    Text("bad span".into()),
-                )],
-            },
-        },
-    ] {
-        let action = std::sync::Mutex::new(Some(action));
+    for case in 0..5 {
         let mut plugin = plugin();
-
-        plugin.add(InlineRule::new(b"", move |_, _| {
-            Ok(action.lock().unwrap().take())
+        plugin.add(InlineRule::new(b"", move |input, _| {
+            let start = input.position;
+            let action = match case {
+                0 => InlineMatch::literal(start),
+                1 => InlineMatch::literal(start + 1),
+                2 => InlineMatch::literal(start + 99),
+                3 => InlineMatch::leaf(start + 3, Invalid.into()),
+                _ => InlineMatch {
+                    end: start + 3,
+                    action: InlineAction::Node {
+                        kind: Text("parent".into()).into(),
+                        inhibit_brackets: false,
+                        children: vec![Node::leaf(
+                            Span { start: 1, end: 2 },
+                            Text("bad span".into()),
+                        )],
+                    },
+                },
+            };
+            Ok(Some(action))
         }));
 
-        assert_eq!(
+        assert!(matches!(
             parser(&plugin).parse_inline("日"),
-            Err(ParseError::InternalError)
-        );
+            Err(ParseError::InvalidRuleOutput { .. } | ParseError::InvalidDocument { .. })
+        ));
     }
+}
+
+#[test]
+fn malformed_rule_results_report_the_rule_phase_source_position_and_cause() {
+    use markdown_parser::engine::ParsePhase;
+    let mut implementation = plugin();
+    implementation.add(
+        InlineRule::new(b"!", |input, _| {
+            Ok(Some(InlineMatch::literal(input.position)))
+        })
+        .named("stuck"),
+    );
+    let error = parser(&implementation).parse_inline("日\r\n!").unwrap_err();
+    assert!(
+        matches!(error, ParseError::InvalidRuleOutput { phase: ParsePhase::Inline, rule: Some(ref name), position: 5, ref reason }
+        if name == "stuck" && reason.contains("must advance")),
+        "{error:?}"
+    );
+
+    let mut implementation = plugin();
+    implementation.add(
+        BlockRule::new(|input, _| Ok(Some(BlockMatch::ignore(input.start)))).named("empty-block"),
+    );
+    let error = parser(&implementation).parse("text").unwrap_err();
+    assert!(
+        matches!(error, ParseError::InvalidRuleOutput { phase: ParsePhase::Block, rule: Some(ref name), position: 0, ref reason }
+        if name == "empty-block" && reason.contains("must advance")),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn invalid_payload_diagnostics_keep_the_original_tree_location() {
+    let mut plugin = plugin();
+    plugin.add(
+        InlineRule::new(b"!", |input, _| {
+            Ok(Some(InlineMatch::leaf(input.position + 1, Invalid.into())))
+        })
+        .named("invalid-payload"),
+    );
+    let error = parser(&plugin).parse_inline("日!").unwrap_err();
+    assert!(
+        matches!(error, ParseError::InvalidDocument { ref path, start: Some(3), end: Some(4), payload_type: Some(ref payload), ref reason }
+        if path == &[1] && payload.ends_with("Invalid") && reason.contains("custom payload invariant")),
+        "{error:?}"
+    );
 }
 
 #[test]
@@ -116,7 +170,7 @@ fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
     let mut accepted = plugin();
     accepted.add(InlineRule::new(b"a", |input, _| {
         Ok(Some(InlineMatch::leaf(
-            input.source.text().len(),
+            input.source.offset(input.source.text().len())?,
             Text("node".into()).into(),
         )))
     }));
@@ -167,10 +221,10 @@ fn source_helpers_reject_invalid_ranges() {
                 .map(Some),
         }));
 
-        assert_eq!(
+        assert!(matches!(
             parser(&plugin).parse("text"),
-            Err(ParseError::InternalError)
-        );
+            Err(ParseError::InvalidRuleOutput { .. })
+        ));
     }
 }
 
@@ -243,7 +297,10 @@ fn rejected_block_matches_do_not_commit_state() {
         }
     }));
 
-    assert_eq!(parser(&plugin).parse("x"), Err(ParseError::InternalError));
+    assert!(matches!(
+        parser(&plugin).parse("x"),
+        Err(ParseError::InvalidRuleOutput { .. })
+    ));
     assert_eq!(commits.load(Ordering::Relaxed), 0);
 }
 
@@ -275,13 +332,17 @@ fn final_validation_stops_at_the_remaining_work_budget() {
     struct Counted;
 
     impl NodeData for Counted {
-        fn role(&self) -> NodeRole {
-            NodeRole::Opaque
+        fn structure() -> &'static markdown_ast::NodeStructure {
+            static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+                role: NodeRole::Opaque,
+                children: markdown_ast::ChildStructure::Any,
+            };
+            &STRUCTURE
         }
         fn payload_bytes(&self) -> usize {
             0
         }
-        fn validate(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+        fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
             let valid = {
                 CHECKS.fetch_add(1, Ordering::Relaxed);
                 true
@@ -296,9 +357,9 @@ fn final_validation_stops_at_the_remaining_work_budget() {
 
     let mut plugin = plugin();
 
-    plugin.add(InlineRule::new(b"x", |_, _| {
+    plugin.add(InlineRule::new(b"x", |input, _| {
         Ok(Some(InlineMatch {
-            end: 1,
+            end: input.position + 1,
             action: InlineAction::Node {
                 kind: Text("parent".into()).into(),
                 inhibit_brackets: false,

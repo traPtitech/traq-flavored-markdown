@@ -20,7 +20,7 @@ The credential file contains `TRAQ_API_BASE_URL` and `BOT_ACCESS_TOKEN`. Alterna
 
 Each UTF-8 JSONL row has a `source` string containing the original message. Collection also writes pseudonymous `id` and `channel` fields and a manifest. Message contents remain private data: output stays under the ignored `.private/corpora/` directory, and logs omit message bodies and credentials. Existing JSONL corpora with a `source` field can be compared without collection.
 
-Comparison defaults to 1,000,000 messages and the local `origin/master` refs of both application checkouts. Fetch those refs first if needed. Use `--max`, `--traq-ref`, `--sui-ref`, and `--out` to change them. Both renderers use equivalent deterministic reference and stamp data, KaTeX version, and highlight.js version to avoid store data and presentation dependency versions obscuring parser differences. The baseline pins both libraries to the versions installed in the current renderer. Comparison verifies the resolved versions before processing messages and records them with the selected revisions.
+Comparison defaults to 1,000,000 messages, 200 warmups, and the local `origin/master` refs of both application checkouts. Fetch those refs first if needed. Use `--max`, `--warmups`, `--traq-ref`, `--sui-ref`, and `--out` to change them. Both renderers use equivalent deterministic reference and stamp data, KaTeX version, and highlight.js version to avoid store data and presentation dependency versions obscuring parser differences. The baseline pins both libraries to the versions installed in the current renderer. Comparison verifies the resolved versions before processing messages and records them with the selected revisions.
 
 The result directory contains raw JSONL differences for full rendering, inline rendering, plain-text rendering, and embeddings, plus summaries and one self-contained report:
 
@@ -39,9 +39,12 @@ The CLI adapters only parse arguments, open files, and assemble services:
   adapters, a clock, and difference/progress sinks. The frontend adapter resolves
   references and stamps without a browser or production store. Initialization,
   warmups, alternating measurement, and file I/O remain separate.
-- `shared/protocol.ts` validates source rows, typed difference rows, and the
-  `run.json` manifest containing revisions, modes, limits, and warmups. Go emits
-  the same typed JSONL result protocol for plain text.
+- `shared/comparison.ts` owns the profiles, measurement result, provenance, and
+  validated `ComparisonPlan`. The workflow writes this plan to `run.json`; both
+  runners consume that file, including its paths, limits, and warmups. Frontend
+  and Go measurements use the same per-profile result model in
+  `frontend-results.json` and `plain-text-results.json`. `shared/protocol.ts`
+  validates source rows and typed JSONL differences.
 - `report/aggregate.ts` streams differences into compressed pages and injects
   them into an already-built viewer. Build the viewer with `bun run build:corpus`;
   the public report command performs this artifact prerequisite explicitly.

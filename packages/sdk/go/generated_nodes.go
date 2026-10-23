@@ -4,7 +4,7 @@ package markdown
 import (
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 	commonmark "github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go"
-	generic "github.com/traPtitech/traq-flavored-markdown/packages/plugins/extensions/go"
+	extensions "github.com/traPtitech/traq-flavored-markdown/packages/plugins/extensions/go"
 	trap "github.com/traPtitech/traq-flavored-markdown/packages/plugins/traq/go"
 )
 
@@ -21,7 +21,7 @@ func newPayload(kind string) ast.Payload {
 	if value := commonmark.NewPayload(kind); value != nil {
 		return value
 	}
-	if value := generic.NewPayload(kind); value != nil {
+	if value := extensions.NewPayload(kind); value != nil {
 		return value
 	}
 	if value := trap.NewPayload(kind); value != nil {

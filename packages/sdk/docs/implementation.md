@@ -7,8 +7,9 @@ owns public usage examples.
 
 Rust owns grammar composition, parsing, typed payloads, and semantic validation.
 [The feature table](../crates/features/src/table.rs) joins each feature's shared
-declarations, node contracts, implementation factories, and profile membership.
-Grammar and plain-text assemblies select from that table; optional Cargo features
+declarations, node contracts, and implementation factories. Ordered profiles select
+features and precedence independently. Grammar and plain-text assemblies use those
+profiles; optional Cargo features
 keep their parser and renderer dependencies separate. The SDK profile also owns
 the frozen TLD policy passed to the configurable link recognizer.
 [The preset catalog](../crates/grammar/src/bindings/presets.rs) names the shipped
@@ -43,18 +44,25 @@ accepts the SDK's closed set of built-in contracts.
 
 [The ABI descriptor](../crates/wasm/src/abi.rs) defines operations, argument
 shapes, success categories, required exports, and error codes. Generated host
-descriptors are consumed by [TypeScript transport](../typescript/runtime/transport.ts)
+descriptors are consumed by [TypeScript transport](../typescript/src/runtime/transport.ts)
 and the core Go binding. Each reply has exactly one outcome: `{ ok: value }` or
-`{ error: { code, message, resource?, path?, offset?, span? } }`.
+`{ error: { code, message, resource?, path?, offset?, span?, phase?, rule?, payload_type? } }`.
+The generated error schema validates both host decoders; rule failures retain
+their parser phase, registered rule, payload type, and source location.
 
 The semantic contract ID hashes the ABI, node and processing schemas, presets,
-and limits. Source provenance identifies implementation inputs; the Wasm SHA-256
+and limits after projecting away documentation and generated type names.
+Each operation references its request and response schema. Identity resolves
+those references per operation, so moving a schema to a different operation
+changes the ID while renaming a generated type does not. Processing helper types
+must be reachable from an operation; they do not contribute duplicate schemas.
+Source provenance identifies implementation inputs; the Wasm SHA-256
 identifies the exact artifact. These serve different purposes. Contract matching
 is a compatibility check, not a signature. The SDK build pipeline binds the ID
 into Wasm and records the artifact metadata in `dist/contract.json`.
 
 `createRuntime` and `NewRuntime` compile once. Every parser, extractor, and native
-plain-text renderer owns an independent instance. The browser `loadRuntime`
+plain-text renderer or fused processor owns an independent instance. The browser `loadRuntime`
 retains its shared runtime for the page and exposes processor factories. Go
 serializes calls to an instance and accepts cancellation contexts; TypeScript
 calls are synchronous after compilation.
@@ -72,18 +80,26 @@ A parser selects a grammar. Renderers and extractors consume its document and do
 not parse the Markdown source again. Bounded codec decoding produces an owned
 validated document; Wasm passes that guarantee into native processing.
 
+The fused processor accepts source, parses and validates once, then passes the
+same native document to extraction and plain-text rendering before encoding the
+combined response. Host-side validated snapshots still serve repeated independent
+operations; they do not imply a persistent native document handle.
+
 Native collectors share one traversal for references, source-preserving message
 text, source edits, and reference-embedding candidates. Native display plain text
 is a separate consumer. The bounded renderer writes into a sink and captures
 children only for handlers that transform their output.
+Its named whitespace policy selects collapsed display text or preserved spacing.
 `TraqUrlClassifier` classifies absolute file and message URLs by a configured
 lexical prefix; an empty origin disables it. It does not resolve relative URLs.
 
-TypeScript separates [message analysis](../typescript/messages/analysis.ts),
-[resource-card classification](../typescript/messages/cards.ts),
-[reference embedding](../typescript/messages/reference-embedding.ts),
-[display policy](../typescript/profiles/traq.ts), and
-[renderer assembly](../typescript/renderer/index.ts). `messageRenderers.prepare`
+TypeScript separates [message analysis](../typescript/src/messages/analysis.ts),
+[resource-card classification](../typescript/src/messages/cards.ts),
+[reference embedding](../typescript/src/messages/reference-embedding.ts),
+[display policy](../typescript/src/profiles/traq.ts), and
+[renderer assembly](../typescript/src/renderer/composition.ts). The default renderer
+entrypoint adds standard highlighting and math adapters; composition does not
+import either adapter. `messageRenderers.prepare`
 shares one context and analysis between standard and condensed views. A render
 plan holds node selections, omissions, replacement child text, and separators.
 

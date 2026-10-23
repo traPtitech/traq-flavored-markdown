@@ -9,8 +9,12 @@ use std::sync::{
 #[derive(Debug, Clone, PartialEq)]
 struct Text;
 impl NodeData for Text {
-    fn role(&self) -> NodeRole {
-        NodeRole::Inline
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0
@@ -20,8 +24,12 @@ impl NodeData for Text {
 #[derive(Debug, Clone, PartialEq)]
 struct Other;
 impl NodeData for Other {
-    fn role(&self) -> NodeRole {
-        NodeRole::Opaque
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Opaque,
+            children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
         0

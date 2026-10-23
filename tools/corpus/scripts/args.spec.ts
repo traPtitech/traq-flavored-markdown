@@ -2,7 +2,7 @@ import path from 'path'
 
 import { expect, test } from 'bun:test'
 
-import { repositoryRoot } from '../../../scripts/paths.ts'
+import { repositoryRoot } from '../../../tools/workspace/paths.ts'
 import { parseArgs, resolveRepositoryPath } from './args.ts'
 
 test('corpus command paths stay repository-relative through --cwd', () => {

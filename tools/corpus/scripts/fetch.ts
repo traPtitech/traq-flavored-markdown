@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import { repositoryRoot } from '../../../scripts/paths.ts'
+import { repositoryRoot } from '../../../tools/workspace/paths.ts'
 import { collect } from '../collection/collect.ts'
 import { parseArgs, parseEnv, resolveRepositoryPath } from './args.ts'
 

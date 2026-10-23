@@ -1,5 +1,8 @@
 use std::{collections::hash_map::DefaultHasher, fs, hash::Hasher, path::Path};
 
+#[path = "src/limits/memory.rs"]
+mod memory;
+
 // An accidental-mismatch identifier, not an authenticity signature. Hash bytes
 // directly and normalize text/paths so Windows and Unix export the same ID.
 fn input(path: &Path, hash: &mut DefaultHasher) {
@@ -45,6 +48,12 @@ fn crate_sources(root: &Path, hash: &mut DefaultHasher) {
 }
 
 fn main() {
+    if std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("wasm32") {
+        println!(
+            "cargo:rustc-link-arg-cdylib=--max-memory={}",
+            memory::MEMORY_BYTES
+        );
+    }
     println!("cargo:rerun-if-env-changed=MARKDOWN_CONTRACT_ID");
     let mut hash = DefaultHasher::new();
     for path in [
@@ -60,8 +69,8 @@ fn main() {
         "../../../../Cargo.toml",
         "../../../../Cargo.lock",
         "../../../../rust-toolchain.toml",
-        "../../../../.cargo/config.toml",
-        "../../../../scripts/codegen/structure.rs",
+        "../../../../tools/contracts/rust/Cargo.toml",
+        "../../../../tools/contracts/rust/src",
     ] {
         input(Path::new(path), &mut hash);
     }

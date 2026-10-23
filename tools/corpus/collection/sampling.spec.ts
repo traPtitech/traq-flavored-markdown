@@ -38,10 +38,10 @@ test('API retries are bounded and scheduling can be injected', async () => {
     baseUrl: 'https://example.test',
     token: 'test',
     delayMs: 3,
-    fetchImpl: (async () =>
+    fetchImpl: async () =>
       ++requests === 1
         ? new Response('', { status: 503 })
-        : Response.json({ okay: true })) as typeof fetch,
+        : Response.json({ okay: true }),
     sleep: async ms => {
       sleeps.push(ms)
     }

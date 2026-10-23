@@ -70,11 +70,7 @@ impl Catalog {
         definition.validate_definition()?;
 
         let description = definition.describe();
-        let plugins = definition
-            .plugins()
-            .iter()
-            .map(|p| self.plugin(p))
-            .collect();
+        let plugins = definition.plugins().map(|p| self.plugin(p)).collect();
 
         let order = definition.rules().map(|r| self.rule_index(r)).collect();
 
@@ -124,6 +120,12 @@ impl Catalog {
     }
 
     fn plugin_spec(&self, plugin: &Plugin) -> PluginSpec {
+        let provider_index = || {
+            self.plugins
+                .iter()
+                .position(|p| p.same(plugin))
+                .expect("registered plugin")
+        };
         PluginSpec {
             group: plugin.namespace().map(|g| {
                 self.groups
@@ -136,16 +138,8 @@ impl Catalog {
 
             rules: plugin.rules().iter().map(|r| self.rule_index(r)).collect(),
 
-            text: if !plugin.has_context_provider() {
-                vec![]
-            } else {
-                vec![
-                    self.plugins
-                        .iter()
-                        .position(|p| p.same(plugin))
-                        .expect("registered plugin"),
-                ]
-            },
+            text_provider: plugin.has_text_provider().then(provider_index),
+            block_policy: plugin.has_block_policy().then(provider_index),
         }
     }
     pub fn describe(&self) -> Value {

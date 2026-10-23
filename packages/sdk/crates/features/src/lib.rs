@@ -8,9 +8,11 @@ use std::sync::LazyLock;
 
 #[cfg(feature = "syntax")]
 mod linkify;
+mod profiles;
 mod table;
 #[cfg(feature = "syntax")]
 pub use linkify::syntax as traq_linkify_syntax;
+pub use profiles::{Profile, ProfileDefinition};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FeatureId {
@@ -25,13 +27,6 @@ pub enum FeatureId {
     References,
     Stamp,
     Spacing,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Profile {
-    Commonmark,
-    TraqV1,
-    TraqPlainText,
 }
 
 #[derive(Debug)]
@@ -55,39 +50,16 @@ impl Payload {
     }
 }
 
-/// One feature's contract, SDK export, implementations, and standard selections.
+/// One feature's contract, SDK export, and available implementations.
 pub struct FeatureDefinition {
     pub id: FeatureId,
     pub export: Export,
     pub declaration: &'static Declaration,
     pub payloads: Vec<Payload>,
-    selection: Selection,
     #[cfg(feature = "syntax")]
     pub syntax: fn() -> &'static markdown_parser::engine::Plugin,
     #[cfg(feature = "text")]
     pub text: Option<fn(TextOptions) -> markdown_renderer::Plugin>,
-}
-
-struct Selection {
-    commonmark: Option<u8>,
-    traq_v1: Option<u8>,
-    plain_text: Option<u8>,
-}
-impl Selection {
-    const fn new(commonmark: Option<u8>, traq_v1: Option<u8>, plain_text: Option<u8>) -> Self {
-        Self {
-            commonmark,
-            traq_v1,
-            plain_text,
-        }
-    }
-    fn order(&self, profile: Profile) -> Option<u8> {
-        match profile {
-            Profile::Commonmark => self.commonmark,
-            Profile::TraqV1 => self.traq_v1,
-            Profile::TraqPlainText => self.plain_text,
-        }
-    }
 }
 
 pub fn all() -> &'static [FeatureDefinition] {
@@ -104,19 +76,13 @@ impl FeatureId {
     }
 }
 
-/// Profile membership and registration order come from the feature table.
+/// Ordered feature capabilities selected by the profile policy.
 pub fn selected(profile: Profile) -> impl Iterator<Item = &'static FeatureDefinition> {
-    let mut features: Vec<_> = all()
+    profile
+        .definition()
+        .features
         .iter()
-        .filter_map(|feature| {
-            feature
-                .selection
-                .order(profile)
-                .map(|order| (order, feature))
-        })
-        .collect();
-    features.sort_by_key(|(order, _)| *order);
-    features.into_iter().map(|(_, feature)| feature)
+        .map(|id| id.definition())
 }
 
 #[cfg(feature = "syntax")]
@@ -130,14 +96,14 @@ pub fn commonmark_syntax() -> &'static markdown_commonmark::Syntax {
 #[derive(Debug, Clone, Copy)]
 pub struct TextOptions {
     pub explicit_links: markdown_commonmark_text::ExplicitLinkStyle,
-    pub math: markdown_generic_text::math::Style,
+    pub math: markdown_extensions_text::math::Style,
 }
 #[cfg(feature = "text")]
 impl Default for TextOptions {
     fn default() -> Self {
         Self {
             explicit_links: markdown_commonmark_text::ExplicitLinkStyle::LabelAndDestination,
-            math: markdown_generic_text::math::Style::DelimitedTex,
+            math: markdown_extensions_text::math::Style::DelimitedTex,
         }
     }
 }
@@ -159,7 +125,7 @@ mod tests {
             };
         }
         markdown_commonmark_contracts::node_catalog!(register);
-        markdown_generic_contracts::node_catalog!(register);
+        markdown_extensions_contracts::node_catalog!(register);
         markdown_trap_contracts::node_catalog!(register);
         let mut actual = HashMap::new();
         let mut exports = HashSet::new();
@@ -183,10 +149,9 @@ mod tests {
     #[test]
     fn profile_orders_are_complete_and_unambiguous() {
         for profile in [Profile::Commonmark, Profile::TraqV1, Profile::TraqPlainText] {
-            let orders: Vec<_> = selected(profile)
-                .map(|feature| feature.selection.order(profile).unwrap())
-                .collect();
-            assert_eq!(orders, (0..orders.len() as u8).collect::<Vec<_>>());
+            let ids: Vec<_> = selected(profile).map(|feature| feature.id).collect();
+            assert_eq!(ids.len(), ids.iter().collect::<HashSet<_>>().len());
+            assert_eq!(ids, profile.definition().features);
         }
         assert_eq!(
             selected(Profile::Commonmark)

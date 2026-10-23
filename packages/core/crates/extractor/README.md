@@ -12,7 +12,12 @@ use markdown_extractor::{Extractor, Plugin, PresetBuilder};
 #[derive(Debug, Clone, PartialEq)]
 struct Reference(String);
 impl NodeData for Reference {
-    fn role(&self) -> NodeRole { NodeRole::Inline }
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Inline, children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
+    }
     fn payload_bytes(&self) -> usize { self.0.len() }
 }
 

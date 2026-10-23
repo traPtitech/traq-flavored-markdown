@@ -21,7 +21,7 @@ export default [
       '**/vendor',
       '**/testdata',
       '**/fixtures/**',
-      '**/typescript/generated/**',
+      '**/typescript/src/generated/**',
       '**/generated_*.go',
       'bun.lock'
     ]
@@ -75,6 +75,8 @@ export default [
   {
     files: [
       'scripts/**/*.{mjs,ts}',
+      'tools/workspace/**/*.{mjs,ts}',
+      'tools/contracts/**/*.{mjs,ts}',
       'tools/corpus/scripts/**/*.{mjs,ts}',
       'packages/**/scripts/**/*.{js,mjs,ts,mts}'
     ],

@@ -46,7 +46,7 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
       maxMessages: 2,
       perChannel: 5,
       delayMs: 0,
-      fetchImpl: fetchImpl as typeof fetch,
+      fetchImpl,
       progress: x => {
         logs.push(x)
       }
@@ -69,7 +69,7 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
         baseUrl: 'https://traq.example/',
         token: 'test-token',
         output: directory,
-        fetchImpl: fetchImpl as typeof fetch
+        fetchImpl
       })
     ).rejects.toMatchObject({ code: 'EEXIST' })
     console.log(

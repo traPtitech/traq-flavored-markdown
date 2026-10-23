@@ -1,10 +1,12 @@
 {
+  "extends": "./tsconfig.portable.json",
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
     "declaration": true,
-    "types": ["bun"]
+    "noEmit": false,
+    "allowImportingTsExtensions": false
   }
 }

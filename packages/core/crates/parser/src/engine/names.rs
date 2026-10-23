@@ -9,8 +9,10 @@ fn duplicate(scope: String, name: &str) -> BuildError {
 }
 
 /// Only namespaces reached through the selected plugins participate.
-pub(super) fn validate(plugins: &[Plugin]) -> Result<(), BuildError> {
-    for plugin in plugins {
+pub(super) fn validate<'a>(
+    plugins: impl Iterator<Item = &'a Plugin> + Clone,
+) -> Result<(), BuildError> {
+    for plugin in plugins.clone() {
         let mut names = HashSet::new();
 
         for rule in plugin.definition.rules.iter() {
@@ -25,6 +27,6 @@ pub(super) fn validate(plugins: &[Plugin]) -> Result<(), BuildError> {
         }
     }
 
-    markdown_definitions::validate_names(plugins.iter().map(|plugin| &plugin.declaration))
+    markdown_definitions::validate_names(plugins.map(|plugin| &plugin.declaration))
         .map_err(|error| duplicate(error.scope, &error.name))
 }

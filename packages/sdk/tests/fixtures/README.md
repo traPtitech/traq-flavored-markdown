@@ -50,3 +50,11 @@ list items, one table, two rows, and four cells. The independently transformed
 expectations matched the revised parser in both modes, with no other AST
 differences and all 787 plain-text expectations unchanged. Sources, spans, and
 child order were preserved.
+
+On 2026-10-23, the unreleased code-block payload made `info` a semantic string:
+CommonMark backslash escapes and character references are decoded while parsing,
+so every renderer sees the same language name. The two block expectations for
+CommonMark examples 24 and 34 were reviewed against the independent specification
+HTML (`language-foo+bar` and `language-föö`) in the root fixture and edited by hand.
+Source text, spans, literal code, inline-mode expectations, and every other
+expectation are unchanged. No parser output was used to regenerate this fixture.

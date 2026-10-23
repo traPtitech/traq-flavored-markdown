@@ -1,34 +1,22 @@
-use markdown_commonmark::inlines::emphasis::paired;
+use markdown_commonmark::inlines::emphasis::paired_rule;
 use markdown_parser::{
     NodeKind,
-    engine::{
-        Plugin,
-        inline::{DelimiterPolicy, InlineRule},
-    },
+    engine::{Plugin, inline::InlineRule},
 };
 pub use markdown_trap_contracts::Spoiler;
 
-/// frontPrior consumes pairs and leaves an odd '!' for JSON or image syntax.
 pub fn inline_rule() -> &'static InlineRule {
-    static RULE: std::sync::LazyLock<InlineRule> = std::sync::LazyLock::new(|| {
-        InlineRule::new(b"!", |input, budget| {
-            paired(
-                input,
-                budget,
-                2,
-                DelimiterPolicy::simple(|| NodeKind::new(Spoiler {})),
-            )
-        })
-        .named("spoiler")
-    });
+    static RULE: std::sync::LazyLock<InlineRule> =
+        std::sync::LazyLock::new(|| paired_rule(b"!", "spoiler", 2, || NodeKind::new(Spoiler {})));
     &RULE
 }
 
 pub fn plugin() -> &'static Plugin {
     static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_trap_contracts::declarations().spoiler);
-        plugin.add(inline_rule());
-        plugin
+        Plugin::from_rule(
+            &markdown_trap_contracts::declarations().spoiler,
+            inline_rule(),
+        )
     });
     &PLUGIN
 }

@@ -3,27 +3,28 @@ import path from 'node:path'
 
 import { frontendAdapters } from '../comparison/adapters/frontend.ts'
 import { compareSources } from '../comparison/runner.ts'
+import {
+  type ComparisonResult,
+  type Mode,
+  parseComparisonPlan
+} from '../shared/comparison.ts'
 import { encodeRecord, parseSource } from '../shared/protocol.ts'
 import { parseArgs } from './args.ts'
 import { readLines } from './read-lines.ts'
 
 const { values } = parseArgs({
   options: {
-    corpus: { type: 'string' },
-    out: { type: 'string' },
-    max: { type: 'number', default: 100000, integer: true, min: 1 },
-    baseline: { type: 'string' },
-    origin: { type: 'string' }
+    plan: { type: 'string' }
   }
 })
-if (!values.corpus || !values.out)
-  throw new Error('--corpus and --out are required')
-await mkdir(values.out, { recursive: true })
+if (!values.plan) throw new Error('--plan is required')
+const plan = parseComparisonPlan(await Bun.file(values.plan).json())
+await mkdir(plan.output, { recursive: true })
 
-const adapters = await frontendAdapters(values.baseline!, values.origin)
-const outputPath = path.join(values.out, 'sui-differences.jsonl')
+const adapters = await frontendAdapters(plan)
+const outputPath = path.join(plan.output, 'sui-differences.jsonl')
 const embeddingOutputPath = path.join(
-  values.out,
+  plan.output,
   'sui-embedding-differences.jsonl'
 )
 await Promise.all([
@@ -38,11 +39,12 @@ console.warn = () => warnings++
 try {
   const result = await compareSources({
     input: async function* () {
-      for await (const line of readLines(values.corpus!))
+      for await (const line of readLines(plan.corpus))
         if (line) yield parseSource(line)
     },
     profiles: adapters.profiles,
-    max: values.max,
+    max: plan.max,
+    warmups: plan.warmups,
     difference: async row => {
       await output.write(encodeRecord(row))
     },
@@ -54,20 +56,30 @@ try {
         console.log(JSON.stringify({ processed: messages }))
     }
   })
-  const report = {
-    ...result,
-    execution: 'standalone',
-    beforeInitializationMs: adapters.beforeInitializationMs,
-    afterInitializationMs: adapters.afterInitializationMs,
-    warnings,
-    timed:
-      'Parse + render; 200 warmups; alternating before/after order; I/O excluded; deterministic reference/stamp ports'
-  }
+  const report: Partial<Record<Mode, ComparisonResult>> = Object.fromEntries(
+    Object.entries(result.modes).map(([mode, measurement]) => [
+      mode,
+      {
+        ...measurement,
+        messages: result.messages,
+        initialization: {
+          beforeMs: adapters.beforeInitializationMs,
+          afterMs: adapters.afterInitializationMs
+        }
+      }
+    ])
+  )
   await Bun.write(
-    path.join(values.out, 'sui-summary.json'),
+    path.join(plan.output, 'frontend-results.json'),
     JSON.stringify(report, null, 2) + '\n'
   )
-  console.log(JSON.stringify(report))
+  console.log(
+    JSON.stringify({
+      results: report,
+      warnings,
+      wallSeconds: result.wallSeconds
+    })
+  )
 } finally {
   await output.end()
   await embeddings.end()

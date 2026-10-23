@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test'
 
 import sourceFixtures from '../../../../tests/fixtures/source-spans.json' with { type: 'json' }
-import type { Node } from '../ast.js'
-import { DocumentContext } from '../document.js'
-import { SourceText } from '../source.js'
+import type { Node } from '../src/ast.js'
+import { DocumentContext } from '../src/document.js'
+import { SourceText } from '../src/source.js'
 
 test('source operations follow the shared cross-language byte contract', () => {
   for (const fixture of sourceFixtures) {

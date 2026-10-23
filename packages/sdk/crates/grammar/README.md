@@ -1,6 +1,6 @@
 # traq-markdown-grammar
 
-The typed grammar distribution layer. It combines CommonMark, generic, and traP
+The typed grammar distribution layer. It combines CommonMark, extensions, and traP
 extensions; their individual syntax crates own the rules themselves.
 
 `traq-markdown-features` joins each feature's shared declaration, native payload

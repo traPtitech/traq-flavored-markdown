@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
 	"os"
 	"testing"
 )
@@ -136,7 +137,7 @@ func TestSnapshotRejectsCycleAndInvalidGoUTF8(t *testing.T) {
 func TestJSONUnicodeValidationUnderEscapes(t *testing.T) {
 	for _, value := range []string{`\ud800`, "😀", "a\\\"b", "\x00"} {
 		raw, _ := json.Marshal(value)
-		if err := ValidateJSON(raw); err != nil {
+		if err := contract.ValidateJSON(raw); err != nil {
 			t.Fatalf("%s: %v", raw, err)
 		}
 	}

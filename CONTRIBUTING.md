@@ -13,14 +13,15 @@ build its generated artifacts.
 - **Rust contracts are authoritative.** Payload types, validation, grammar
   presets, and processing contracts originate in Rust. Review regenerated
   TypeScript and Go files, but do not hand-edit them.
-- **Preserve compatibility deliberately.** A grammar version is a persistent
-  interpretation of stored source. Do not change an existing version's accepted
-  meaning; add a new version when behavior must change. Never regenerate a
-  compatibility fixture from the parser under test.
+- **Review behavior changes deliberately.** The v1 grammar is unreleased and may
+  still change together with its APIs and contracts. Document intentional changes
+  and review their effect on stored source. Once a grammar version is released,
+  preserve its interpretation and add a new version for behavior changes. Never
+  regenerate a compatibility fixture from the parser under test.
 - **Keep dependencies flowing downward.** Core does not depend on plugins or
   traQ. Plugins may depend on core, and the SDK composes them for traQ. Keep
   application policy and artifact-specific code in the SDK, and shared generators
-  in `scripts/codegen`.
+  in `tools/contracts`.
 - **Keep code with its owner.** Place implementation and its tests in the owning
   package. Package README files describe public APIs; do not introduce a second
   source of truth for an API in a root document.

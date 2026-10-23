@@ -232,6 +232,7 @@ name = "markdown-commonmark-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
+ "markdown-contract-export",
  "markdown-definitions",
  "schemars",
  "serde",
@@ -245,6 +246,16 @@ dependencies = [
  "markdown-ast",
  "markdown-commonmark-contracts",
  "markdown-renderer",
+]
+
+[[package]]
+name = "markdown-contract-export"
+version = "0.1.0"
+dependencies = [
+ "markdown-ast",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -265,18 +276,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "markdown-extractor"
+name = "markdown-extensions-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
- "markdown-definitions",
-]
-
-[[package]]
-name = "markdown-generic-contracts"
-version = "0.1.0"
-dependencies = [
- "markdown-ast",
+ "markdown-contract-export",
  "markdown-definitions",
  "schemars",
  "serde",
@@ -284,24 +288,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "markdown-generic-syntax"
+name = "markdown-extensions-syntax"
 version = "0.1.0"
 dependencies = [
  "markdown-commonmark",
  "markdown-commonmark-contracts",
  "markdown-definitions",
- "markdown-generic-contracts",
+ "markdown-extensions-contracts",
  "markdown-parser",
  "regex",
 ]
 
 [[package]]
-name = "markdown-generic-text"
+name = "markdown-extensions-text"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
- "markdown-generic-contracts",
+ "markdown-extensions-contracts",
  "markdown-renderer",
+]
+
+[[package]]
+name = "markdown-extractor"
+version = "0.1.0"
+dependencies = [
+ "markdown-ast",
+ "markdown-definitions",
 ]
 
 [[package]]
@@ -328,6 +340,7 @@ name = "markdown-trap-contracts"
 version = "0.1.0"
 dependencies = [
  "markdown-ast",
+ "markdown-contract-export",
  "markdown-definitions",
  "schemars",
  "serde",
@@ -633,9 +646,9 @@ dependencies = [
  "markdown-commonmark-contracts",
  "markdown-commonmark-text",
  "markdown-definitions",
- "markdown-generic-contracts",
- "markdown-generic-syntax",
- "markdown-generic-text",
+ "markdown-extensions-contracts",
+ "markdown-extensions-syntax",
+ "markdown-extensions-text",
  "markdown-parser",
  "markdown-renderer",
  "markdown-trap-contracts",
@@ -647,11 +660,12 @@ dependencies = [
 name = "traq-markdown-grammar"
 version = "0.1.0"
 dependencies = [
+ "markdown-ast",
  "markdown-commonmark",
  "markdown-commonmark-contracts",
  "markdown-definitions",
- "markdown-generic-contracts",
- "markdown-generic-syntax",
+ "markdown-extensions-contracts",
+ "markdown-extensions-syntax",
  "markdown-parser",
  "markdown-trap-contracts",
  "markdown-trap-syntax",
@@ -667,8 +681,8 @@ dependencies = [
  "markdown-ast",
  "markdown-commonmark-contracts",
  "markdown-commonmark-text",
+ "markdown-extensions-text",
  "markdown-extractor",
- "markdown-generic-text",
  "markdown-renderer",
  "markdown-trap-contracts",
  "markdown-trap-extraction",
@@ -687,8 +701,9 @@ dependencies = [
  "markdown-ast",
  "markdown-codec",
  "markdown-commonmark-contracts",
+ "markdown-contract-export",
  "markdown-definitions",
- "markdown-generic-contracts",
+ "markdown-extensions-contracts",
  "markdown-parser",
  "markdown-trap-contracts",
  "schemars",

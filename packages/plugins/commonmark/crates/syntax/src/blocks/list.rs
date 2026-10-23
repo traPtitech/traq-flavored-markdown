@@ -11,7 +11,7 @@ use markdown_parser::{
     },
 };
 
-use std::ops::Range;
+use markdown_parser::engine::source::ViewRange;
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
@@ -120,7 +120,7 @@ fn collect_continuation(
     first_content: &str,
     lazy: bool,
     mut i: LineIndex,
-    ranges: &mut Vec<Range<usize>>,
+    ranges: &mut Vec<ViewRange>,
 ) -> (LineIndex, bool) {
     let source = input.source;
     let lines = input.lines;
@@ -193,10 +193,10 @@ fn collect_continuation(
 fn unindent_blank_continuations(
     source: &markdown_parser::engine::source::SourceView,
     marker_width: usize,
-    ranges: &mut [Range<usize>],
+    ranges: &mut [ViewRange],
 ) {
     for range in ranges.iter_mut().skip(1) {
-        let raw = &source.text()[range.clone()];
+        let raw = &source[range.clone()];
 
         if blank(raw.trim_end_matches('\n')) {
             range.start += marker_width.min(raw.len() - raw.trim_start_matches(' ').len());

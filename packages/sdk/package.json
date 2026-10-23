@@ -40,6 +40,10 @@
       "types": "./dist/renderer/index.d.ts",
       "import": "./dist/renderer/index.js"
     },
+    "./renderer/composition": {
+      "types": "./dist/renderer/composition.d.ts",
+      "import": "./dist/renderer/composition.js"
+    },
     "./index.css": "./dist/index.css",
     "./styles/*": "./styles/*.scss"
   },

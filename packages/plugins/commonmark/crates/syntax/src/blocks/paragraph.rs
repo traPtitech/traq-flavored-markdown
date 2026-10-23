@@ -56,7 +56,7 @@ pub(super) fn parse(
         end += 1;
     }
 
-    let raw = &source.text()[lines[first].start..lines[end - 1].end];
+    let raw = &source[lines[first].start..lines[end - 1].end];
     let start = lines[first].start + raw.len() - raw.trim_start_matches(ascii_space).len();
     let finish = lines[end - 1].start + input.line(end - 1).trim_end_matches(ascii_space).len();
     let view = source.join(&[start..finish.max(start)])?;

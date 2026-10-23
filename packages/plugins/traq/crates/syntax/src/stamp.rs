@@ -113,34 +113,20 @@ fn parse_effects(suffix: &str) -> Option<StampEffects> {
     }
 
     for effect in suffix.strip_prefix('.')?.split('.') {
-        use StampAnimation as Animation;
         match effect {
             "ex-large" => effects.size = StampSize::ExLarge,
             "large" => effects.size = StampSize::Large,
             "small" => effects.size = StampSize::Small,
-            "rotate" => effects.animations.push(Animation::Rotate),
-            "rotate-inv" => effects.animations.push(Animation::RotateInv),
-            "wiggle" => effects.animations.push(Animation::Wiggle),
-            "parrot" => effects.animations.push(Animation::Parrot),
-            "zoom" => effects.animations.push(Animation::Zoom),
-            "inversion" => effects.animations.push(Animation::Inversion),
-            "turn" => effects.animations.push(Animation::Turn),
-            "turn-v" => effects.animations.push(Animation::TurnV),
-            "happa" => effects.animations.push(Animation::Happa),
-            "pyon" => effects.animations.push(Animation::Pyon),
-            "flashy" => effects.animations.push(Animation::Flashy),
-            "pull" => effects.animations.push(Animation::Pull),
-            "atsumori" => effects.animations.push(Animation::Atsumori),
-            "stretch" => effects.animations.push(Animation::Stretch),
-            "stretch-v" => effects.animations.push(Animation::StretchV),
-            "conga" | "marquee" => effects.animations.push(Animation::Conga),
-            "conga-inv" | "marquee-inv" => effects.animations.push(Animation::CongaInv),
-            "rainbow" => effects.animations.push(Animation::Rainbow),
-            "ascension" => effects.animations.push(Animation::Ascension),
-            "shake" => effects.animations.push(Animation::Shake),
-            "party" => effects.animations.push(Animation::Party),
-            "attract" => effects.animations.push(Animation::Attract),
-            _ => return None,
+            animation => {
+                let canonical = match animation {
+                    "marquee" => "conga",
+                    "marquee-inv" => "conga-inv",
+                    name => name,
+                };
+                effects
+                    .animations
+                    .push(StampAnimation::from_name(canonical)?);
+            }
         }
         if effects.animations.len() > 5 {
             return None;

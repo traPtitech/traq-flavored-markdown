@@ -30,13 +30,19 @@ pub struct Error {
     pub code: ErrorCode,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource: Option<String>,
+    pub resource: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<String>,
+    pub path: Option<Box<str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<ErrorSpan>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phase: Option<markdown_parser::engine::ParsePhase>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rule: Option<Box<str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payload_type: Option<Box<str>>,
 }
 
 impl Error {
@@ -48,6 +54,9 @@ impl Error {
             path: None,
             offset: None,
             span: None,
+            phase: None,
+            rule: None,
+            payload_type: None,
         }
     }
     pub fn limit(resource: &str) -> Self {
@@ -70,9 +79,15 @@ impl Error {
         } else {
             Self::new(ErrorCode::InvalidDocument, &error)
         };
-        reply.path = Some(error.path.iter().fold(String::from("$"), |path, index| {
-            format!("{path}.children[{index}]")
-        }));
+        reply.path = Some(
+            error
+                .path
+                .iter()
+                .fold(String::from("$"), |path, index| {
+                    format!("{path}.children[{index}]")
+                })
+                .into_boxed_str(),
+        );
         reply.span = error.span.and_then(wire_span);
         reply
     }
@@ -83,10 +98,10 @@ impl Error {
         if let Some(resource) = error.resource() {
             return Self::limit(resource);
         }
-        let code = match error.code() {
-            "invalid_payload" | "invalid_node" | "unsupported_node" | "invalid_edit"
-            | "overlapping_edits" => ErrorCode::InvalidDocument,
-            _ => ErrorCode::InternalError,
+        let code = match error.category() {
+            traq_markdown_processing::ErrorCategory::InvalidDocument => ErrorCode::InvalidDocument,
+            traq_markdown_processing::ErrorCategory::ResourceLimit => ErrorCode::ResourceLimit,
+            traq_markdown_processing::ErrorCategory::Internal => ErrorCode::InternalError,
         };
         let mut reply = Self::new(code, &error);
         match error {
@@ -110,9 +125,11 @@ impl Error {
                 .iter()
                 .fold(String::from("$"), |path, index| {
                     format!("{path}.children[{index}]")
-                }),
+                })
+                .into_boxed_str(),
         );
         error.span = validation.span.and_then(wire_span);
+        error.payload_type = validation.payload_type.map(Into::into);
         error
     }
     pub fn not_configured() -> Self {
@@ -138,6 +155,39 @@ impl From<traq_markdown_grammar::ParseError> for Error {
             ParseError::InternalError => {
                 Self::new(ErrorCode::InternalError, "parser invariant failed")
             }
+            ParseError::InvalidRuleOutput {
+                phase,
+                rule,
+                position,
+                reason,
+            } => {
+                let mut reply = Self::new(ErrorCode::InternalError, reason);
+                reply.phase = Some(phase);
+                reply.rule = rule.map(String::into_boxed_str);
+                reply.offset = position.try_into().ok();
+                reply
+            }
+            ParseError::InvalidDocument {
+                path,
+                start,
+                end,
+                payload_type,
+                reason,
+            } => {
+                let mut reply = Self::new(ErrorCode::InternalError, reason);
+                reply.path = Some(
+                    path.iter()
+                        .fold(String::from("$"), |path, index| {
+                            format!("{path}.children[{index}]")
+                        })
+                        .into_boxed_str(),
+                );
+                reply.span = start
+                    .zip(end)
+                    .and_then(|(start, end)| wire_span(markdown_ast::Span { start, end }));
+                reply.payload_type = payload_type.map(String::into_boxed_str);
+                reply
+            }
         }
     }
 }
@@ -146,6 +196,15 @@ impl From<traq_markdown_grammar::ParseError> for Error {
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub contract_id: &'static str,
+}
+
+#[derive(serde::Deserialize)]
+#[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct ProcessorConfiguration {
+    pub preset: String,
+    #[serde(default)]
+    pub options: traq_markdown_processing::pipeline::ProcessorOptions,
 }
 pub const CONTRACT_ID: &str = match option_env!("MARKDOWN_CONTRACT_ID") {
     Some(value) => value,
@@ -159,33 +218,97 @@ pub fn configured() -> Configuration {
 
 #[cfg(feature = "contracts")]
 #[allow(dead_code)] // Used by the native exporter, not the Wasm library target.
-pub fn descriptor() -> serde_json::Value {
-    let error = schemars::generate::SchemaSettings::default()
-        .with(|settings| settings.contract = schemars::generate::Contract::Serialize)
-        .into_generator()
-        .into_root_schema_for::<Error>();
-    serde_json::json!({
-        "version": 1,
-        "operations": {
-            "configure": { "export": "configure", "input": "text", "params": [], "result": "configuration", "configuration": true },
-            "configureExtractor": { "export": "configure_extractor", "input": "json", "params": [], "result": "configuration", "configuration": true },
-            "configureRenderer": { "export": "configure_renderer", "input": "json", "params": [], "result": "configuration", "configuration": true },
-            "parse": { "export": "parse", "input": "text", "params": ["i32"], "result": "document", "configuration": false },
-            "extract": { "export": "extract", "input": "json", "params": [], "result": "extraction", "configuration": false },
-            "render": { "export": "render", "input": "json", "params": [], "result": "text", "configuration": false }
-        },
-        "exports": {
-            "input_ptr": {"params":["i32"],"results":["i32"]},
-            "output_ptr": {"params":[],"results":["i32"]},
-            "contract_ptr": {"params":[],"results":["i32"]},
-            "contract_len": {"params":[],"results":["i32"]},
-            "configure": {"params":[],"results":["i32"]},
-            "configure_extractor": {"params":[],"results":["i32"]},
-            "configure_renderer": {"params":[],"results":["i32"]},
-            "parse": {"params":["i32"],"results":["i32"]},
-            "extract": {"params":[],"results":["i32"]},
-            "render": {"params":[],"results":["i32"]}
-        },
-        "error": error
-    })
+pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export::AbiContract> {
+    use markdown_contract_export::{AbiContract, Input, Operation, Output, WasmType, schema};
+    AbiContract::buffered(
+        1,
+        schema::<Error>(schemars::generate::Contract::Serialize),
+        [
+            (
+                "configure",
+                Operation::new("configure", Input::Text, vec![], Output::Configuration),
+            ),
+            (
+                "configureExtractor",
+                Operation::new(
+                    "configure_extractor",
+                    Input::Json,
+                    vec![],
+                    Output::Configuration,
+                )
+                .request_schema("ExtractorOptions"),
+            ),
+            (
+                "configureRenderer",
+                Operation::new(
+                    "configure_renderer",
+                    Input::Json,
+                    vec![],
+                    Output::Configuration,
+                )
+                .request_schema("RendererOptions"),
+            ),
+            (
+                "parse",
+                Operation::new("parse", Input::Text, vec![WasmType::I32], Output::Document),
+            ),
+            (
+                "extract",
+                Operation::new("extract", Input::Json, vec![], Output::Extraction)
+                    .response_schema("Extraction"),
+            ),
+            (
+                "render",
+                Operation::new("render", Input::Json, vec![], Output::Text),
+            ),
+            (
+                "configureProcessor",
+                Operation::new(
+                    "configure_processor",
+                    Input::Json,
+                    vec![],
+                    Output::Configuration,
+                )
+                .request_schema("ProcessorConfiguration"),
+            ),
+            (
+                "process",
+                Operation::new(
+                    "process",
+                    Input::Text,
+                    vec![WasmType::I32],
+                    Output::Processing,
+                )
+                .response_schema("ProcessingResult"),
+            ),
+        ],
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Error;
+    use markdown_ast::{Span, ValidationError, ValidationErrorKind};
+
+    #[test]
+    fn validation_context_survives_codec_and_processing_boundaries() {
+        let validation = ValidationError {
+            kind: ValidationErrorKind::InvalidNode,
+            path: vec![1, 2],
+            span: Some(Span { start: 3, end: 7 }),
+            payload_type: Some("example::Heading"),
+            payload: None,
+        };
+        for error in [
+            Error::validation(&validation),
+            Error::document(validation.clone().into()),
+            Error::processing(validation.into()),
+        ] {
+            let wire = serde_json::to_value(error).unwrap();
+            assert_eq!(wire["code"], "invalid_document");
+            assert_eq!(wire["payload_type"], "example::Heading");
+            assert_eq!(wire["path"], "$.children[1].children[2]");
+            assert_eq!(wire["span"], serde_json::json!({"start": 3, "end": 7}));
+        }
+    }
 }

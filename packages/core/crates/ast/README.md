@@ -11,9 +11,14 @@ use markdown_ast::{Node, NodeData, NodeRole, Span};
 struct Heading { level: u8 }
 
 impl NodeData for Heading {
-    fn role(&self) -> NodeRole { NodeRole::Block }
+    fn structure() -> &'static markdown_ast::NodeStructure {
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
+            role: NodeRole::Block, children: markdown_ast::ChildStructure::Any,
+        };
+        &STRUCTURE
+    }
     fn payload_bytes(&self) -> usize { 0 }
-    fn validate(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+    fn validate_payload(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = (|| {
         (1..=6).contains(&self.level)
     })();
@@ -40,17 +45,20 @@ complete output size before allocating the result.
 
 ## Validation
 
-Every external plugin node must implement `NodeData::role` and
+Every external plugin node must implement `NodeData::structure` and
 `NodeData::payload_bytes`. A role declares block, inline, structural, or opaque
 placement; existing parent contracts accept external nodes according to that
 declaration without registering their types in core. `payload_bytes` counts
-owned heap content, including every string field. `NodeData::validate` checks a node and
+owned heap content, including every string field. `NodeData::validate_payload` checks a node and
 its direct children. Use `document.validate(limits)` for a complete tree check:
 it validates source and payload size, node count, depth, UTF-8 spans,
 containment, source-ordered non-overlapping siblings, and every node's data. The
 default limits are 65,536 source bytes, 8 MiB of payload bytes, 16,384 nodes,
 and depth 64. Validation returns a `ValidationError` on failure and never checks
-codec registrations or handlers.
+codec registrations or handlers. The structure contract is always checked before
+the custom `validate_payload` hook, so a custom validator cannot bypass it.
+The `markdown_definitions::node` attribute derives the ordinary implementation
+and field accounting; `markdown_definitions::payload` handles nested data.
 
 AST construction and editing do not validate automatically. Validation is not
 cached, so validate again after an edit. `ValidatedDocument::new(&document)` uses

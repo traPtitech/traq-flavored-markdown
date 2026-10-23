@@ -1,10 +1,6 @@
 package ast
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -67,87 +63,4 @@ func ValidateSource(source string) error {
 // IsBoundary reports whether an offset is a UTF-8 byte boundary in source.
 func IsBoundary(source string, position uint32) bool {
 	return uint64(position) <= uint64(len(source)) && (int(position) == len(source) || utf8.RuneStart(source[position]))
-}
-
-// ValidateJSON rejects the lossy Unicode replacements accepted by encoding/json.
-func ValidateJSON(raw []byte) error {
-	if !utf8.Valid(raw) {
-		return fmt.Errorf("invalid UTF-8")
-	}
-	if !json.Valid(raw) {
-		return fmt.Errorf("invalid JSON")
-	}
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	decoder.UseNumber()
-	if err := distinctFields(decoder); err != nil {
-		return err
-	}
-	for i := 0; i < len(raw); i++ {
-		if raw[i] != '"' {
-			continue
-		}
-		i++
-		for ; i < len(raw) && raw[i] != '"'; i++ {
-			if raw[i] != '\\' {
-				continue
-			}
-			i++
-			if raw[i] != 'u' {
-				continue
-			}
-			value, _ := strconv.ParseUint(string(raw[i+1:i+5]), 16, 16)
-			i += 4
-			if value >= 0xDC00 && value <= 0xDFFF {
-				return fmt.Errorf("unpaired Unicode surrogate")
-			}
-			if value >= 0xD800 && value <= 0xDBFF {
-				if i+6 >= len(raw) || raw[i+1] != '\\' || raw[i+2] != 'u' {
-					return fmt.Errorf("unpaired Unicode surrogate")
-				}
-				low, err := strconv.ParseUint(string(raw[i+3:i+7]), 16, 16)
-				if err != nil || low < 0xDC00 || low > 0xDFFF {
-					return fmt.Errorf("unpaired Unicode surrogate")
-				}
-				i += 6
-			}
-		}
-	}
-	return nil
-}
-
-// encoding/json accepts repeated keys; the Rust wire codec rejects them.
-func distinctFields(decoder *json.Decoder) error {
-	token, err := decoder.Token()
-	if err != nil {
-		return err
-	}
-	delimiter, ok := token.(json.Delim)
-	if !ok {
-		return nil
-	}
-	if delimiter == '{' {
-		seen := map[string]bool{}
-		for decoder.More() {
-			key, err := decoder.Token()
-			if err != nil {
-				return err
-			}
-			name := key.(string)
-			if seen[name] {
-				return fmt.Errorf("duplicate JSON field: %s", name)
-			}
-			seen[name] = true
-			if err := distinctFields(decoder); err != nil {
-				return err
-			}
-		}
-	} else if delimiter == '[' {
-		for decoder.More() {
-			if err := distinctFields(decoder); err != nil {
-				return err
-			}
-		}
-	}
-	_, err = decoder.Token()
-	return err
 }

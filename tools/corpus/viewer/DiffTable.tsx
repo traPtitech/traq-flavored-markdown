@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react'
 
-import type { DifferenceRow, Mode, OutputKind } from '../report-schema.ts'
+import type { DifferenceRow, OutputKind } from '../report-schema.ts'
 import { outputDiff } from './data/diff.ts'
 import { renderHTML } from './preview/html.ts'
+import type { OutputView } from './state.ts'
 
 type DiffTableProps = {
   rows: DifferenceRow[]
-  outputView: 'rendered' | 'raw'
-  mode: Mode
+  outputView: OutputView
 }
 
 export default function DiffTable({ rows, outputView }: DiffTableProps) {
@@ -21,8 +21,8 @@ export default function DiffTable({ rows, outputView }: DiffTableProps) {
       <thead>
         <tr>
           <th>原文</th>
-          <th>before · master</th>
-          <th>after · Rust 移行版</th>
+          <th>before</th>
+          <th>after</th>
         </tr>
       </thead>
       <tbody id="rows">
@@ -61,35 +61,23 @@ function SourceCell({ row }: { row: DifferenceRow }) {
 }
 
 function RenderCell({ text, kind }: { text: string; kind: OutputKind }) {
-  const ref = useRef<HTMLDivElement | HTMLPreElement>(null)
-
-  useEffect(() => {
-    if (!ref.current) return
-    if (kind !== 'html') {
-      ref.current.textContent = text
-    } else {
-      ref.current.replaceChildren(renderHTML(text))
-    }
-  }, [text, kind])
-
-  if (kind !== 'html') {
-    return (
-      <td>
-        <pre
-          className="cell-content plain-text"
-          ref={ref as React.RefObject<HTMLPreElement>}
-        />
-      </td>
-    )
-  }
   return (
     <td>
-      <div
-        className="cell-content markdown-body"
-        ref={ref as React.RefObject<HTMLDivElement>}
-      />
+      {kind === 'html' ? (
+        <HtmlPreview html={text} />
+      ) : (
+        <pre className="cell-content plain-text">{text}</pre>
+      )}
     </td>
   )
+}
+
+function HtmlPreview({ html }: { html: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    ref.current?.replaceChildren(renderHTML(html))
+  }, [html])
+  return <div className="cell-content markdown-body" ref={ref} />
 }
 
 function RawDiffCells({ row }: { row: DifferenceRow }) {

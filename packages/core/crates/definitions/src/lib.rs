@@ -12,6 +12,7 @@ mod registration;
 pub mod handlers;
 
 pub use markdown_definitions_derive::NodeType;
+pub use markdown_definitions_derive::{node, payload};
 pub use names::{NameCollision, validate_names};
 pub use namespace::{Plugin, PluginGroup};
 pub use node_type::NodeType;

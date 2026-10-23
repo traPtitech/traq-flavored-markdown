@@ -1,9 +1,10 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
-import { corpusRoot } from '../../../scripts/paths.ts'
-import { type ReportMetadata } from '../report-schema.ts'
+import { corpusRoot } from '../../../tools/workspace/paths.ts'
+import { type ReportMetadata, modes } from '../report-schema.ts'
 import { aggregateDifferences, reportDocument } from '../report/aggregate.ts'
+import { parseComparisonPlan } from '../shared/comparison.ts'
 import { parseDifferenceLine } from '../shared/protocol.ts'
 import { parseArgs, resolveRepositoryPath } from './args.ts'
 import { readLines } from './read-lines.ts'
@@ -26,18 +27,19 @@ const aggregated = await aggregateDifferences(
   })()
 )
 const read = (file: string) => Bun.file(path.join(data, file)).json()
-const [sui, traq, revisions] = await Promise.all([
-  read('sui-summary.json'),
-  read('traq-summary.json'),
-  read('revisions.json')
+const [frontend, plainText, rawPlan] = await Promise.all([
+  read('frontend-results.json'),
+  read('plain-text-results.json'),
+  read('run.json')
 ])
+const plan = parseComparisonPlan(rawPlan)
+const results: ReportMetadata['results'] = { ...frontend, ...plainText }
 const metadata: ReportMetadata = {
   filters: aggregated.filters,
   counts: aggregated.counts,
-  messages: sui.messages,
-  sui,
-  traq,
-  revisions,
+  messages: results[modes[0]].messages,
+  results,
+  run: { warmups: plan.warmups, provenance: plan.provenance },
   generated: new Date().toISOString(),
   pageSize: aggregated.pageSize
 }

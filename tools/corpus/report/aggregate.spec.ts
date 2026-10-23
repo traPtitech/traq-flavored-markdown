@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 
 import { type ReportMetadata, parseDifferenceRow } from '../report-schema.ts'
+import { byMode } from '../shared/comparison.ts'
 import {
   ReportRepository,
   parseReport,
@@ -40,35 +41,38 @@ test('report aggregation and repository share validated rows without building a 
     })(),
     1
   )
-  const timing = { meanUs: 1, p50Us: 1, p95Us: 1 },
-    comparison = { before: timing, after: timing }
+  const timing = {
+    calls: 3,
+    totalMs: 1,
+    meanUs: 1,
+    p50Us: 1,
+    p95Us: 1,
+    p99Us: 1
+  }
   const metadata: ReportMetadata = {
     messages: 3,
     counts: aggregate.counts,
     filters: aggregate.filters,
     pageSize: 1,
     generated: '2026-01-01T00:00:00Z',
-    revisions: {
-      suiMaster: 'a',
-      traqMaster: 'b',
-      renderer: 'c',
-      processor: 'd'
+    run: {
+      warmups: 0,
+      provenance: {
+        before: byMode(() => ({ label: 'before', revision: 'a' })),
+        after: { label: 'after', revision: 'b' },
+        dependencies: {}
+      }
     },
-    sui: {
+    results: byMode(mode => ({
       messages: 3,
-      modes: {
-        render: { differences: 2, ...comparison },
-        inline: { differences: 0, ...comparison }
-      },
-      beforeInitializationMs: 1,
-      afterInitializationMs: 1
-    },
-    traq: {
-      messages: 3,
-      differences: 1,
-      afterInitializationMs: 1,
-      ...comparison
-    }
+      differences: aggregate.counts[mode],
+      embeddingDifferences: 0,
+      beforeErrors: 0,
+      afterErrors: mode === 'render' ? 1 : 0,
+      initialization: { beforeMs: 1, afterMs: 1 },
+      before: timing,
+      after: timing
+    }))
   }
   const html = reportDocument(
     '<script type="application/json" id="metadata"></script><script type="application/json" id="payload"></script>',
@@ -86,7 +90,13 @@ test('report aggregation and repository share validated rows without building a 
   ).toThrow('message counts mismatch')
   expect(() =>
     parseReport(
-      { ...metadata, traq: { ...metadata.traq, differences: 2 } },
+      {
+        ...metadata,
+        results: {
+          ...metadata.results,
+          plainText: { ...metadata.results.plainText, differences: 2 }
+        }
+      },
       aggregate.payload
     )
   ).toThrow('counts mismatch')

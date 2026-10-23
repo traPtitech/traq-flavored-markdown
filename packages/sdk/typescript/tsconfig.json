@@ -1,7 +1,7 @@
 {
-  "extends": "../../../tsconfig.base.json",
+  "extends": "../../../tsconfig.tooling.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM"]
   },
-  "include": ["**/*.ts", "../examples/typescript/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "../examples/typescript/*.ts"]
 }

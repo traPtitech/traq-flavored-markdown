@@ -25,8 +25,8 @@ impl Grammar {
         self.data.definition.clone()
     }
 
-    pub fn plugins(&self) -> &[Plugin] {
-        &self.data.definition.plugins
+    pub fn plugins(&self) -> impl ExactSizeIterator<Item = &Plugin> + Clone {
+        self.data.definition.plugins()
     }
 
     pub fn describe(&self) -> String {

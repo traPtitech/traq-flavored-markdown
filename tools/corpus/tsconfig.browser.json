@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.browser.json",
+  "include": ["viewer/**/*.ts", "viewer/**/*.tsx"],
+  "exclude": [
+    "viewer/**/*.spec.ts",
+    "viewer/**/*.spec.tsx",
+    "viewer/vite.config.ts"
+  ]
+}

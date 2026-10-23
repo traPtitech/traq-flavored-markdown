@@ -1,5 +1,39 @@
 use crate::{Node, NodeData, NodeRole, PayloadError};
-use std::any::TypeId;
+use std::{
+    any::{Any, TypeId},
+    sync::Arc,
+};
+
+type ArityAccessor = dyn Fn(&dyn Any) -> usize + Send + Sync;
+
+/// A payload field whose length constrains each child's number of children.
+/// The native accessor and exported field name describe the same relationship.
+#[derive(Clone)]
+pub struct ChildArity {
+    pub field: &'static str,
+    length: Arc<ArityAccessor>,
+}
+impl ChildArity {
+    pub fn new<T: NodeData>(field: &'static str, length: fn(&T) -> usize) -> Self {
+        Self {
+            field,
+            length: Arc::new(move |payload| {
+                length(
+                    payload
+                        .downcast_ref::<T>()
+                        .expect("structure belongs to its payload type"),
+                )
+            }),
+        }
+    }
+}
+impl std::fmt::Debug for ChildArity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChildArity")
+            .field("field", &self.field)
+            .finish_non_exhaustive()
+    }
+}
 
 /// A native payload identity. Distribution exporters resolve this through their
 /// contract registry; the AST does not depend on persisted wire names.
@@ -39,10 +73,10 @@ pub enum ChildStructure {
         types: Vec<PayloadType>,
         nonempty: bool,
     },
-    Table {
-        header: PayloadType,
-        row: PayloadType,
-        columns_field: &'static str,
+    Sequence {
+        prefix: Vec<PayloadType>,
+        rest: PayloadType,
+        child_arity: Option<ChildArity>,
     },
 }
 
@@ -71,12 +105,11 @@ impl NodeStructure {
             },
         }
     }
-    pub fn validate(&self, children: &[Node], columns: Option<usize>) -> Result<(), PayloadError> {
+    pub fn validate(&self, payload: &dyn Any, children: &[Node]) -> Result<(), PayloadError> {
         let required = match &self.children {
             ChildStructure::Roles { nonempty, .. } | ChildStructure::Types { nonempty, .. } => {
                 *nonempty
             }
-            ChildStructure::Table { .. } => true,
             _ => false,
         };
         if required && children.is_empty() {
@@ -107,24 +140,40 @@ impl NodeStructure {
                 }
                 Ok(())
             }
-            ChildStructure::Table { header, row, .. } => {
-                let columns = columns
-                    .filter(|value| *value > 0)
-                    .ok_or_else(|| PayloadError::new("at least one table column"))?;
+            ChildStructure::Sequence {
+                prefix,
+                rest,
+                child_arity,
+            } => {
+                if children.len() < prefix.len() {
+                    return Err(PayloadError::new("complete child sequence prefix").actual(
+                        format!(
+                            "{} children; expected at least {}",
+                            children.len(),
+                            prefix.len()
+                        ),
+                    ));
+                }
+                let arity = child_arity.as_ref().map(|arity| (arity.length)(payload));
+                if arity == Some(0) {
+                    return Err(PayloadError::new("positive child arity"));
+                }
                 for (index, child) in children.iter().enumerate() {
-                    let expected = if index == 0 { header } else { row };
+                    let expected = prefix.get(index).unwrap_or(rest);
                     if !expected.matches(child) {
-                        return Err(
-                            PayloadError::new("initial header row followed by body rows")
-                                .actual(format!("child {index}: {}", child.data_type_name())),
-                        );
+                        return Err(PayloadError::new("children matching the declared sequence")
+                            .actual(format!("child {index}: {}", child.data_type_name())));
                     }
-                    if child.children.len() != columns {
+                    if let Some(arity) = arity
+                        && child.children.len() != arity
+                    {
                         return Err(
-                            PayloadError::new("row width equal to table columns").actual(format!(
-                                "row {index}: {} cells; expected {columns}",
-                                child.children.len()
-                            )),
+                            PayloadError::new("child arity equal to payload field length").actual(
+                                format!(
+                                    "child {index}: {} children; expected {arity}",
+                                    child.children.len()
+                                ),
+                            ),
                         );
                     }
                 }

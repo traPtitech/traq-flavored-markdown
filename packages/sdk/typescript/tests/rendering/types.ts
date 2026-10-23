@@ -28,10 +28,10 @@ const messageView = rendering.messageRenderers({
 })
 const messageHtml: string = messageView.standard.render(
   parser.parse('text')
-).renderedText
+).html
 const condensedHtml: string = messageView.condensed.render(
   parser.parse('text')
-).renderedText
+).html
 
 const openDocument = {} as Document<true>
 const openResult: string = view.render(openDocument)
@@ -83,7 +83,7 @@ renderer(rendering.html())
 
 const bothViews = messageView.render(parser.parse('text'))
 const prepared = messageView.prepare(parser.parse('text'))
-void [bothViews.standard.renderedText, prepared.condensed().renderedText]
+void [bothViews.standard.html, prepared.condensed().html]
 // @ts-expect-error Each message renderer exposes only render.
 messageView.condensed.renderInline(parser.parse('text'))
 

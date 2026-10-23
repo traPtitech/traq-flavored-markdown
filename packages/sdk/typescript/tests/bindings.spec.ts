@@ -3,9 +3,12 @@ import path from 'path'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { goPayload } from '../../../../scripts/codegen/go.ts'
-import { type Shape, shape } from '../../../../scripts/codegen/schema.ts'
-import { emitTypeScriptValidators } from '../../../../scripts/codegen/typescript-validators.ts'
+import { goPayload } from '../../../../tools/contracts/typescript/go.ts'
+import {
+  type Shape,
+  shape
+} from '../../../../tools/contracts/typescript/schema.ts'
+import { emitTypeScriptValidators } from '../../../../tools/contracts/typescript/typescript-validators.ts'
 import { isKnownNode, names, nodes } from '../../dist/generated/nodes.js'
 import { isPreset, presets } from '../../dist/generated/presets.js'
 import { nodeContractsDirectory } from '../../scripts/node-contracts.ts'
