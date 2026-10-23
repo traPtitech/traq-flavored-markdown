@@ -1,12 +1,15 @@
 import type {
   ReadonlyDocument as Document,
   Node as MutableNode,
-  ReadonlyNode as Node
+  ReadonlyNode as Node,
+  NodeVariant,
+  MutableDocument
 } from './ast.js'
 import { ByteBudget, dataField, utf8ByteLength } from './boundary.js'
 import { documentLimits } from './generated/limits.js'
-import { defineNode, isOwnedDefinition, validateStructure } from './nodes.js'
-import type { NodeDefinition, NodeStructure } from './nodes.js'
+import { DocumentValidationError } from './errors.js'
+import { DocumentSchema, opaqueDocumentSchema } from './schema.js'
+import type { NodeDefinition } from './nodes.js'
 import { SourceText } from './source.js'
 
 export { documentLimits } from './generated/limits.js'
@@ -18,12 +21,16 @@ export interface DocumentLimits {
   depth: number
 }
 
-export interface DocumentOptions {
-  definitions?: Iterable<NodeDefinition>
+export interface DocumentOptions<Variant extends NodeVariant = NodeVariant> {
+  schema?: DocumentSchema<Variant>
   limits?: Readonly<DocumentLimits>
 }
 
-type Location = { readonly ancestors: readonly Node[]; readonly index: number }
+type Location<Variant extends NodeVariant = NodeVariant> = {
+  readonly ancestors: readonly Node<Variant>[]
+  readonly index: number
+  readonly path: string
+}
 
 function plainRecord(value: unknown): asserts value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
@@ -103,18 +110,20 @@ class PayloadSnapshot {
 /** A validated, owned snapshot for one or more document operations.
  * The caller's mutable AST is never frozen or used as an unbounded validation cache.
  */
-export class DocumentContext {
-  readonly document: Document
+export class DocumentContext<Variant extends NodeVariant = NodeVariant> {
+  readonly document: Document<Variant>
   readonly source: SourceText
   #snapshots = new Map<Node, Node>()
   #locations = new Map<Node, Location>()
-  #validated = new Set<NodeDefinition>()
-  #structures = new Map<string, NodeStructure>()
+  #validated = new Set<DocumentSchema>()
   #validating = false
 
   constructor(
     document: Document,
-    { definitions = [], limits = documentLimits }: DocumentOptions = {}
+    {
+      schema = opaqueDocumentSchema as DocumentSchema<Variant>,
+      limits = documentLimits
+    }: DocumentOptions<Variant> = {}
   ) {
     plainRecord(limits)
     const bound = Object.fromEntries(
@@ -151,7 +160,8 @@ export class DocumentContext {
       nodes: readonly Node[],
       start: number,
       end: number,
-      ancestors: readonly Node[]
+      ancestors: readonly Node[],
+      parentPath: string
     ): Node[] => {
       const length = nodes.length
       if (ancestors.length >= bound.depth && length)
@@ -199,14 +209,16 @@ export class DocumentContext {
         const snapshot: MutableNode = { kind, span: Object.freeze(span), data }
         this.#snapshots.set(node, snapshot)
         this.#snapshots.set(snapshot, snapshot)
-        this.#locations.set(snapshot, Object.freeze({ ancestors, index }))
+        const path = `${parentPath}.children[${index}]`
+        this.#locations.set(snapshot, Object.freeze({ ancestors, index, path }))
         if (children !== undefined)
           Object.defineProperty(snapshot, 'children', {
             value: copy(
               children,
               span.start,
               span.end,
-              Object.freeze([...ancestors, snapshot])
+              Object.freeze([...ancestors, snapshot]),
+              path
             ),
             enumerable: true
           })
@@ -217,74 +229,66 @@ export class DocumentContext {
     }
     this.document = Object.freeze({
       source: this.source.text,
-      children: copy(children, 0, this.source.byteLength, Object.freeze([]))
-    })
-    this.validateDefinitions(definitions)
+      children: copy(children, 0, this.source.byteLength, Object.freeze([]), '$')
+    }) as unknown as Document<Variant>
+    this.withSchema(schema)
     Object.freeze(this)
   }
 
   /** Resolve either a caller node or a snapshot node; external nodes are rejected. */
-  node(value: Node): Node {
+  node(value: Node): Node<Variant> {
     const node = this.#snapshots.get(value)
     if (!node) throw new TypeError('Node does not belong to this document')
-    return node
+    return node as Node<Variant>
   }
 
-  location(value: Node): Location {
-    return this.#locations.get(this.node(value))!
+  location(value: Node): Location<Variant> {
+    return this.#locations.get(this.node(value))! as Location<Variant>
   }
 
-  /** Definitions are cached only after payload and structure validation succeeds. */
-  validateDefinitions(definitions: Iterable<NodeDefinition>): void {
+  hasContract(kind: string): boolean {
+    return [...this.#validated].some(schema => schema.has(kind))
+  }
+
+  /** Narrow owned, validated data without running its payload validator again. */
+  matches<Selected extends NodeVariant>(
+    node: Node,
+    definition: NodeDefinition<Selected>
+  ): node is Node & Node<Selected> {
+    this.node(node)
+    if (![...this.#validated].some(schema => schema.hasDefinition(definition)))
+      throw new DocumentValidationError('Node contract has not been validated: ' + definition.kind)
+    return node.kind === definition.kind
+  }
+
+  /** Reuse ownership while checking an independently selected node schema. */
+  withSchema<Selected extends NodeVariant>(
+    schema: DocumentSchema<Selected>
+  ): DocumentContext<Selected> {
+    if ([...this.#validated].some(previous => previous.satisfies(schema)))
+      return this as unknown as DocumentContext<Selected>
     if (this.#validating)
-      throw new TypeError('Document validation is not reentrant')
+      throw new DocumentValidationError('Document validation is not reentrant')
+    for (const previous of this.#validated) schema.assertCompatible(previous)
     this.#validating = true
     try {
-      this.#validateDefinitions(definitions)
+      schema.validate(this)
+      this.#validated.add(schema)
     } finally {
       this.#validating = false
     }
+    return this as unknown as DocumentContext<Selected>
   }
 
-  #validateDefinitions(definitions: Iterable<NodeDefinition>): void {
-    const pending = [...new Set(definitions)].filter(
-      definition => !this.#validated.has(definition)
-    )
-    if (!pending.length) return
-    const structures = new Map(this.#structures)
-    const validators = new Map<string, ((data: unknown) => boolean)[]>()
-    for (const definition of pending) {
-      // Normalize even structurally typed declarations supplied by callers.
-      const contract = defineNode(
-        definition.kind,
-        definition.validateData,
-        definition.structure
-      )
-      const previous = structures.get(contract.kind)
-      if (
-        previous &&
-        JSON.stringify(previous) !== JSON.stringify(contract.structure)
-      )
-        throw new TypeError('Conflicting node structure: ' + contract.kind)
-      structures.set(contract.kind, contract.structure)
-      const checks = validators.get(contract.kind) ?? []
-      checks.push(contract.validateData)
-      validators.set(contract.kind, checks)
-    }
-    for (const node of this.walk()) {
-      if (validators.get(node.kind)?.some(validate => !validate(node.data)))
-        throw new TypeError('Invalid render payload: ' + node.kind)
-      validateStructure(node, structures)
-    }
-    this.#structures = structures
-    for (const definition of pending)
-      if (isOwnedDefinition(definition)) this.#validated.add(definition)
+  /** Explicit editing boundary: the returned draft shares no mutable data. */
+  toMutable(): MutableDocument<Variant> {
+    return structuredClone(this.document) as unknown as MutableDocument<Variant>
   }
 
   *walk(
-    nodes: readonly Node[] = this.document.children,
-    descend: (node: Node) => boolean = () => true
-  ): Generator<Node> {
+    nodes: readonly Node<Variant>[] = this.document.children,
+    descend: (node: Node<Variant>) => boolean = () => true
+  ): Generator<Node<Variant>> {
     const pending = [...nodes].reverse()
     while (pending.length) {
       const node = this.node(pending.pop()!)

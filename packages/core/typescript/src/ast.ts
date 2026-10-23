@@ -4,6 +4,11 @@ export interface Span {
   end: number
 }
 
+export interface NodeVariant {
+  kind: string
+  data: unknown
+}
+
 export type Node<
   Kind extends { kind: string; data: unknown } = {
     kind: string
@@ -65,6 +70,8 @@ export { SourceText } from './source.js'
 export type { SourceEdit } from './source.js'
 export { DocumentContext, documentLimits } from './document.js'
 export type { DocumentLimits, DocumentOptions } from './document.js'
+export { DocumentSchema } from './schema.js'
+export { DocumentValidationError } from './errors.js'
 export { defineNode } from './nodes.js'
 export type {
   NodeDefinition,

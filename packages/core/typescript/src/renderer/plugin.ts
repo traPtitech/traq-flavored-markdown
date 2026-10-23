@@ -1,6 +1,5 @@
 import type { DeepReadonly, ReadonlyNode as Node } from '../ast.js'
 import type { NodeDefinition } from '../nodes.js'
-import { defineNode, isOwnedDefinition } from '../nodes.js'
 import { PluginDeclaration } from './definitions.js'
 import type { Handler, RenderContext } from './types.js'
 
@@ -11,7 +10,7 @@ type DefinedHandler<D> = (node: NodeFor<D>, context: RenderContext) => string
 export interface Implementation {
   declaration: PluginDeclaration
   handlers: ReadonlyMap<string, Handler>
-  definitions: ReadonlyMap<string, NodeDefinition>
+  requiredKinds: ReadonlySet<string>
 }
 
 const implementations = new WeakMap<RenderPlugin, Implementation>()
@@ -30,19 +29,19 @@ export class RenderPlugin {
     implementations.set(this, {
       declaration,
       handlers: new Map(),
-      definitions: new Map()
+      requiredKinds: new Set()
     })
     Object.freeze(this)
   }
 
-  on<D extends string | NodeDefinition>(
+  withHandler<D extends string | NodeDefinition>(
     definition: D,
     handler: DefinedHandler<D>
   ) {
     return this.#set(definition, handler, false)
   }
 
-  replace<D extends string | NodeDefinition>(
+  withReplacedHandler<D extends string | NodeDefinition>(
     definition: D,
     handler: DefinedHandler<D>
   ) {
@@ -57,8 +56,6 @@ export class RenderPlugin {
     const kind = typeof definition === 'string' ? definition : definition?.kind
     const validateData =
       typeof definition === 'string' ? undefined : definition?.validateData
-    const structure =
-      typeof definition === 'string' ? undefined : definition?.structure
     if (typeof kind !== 'string' || typeof handler !== 'function')
       throw new TypeError('Expected node kind and render handler')
     if (typeof definition !== 'string' && typeof validateData !== 'function')
@@ -74,20 +71,15 @@ export class RenderPlugin {
 
     const handlers = new Map(state.handlers)
     handlers.set(kind, (node, context) => handler(node as NodeFor<D>, context))
-    const definitions = new Map(state.definitions)
+    const requiredKinds = new Set(state.requiredKinds)
     if (typeof definition !== 'string')
-      definitions.set(
-        kind,
-        isOwnedDefinition(definition)
-          ? definition
-          : defineNode(kind, validateData!, structure)
-      )
+      requiredKinds.add(kind)
 
     const next = new RenderPlugin(state.declaration)
     implementations.set(next, {
       declaration: state.declaration,
       handlers,
-      definitions
+      requiredKinds
     })
     return next
   }

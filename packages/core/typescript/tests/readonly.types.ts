@@ -1,5 +1,6 @@
 import type { DocumentContext } from '../src/document.js'
 import { defineNode } from '../src/nodes.js'
+import { DocumentSchema } from '../src/schema.js'
 import type { Handler } from '../src/renderer/types.js'
 
 export function snapshotTypes(context: DocumentContext) {
@@ -25,4 +26,21 @@ export const payloadTypes: Handler<{
   // @ts-expect-error handler payloads are deeply readonly
   node.data.values.push('changed')
   return ''
+}
+
+export function schemaTypes() {
+  const text = defineNode<{ kind: 'text'; data: { value: string } }>(
+    'text', () => true
+  )
+  const document = new DocumentSchema([text]).document({ source: '', children: [] })
+  for (const node of document.walk()) {
+    const value: string = node.data.value
+    // @ts-expect-error a validated schema retains its exact node kind
+    const other: 'other' = node.kind
+    // @ts-expect-error typed traversal remains readonly
+    node.data.value = value
+    void other
+  }
+  const draft = document.toMutable()
+  draft.children[0].data.value = 'editable'
 }

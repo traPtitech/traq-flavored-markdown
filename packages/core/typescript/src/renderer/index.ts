@@ -1,10 +1,11 @@
 import { DocumentContext } from '../document.js'
+import type { DocumentSchema } from '../schema.js'
 import { escapeHtml } from './html.js'
 import { configuration } from './preset.js'
 import type {
   Document,
   Node,
-  Preset,
+  HtmlPreset,
   RenderContext,
   RenderPlan,
   Renderer
@@ -13,7 +14,7 @@ import type {
 export type {
   Node,
   Document,
-  Preset,
+  HtmlPreset,
   Renderer,
   RenderContext,
   RenderPlan,
@@ -26,19 +27,25 @@ export { RenderPlugin } from './plugin.js'
 export { PresetBuilder } from './preset.js'
 export type { RegistrationHandle } from './preset.js'
 
-export function renderer(preset: Preset): Renderer {
+export function createRenderer(
+  preset: HtmlPreset,
+  { schema }: { schema?: DocumentSchema } = {}
+): Renderer {
   const {
     handlers,
-    definitions,
+    requiredKinds,
     fallback: renderFallback
   } = configuration(preset)
 
   function createSession(document: Document | DocumentContext) {
-    const context =
-      document instanceof DocumentContext
+    const context = schema
+      ? schema.document(document)
+      : document instanceof DocumentContext
         ? document
-        : new DocumentContext(document, { definitions: definitions.values() })
-    context.validateDefinitions(definitions.values())
+        : new DocumentContext(document)
+    for (const kind of requiredKinds)
+      if (!context.hasContract(kind))
+        throw new TypeError('Renderer requires a document schema for: ' + kind)
 
     function render(plan: RenderPlan = {}) {
       const roots = (plan.roots ?? context.document.children).map(node =>
@@ -80,6 +87,10 @@ export function renderer(preset: Preset): Renderer {
           source: context.source.text,
           ancestors,
           index,
+          parent: (definition, distance = 1) => {
+            const parent = ancestors.at(-distance)
+            return parent && context.matches(parent, definition) ? parent : undefined
+          },
           escape: escapeHtml,
           renderChildren: (join = '') => {
             const replacement = replacements.get(node)
@@ -118,7 +129,7 @@ export function renderer(preset: Preset): Renderer {
 
   return Object.freeze({
     createSession,
-    render: (document: Document, plan?: RenderPlan) =>
+    render: (document: Document | DocumentContext, plan?: RenderPlan) =>
       createSession(document).render(plan)
   })
 }

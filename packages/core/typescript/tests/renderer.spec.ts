@@ -2,40 +2,40 @@ import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/d
 import {
   PresetBuilder,
   RenderPlugin,
-  renderer
+  createRenderer
 } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
 test('plugins are immutable values and presets retain the selected version', () => {
   const declaration = new Declaration('custom')
-  const plugin = new RenderPlugin(declaration).on('text', (n, c) =>
+  const plugin = new RenderPlugin(declaration).withHandler('text', (n, c) =>
     c.escape(n.data as string)
   )
   const builder = new PresetBuilder()
   const registration = builder.register(plugin)
-  const view = renderer(builder.build())
+  const view = createRenderer(builder.build())
   const document = {
     source: '<猫>',
     children: [{ kind: 'text', data: '<猫>', span: { start: 0, end: 5 } }]
   }
   expect(view.render(document)).toBe('&lt;猫&gt;')
-  const updated = plugin.replace('text', () => '<b>changed</b>')
+  const updated = plugin.withReplacedHandler('text', () => '<b>changed</b>')
   expect(updated).not.toBe(plugin)
   expect(view.render(document)).toBe('&lt;猫&gt;')
-  expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  expect(createRenderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
   expect(
-    renderer(new PresetBuilder().add(plugin).build()).render(document)
+    createRenderer(new PresetBuilder().add(plugin).build()).render(document)
   ).toBe('&lt;猫&gt;')
   expect(() => builder.add(plugin)).toThrow(/Duplicate plugin/)
   expect(() => builder.add(updated)).toThrow(/Duplicate plugin/)
   builder.remove(registration)
-  expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  expect(createRenderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
   const nextRegistration = builder.register(updated)
-  expect(renderer(builder.build()).render(document)).toBe('<b>changed</b>')
+  expect(createRenderer(builder.build()).render(document)).toBe('<b>changed</b>')
   builder.remove(nextRegistration)
-  expect(renderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
+  expect(createRenderer(builder.build()).render(document)).toBe('&lt;猫&gt;')
   expect(view.render(document)).toBe('&lt;猫&gt;')
-  expect(renderer(new PresetBuilder().build()).render(document)).toBe(
+  expect(createRenderer(new PresetBuilder().build()).render(document)).toBe(
     '&lt;猫&gt;'
   )
   expect(() => new PresetBuilder().add(plugin).add(plugin)).toThrow(
@@ -46,17 +46,17 @@ test('plugins are immutable values and presets retain the selected version', () 
 test('fallback and child rendering have no block or inline mode', () => {
   const declaration = new Declaration('containers')
   const plugin = new RenderPlugin(declaration)
-    .on('container', (node, ctx) => {
+    .withHandler('container', (node, ctx) => {
       expect('inline' in ctx).toBeFalse()
       expect('blocks' in ctx).toBeFalse()
       return ctx.renderChildren()
     })
-    .on('explicit', (node, ctx) => ctx.fallback(node))
+    .withHandler('explicit', (node, ctx) => ctx.fallback(node))
   const builder = new PresetBuilder().add(plugin)
   const options = { fallback: (text: string) => `<aside>${text}</aside>` }
-  const custom = renderer(builder.build(options))
+  const custom = createRenderer(builder.build(options))
   options.fallback = () => 'changed'
-  const plain = renderer(builder.build())
+  const plain = createRenderer(builder.build())
   const leaf = { kind: 'unknown', data: {}, span: { start: 0, end: 5 } }
   const document = { source: '<猫>', children: [leaf] }
   for (const view of [plain, custom]) {
@@ -75,7 +75,7 @@ test('fallback and child rendering have no block or inline mode', () => {
     /Expected render fallback/
   )
   expect(() =>
-    renderer(builder.build({ fallback: () => [] as unknown as string })).render(
+    createRenderer(builder.build({ fallback: () => [] as unknown as string })).render(
       document
     )
   ).toThrow(/HTML string/)
@@ -83,13 +83,13 @@ test('fallback and child rendering have no block or inline mode', () => {
 
 test('render overlays select roots, omit nodes, and escape replacement child text', () => {
   const plugin = new RenderPlugin(new Declaration('overlay'))
-    .on(
+    .withHandler(
       'container',
       (node, context) => '<p>' + context.renderChildren() + '</p>'
     )
-    .on('copied', (node, context) => context.renderChildren())
-    .on('text', node => String(node.data))
-  const view = renderer(new PresetBuilder().add(plugin).build())
+    .withHandler('copied', (node, context) => context.renderChildren())
+    .withHandler('text', node => String(node.data))
+  const view = createRenderer(new PresetBuilder().add(plugin).build())
   const first = { kind: 'text', data: 'first', span: { start: 0, end: 0 } }
   const second = { kind: 'text', data: 'second', span: { start: 0, end: 0 } }
   const container = {
@@ -124,7 +124,7 @@ test('render overlays select roots, omit nodes, and escape replacement child tex
 })
 
 test('renderer rejects invalid UTF-8 spans throughout the document', () => {
-  const view = renderer(new PresetBuilder().build())
+  const view = createRenderer(new PresetBuilder().build())
   const valid = {
     source: '猫x',
     children: [

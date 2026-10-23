@@ -1,5 +1,6 @@
 import {
   DocumentContext,
+  DocumentSchema,
   defineNode,
   documentLimits
 } from '@traq-flavored-markdown/core'
@@ -7,7 +8,7 @@ import { PluginDeclaration } from '@traq-flavored-markdown/core/definitions'
 import {
   PresetBuilder,
   RenderPlugin,
-  renderer
+  createRenderer
 } from '@traq-flavored-markdown/core/renderer'
 import { expect, test } from 'bun:test'
 
@@ -15,14 +16,14 @@ import type { MutableNode } from '../src/ast.js'
 
 test('every render plan node must belong to the validated document before any handler runs', () => {
   let calls = 0
-  const plugin = new RenderPlugin(new PluginDeclaration('plan')).on(
+  const plugin = new RenderPlugin(new PluginDeclaration('plan')).withHandler(
     'text',
     () => {
       calls++
       return 'text'
     }
   )
-  const view = renderer(new PresetBuilder().add(plugin).build())
+  const view = createRenderer(new PresetBuilder().add(plugin).build())
   const node = { kind: 'text', data: {}, span: { start: 0, end: 3 } }
   const document = { source: 'abc', children: [node] }
   const foreign = { ...node, span: { start: -1, end: 100 } }
@@ -50,14 +51,16 @@ test('node definitions infer payload types and validate known nodes before dispa
     }
   )
   let calls = 0
-  const plugin = new RenderPlugin(new PluginDeclaration('typed')).on(
+  const plugin = new RenderPlugin(new PluginDeclaration('typed')).withHandler(
     text,
     (node, ctx) => {
       calls++
       return ctx.escape(node.data.value)
     }
   )
-  const view = renderer(new PresetBuilder().add(plugin).build())
+  const view = createRenderer(new PresetBuilder().add(plugin).build(), {
+    schema: new DocumentSchema([text])
+  })
   const node = {
     kind: 'text',
     data: { value: '<猫>' },
@@ -78,15 +81,15 @@ test('node definitions infer payload types and validate known nodes before dispa
       { source: '', children: [malformed] },
       { omittedNodes: new Set([malformed]) }
     )
-  ).toThrow(/Invalid render payload/)
+  ).toThrow(/Invalid node payload/)
   expect(calls).toBe(before)
 })
 
 test('sessions retain document ancestry and node-bound child replacement', () => {
   const seen: string[][] = []
   const plugin = new RenderPlugin(new PluginDeclaration('tree'))
-    .on('container', (_node, ctx) => '[' + ctx.renderChildren() + ']')
-    .on('text', (_node, ctx) => {
+    .withHandler('container', (_node, ctx) => '[' + ctx.renderChildren() + ']')
+    .withHandler('text', (_node, ctx) => {
       seen.push(ctx.ancestors.map(parent => parent.kind))
       return String(ctx.index)
     })
@@ -97,7 +100,7 @@ test('sessions retain document ancestry and node-bound child replacement', () =>
     span: { start: 0, end: 0 },
     children: [child]
   }
-  const view = renderer(new PresetBuilder().add(plugin).build())
+  const view = createRenderer(new PresetBuilder().add(plugin).build())
   expect(
     view.render({ source: '', children: [parent] }, { roots: [child] })
   ).toBe('0')
@@ -111,32 +114,32 @@ test('sessions retain document ancestry and node-bound child replacement', () =>
 })
 
 test('registration handles survive revisions and reject changes through other builders', () => {
-  const plugin = new RenderPlugin(new PluginDeclaration('replace')).on(
+  const plugin = new RenderPlugin(new PluginDeclaration('replace')).withHandler(
     'text',
     () => 'before'
   )
   const builder = new PresetBuilder()
   const registration = builder.register(plugin)
-  const before = renderer(builder.build())
+  const before = createRenderer(builder.build())
   const document = {
     source: '',
     children: [{ kind: 'text', data: {}, span: { start: 0, end: 0 } }]
   }
   builder.replace(
     registration,
-    plugin.replace('text', () => 'after')
+    plugin.withReplacedHandler('text', () => 'after')
   )
-  expect(renderer(builder.build()).render(document)).toBe('after')
+  expect(createRenderer(builder.build()).render(document)).toBe('after')
   expect(before.render(document)).toBe('before')
   expect(() => new PresetBuilder().remove(registration)).toThrow(
     /Missing registration/
   )
   builder.remove(registration)
-  expect(renderer(builder.build()).render(document)).toBe('')
+  expect(createRenderer(builder.build()).render(document)).toBe('')
 })
 
 test('fallback preserves leading BOM and cyclic documents fail before rendering', () => {
-  const view = renderer(new PresetBuilder().build())
+  const view = createRenderer(new PresetBuilder().build())
   expect(
     view.render({
       source: '\uFEFFx',
@@ -204,7 +207,7 @@ test('limits are finite integers and payload allocations are bounded before vali
       new DocumentContext(
         { source: '', children: [node] },
         {
-          definitions,
+          schema: new DocumentSchema(definitions),
           limits: {
             ...documentLimits,
             payloadBytes: 32
@@ -216,7 +219,7 @@ test('limits are finite integers and payload allocations are bounded before vali
     () =>
       new DocumentContext(
         { source: '', children: [{ ...node, data: new Array(1000) }] },
-        { definitions, limits: { ...documentLimits, payloadBytes: 32 } }
+        { schema: new DocumentSchema(definitions), limits: { ...documentLimits, payloadBytes: 32 } }
       )
   ).toThrow(/payload byte limit/)
   expect(validations).toBe(0)
@@ -313,7 +316,7 @@ test('validation callbacks cannot change captured kinds, spans or expand schedul
   const context = new DocumentContext(
     { source: 'x', children },
     {
-      definitions: [
+      schema: new DocumentSchema([
         defineNode('text', () => {
           node.kind = 'changed'
           node.span.end = 1000
@@ -324,7 +327,7 @@ test('validation callbacks cannot change captured kinds, spans or expand schedul
           })
           return true
         })
-      ]
+      ])
     }
   )
   expect(context.document.children).toHaveLength(1)
@@ -332,7 +335,7 @@ test('validation callbacks cannot change captured kinds, spans or expand schedul
   expect(context.document.children[0].span).toEqual({ start: 0, end: 1 })
 })
 
-test('a changing external declaration cannot register its validator under another kind', () => {
+test('a schema captures a changing external declaration before consumers run', () => {
   let reads = 0
   let handlers = 0
   const declaration = {
@@ -341,20 +344,21 @@ test('a changing external declaration cannot register its validator under anothe
       return ++reads === 1 ? 'text' : 'different'
     }
   }
-  const plugin = new RenderPlugin(new PluginDeclaration('changing-kind')).on(
-    declaration,
+  const schema = new DocumentSchema([declaration])
+  const plugin = new RenderPlugin(new PluginDeclaration('changing-kind')).withHandler(
+    'text',
     () => {
       handlers++
       return 'invalid handler ran'
     }
   )
-  const view = renderer(new PresetBuilder().add(plugin).build())
+  const view = createRenderer(new PresetBuilder().add(plugin).build(), { schema })
   expect(() =>
     view.render({
       source: '',
       children: [{ kind: 'text', data: {}, span: { start: 0, end: 0 } }]
     })
-  ).toThrow(/Invalid render payload/)
+  ).toThrow(/Invalid node payload/)
   expect(reads).toBe(1)
   expect(handlers).toBe(0)
 })

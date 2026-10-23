@@ -5,7 +5,8 @@ import type {
   Span
 } from '../ast.js'
 import type { DocumentContext } from '../document.js'
-import type { NodeKind } from '../nodes.js'
+import type { NodeVariant } from '../nodes.js'
+import type { NodeDefinition } from '../nodes.js'
 
 export type {
   ReadonlyNode as Node,
@@ -22,6 +23,11 @@ export interface RenderContext {
   ancestors: readonly Node[]
   /** Position among the node's original siblings. */
   index: number
+  /** Get a typed ancestor whose contract was validated by the document schema. */
+  parent<Variant extends NodeVariant>(
+    definition: NodeDefinition<Variant>,
+    distance?: number
+  ): Node<Variant> | undefined
   source: string
   /** Escape text before including it in a custom HTML handler. */
   escape(text: string): string
@@ -36,7 +42,7 @@ export interface RenderContext {
 }
 
 /** Handlers return trusted HTML. Escape values obtained from the document. */
-export type Handler<K extends NodeKind = NodeKind> = (
+export type Handler<K extends NodeVariant = NodeVariant> = (
   node: Node & DeepReadonly<K>,
   context: RenderContext
 ) => string
@@ -46,8 +52,8 @@ export type Fallback = (escapedSource: string) => string
 
 declare const identity: unique symbol
 
-export interface Preset {
-  readonly [identity]: 'renderer-preset'
+export interface HtmlPreset {
+  readonly [identity]: 'html-preset'
 }
 
 /** Presentation changes keyed by original or snapshot nodes in this document. */
@@ -67,5 +73,5 @@ export interface RenderSession {
 
 export interface Renderer {
   createSession(document: Document | DocumentContext): RenderSession
-  render(document: Document, plan?: RenderPlan): string
+  render(document: Document | DocumentContext, plan?: RenderPlan): string
 }

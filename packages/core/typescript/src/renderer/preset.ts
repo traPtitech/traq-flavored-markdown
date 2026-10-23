@@ -1,24 +1,23 @@
-import type { NodeDefinition } from '../nodes.js'
 import type { PluginGroup } from './definitions.js'
 import type { Implementation, RenderPlugin } from './plugin.js'
 import { implementation } from './plugin.js'
-import type { Fallback, Handler, Preset } from './types.js'
+import type { Fallback, Handler, HtmlPreset } from './types.js'
 
 const presets = new WeakMap<
-  Preset,
+  HtmlPreset,
   {
     handlers: Map<string, Handler>
-    definitions: Map<string, NodeDefinition>
+    requiredKinds: Set<string>
     fallback: Fallback
   }
 >()
 
 const defaultFallback: Fallback = text => text
 
-export function configuration(preset: Preset) {
+export function configuration(preset: HtmlPreset) {
   const value = presets.get(preset)
 
-  if (!value) throw new TypeError('Expected renderer Preset')
+  if (!value) throw new TypeError('Expected renderer HtmlPreset')
 
   return value
 }
@@ -102,11 +101,11 @@ export class PresetBuilder {
     const plugins = [...this.#plugins.values()].map(implementation)
     validateNames(plugins)
 
-    const preset = Object.freeze({}) as Preset
+    const preset = Object.freeze({}) as HtmlPreset
 
     presets.set(preset, {
       handlers: new Map(plugins.flatMap(p => [...p.handlers])),
-      definitions: new Map(plugins.flatMap(p => [...p.definitions])),
+      requiredKinds: new Set(plugins.flatMap(p => [...p.requiredKinds])),
       fallback
     })
 
