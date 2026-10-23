@@ -21,8 +21,6 @@ their sibling index. Table, row, and cell handlers all use the core dispatcher,
 so ancestry, handler replacement, omission, and child text replacement follow
 the same rules as other nodes.
 
-The implementation, Rust crates, generated Go package, and codegen group are
-named `extensions`. Persisted node kinds retain the legacy wire namespace
-`generic.*`, independently of those implementation names. Historical fixtures
-remain unchanged as an independent oracle for these serialized contracts. The
-SDK chooses the feature set and grammar precedence.
+The implementation, Rust crates, generated Go package, codegen group, and
+persisted node kinds consistently use `extensions`. The SDK chooses the feature
+set and grammar precedence.

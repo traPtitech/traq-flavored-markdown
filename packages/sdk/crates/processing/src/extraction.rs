@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ExtractorOptions {
     /// Origin used to recognize traQ file/message URLs; empty leaves URLs as text.
     #[serde(default)]

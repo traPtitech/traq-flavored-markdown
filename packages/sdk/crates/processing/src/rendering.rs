@@ -14,8 +14,8 @@ pub enum WhitespacePolicy {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
-pub struct RendererOptions {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PlainTextOptions {
     #[serde(default)]
     pub origin: String,
     #[serde(default)]
@@ -28,7 +28,7 @@ pub struct PlainTextRenderer {
 }
 
 impl PlainTextRenderer {
-    pub fn new(options: RendererOptions) -> crate::Result<Self> {
+    pub fn new(options: PlainTextOptions) -> crate::Result<Self> {
         Ok(Self {
             renderer: Renderer::new(&crate::presets::traq::plain_text::preset(&options.origin)?),
             whitespace: options.whitespace,

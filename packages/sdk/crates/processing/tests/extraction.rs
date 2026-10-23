@@ -227,7 +227,7 @@ fn custom_parser_limits_flow_through_validated_consumers() {
     use markdown_ast::{DocumentView, ValidationError, ValidationLimits};
     use traq_markdown_grammar::Limits;
     use traq_markdown_processing::presets::traq::{embedding, message};
-    use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
+    use traq_markdown_processing::rendering::{PlainTextOptions, PlainTextRenderer};
 
     let source = "x".repeat(ValidationLimits::default().source_bytes + 1);
     let document_limits = ValidationLimits {
@@ -248,7 +248,7 @@ fn custom_parser_limits_flow_through_validated_consumers() {
     ));
     let validated = DocumentView::with_limits(&document, document_limits).unwrap();
 
-    let renderer = PlainTextRenderer::new(RendererOptions::default()).unwrap();
+    let renderer = PlainTextRenderer::new(PlainTextOptions::default()).unwrap();
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
     assert_eq!(renderer.render(validated).unwrap(), source);
     assert_eq!(extractor.extract(validated).unwrap().message_text, source);

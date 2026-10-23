@@ -2,14 +2,14 @@
 use crate::{
     Result,
     extraction::{Extraction, Extractor, ExtractorOptions},
-    rendering::{PlainTextRenderer, RendererOptions, WhitespacePolicy},
+    rendering::{PlainTextOptions, PlainTextRenderer, WhitespacePolicy},
 };
 use markdown_ast::DocumentView;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProcessorOptions {
     #[serde(default)]
     pub origin: String,
@@ -36,7 +36,7 @@ impl Processor {
             extractor: Extractor::new(ExtractorOptions {
                 origin: options.origin.clone(),
             })?,
-            renderer: PlainTextRenderer::new(RendererOptions {
+            renderer: PlainTextRenderer::new(PlainTextOptions {
                 origin: options.origin,
                 whitespace: options.whitespace,
             })?,

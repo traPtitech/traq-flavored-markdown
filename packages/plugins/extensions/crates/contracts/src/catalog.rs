@@ -1,4 +1,4 @@
-//! Extension contracts retain the legacy `generic.*` wire namespace.
+//! Extension payloads use the `extensions.*` wire namespace.
 
 use markdown_definitions::implement_wire_kinds;
 
@@ -7,14 +7,14 @@ macro_rules! node_catalog {
     ($consumer:ident) => {
         $consumer! {
             "extensions";
-            $crate::InlineMath => "generic.inline_math",
-            $crate::BlockMath => "generic.block_math",
-            $crate::Table => "generic.table",
-            $crate::HeaderRow => "generic.table_header_row",
-            $crate::Row => "generic.row",
-            $crate::Cell => "generic.cell",
-            $crate::Mark => "generic.mark",
-            $crate::Strikethrough => "generic.strikethrough",
+            $crate::InlineMath => "extensions.inline_math",
+            $crate::BlockMath => "extensions.block_math",
+            $crate::Table => "extensions.table",
+            $crate::HeaderRow => "extensions.table_header_row",
+            $crate::Row => "extensions.row",
+            $crate::Cell => "extensions.cell",
+            $crate::Mark => "extensions.mark",
+            $crate::Strikethrough => "extensions.strikethrough",
         }
     };
 }

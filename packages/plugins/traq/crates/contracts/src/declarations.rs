@@ -11,7 +11,7 @@ pub struct PluginDeclarations {
 
 pub fn declarations() -> &'static PluginDeclarations {
     static CONTRACTS: LazyLock<PluginDeclarations> = LazyLock::new(|| {
-        let trap = Plugin::group("trap");
+        let trap = Plugin::group("traq");
         PluginDeclarations {
             references: trap.plugin("references"),
             stamp: trap.plugin("stamp"),

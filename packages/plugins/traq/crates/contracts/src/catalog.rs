@@ -6,7 +6,7 @@ use markdown_definitions::implement_wire_kinds;
 macro_rules! node_catalog {
     ($consumer:ident) => {
         $consumer! {
-            "trap";
+            "traq";
             $crate::Stamp => "traq.stamp",
             $crate::Reference => "traq.reference",
             $crate::Embedding => "traq.embedding",

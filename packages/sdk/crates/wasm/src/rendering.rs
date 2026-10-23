@@ -1,7 +1,7 @@
 use crate::abi::{self, Error};
 use crate::buffers::IO;
 use std::cell::RefCell;
-use traq_markdown_processing::rendering::{PlainTextRenderer, RendererOptions};
+use traq_markdown_processing::rendering::{PlainTextOptions, PlainTextRenderer};
 
 thread_local! { static RENDERER: RefCell<Option<PlainTextRenderer>> = const { RefCell::new(None) }; }
 
@@ -10,7 +10,7 @@ pub extern "C" fn configure_renderer() -> u32 {
     IO.with_borrow_mut(|io| {
         let result = (|| -> Result<_, Error> {
             let source = io.source()?;
-            let options: RendererOptions = serde_json::from_str(source).map_err(Error::request)?;
+            let options: PlainTextOptions = serde_json::from_str(source).map_err(Error::request)?;
             let renderer = PlainTextRenderer::new(options).map_err(Error::processing)?;
             RENDERER.set(Some(renderer));
             Ok(abi::configured())

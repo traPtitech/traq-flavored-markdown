@@ -17,7 +17,7 @@ pub enum ErrorCode {
 
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ErrorSpan {
     pub start: u32,
     pub end: u32,
@@ -25,7 +25,7 @@ pub struct ErrorSpan {
 
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Error {
     pub code: ErrorCode,
     pub message: String,
@@ -211,7 +211,7 @@ pub struct Configuration {
 
 #[derive(serde::Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProcessorConfiguration {
     pub preset: String,
     #[serde(default)]
@@ -257,7 +257,7 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                     vec![],
                     Output::Configuration,
                 )
-                .request_schema("RendererOptions"),
+                .request_schema("PlainTextOptions"),
             ),
             (
                 "parse",

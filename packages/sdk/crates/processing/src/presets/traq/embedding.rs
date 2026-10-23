@@ -15,7 +15,7 @@ pub enum LookupKind {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ReferenceEmbeddingCandidate {
     /// UTF-8 byte offsets into the original source, not rendered text.
     pub start: u32,

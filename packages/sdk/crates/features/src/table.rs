@@ -137,7 +137,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
         FeatureDefinition {
             id: FeatureId::Spoiler,
             export: Export {
-                group: "trap",
+                group: "traq",
                 member: "spoiler",
             },
             declaration: &traq::declarations().spoiler,
@@ -150,7 +150,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
         FeatureDefinition {
             id: FeatureId::References,
             export: Export {
-                group: "trap",
+                group: "traq",
                 member: "references",
             },
             declaration: &traq::declarations().references,
@@ -166,7 +166,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
         FeatureDefinition {
             id: FeatureId::Stamp,
             export: Export {
-                group: "trap",
+                group: "traq",
                 member: "stamp",
             },
             declaration: &traq::declarations().stamp,
@@ -179,7 +179,7 @@ pub(super) fn definitions() -> Vec<FeatureDefinition> {
         FeatureDefinition {
             id: FeatureId::Spacing,
             export: Export {
-                group: "trap",
+                group: "traq",
                 member: "spacing",
             },
             declaration: &traq::declarations().spacing,

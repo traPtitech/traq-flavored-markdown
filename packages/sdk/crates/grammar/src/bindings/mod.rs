@@ -1,8 +1,12 @@
 //! Named native grammars and SDK metadata owned by this distribution.
 mod catalog;
 mod composition;
-pub use catalog::{Catalog, PresetSpec, RuleSpec};
+mod exports;
+mod ids;
+pub use catalog::{Catalog, CatalogDescription, PresetSpec, RulePhase, RuleSpec};
 pub use composition::{Composition, GroupSpec, PluginSpec};
+pub use exports::{CatalogExports, ExportEntry, ExportTree};
+pub use ids::{GroupId, PluginId, PresetId, RuleId};
 
 mod presets;
 pub(crate) use presets::PRESETS;

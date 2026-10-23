@@ -11,7 +11,7 @@ use serde_json::value::RawValue;
 use std::fmt;
 
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Position {
     start: usize,
     end: usize,

@@ -38,3 +38,7 @@ visibility. Stamps store semantic colors (numeric RGB or canonical HSL) and keep
 their literal source separately.
 
 The SDK processing crate owns the traQ composition and runnable native examples.
+
+Rust crate identifiers retain the organization name `markdown-trap-*`. Public
+feature namespaces, generated package groups, and serialized node kinds use
+`traq`, matching the application and this plugin directory.

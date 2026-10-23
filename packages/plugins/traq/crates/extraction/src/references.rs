@@ -15,7 +15,7 @@ pub enum EmbeddedKind {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EmbeddedInfo {
     pub raw: String,
     #[serde(rename = "type")]
