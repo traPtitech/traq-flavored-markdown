@@ -22,7 +22,7 @@ export type {
   EmbeddedInfo,
   ReferenceEmbeddingPlan,
   ReferenceEmbeddingCandidate,
-  LookupKind
+  ReferenceKind
 } from './generated/processing.js'
 export type { GrammarPresetId } from './generated/presets.js'
 export { isGrammarPresetId, presets } from './generated/presets.js'

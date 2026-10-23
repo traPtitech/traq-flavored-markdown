@@ -10,7 +10,8 @@ import { JsonBoundary, JsonBoundaryError } from './bounded-json.js'
 import { DocumentValidationError } from './errors.js'
 import { documentLimits } from './generated/limits.js'
 import type { NodeDefinition } from './nodes.js'
-import { DocumentSchema, opaqueDocumentSchema } from './schema.js'
+import { opaqueDocumentSchema } from './schema.js'
+import type { DocumentSchema } from './schema.js'
 import { SourceText } from './source.js'
 
 export { documentLimits } from './generated/limits.js'
@@ -96,7 +97,7 @@ function payloadFailure(cause: unknown): never {
 export class DocumentContext<Variant extends NodeVariant = NodeVariant> {
   readonly document: Document<Variant>
   readonly source: SourceText
-  #snapshots = new Map<Node, Node>()
+  #snapshots = new WeakMap<Node, Node>()
   #locations = new Map<Node, Location>()
   #validated = new Set<DocumentSchema>()
   #validating = false
@@ -282,10 +283,6 @@ export class DocumentContext<Variant extends NodeVariant = NodeVariant> {
 
   location(value: Node): Location<Variant> {
     return this.#locations.get(this.node(value))! as Location<Variant>
-  }
-
-  hasContract(kind: string): boolean {
-    return [...this.#validated].some(schema => schema.has(kind))
   }
 
   hasDefinition(definition: NodeDefinition): boolean {

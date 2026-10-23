@@ -214,7 +214,9 @@ test('Go and TypeScript fixtures retain the Rust AST for blocks and inlines', as
               method === 'parse'
                 ? parser.parse(source)
                 : parser.parseInline(source)
-            expect(parsed as unknown).toEqual((expected as { Ok: unknown }).Ok)
+            expect(parsed.document as unknown).toEqual(
+              (expected as { Ok: unknown }).Ok
+            )
           } else {
             const error = captureError(() =>
               method === 'parse'

@@ -1,5 +1,5 @@
-import type { PluginGroup } from './definitions.js'
 import type { NodeDefinition } from '../nodes.js'
+import type { PluginGroup } from './definitions.js'
 import type { Implementation, RenderPlugin } from './plugin.js'
 import { implementation } from './plugin.js'
 import type { Fallback, Handler, HtmlPreset } from './types.js'
@@ -106,7 +106,9 @@ export class PresetBuilder {
 
     presets.set(preset, {
       handlers: new Map(plugins.flatMap(p => [...p.handlers])),
-      requiredContracts: new Map(plugins.flatMap(p => [...p.requiredContracts])),
+      requiredContracts: new Map(
+        plugins.flatMap(p => [...p.requiredContracts])
+      ),
       fallback
     })
 

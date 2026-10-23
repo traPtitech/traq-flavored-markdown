@@ -1,11 +1,12 @@
+import { expect, test } from 'bun:test'
 import { fileURLToPath } from 'node:url'
 
-import { expect, test } from 'bun:test'
-import { compile } from 'sass'
+import { NodePackageImporter, compile } from 'sass'
 
 test('the SDK theme composes plugin CSS and supplies compact stamp overrides', () => {
   const css = compile(
-    fileURLToPath(new URL('../styles/index.scss', import.meta.url))
+    fileURLToPath(new URL('../styles/index.scss', import.meta.url)),
+    { importers: [new NodePackageImporter()] }
   ).css
   expect(css).toContain('.markdown-body')
   expect(css).toContain('.spoiler')

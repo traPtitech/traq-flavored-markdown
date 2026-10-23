@@ -1,10 +1,10 @@
+import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
 import {
   endsWithResourceCard,
   messageRenderers,
   resourceCardFromUrl
 } from '@traq-flavored-markdown/sdk/renderer'
 import { expect, test } from 'bun:test'
-import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
 
 import linkFixtures from '../../../tests/fixtures/traq-links.json' with { type: 'json' }
 import { classifyTraqLink } from '../../src/traq/messages/cards.js'
@@ -53,7 +53,7 @@ test('URL meaning follows the shared Rust contract', () => {
 test('message rendering extracts cards, trims trailing bare links, and keeps the AST reusable', () => {
   const source = '本文\n' + file + '\n' + quote,
     document = parser.parse(source),
-    snapshot = structuredClone(document)
+    snapshot = document.toMutable()
   expect(Object.keys(view).sort()).toEqual([
     'condensed',
     'prepare',
@@ -72,7 +72,7 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
     { type: 'message', id: messageId }
   ])
   expect(condensed.cards).toEqual(normal.cards)
-  expect(document).toEqual(snapshot)
+  expect(document.document).toEqual(snapshot)
   expect(view.standard.render(document).html).toBe(normal.html)
   expect(
     view.standard

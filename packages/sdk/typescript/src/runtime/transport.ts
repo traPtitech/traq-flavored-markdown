@@ -1,6 +1,7 @@
-import {
+import { DocumentValidationError } from '@traq-flavored-markdown/core'
+import type {
   DocumentContext,
-  DocumentValidationError
+  ReadonlyDocument
 } from '@traq-flavored-markdown/core'
 import {
   fields,
@@ -20,7 +21,11 @@ import { schema } from '../generated/nodes.js'
 import { type Extraction, isExtraction } from '../generated/processing.js'
 import { MarkdownError } from './errors.js'
 import { encodeRequest } from './json.js'
-import type { ParsedDocument, ProcessedDocument } from './types.js'
+import type {
+  DocumentInput,
+  ParsedDocument,
+  ProcessedDocument
+} from './types.js'
 
 type OperationName = keyof typeof operations
 type Results = {
@@ -43,9 +48,7 @@ const inputSchema = schema.withUnknownNodes()
 const documentRequests = new WeakMap<DocumentContext, string>()
 
 function encodeDocument(input: unknown): string {
-  const context = inputSchema.document(
-    input as import('./types.js').DocumentInput
-  )
+  const context = inputSchema.document(input as DocumentInput)
   const cached = documentRequests.get(context)
   if (cached !== undefined) return cached
   const encoded = encodeRequest(context.document, inputBytes)
@@ -62,9 +65,7 @@ export interface Transport {
   dispose(): void
 }
 
-const isDocument = (
-  value: unknown
-): value is import('@traq-flavored-markdown/core').ReadonlyDocument =>
+const isDocument = (value: unknown): value is ReadonlyDocument =>
   fields(value, { source: string, children: Array.isArray })
 
 /** One independent Wasm instance, verified against the generated semantic contract. */
@@ -265,12 +266,10 @@ export function createTransport(
                   : typeof value === 'string'
         if (!valid) throw new Error('Malformed Wasm success value')
         if (descriptor.result === 'document')
-          reply.ok = schema.document(
-            value as import('@traq-flavored-markdown/core').ReadonlyDocument
-          )
+          reply.ok = schema.document(value as ReadonlyDocument)
         else if (descriptor.result === 'processing') {
           const result = value as {
-            document: import('@traq-flavored-markdown/core').ReadonlyDocument
+            document: ReadonlyDocument
             extraction: Extraction
             plainText: string
           }

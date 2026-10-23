@@ -17,7 +17,10 @@ import { configureCondensed } from '../traq/views/condensed.js'
 import { messageRenderPlan } from '../traq/views/plan.js'
 import { configureSpacing } from '../traq/views/spacing.js'
 
-export { analyzeMessage, endsWithResourceCard } from '../traq/messages/analysis.js'
+export {
+  analyzeMessage,
+  endsWithResourceCard
+} from '../traq/messages/analysis.js'
 export type { MessageAnalysis, MessageLink } from '../traq/messages/analysis.js'
 export { resourceCardFromUrl } from '../traq/messages/cards.js'
 export type { ResourceCard } from '../traq/messages/cards.js'

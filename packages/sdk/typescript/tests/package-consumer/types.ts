@@ -1,9 +1,9 @@
 import { DocumentContext } from '@traq-flavored-markdown/core'
+import type { ReadonlyNode as UnknownNode } from '@traq-flavored-markdown/core'
 import { type Extraction } from '@traq-flavored-markdown/sdk'
 import {
   type ParsedDocument,
   type ReadonlyDocument,
-  type ReadonlyNode,
   createRuntime,
   isGrammarPresetId,
   isKnownNode,
@@ -28,7 +28,7 @@ for (const node of document.document.children)
     const id: string = reference.id
     void id
   }
-declare const unknownNode: import('@traq-flavored-markdown/core').ReadonlyNode
+declare const unknownNode: UnknownNode
 if (isKnownNode(unknownNode) && unknownNode.kind === names.Reference) {
   const id: string = unknownNode.data.id
   void id

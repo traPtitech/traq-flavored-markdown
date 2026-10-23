@@ -1,5 +1,5 @@
-@use '../../plugins/traq/styles/base';
-@use '../../plugins/extensions/styles/base' as extensions;
+@use 'pkg:@traq-flavored-markdown/traq-plugin/styles/base';
+@use 'pkg:@traq-flavored-markdown/extensions-plugin/styles/base' as extensions;
 @forward './markdown';
 
 // Condensed views align large stamps and all of their effect wrappers.

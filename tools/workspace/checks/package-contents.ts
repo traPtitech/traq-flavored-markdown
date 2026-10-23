@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import path from 'path'
 
 import { captureProcess } from '../infrastructure/process.ts'
@@ -111,6 +112,28 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
     ],
     temporaryDirectory
   )
+  // Resolve the public SCSS using only the installed package tree.
+  const sass = path.join(
+    path.dirname(
+      createRequire(path.join(sdkRoot, 'package.json')).resolve(
+        'sass/package.json'
+      )
+    ),
+    'sass.js'
+  )
+  await Bun.write(
+    `${temporaryDirectory}/theme.scss`,
+    '@use "pkg:@traq-flavored-markdown/sdk/styles/index";\n'
+  )
+  await capture(
+    bun,
+    [sass, '--pkg-importer=node', '--no-source-map', 'theme.scss', 'theme.css'],
+    temporaryDirectory
+  )
+  const theme = await Bun.file(`${temporaryDirectory}/theme.css`).text()
+  for (const selector of ['.markdown-body', '.spoiler', '.katex-block'])
+    if (!theme.includes(selector))
+      throw Error('Packed SCSS missing ' + selector)
   const tsc = path.join(
     path.dirname(
       Bun.fileURLToPath(import.meta.resolve('@typescript/native/package.json'))

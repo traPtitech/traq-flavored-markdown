@@ -14,8 +14,14 @@ const readBytes = async (url: URL) => new Uint8Array(await readFile(url))
 
 for (const dependency of ['highlight.js', 'katex']) {
   let installed = false
-  try { import.meta.resolve(dependency); installed = true } catch {}
-  check(!installed, dependency + ' should be optional for runtime and custom renderers')
+  try {
+    import.meta.resolve(dependency)
+    installed = true
+  } catch {}
+  check(
+    !installed,
+    dependency + ' should be optional for runtime and custom renderers'
+  )
 }
 
 const bytes = await readBytes(
@@ -34,7 +40,12 @@ try {
     parser.parseInline(':stamp:').document.children[0].kind === names.Stamp,
     'Packed parser did not load the traQ preset'
   )
-  check(createHtmlRenderer({ math: { render: tex => '<math>' + tex + '</math>' } }).render(parser.parseInline('$x$')) === '<math>x</math>', 'Custom adapters should work without bundled dependencies')
+  check(
+    createHtmlRenderer({
+      math: { render: tex => '<math>' + tex + '</math>' }
+    }).render(parser.parseInline('$x$')) === '<math>x</math>',
+    'Custom adapters should work without bundled dependencies'
+  )
   const extractor = runtime.createExtractor({ origin: '' })
   check(
     runtime.createPlainTextRenderer().render(parser.parse('**hello**')) ===

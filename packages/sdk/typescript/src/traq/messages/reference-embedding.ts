@@ -3,8 +3,8 @@ import type { SourceEdit } from '@traq-flavored-markdown/core'
 import { utf8ByteLength } from '@traq-flavored-markdown/core/validation'
 
 import type {
-  LookupKind,
   ReferenceEmbeddingPlan,
+  ReferenceKind,
   References
 } from '../../generated/processing.js'
 
@@ -12,7 +12,7 @@ import type {
 export function embedReferences(
   source: string,
   plan: ReferenceEmbeddingPlan,
-  resolve: (kind: LookupKind, name: string) => string | undefined
+  resolve: (kind: ReferenceKind, name: string) => string | undefined
 ): string {
   const text = new SourceText(source)
   let position = 0

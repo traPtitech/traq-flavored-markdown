@@ -4,6 +4,7 @@ import {
   names
 } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { plugin } from '@traq-flavored-markdown/commonmark-plugin/renderer'
+import type { ReadonlyDocument } from '@traq-flavored-markdown/core'
 import { PluginDeclaration as Declaration } from '@traq-flavored-markdown/core/definitions'
 import {
   PresetBuilder,
@@ -11,11 +12,7 @@ import {
   RenderPlugin,
   createRenderer
 } from '@traq-flavored-markdown/core/renderer'
-import {
-  type ReadonlyDocument,
-  createRuntime,
-  presets
-} from '@traq-flavored-markdown/sdk'
+import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
 import type { ReferenceResolver } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 const runtime = await createRuntime(new Uint8Array())
@@ -33,8 +30,7 @@ const condensedHtml: string = messageView.condensed.render(
   parser.parse('text')
 ).html
 
-const openDocument =
-  {} as import('@traq-flavored-markdown/core').ReadonlyDocument
+const openDocument = {} as ReadonlyDocument
 const openResult: string = view.render(openDocument)
 const custom = plugin().withReplacedHandler(names.Link, (node, context) => {
   if (isKnownNode(node) && node.kind === names.Link) {

@@ -75,7 +75,7 @@
     "test": "bun test ./typescript/tests",
     "test:go": "go -C go test -count=1 ./...",
     "typecheck": "bun run ../../scripts/tsc.ts -p typescript/tsconfig.json && bun run ../../scripts/tsc.ts -p examples/typescript/tsconfig.json",
-    "build:styles": "sass --no-source-map styles/index.scss dist/index.css"
+    "build:styles": "sass --pkg-importer=node --no-source-map styles/index.scss dist/index.css"
   },
   "devDependencies": {
     "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
