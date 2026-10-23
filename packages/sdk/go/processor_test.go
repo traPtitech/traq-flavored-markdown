@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"bytes"
 	"context"
 	"reflect"
 	"strings"
@@ -53,7 +54,7 @@ func TestFusedProcessing(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(result.Document, document) || !reflect.DeepEqual(result.Extraction, *extraction) || result.PlainText != text {
+		if !bytes.Equal(result.Document.JSON(), document.JSON()) || !reflect.DeepEqual(result.Extraction, *extraction) || result.PlainText != text {
 			t.Fatalf("fused result differs: %+v", result)
 		}
 	}
