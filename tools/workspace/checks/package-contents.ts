@@ -57,7 +57,13 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
     ])
       if (!files.has(name)) throw Error(repo + ': missing ' + name)
     if (repo === 'sdk')
-      for (const directory of ['messages', 'profiles', 'runtime']) {
+      for (const directory of [
+        'traq/messages',
+        'traq/profile',
+        'traq/views',
+        'runtime',
+        'adapters'
+      ]) {
         if (
           ![...files].some(
             file =>
@@ -115,6 +121,24 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
     ['typescript/tests/package-consumer', 'sdk'],
     ['typescript/tests/rendering', 'renderer']
   ]) {
+    if (name === 'renderer') {
+      // The runtime consumer above proves that optional adapters are absent.
+      // HTML consumers opt in explicitly before importing the adapter entrypoint.
+      await capture(
+        npm,
+        [
+          'install',
+          '--ignore-scripts',
+          '--no-save',
+          '--no-audit',
+          '--no-fund',
+          '--registry=https://registry.npmjs.org',
+          `highlight.js@${manifests['commonmark-plugin'].peerDependencies!['highlight.js']}`,
+          `katex@${manifests['extensions-plugin'].peerDependencies!['katex']}`
+        ],
+        temporaryDirectory
+      )
+    }
     await Bun.write(
       `${temporaryDirectory}/${name}.ts`,
       Bun.file(path.join(sdkRoot, source, 'types.ts'))

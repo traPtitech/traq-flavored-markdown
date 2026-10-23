@@ -23,21 +23,43 @@ test('selective builds generate only artifacts reachable from the requested pack
     contracts: async name => {
       calls.push(`contracts:${name}`)
     },
-    build: async name => {
-      calls.push(`build:${name}`)
+    prepare: async name => {
+      calls.push(`prepare:${name}`)
+    },
+    typescript: async name => {
+      calls.push(`typescript:${name}`)
+    },
+    styles: async () => {
+      calls.push('styles:sdk')
+    },
+    wasm: async () => {
+      calls.push('wasm:sdk')
+    },
+    metadata: async () => {
+      calls.push('metadata:sdk')
     }
   })
   await runTasks(tasks, ['build:core'])
-  expect(calls).toEqual(['contracts:core', 'build:core'])
+  expect(calls).toEqual(['contracts:core', 'prepare:core', 'typescript:core'])
   calls.length = 0
   await runTasks(tasks, ['build:extensions-plugin'])
   expect(calls).not.toContain('contracts:traq-plugin')
   expect(calls).not.toContain('contracts:sdk')
   expect(calls.filter(call => call === 'contracts:core')).toHaveLength(1)
-  expect(calls.indexOf('build:core')).toBeLessThan(
-    calls.indexOf('build:commonmark-plugin')
+  expect(calls.indexOf('typescript:core')).toBeLessThan(
+    calls.indexOf('typescript:commonmark-plugin')
   )
-  expect(calls.at(-1)).toBe('build:extensions-plugin')
+  expect(calls.at(-1)).toBe('typescript:extensions-plugin')
+  calls.length = 0
+  await runTasks(tasks, ['build:sdk'])
+  expect(calls.filter(call => call === 'prepare:sdk')).toHaveLength(1)
+  expect(calls.indexOf('wasm:sdk')).toBeGreaterThan(
+    calls.indexOf('typescript:core')
+  )
+  expect(calls.indexOf('metadata:sdk')).toBeGreaterThan(
+    calls.indexOf('wasm:sdk')
+  )
+  expect(calls).toContain('styles:sdk')
 })
 
 test('build modules load before workspace packages have been built', async () => {
@@ -63,9 +85,9 @@ test('build modules load before workspace packages have been built', async () =>
         `
           import assert from 'node:assert/strict'
           const { buildWorkspace } = await import('./tools/workspace/build/workspace.ts')
-          const { assembleSdk } = await import('./packages/sdk/scripts/build.ts')
+          const { buildSdkWasm } = await import('./packages/sdk/scripts/build.ts')
           assert.equal(typeof buildWorkspace, 'function')
-          assert.equal(typeof assembleSdk, 'function')
+          assert.equal(typeof buildSdkWasm, 'function')
         `
       ],
       { cwd: root, stdout: 'pipe', stderr: 'pipe' }

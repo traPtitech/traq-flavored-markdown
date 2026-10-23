@@ -12,12 +12,23 @@ type Definitions = ContractModule['definitions']
 
 const typeName = (name: string) => name
 const fieldName = (name: string) =>
-  name === 'id'
-    ? 'ID'
-    : name.replace(
-        /(^|_)([a-z])/g,
-        (_: string, _prefix: string, letter: string) => letter.toUpperCase()
-      )
+  name
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .split('_')
+    .map(part => {
+      const initialism = (
+        {
+          id: 'ID',
+          url: 'URL',
+          urls: 'URLs',
+          html: 'HTML',
+          json: 'JSON',
+          utf8: 'UTF8'
+        } as Record<string, string>
+      )[part.toLowerCase()]
+      return initialism ?? part[0].toUpperCase() + part.slice(1)
+    })
+    .join('')
 const enumName = (value: string) =>
   (({
     '*': 'Asterisk',
