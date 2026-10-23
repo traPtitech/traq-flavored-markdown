@@ -171,7 +171,7 @@ test('reference rendering rejects script links and escapes labels', () => {
 })
 
 test('table handlers reject forged alignment metadata', () => {
-  const view = createRenderer(rendering.createHtmlPreset())
+  const view = rendering.createHtmlRenderer()
   const document = parser.parse('| a |\n| - |\n| b |').toMutable()
   const table = document.children[0]
   table.data = { alignments: ['left;position:fixed'] } as never
