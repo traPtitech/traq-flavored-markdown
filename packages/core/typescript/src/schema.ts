@@ -9,12 +9,9 @@ import type { NodeDefinition, NodeStructure } from './nodes.js'
 export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   readonly #definitions: ReadonlyMap<string, NodeDefinition>
   readonly #structures: ReadonlyMap<string, NodeStructure>
-  readonly #unknown: 'preserve' | 'reject'
+  #unknown: 'preserve' | 'reject' = 'reject'
 
-  constructor(
-    definitions: Iterable<NodeDefinition<Variant>> = [],
-    { unknown = 'reject' }: { unknown?: 'preserve' | 'reject' } = {}
-  ) {
+  constructor(definitions: Iterable<NodeDefinition<Variant>> = []) {
     const contracts = new Map<string, NodeDefinition>()
     const structures = new Map<string, NodeStructure>()
     for (const input of definitions) {
@@ -31,7 +28,6 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
     }
     this.#definitions = contracts
     this.#structures = structures
-    this.#unknown = unknown
     Object.freeze(this)
   }
 
@@ -54,19 +50,19 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   extend<Additional extends NodeVariant>(
     definitions: Iterable<NodeDefinition<Additional>>
   ): DocumentSchema<Variant | Additional> {
-    return new DocumentSchema<Variant | Additional>(
-      [...this.#definitions.values(), ...definitions] as NodeDefinition<
-        Variant | Additional
-      >[],
-      { unknown: this.#unknown }
-    )
+    const extended = new DocumentSchema<Variant | Additional>([
+      ...this.#definitions.values(),
+      ...definitions
+    ] as NodeDefinition<Variant | Additional>[])
+    extended.#unknown = this.#unknown
+    return extended
   }
 
   /** Preserve opaque application nodes while still checking every known contract. */
   withUnknownNodes(): DocumentSchema<NodeVariant> {
-    return new DocumentSchema(this.#definitions.values(), {
-      unknown: 'preserve'
-    })
+    const open = new DocumentSchema(this.#definitions.values())
+    open.#unknown = 'preserve'
+    return open
   }
 
   /** Validate and own external input, or reuse an already owned document. */
@@ -138,6 +134,4 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
 }
 
 /** Grammar-independent snapshots accept opaque nodes without assigning payload types. */
-export const opaqueDocumentSchema = new DocumentSchema([], {
-  unknown: 'preserve'
-})
+export const opaqueDocumentSchema = new DocumentSchema().withUnknownNodes()

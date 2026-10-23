@@ -104,6 +104,16 @@ export class DocumentContext<Variant extends NodeVariant = NodeVariant> {
 
   constructor(
     document: Document,
+    options: DocumentOptions<Variant> & { schema: DocumentSchema<Variant> }
+  )
+  constructor(
+    document: Document,
+    ...options: NodeVariant extends Variant
+      ? [options?: Omit<DocumentOptions<Variant>, 'schema'>]
+      : never
+  )
+  constructor(
+    document: Document,
     {
       schema = opaqueDocumentSchema as DocumentSchema<Variant>,
       limits = documentLimits
@@ -294,7 +304,10 @@ export class DocumentContext<Variant extends NodeVariant = NodeVariant> {
     node: Node,
     definition: NodeDefinition<Selected>
   ): node is Node & Node<Selected> {
-    this.node(node)
+    if (this.node(node) !== node)
+      throw new DocumentValidationError(
+        'Only owned snapshot nodes can be narrowed'
+      )
     if (![...this.#validated].some(schema => schema.hasDefinition(definition)))
       throw new DocumentValidationError(
         'Node contract has not been validated: ' + definition.kind

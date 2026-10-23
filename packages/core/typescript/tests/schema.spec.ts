@@ -152,3 +152,24 @@ test('unknown node policy and typed renderer requirements are explicit', () => {
   expect(calls).toBe(0)
   expect(renderer.render(schema.document(input))).toBe('value')
 })
+
+test('cached narrowing accepts only the owned snapshot, never the mutable source node', () => {
+  const text = defineNode<{ kind: 'text'; data: string }>(
+    'text',
+    data => typeof data === 'string'
+  )
+  const input = {
+    kind: 'text',
+    data: 'before' as unknown,
+    span: { start: 0, end: 0 }
+  }
+  const context = new DocumentSchema([text]).document({
+    source: '',
+    children: [input]
+  })
+  input.data = 42
+  expect(() => context.matches(input, text)).toThrow(/owned snapshot/)
+  const snapshot = context.node(input)
+  expect(context.matches(snapshot, text)).toBe(true)
+  expect(snapshot.data).toBe('before')
+})
