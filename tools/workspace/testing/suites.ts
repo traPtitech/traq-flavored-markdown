@@ -29,7 +29,7 @@ export const suites = {
       'packages/sdk/scripts/{contract-identity,generation}.spec.ts',
       'tools/workspace/{build,checks,infrastructure,testing,release}/**/*.spec.ts',
       'tools/workspace/{release,policy,toolchains}.spec.ts',
-      'tools/contracts/typescript/{generation,groups,ir,manifest,output-manifest}.spec.ts'
+      'tools/contracts/tests/{generation,groups,ir,manifest,output-manifest}.spec.ts'
     ]
   },
   assembly: {
@@ -44,7 +44,7 @@ export const suites = {
     timeout: 60000,
     resources: 'Go compiler and generated temporary modules; run serially',
     include: [
-      'tools/contracts/typescript/{go-contract,contract-integers,contract-strings,contract-unions}.spec.ts'
+      'tools/contracts/tests/{go-contract,contract-integers,contract-strings,contract-unions}.spec.ts'
     ]
   },
   workspace: {

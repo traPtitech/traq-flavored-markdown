@@ -4,7 +4,7 @@ import {
   parseArtifactManifest,
   parseArtifactMetadata,
   parseNodeManifest
-} from './manifest.ts'
+} from '../model/manifest.ts'
 
 test('manifest loading validates contracts before generators observe them', () => {
   const source = {

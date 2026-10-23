@@ -5,10 +5,15 @@ import { expect, test } from 'bun:test'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
 import { repositoryRoot } from '../../workspace/paths.ts'
-import { emitGoDeclarations, goContract, goFile, goNodes } from './go.ts'
-import { runCommand } from './io.ts'
-import { normalizeContracts } from './ir.ts'
-import type { RawSchema } from './schema.ts'
+import {
+  emitGoDeclarations,
+  goContract,
+  goFile,
+  goNodes
+} from '../emitters/go.ts'
+import { runCommand } from '../io/io.ts'
+import { normalizeContracts } from '../model/ir.ts'
+import type { RawSchema } from '../model/schema.ts'
 
 async function writeModule(directory: string) {
   const core = path
@@ -123,7 +128,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     await writeModule(directory)
     await write(`${directory}/contract.go`, source)
     await write(`${directory}/contract_test.go`, testSource)
-    await runCommand(['go', 'test', './...'], directory)
+    await runCommand(['go', 'test', '../typescript/...'], directory)
   })
 }, 60_000)
 
@@ -196,7 +201,7 @@ func TestStampKind(t *testing.T) {
     await writeModule(directory)
     await write(`${directory}/contract.go`, source)
     await write(`${directory}/contract_test.go`, testSource)
-    await runCommand(['go', 'test', './...'], directory)
+    await runCommand(['go', 'test', '../typescript/...'], directory)
   })
 }, 60_000)
 
@@ -269,7 +274,7 @@ func TestRequest(t *testing.T) {
 }
 `
     )
-    await runCommand(['go', 'test', './...'], directory)
+    await runCommand(['go', 'test', '../typescript/...'], directory)
   })
 }, 60_000)
 
@@ -318,7 +323,7 @@ func TestDirectDecoder(t *testing.T) {
 }
 `
     )
-    await runCommand(['go', 'test', './...'], directory)
+    await runCommand(['go', 'test', '../typescript/...'], directory)
   })
 }, 60_000)
 
@@ -371,6 +376,6 @@ test('generated Go string bounds count Unicode scalars and preserve one-sided an
       goFile('contract', goContract(schema))
     )
     await write(directory + '/contract_test.go', testSource)
-    await runCommand(['go', 'test', './...'], directory)
+    await runCommand(['go', 'test', '../typescript/...'], directory)
   })
 }, 60_000)

@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
-import { goNodes } from './go.ts'
-import { nodeFiles } from './nodes.ts'
+import { goNodes } from '../emitters/go.ts'
+import { nodeFiles } from '../emitters/nodes.ts'
 
 test('Rust-exported schemas generate shared host contracts', () => {
   const schema = {

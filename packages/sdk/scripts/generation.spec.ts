@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import type { RawSchema } from '../../../tools/contracts/typescript/schema.ts'
+import type { RawSchema } from '../../../tools/contracts/model/schema.ts'
 import { goNodes as sdkGoNodes } from './codegen/nodes-go.ts'
 import { typescriptFiles } from './codegen/nodes-typescript.ts'
 import { presetFiles } from './codegen/presets.ts'

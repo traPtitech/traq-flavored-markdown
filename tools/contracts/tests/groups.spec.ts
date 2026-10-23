@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { assertNodeGroup } from './groups.ts'
+import { assertNodeGroup } from '../model/groups.ts'
 
 test('contract groups accept their independently named legacy wire kinds', () => {
   expect(() =>

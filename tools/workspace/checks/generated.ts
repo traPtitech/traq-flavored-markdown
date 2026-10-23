@@ -3,11 +3,11 @@ import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'path'
 
-import { generateBindings } from '../../contracts/generate.ts'
 import {
   outputIndex,
   readOutputIndex
-} from '../../contracts/typescript/output-manifest.ts'
+} from '../../contracts/io/output-manifest.ts'
+import { generateBindings } from '../generate.ts'
 import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { repositoryRoot } from '../paths.ts'
 
@@ -77,7 +77,7 @@ export const generatedChanges = (
     )
 
 export async function checkGenerated(
-  generate: (outputRoot: string) => Promise<void> = outputRoot =>
+  generate: (outputRoot: string) => Promise<unknown> = outputRoot =>
     generateBindings(undefined, undefined, outputRoot),
   targets?: GeneratedTargets,
   sourceRoot = repositoryRoot

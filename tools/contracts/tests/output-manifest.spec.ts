@@ -7,7 +7,7 @@ import {
   OutputManifest,
   applyOutputManifest,
   readOutputIndex
-} from './output-manifest.ts'
+} from '../io/output-manifest.ts'
 
 test('output replacement removes retired managed files and preserves user files', async () => {
   await withTempDirectory('manifest-test-', async root => {

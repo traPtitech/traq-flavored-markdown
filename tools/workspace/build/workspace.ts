@@ -1,8 +1,8 @@
 import { $ } from 'bun'
 
 import { assembleSdk } from '../../../packages/sdk/scripts/build.ts'
-import { generateBindings } from '../../contracts/generate.ts'
 import { checkGenerated } from '../checks/generated.ts'
+import { generateBindings } from '../generate.ts'
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { type PackageName, packageRoot } from '../paths.ts'
 import { cleanBuildOutput } from './outputs.ts'

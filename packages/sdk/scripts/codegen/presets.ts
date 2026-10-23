@@ -1,6 +1,6 @@
-import type { PresetTree } from '../../../../tools/contracts/typescript/manifest.ts'
+import type { PresetTree } from '../../../../tools/contracts/model/manifest.ts'
 
-export type { PresetTree } from '../../../../tools/contracts/typescript/manifest.ts'
+export type { PresetTree } from '../../../../tools/contracts/model/manifest.ts'
 
 const q = JSON.stringify
 

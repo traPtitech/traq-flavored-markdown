@@ -11,8 +11,7 @@ test('build modules load before workspace packages have been built', async () =>
     // Copy sources without installed workspace links or existing dist artifacts.
     for (const directory of [
       'tools/workspace',
-      'tools/contracts/typescript',
-      'tools/contracts/generate.ts',
+      'tools/contracts',
       'packages/sdk/scripts',
       'packages/sdk/typescript/src/generated'
     ])

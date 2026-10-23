@@ -1,3 +1,3 @@
-import { main } from '../tools/contracts/generate.ts'
+import { main } from '../tools/workspace/generate.ts'
 
 await main()

@@ -1,14 +1,14 @@
 import path from 'path'
 
-import { readManifest } from '../../../tools/contracts/typescript/io.ts'
-import {
-  type ArtifactManifest,
-  parseArtifactManifest
-} from '../../../tools/contracts/typescript/manifest.ts'
+import { readManifest } from '../../../tools/contracts/io/io.ts'
 import {
   OutputManifest,
   applyOutputManifest
-} from '../../../tools/contracts/typescript/output-manifest.ts'
+} from '../../../tools/contracts/io/output-manifest.ts'
+import {
+  type ArtifactManifest,
+  parseArtifactManifest
+} from '../../../tools/contracts/model/manifest.ts'
 import {
   packageOutputRoot,
   repositoryRoot

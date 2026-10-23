@@ -1,6 +1,6 @@
-import type { RawSchema } from './schema.ts'
-import { quoted as q } from './schema.ts'
-import type { NodeStructure } from './structure.ts'
+import type { RawSchema } from '../model/schema.ts'
+import { quoted as q } from '../model/schema.ts'
+import type { NodeStructure } from '../model/structure.ts'
 import { emitTypeScriptValidators } from './typescript-validators.ts'
 import { typescriptDeclarations } from './typescript.ts'
 

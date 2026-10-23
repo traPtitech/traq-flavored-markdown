@@ -1,4 +1,4 @@
-import { nodeGroup } from '../../../../tools/contracts/typescript/groups.ts'
+import { nodeGroup } from '../../../../tools/contracts/model/groups.ts'
 
 export function typescriptFiles(manifest: {
   nodes: Record<string, { group: string }>

@@ -1,12 +1,12 @@
 import {
   type Operation,
   validateOperationSchemas
-} from '../../../tools/contracts/typescript/manifest.ts'
+} from '../../../tools/contracts/model/manifest.ts'
 import {
   type RawSchema,
   type Shape,
   shape
-} from '../../../tools/contracts/typescript/schema.ts'
+} from '../../../tools/contracts/model/schema.ts'
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical)

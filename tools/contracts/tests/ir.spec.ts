@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { normalizeContracts } from './ir.ts'
+import { normalizeContracts } from '../model/ir.ts'
 
 test('request contracts retain omission, defaults, and named references', () => {
   const module = normalizeContracts(

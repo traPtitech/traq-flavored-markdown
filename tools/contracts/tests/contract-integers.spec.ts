@@ -6,9 +6,9 @@ import ts from 'typescript'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
 import { packageRoot } from '../../workspace/paths.ts'
-import { goPayload } from './go.ts'
-import { type IntegerShape, shape } from './schema.ts'
-import { emitTypeScriptValidators } from './typescript-validators.ts'
+import { goPayload } from '../emitters/go.ts'
+import { emitTypeScriptValidators } from '../emitters/typescript-validators.ts'
+import { type IntegerShape, shape } from '../model/schema.ts'
 
 const validationModule = pathToFileURL(
   path.join(packageRoot('core'), 'typescript', 'src', 'validation.ts')

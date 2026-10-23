@@ -6,9 +6,9 @@ import ts from 'typescript'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
 import { packageRoot } from '../../workspace/paths.ts'
-import { normalizeContracts } from './ir.ts'
-import { type RawSchema, shape } from './schema.ts'
-import { emitTypeScriptValidators } from './typescript-validators.ts'
+import { emitTypeScriptValidators } from '../emitters/typescript-validators.ts'
+import { normalizeContracts } from '../model/ir.ts'
+import { type RawSchema, shape } from '../model/schema.ts'
 
 test('string bounds remain in normalized contracts and reject malformed constraints', () => {
   const bounded = { type: 'string', minLength: 2, maxLength: 2 }

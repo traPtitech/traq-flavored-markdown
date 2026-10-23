@@ -6,8 +6,8 @@ import ts from 'typescript'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
 import { packageRoot } from '../../workspace/paths.ts'
-import type { RawSchema } from './schema.ts'
-import { emitTypeScriptValidators } from './typescript-validators.ts'
+import { emitTypeScriptValidators } from '../emitters/typescript-validators.ts'
+import type { RawSchema } from '../model/schema.ts'
 
 test('tagged Rust unions validate their discriminators and variant fields', async () => {
   const schema: RawSchema = {

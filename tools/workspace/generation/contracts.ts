@@ -1,28 +1,29 @@
 import path from 'path'
 
-import { generateSdk } from '../../packages/sdk/scripts/generate-bindings.ts'
-import { readNpmPackageGraph } from '../workspace/package-graph.ts'
+import { goNodes as contractGoNodes } from '../../contracts/emitters/go.ts'
+import { nodeFiles } from '../../contracts/emitters/nodes.ts'
+import { readManifest, runCommand } from '../../contracts/io/io.ts'
 import {
-  cargoTargetDirectory,
-  packageOutputRoot,
-  packageRoot,
-  repositoryRoot
-} from '../workspace/paths.ts'
-import { goNodes as contractGoNodes } from './typescript/go.ts'
+  OutputManifest,
+  applyOutputManifest
+} from '../../contracts/io/output-manifest.ts'
 import {
   type ContractPackage,
   assertNodeGroup,
   nodeGroup,
   nodeGroups
-} from './typescript/groups.ts'
-import { readManifest, runCommand } from './typescript/io.ts'
-import { parseCoreManifest, parseNodeManifest } from './typescript/manifest.ts'
-import { nodeFiles } from './typescript/nodes.ts'
+} from '../../contracts/model/groups.ts'
 import {
-  OutputManifest,
-  applyOutputManifest
-} from './typescript/output-manifest.ts'
-import type { RawSchema } from './typescript/schema.ts'
+  parseCoreManifest,
+  parseNodeManifest
+} from '../../contracts/model/manifest.ts'
+import type { RawSchema } from '../../contracts/model/schema.ts'
+import {
+  cargoTargetDirectory,
+  packageOutputRoot,
+  packageRoot,
+  repositoryRoot
+} from '../paths.ts'
 
 const runCargo = (command: string[], cwd = repositoryRoot) =>
   runCommand(command, cwd).env({
@@ -146,57 +147,3 @@ export async function generateContracts(
   await applyOutputManifest(outputRoot, plan)
   return plan
 }
-
-export async function generateBindings(
-  packageName?: ContractPackage | 'sdk',
-  input?: string,
-  outputRoot = repositoryRoot
-) {
-  if (!packageName) {
-    await generateCoreContracts(outputRoot)
-    const { graph } = await readNpmPackageGraph()
-    for (const name of graph.order)
-      if (
-        name === 'commonmark-plugin' ||
-        name === 'extensions-plugin' ||
-        name === 'traq-plugin'
-      )
-        await generateContracts(name, outputRoot)
-      else if (name === 'sdk') await generateSdk(undefined, outputRoot)
-    return
-  }
-  if (
-    packageName === 'commonmark-plugin' ||
-    packageName === 'extensions-plugin' ||
-    packageName === 'traq-plugin'
-  ) {
-    await generateContracts(packageName, outputRoot)
-    return
-  }
-  if (packageName === 'sdk') {
-    await generateSdk(input ? path.resolve(input) : undefined, outputRoot)
-    return
-  }
-  throw new Error(
-    'usage: bun tools/contracts/generate.ts [commonmark-plugin|extensions-plugin|traq-plugin|sdk] [contracts-dir]'
-  )
-}
-
-export async function main() {
-  const [packageName, input, ...rest] = Bun.argv.slice(2)
-  if (
-    rest.length ||
-    (packageName !== undefined &&
-      packageName !== 'commonmark-plugin' &&
-      packageName !== 'extensions-plugin' &&
-      packageName !== 'traq-plugin' &&
-      packageName !== 'sdk') ||
-    (input !== undefined && packageName !== 'sdk')
-  )
-    throw new Error(
-      'usage: bun tools/contracts/generate.ts [commonmark-plugin|extensions-plugin|traq-plugin|sdk] [contracts-dir]'
-    )
-  await generateBindings(packageName, input)
-}
-
-if (Bun.main === Bun.fileURLToPath(import.meta.url)) await main()

@@ -2,10 +2,10 @@ import {
   type ContractModule,
   type ContractShape,
   normalizeContracts
-} from './ir.ts'
-import type { RawSchema } from './schema.ts'
-import { quoted as q, typeName } from './schema.ts'
-import type { NodeStructure } from './structure.ts'
+} from '../model/ir.ts'
+import type { RawSchema } from '../model/schema.ts'
+import { quoted as q, typeName } from '../model/schema.ts'
+import type { NodeStructure } from '../model/structure.ts'
 
 function validator(s: ContractShape): string {
   if (s.kind === 'reference') return `validate${s.name}`

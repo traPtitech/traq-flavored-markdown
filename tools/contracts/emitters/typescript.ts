@@ -3,8 +3,8 @@ import {
   type ContractModule,
   type ContractShape,
   normalizeContracts
-} from './ir.ts'
-import { type RawSchema, quoted as q } from './schema.ts'
+} from '../model/ir.ts'
+import { type RawSchema, quoted as q } from '../model/schema.ts'
 
 function description(text?: string, indent = ''): string {
   if (!text) return ''
