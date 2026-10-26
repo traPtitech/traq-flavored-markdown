@@ -33,6 +33,7 @@ fn links_cannot_contain_other_links() {
     for source in [
         "[<https://inner.example>](https://outer.example)",
         "[<a@example.com>](https://outer.example)",
+        "[<trap.jp>](https://outer.example)",
         "[outer [inner](/inner)](/outer)",
     ] {
         let document = parser.parse_inline(source).unwrap();
@@ -101,7 +102,7 @@ fn destinations_are_encoded_without_losing_source_notation() {
     for source in [
         "[x](<https://example.com/日本>)",
         "<https://example.com/日本>",
-        "https://example.com/日本",
+        "<example.com/日本>",
     ] {
         let document = parser.parse_inline(source).unwrap();
         assert_eq!(document.source, source);
@@ -110,6 +111,32 @@ fn destinations_are_encoded_without_losing_source_notation() {
             "https://example.com/%E6%97%A5%E6%9C%AC"
         );
     }
+}
+
+#[test]
+fn scheme_less_angle_links_are_a_traq_extension() {
+    let source = "<trap.jp> <README.md> <//trap.jp>";
+    let commonmark = presets::commonmark::parser().parse_inline(source).unwrap();
+    assert!(
+        commonmark
+            .children
+            .iter()
+            .all(|node| node.payload::<Link>().is_none())
+    );
+    let traq = presets::traq::v1::parser().parse_inline(source).unwrap();
+    let links: Vec<_> = traq
+        .children
+        .iter()
+        .filter_map(|node| node.payload::<Link>())
+        .collect();
+    assert_eq!(
+        links
+            .iter()
+            .map(|link| link.destination.as_str())
+            .collect::<Vec<_>>(),
+        ["https://trap.jp", "https://readme.md", "https://trap.jp"]
+    );
+    assert!(links.iter().all(|link| link.form == LinkForm::Autolink));
 }
 
 #[test]

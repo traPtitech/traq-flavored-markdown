@@ -17,7 +17,8 @@ fn extractor_consumes_ast_and_preserves_message_metadata() {
     let user = format!(r#"!{{"type":"user","id":"{id}","raw":"@alice"}}"#);
     let file = format!(r#"!{{"type":"file","id":"{id}"}}"#);
     let citation = format!(r#"!{{"type":"message","id":"{id}"}}"#);
-    let source = format!("**{user}**\n{file} !!{citation}!!\nhttps://q.example.test/files/{id}\n");
+    let source =
+        format!("**{user}**\n{file} !!{citation}!!\n<https://q.example.test/files/{id}>\n");
     let document = parse(&source);
     let result = extractor.extract(&document).unwrap();
     assert_eq!(result.references.mentions, [id]);

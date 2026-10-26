@@ -7,7 +7,8 @@ The spoiler scanner follows @traptitech/markdown-it-spoiler 1.1.6.
 The inline math scanner follows @traptitech/markdown-it-katex 3.6.0.
 Block parsing, reference handling, and HTML recognition follow markdown-it 14.3.0.
 V1 stamp recognition follows @traptitech/traq-markdown-it.
-URL recognition/normalization and the frozen TLD set follow linkify-it 5 and markdown-it 14.3.0.
+URL recognition/normalization follow linkify-it 5 and markdown-it 14.3.0.
+The previous bare-link recognizer and its frozen TLD set have been removed.
 
 Copyright (c) 2014 Vitaly Puzrin, Alex Kocharin.
 Copyright (c) 2014-2015 Vitaly Puzrin, Alex Kocharin.

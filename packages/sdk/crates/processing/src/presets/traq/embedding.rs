@@ -99,7 +99,65 @@ pub(crate) fn finish(
 ) -> crate::Result<ReferenceEmbeddingPlan> {
     result.unembedded_text = crate::edits::apply(source, edits)?;
     result.candidates.sort_by_key(|candidate| candidate.start);
+    exclude_url_candidates(source, &mut result.candidates);
     Ok(result)
+}
+
+// Bare URLs are ordinary Markdown text, but replacing their fragments or path
+// components with references would corrupt them. Inspect the original tokens
+// so this protection also covers URLs split across formatting nodes.
+fn exclude_url_candidates(source: &str, candidates: &mut Vec<ReferenceEmbeddingCandidate>) {
+    if candidates.is_empty() {
+        return;
+    }
+    let mut offset = 0;
+    let mut urls = Vec::new();
+    for token in source.split_inclusive(char::is_whitespace) {
+        let value = token
+            .trim_end_matches(char::is_whitespace)
+            .trim_start_matches(['(', '[', '{', '<', '>', '\'', '"', '*', '_', '~', '!', '=']);
+        if let Some(start) = url_start(value) {
+            let base = offset + token.find(value).unwrap();
+            let end = value[start..]
+                .find(['<', '>'])
+                .map_or(value.len(), |end| start + end);
+            urls.push(base + start..base + end);
+        }
+        offset += token.len();
+    }
+    let mut urls = urls.into_iter().peekable();
+    candidates.retain(|candidate| {
+        let position = candidate.start as usize;
+        while urls.peek().is_some_and(|range| range.end <= position) {
+            urls.next();
+        }
+        urls.peek().is_none_or(|range| !range.contains(&position))
+    });
+}
+
+fn url_start(value: &str) -> Option<usize> {
+    for (position, _) in value.char_indices() {
+        if ["http://", "https://", "ftp://"].iter().any(|prefix| {
+            value
+                .get(position..position + prefix.len())
+                .is_some_and(|start| start.eq_ignore_ascii_case(prefix))
+        }) && value[..position]
+            .chars()
+            .next_back()
+            .is_none_or(|ch| !ch.is_ascii_alphanumeric() && !"+-".contains(ch))
+        {
+            return Some(position);
+        }
+    }
+    let value = value.strip_prefix("//").unwrap_or(value);
+    let end = value.find(['/', '?', '#'])?;
+    let authority = &value[..end];
+    let host = authority.split(':').next().unwrap();
+    (host.contains('.')
+        && host.split('.').all(|part| {
+            !part.is_empty() && part.chars().all(|ch| ch.is_alphanumeric() || ch == '-')
+        }))
+    .then_some(0)
 }
 
 fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmbeddingCandidate>) {

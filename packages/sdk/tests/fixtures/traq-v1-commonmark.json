@@ -68574,45 +68574,11 @@
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 1,
+                    "end": 25,
                     "start": 0
                   },
                   "data": {
-                    "value": "<"
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 20,
-                    "start": 1
-                  },
-                  "data": {
-                    "destination": "https://foo.bar/baz",
-                    "form": "linkify",
-                    "title": null
-                  },
-                  "children": [
-                    {
-                      "kind": "commonmark.text",
-                      "span": {
-                        "end": 20,
-                        "start": 1
-                      },
-                      "data": {
-                        "value": "https://foo.bar/baz"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 25,
-                    "start": 20
-                  },
-                  "data": {
-                    "value": " bim>"
+                    "value": "<https://foo.bar/baz bim>"
                   }
                 }
               ]
@@ -68627,45 +68593,11 @@
             {
               "kind": "commonmark.text",
               "span": {
-                "end": 1,
+                "end": 25,
                 "start": 0
               },
               "data": {
-                "value": "<"
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 20,
-                "start": 1
-              },
-              "data": {
-                "destination": "https://foo.bar/baz",
-                "form": "linkify",
-                "title": null
-              },
-              "children": [
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 20,
-                    "start": 1
-                  },
-                  "data": {
-                    "value": "https://foo.bar/baz"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "commonmark.text",
-              "span": {
-                "end": 25,
-                "start": 20
-              },
-              "data": {
-                "value": " bim>"
+                "value": "<https://foo.bar/baz bim>"
               }
             },
             {
@@ -69068,45 +69000,11 @@
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 2,
+                    "end": 19,
                     "start": 0
                   },
                   "data": {
-                    "value": "< "
-                  }
-                },
-                {
-                  "kind": "commonmark.link",
-                  "span": {
-                    "end": 17,
-                    "start": 2
-                  },
-                  "data": {
-                    "destination": "https://foo.bar",
-                    "form": "linkify",
-                    "title": null
-                  },
-                  "children": [
-                    {
-                      "kind": "commonmark.text",
-                      "span": {
-                        "end": 17,
-                        "start": 2
-                      },
-                      "data": {
-                        "value": "https://foo.bar"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 19,
-                    "start": 17
-                  },
-                  "data": {
-                    "value": " >"
+                    "value": "< https://foo.bar >"
                   }
                 }
               ]
@@ -69121,45 +69019,11 @@
             {
               "kind": "commonmark.text",
               "span": {
-                "end": 2,
+                "end": 19,
                 "start": 0
               },
               "data": {
-                "value": "< "
-              }
-            },
-            {
-              "kind": "commonmark.link",
-              "span": {
-                "end": 17,
-                "start": 2
-              },
-              "data": {
-                "destination": "https://foo.bar",
-                "form": "linkify",
-                "title": null
-              },
-              "children": [
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 17,
-                    "start": 2
-                  },
-                  "data": {
-                    "value": "https://foo.bar"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "commonmark.text",
-              "span": {
-                "end": 19,
-                "start": 17
-              },
-              "data": {
-                "value": " >"
+                "value": "< https://foo.bar >"
               }
             },
             {
@@ -69248,14 +69112,28 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.text",
+                  "kind": "commonmark.link",
                   "span": {
                     "end": 13,
                     "start": 0
                   },
                   "data": {
-                    "value": "<foo.bar.baz>"
-                  }
+                    "destination": "https://foo.bar.baz",
+                    "form": "autolink",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "end": 12,
+                        "start": 1
+                      },
+                      "data": {
+                        "value": "foo.bar.baz"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -69267,14 +69145,28 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.text",
+              "kind": "commonmark.link",
               "span": {
                 "end": 13,
                 "start": 0
               },
               "data": {
-                "value": "<foo.bar.baz>"
-              }
+                "destination": "https://foo.bar.baz",
+                "form": "autolink",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "end": 12,
+                    "start": 1
+                  },
+                  "data": {
+                    "value": "foo.bar.baz"
+                  }
+                }
+              ]
             },
             {
               "kind": "commonmark.softbreak",
@@ -69305,28 +69197,14 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.link",
+                  "kind": "commonmark.text",
                   "span": {
                     "end": 19,
                     "start": 0
                   },
                   "data": {
-                    "destination": "https://example.com",
-                    "form": "linkify",
-                    "title": null
-                  },
-                  "children": [
-                    {
-                      "kind": "commonmark.text",
-                      "span": {
-                        "end": 19,
-                        "start": 0
-                      },
-                      "data": {
-                        "value": "https://example.com"
-                      }
-                    }
-                  ]
+                    "value": "https://example.com"
+                  }
                 }
               ]
             }
@@ -69338,28 +69216,14 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.link",
+              "kind": "commonmark.text",
               "span": {
                 "end": 19,
                 "start": 0
               },
               "data": {
-                "destination": "https://example.com",
-                "form": "linkify",
-                "title": null
-              },
-              "children": [
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 19,
-                    "start": 0
-                  },
-                  "data": {
-                    "value": "https://example.com"
-                  }
-                }
-              ]
+                "value": "https://example.com"
+              }
             },
             {
               "kind": "commonmark.softbreak",
@@ -69390,28 +69254,14 @@
               "data": {},
               "children": [
                 {
-                  "kind": "commonmark.link",
+                  "kind": "commonmark.text",
                   "span": {
                     "end": 19,
                     "start": 0
                   },
                   "data": {
-                    "destination": "mailto:foo@bar.example.com",
-                    "form": "linkify",
-                    "title": null
-                  },
-                  "children": [
-                    {
-                      "kind": "commonmark.text",
-                      "span": {
-                        "end": 19,
-                        "start": 0
-                      },
-                      "data": {
-                        "value": "foo@bar.example.com"
-                      }
-                    }
-                  ]
+                    "value": "foo@bar.example.com"
+                  }
                 }
               ]
             }
@@ -69423,28 +69273,14 @@
         "Ok": {
           "children": [
             {
-              "kind": "commonmark.link",
+              "kind": "commonmark.text",
               "span": {
                 "end": 19,
                 "start": 0
               },
               "data": {
-                "destination": "mailto:foo@bar.example.com",
-                "form": "linkify",
-                "title": null
-              },
-              "children": [
-                {
-                  "kind": "commonmark.text",
-                  "span": {
-                    "end": 19,
-                    "start": 0
-                  },
-                  "data": {
-                    "value": "foo@bar.example.com"
-                  }
-                }
-              ]
+                "value": "foo@bar.example.com"
+              }
             },
             {
               "kind": "commonmark.softbreak",

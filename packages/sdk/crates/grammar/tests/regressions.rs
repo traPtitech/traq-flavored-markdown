@@ -35,7 +35,7 @@ fn table_pipes_follow_backslash_parity() {
 
 #[test]
 fn many_short_links_fit_the_default_work_budget() {
-    let source = "http://x ".repeat(1_000);
+    let source = "<trap.jp> ".repeat(1_000);
     let document = presets::traq::v1::parser().parse_inline(&source).unwrap();
     assert_eq!(
         document

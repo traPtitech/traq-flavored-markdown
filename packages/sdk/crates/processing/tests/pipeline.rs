@@ -61,7 +61,7 @@ fn one_ast_supports_plain_text_and_reference_collection() {
 fn preset_configuration_is_independent_and_bounded() {
     let parser = traq_markdown_grammar::presets::traq::v1::parser();
     let source = "https://q.example.test/files/00000000-0000-0000-0000-000000000001";
-    let document = parser.parse(source).unwrap();
+    let document = parser.parse(&format!("<{source}>")).unwrap();
     let special = Renderer::new(&traq::plain_text::preset("https://q.example.test").unwrap());
     let ordinary = Renderer::new(&traq::plain_text::preset("").unwrap());
     assert_eq!(special.render(&document).unwrap().trim(), "[添付ファイル]");
