@@ -1,14 +1,17 @@
 use crate::Options;
 use markdown_ast::Node;
 use markdown_commonmark_contracts::*;
-use markdown_renderer::{Context, Output, Plugin, Result};
+use markdown_renderer::Context;
+use markdown_renderer::Output;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::Result;
 
 fn block<T>(_: &T, nodes: &[Node], ctx: &Context<'_>, output: &mut Output<'_>) -> Result<()> {
     ctx.children(nodes, output)?;
     output.push("\n")
 }
 
-pub(crate) fn register(renderer: &mut Plugin, options: Options) -> Result<()> {
+pub(crate) fn register(renderer: &mut RenderPlugin, options: Options) -> Result<()> {
     renderer.on::<Text>(|v, _, _, output| output.push(&v.value))?;
     renderer.on::<Paragraph>(block)?;
     renderer.on::<Heading>(block)?;

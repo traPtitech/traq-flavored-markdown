@@ -1,22 +1,36 @@
-//! Extension contracts retain the legacy `generic.*` wire namespace.
-
-use markdown_definitions::implement_wire_kinds;
-
+//! Plugin-owned features and payload identities share one catalog.
 #[macro_export]
-macro_rules! node_catalog {
-    ($consumer:ident) => {
-        $consumer! {
+macro_rules! feature_catalog {
+    ($consumer:path $(, $argument:ident)*) => {
+        $consumer! { $($argument;)*
             "extensions";
-            $crate::InlineMath => "generic.inline_math",
-            $crate::BlockMath => "generic.block_math",
-            $crate::Table => "generic.table",
-            $crate::HeaderRow => "generic.table_header_row",
-            $crate::Row => "generic.row",
-            $crate::Cell => "generic.cell",
-            $crate::Mark => "generic.mark",
-            $crate::Strikethrough => "generic.strikethrough",
+            Math => &$crate::declarations().math; [
+                $crate::InlineMath => "extensions.inline_math",
+                $crate::BlockMath => "extensions.block_math",
+            ],
+            Table => &$crate::declarations().table; [
+                $crate::Table => "extensions.table",
+                $crate::HeaderRow => "extensions.table_header_row",
+                $crate::Row => "extensions.row",
+                $crate::Cell => "extensions.cell",
+            ],
+            Mark => &$crate::declarations().mark; [
+                $crate::Mark => "extensions.mark",
+            ],
+            Strikethrough => &$crate::declarations().strikethrough; [
+                $crate::Strikethrough => "extensions.strikethrough",
+            ],
+            Linkify => &$crate::declarations().linkify; [
+
+            ],
         }
     };
 }
 
-node_catalog!(implement_wire_kinds);
+#[macro_export]
+macro_rules! node_catalog {
+    ($consumer:ident) => {
+        $crate::feature_catalog!($crate::__nodes_from_features, $consumer);
+    };
+}
+feature_catalog!(markdown_definitions::define_feature_contracts);

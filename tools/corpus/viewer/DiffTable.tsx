@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react'
 
-import type { DifferenceRow, OutputKind } from '../report-schema.ts'
+import type { Outcome } from '../protocol/comparison.ts'
+import type { DifferenceRow } from '../protocol/report.ts'
 import { outputDiff } from './data/diff.ts'
-import { renderHTML } from './preview/html.ts'
+import { createInertPreviewFragment } from './preview/html.ts'
 import type { OutputView } from './state.ts'
 
 type DiffTableProps = {
@@ -27,14 +28,14 @@ export default function DiffTable({ rows, outputView }: DiffTableProps) {
       </thead>
       <tbody id="rows">
         {rows.map(row => (
-          <tr key={row.index}>
+          <tr key={`${row.profile}:${row.index}`}>
             <SourceCell row={row} />
             {outputView === 'raw' ? (
               <RawDiffCells row={row} />
             ) : (
               <>
-                <RenderCell text={row.before} kind={row.beforeType} />
-                <RenderCell text={row.after} kind={row.afterType} />
+                <RenderCell outcome={row.before} />
+                <RenderCell outcome={row.after} />
               </>
             )}
           </tr>
@@ -60,13 +61,18 @@ function SourceCell({ row }: { row: DifferenceRow }) {
   )
 }
 
-function RenderCell({ text, kind }: { text: string; kind: OutputKind }) {
+function RenderCell({ outcome }: { outcome: Outcome }) {
   return (
     <td>
-      {kind === 'html' ? (
-        <HtmlPreview html={text} />
+      {outcome.kind === 'html' ? (
+        <HtmlPreview html={outcome.value} />
       ) : (
-        <pre className="cell-content plain-text">{text}</pre>
+        <pre
+          className={`cell-content plain-text${outcome.kind === 'error' ? ' output-error' : ''}`}
+        >
+          {outcome.kind === 'error' && <strong>実行エラー: </strong>}
+          {outcome.value}
+        </pre>
       )}
     </td>
   )
@@ -75,35 +81,48 @@ function RenderCell({ text, kind }: { text: string; kind: OutputKind }) {
 function HtmlPreview({ html }: { html: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    ref.current?.replaceChildren(renderHTML(html))
+    ref.current?.replaceChildren(createInertPreviewFragment(html))
   }, [html])
   return <div className="cell-content markdown-body" ref={ref} />
 }
 
 function RawDiffCells({ row }: { row: DifferenceRow }) {
-  const { parts, coarse } = outputDiff(row.before, row.after)
+  const { parts, coarse } = outputDiff(row.before.value, row.after.value)
 
   const title = coarse
     ? '長い出力のため、共通の先頭・末尾を除いた変更範囲をまとめて強調しています。文字列は省略していません。'
     : undefined
 
   const renderSide = (isAfter: boolean) => {
+    const outcome = isAfter ? row.after : row.before
     return (
-      <pre className="cell-content raw-html" title={title}>
-        {parts.map((part, i) => {
-          const op = part[0]
-          const value = part[1]
-          if (!value) return null
-          if (op === (isAfter ? -1 : 1)) return null
+      <>
+        {(outcome.kind === 'error' || row.before.kind !== row.after.kind) && (
+          <strong
+            className={outcome.kind === 'error' ? 'output-error' : undefined}
+          >
+            {outcome.kind === 'error' ? '実行エラー' : outcome.kind}
+          </strong>
+        )}
+        <pre className="cell-content raw-html" title={title}>
+          {parts.map((part, i) => {
+            const op = part[0]
+            const value = part[1]
+            if (!value) return null
+            if (op === (isAfter ? -1 : 1)) return null
 
-          if (op === 0) return <span key={i}>{value}</span>
-          return (
-            <mark key={i} className={op === -1 ? 'diff-removed' : 'diff-added'}>
-              {value}
-            </mark>
-          )
-        })}
-      </pre>
+            if (op === 0) return <span key={i}>{value}</span>
+            return (
+              <mark
+                key={i}
+                className={op === -1 ? 'diff-removed' : 'diff-added'}
+              >
+                {value}
+              </mark>
+            )
+          })}
+        </pre>
+      </>
     )
   }
 

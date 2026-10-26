@@ -1,22 +1,36 @@
-import type { DifferenceRow, Mode, OutputKind } from '../report-schema.ts'
-import { defaultWarmups } from '../shared/comparison.ts'
-import type { SourceRecord } from '../shared/protocol.ts'
+import {
+  type DifferenceRow,
+  type Outcome,
+  type ProfileId,
+  type ProfileResult,
+  type SourceRecord,
+  type Timing,
+  defaultWarmups,
+  isFailure,
+  outcomesEqual
+} from '../protocol/comparison.ts'
 
 export type AdapterOutput = {
-  kind: Exclude<OutputKind, 'error'>
-  value: string
+  outcome: Exclude<Outcome, { kind: 'error' }>
   embeddings?: unknown
 }
 export type Adapter = (source: string) => AdapterOutput | Promise<AdapterOutput>
-export type Profile = { mode: Mode; before: Adapter; after: Adapter }
-type Measured = {
-  kind: OutputKind
-  value: string
-  embeddings?: unknown
-  ms: number
+export type Profile = { id: ProfileId; before: Adapter; after: Adapter }
+type Measured = { outcome: Outcome; embeddings?: unknown; ms: number }
+export type EmbeddingDifference = {
+  runId: string
+  index: number
+  profile: ProfileId
+  source: string
+  before: unknown
+  after: unknown
 }
+type Measurement = Omit<
+  ProfileResult,
+  'messages' | 'initialization' | 'actualWarmups'
+>
 
-export function summarize(values: readonly number[]) {
+export function summarize(values: readonly number[]): Timing {
   const sorted = [...values].sort((a, b) => a - b)
   const totalMs = sorted.reduce((sum, value) => sum + value, 0)
   const percentile = (p: number) =>
@@ -43,15 +57,18 @@ async function measure(
     return { ...value, ms: now() - start }
   } catch (error) {
     return {
-      kind: 'error',
-      value: error instanceof Error ? error.message : String(error),
+      outcome: {
+        kind: 'error',
+        value: error instanceof Error ? error.message : String(error)
+      },
       ms: now() - start
     }
   }
 }
 
-/** Input, adapters, clock, and sinks are ports; comparison policy needs no Git/network. */
+/** Adapters retain language-local measurement; storage and process startup stay outside. */
 export async function compareSources({
+  runId,
   input,
   profiles,
   max = Infinity,
@@ -61,24 +78,31 @@ export async function compareSources({
   progress = () => undefined,
   now = () => performance.now()
 }: {
+  runId: string
   input: () => AsyncIterable<SourceRecord>
   profiles: readonly Profile[]
   max?: number
   warmups?: number
   difference: (row: DifferenceRow) => void | Promise<void>
-  embeddingDifference?: (row: {
-    index: number
-    mode: Mode
-    source: string
-    before: unknown
-    after: unknown
-  }) => void | Promise<void>
+  embeddingDifference?: (row: EmbeddingDifference) => void | Promise<void>
   progress?: (messages: number) => void
   now?: () => number
 }) {
+  if (
+    !runId ||
+    !profiles.length ||
+    new Set(profiles.map(profile => profile.id)).size !== profiles.length
+  )
+    throw new Error('Comparison requires a run ID and unique profiles')
+  if (
+    (max !== Infinity && (!Number.isSafeInteger(max) || max <= 0)) ||
+    !Number.isSafeInteger(warmups) ||
+    warmups < 0
+  )
+    throw new Error('Invalid measurement bounds')
   const stats = new Map(
     profiles.map(profile => [
-      profile.mode,
+      profile.id,
       {
         differences: 0,
         embeddingDifferences: 0,
@@ -89,14 +113,14 @@ export async function compareSources({
       }
     ])
   )
-  let warmed = 0
+  let actualWarmups = 0
   if (warmups > 0)
     for await (const { source } of input()) {
       for (const profile of profiles) {
         await measure(profile.before, source, now)
         await measure(profile.after, source, now)
       }
-      if (++warmed >= warmups) break
+      if (++actualWarmups >= warmups) break
     }
   const start = now()
   let messages = 0
@@ -111,54 +135,56 @@ export async function compareSources({
         after = await measure(profile.after, source, now)
         before = await measure(profile.before, source, now)
       }
-      const current = stats.get(profile.mode)!
+      const current = stats.get(profile.id)!
       current.before.push(before.ms)
       current.after.push(after.ms)
-      current.beforeErrors += Number(before.kind === 'error')
-      current.afterErrors += Number(after.kind === 'error')
+      current.beforeErrors += Number(isFailure(before.outcome))
+      current.afterErrors += Number(isFailure(after.outcome))
       if (
-        before.kind !== 'error' &&
-        after.kind !== 'error' &&
+        !isFailure(before.outcome) &&
+        !isFailure(after.outcome) &&
         JSON.stringify(before.embeddings) !== JSON.stringify(after.embeddings)
       ) {
         current.embeddingDifferences++
         await embeddingDifference({
+          runId,
           index: messages,
-          mode: profile.mode,
+          profile: profile.id,
           source,
           before: before.embeddings,
           after: after.embeddings
         })
       }
-      if (before.kind !== after.kind || before.value !== after.value) {
+      if (!outcomesEqual(before.outcome, after.outcome)) {
         current.differences++
         await difference({
+          runId,
           index: messages,
-          mode: profile.mode,
+          profile: profile.id,
           source,
-          before: before.value,
-          after: after.value,
-          beforeType: before.kind,
-          afterType: after.kind,
-          error: before.kind === 'error' || after.kind === 'error'
+          before: before.outcome,
+          after: after.outcome
         })
       }
     }
     messages++
     progress(messages)
+    if (messages >= max) break
   }
+  const results: Partial<Record<ProfileId, Measurement>> = Object.fromEntries(
+    [...stats].map(([profile, value]) => [
+      profile,
+      {
+        ...value,
+        before: summarize(value.before),
+        after: summarize(value.after)
+      }
+    ])
+  )
   return {
     messages,
+    actualWarmups,
     wallSeconds: (now() - start) / 1000,
-    modes: Object.fromEntries(
-      [...stats].map(([mode, value]) => [
-        mode,
-        {
-          ...value,
-          before: summarize(value.before),
-          after: summarize(value.after)
-        }
-      ])
-    )
+    results
   }
 }

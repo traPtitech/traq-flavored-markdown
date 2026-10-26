@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
 import type { ReferenceEmbeddingCandidate } from '../../src/generated/processing.js'
-import { embedReferences } from '../../src/messages/reference-embedding.js'
+import { embedReferences } from '../../src/traq/messages/reference-embedding.js'
 
 const candidate: ReferenceEmbeddingCandidate = {
   start: 8,

@@ -1,5 +1,5 @@
 use markdown_ast::{Node, Span};
-use markdown_trap_contracts::{
+use markdown_traq_contracts::{
     BlankLine, Embedding, EmbeddingKind, Reference, ReferenceKind, Spoiler,
 };
 

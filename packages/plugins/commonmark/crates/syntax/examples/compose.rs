@@ -1,5 +1,6 @@
 use markdown_commonmark::{Syntax, html};
-use markdown_parser::{GrammarBuilder, Parser};
+use markdown_parser::GrammarBuilder;
+use markdown_parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let syntax = Syntax::default();

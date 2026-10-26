@@ -9,7 +9,7 @@ import (
 // PlainTextRenderer renders an AST using the traQ PlainText policy owned by Rust.
 type PlainTextRenderer struct{ instance *binding.Instance }
 
-func (r *Runtime) NewPlainTextRenderer(ctx context.Context, options RendererOptions) (*PlainTextRenderer, error) {
+func (r *Runtime) NewPlainTextRenderer(ctx context.Context, options PlainTextOptions) (*PlainTextRenderer, error) {
 	instance, err := r.configure(ctx, operationConfigureRenderer, options, options.Origin)
 	if err != nil {
 		return nil, err
@@ -19,16 +19,7 @@ func (r *Runtime) NewPlainTextRenderer(ctx context.Context, options RendererOpti
 }
 
 func (r *PlainTextRenderer) Render(ctx context.Context, document *Document) (string, error) {
-	validated, err := ValidateDocument(document)
-	if err != nil {
-		return "", binding.DocumentError(err)
-	}
-	return r.RenderValidated(ctx, validated)
-}
-
-// RenderValidated reuses an immutable document snapshot.
-func (r *PlainTextRenderer) RenderValidated(ctx context.Context, document *ValidatedDocument) (string, error) {
-	if document == nil {
+	if !document.IsValid() {
 		return "", &Error{Code: "invalid_document", Message: "document is required"}
 	}
 

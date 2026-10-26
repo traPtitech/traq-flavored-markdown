@@ -1,5 +1,5 @@
 use markdown_ast::{
-    Document, Node, NodeData, NodeRole, Span, ValidatedDocument, ValidationErrorKind as Error,
+    DocumentView, MutableDocument, Node, NodeData, NodeRole, Span, ValidationErrorKind as Error,
     ValidationLimits,
 };
 
@@ -32,7 +32,7 @@ fn leaf(start: usize, end: usize) -> Node {
 
 #[test]
 fn whole_document_validation_counts_descendants_and_observes_edits() {
-    let mut doc = Document {
+    let mut doc = MutableDocument {
         source: "猫x".into(),
         children: vec![Node::new(
             Span { start: 0, end: 4 },
@@ -48,7 +48,12 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
         depth: 2,
     };
 
-    assert_eq!(doc.validate(limits).map_err(|error| error.kind), Ok(3));
+    assert_eq!(
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
+        Ok(3)
+    );
 
     for (limits, error) in [
         (
@@ -61,20 +66,29 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
         (ValidationLimits { nodes: 2, ..limits }, Error::Nodes),
         (ValidationLimits { depth: 1, ..limits }, Error::Depth),
     ] {
-        assert_eq!(doc.validate(limits).map_err(|error| error.kind), Err(error));
+        assert_eq!(
+            doc.validate(limits)
+                .map(|view| view.node_count())
+                .map_err(|error| error.kind),
+            Err(error)
+        );
     }
 
-    doc.children[0].children[1].get_mut::<Data>().unwrap().0 = false;
+    doc.children[0].children[1].payload_mut::<Data>().unwrap().0 = false;
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::InvalidNode)
     );
-    doc.children[0].children[1].get_mut::<Data>().unwrap().0 = true;
+    doc.children[0].children[1].payload_mut::<Data>().unwrap().0 = true;
 
     for (start, end) in [(1, 3), (3, 2), (0, 5), (0, usize::MAX)] {
         doc.children[0].children[1].span = Span { start, end };
         assert_eq!(
-            doc.validate(limits).map_err(|error| error.kind),
+            doc.validate(limits)
+                .map(|view| view.node_count())
+                .map_err(|error| error.kind),
             Err(Error::InvalidSpan)
         );
     }
@@ -83,7 +97,9 @@ fn whole_document_validation_counts_descendants_and_observes_edits() {
     doc.children[0].children[1] = leaf(3, 4);
 
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::InvalidSpan)
     );
 }
@@ -97,21 +113,29 @@ fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
         depth: 0,
     };
 
-    let mut doc = Document {
+    let mut doc = MutableDocument {
         source: String::new(),
         children: vec![],
     };
 
-    assert_eq!(doc.validate(limits).map_err(|error| error.kind), Ok(0));
+    assert_eq!(
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
+        Ok(0)
+    );
     doc.children.push(leaf(0, 0));
 
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::Nodes)
     );
 
     assert_eq!(
         doc.validate(ValidationLimits { nodes: 1, ..limits })
+            .map(|view| view.node_count())
             .map_err(|error| error.kind),
         Err(Error::Depth)
     );
@@ -136,29 +160,39 @@ fn empty_trees_allow_zero_limits_and_deep_trees_do_not_recurse() {
             nodes: 128,
             source_bytes: 0,
             payload_bytes: 0,
-        }),
+        })
+        .map(|view| view.node_count()),
         Ok(128)
     );
 }
 
 #[test]
 fn siblings_must_follow_source_order_without_overlapping() {
-    let mut doc = Document {
+    let mut doc = MutableDocument {
         source: "abcdef".into(),
         children: vec![leaf(0, 2), leaf(2, 4), leaf(4, 6)],
     };
     let limits = ValidationLimits::default();
-    assert_eq!(doc.validate(limits).map_err(|error| error.kind), Ok(3));
+    assert_eq!(
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
+        Ok(3)
+    );
 
     doc.children[1].span = Span { start: 1, end: 4 };
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::InvalidSpan)
     );
 
     doc.children[1].span = Span { start: 5, end: 6 };
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::InvalidSpan)
     );
 
@@ -168,14 +202,16 @@ fn siblings_must_follow_source_order_without_overlapping() {
         vec![leaf(1, 3), leaf(2, 4)],
     )];
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::InvalidSpan)
     );
 }
 
 #[test]
 fn validated_borrow_can_use_the_producers_custom_limits() {
-    let doc = Document {
+    let doc = MutableDocument {
         source: "x".repeat(ValidationLimits::default().source_bytes + 1),
         children: vec![],
     };
@@ -185,17 +221,15 @@ fn validated_borrow_can_use_the_producers_custom_limits() {
     };
 
     assert!(matches!(
-        ValidatedDocument::new(&doc).map_err(|error| error.kind),
+        DocumentView::new(&doc).map_err(|error| error.kind),
         Err(Error::SourceBytes)
     ));
     assert_eq!(
-        ValidatedDocument::with_limits(&doc, limits)
-            .unwrap()
-            .document(),
+        DocumentView::with_limits(&doc, limits).unwrap().document(),
         &doc
     );
     assert!(matches!(
-        ValidatedDocument::with_limits(
+        DocumentView::with_limits(
             &doc,
             ValidationLimits {
                 source_bytes: doc.source.len() - 1,
@@ -224,7 +258,7 @@ impl NodeData for Owned {
 
 #[test]
 fn payload_limit_counts_native_node_data_before_consumption() {
-    let doc = Document {
+    let doc = MutableDocument {
         source: String::new(),
         children: vec![
             Node::leaf(Span { start: 0, end: 0 }, Owned("abc".into())),
@@ -236,18 +270,21 @@ fn payload_limit_counts_native_node_data_before_consumption() {
         ..ValidationLimits::default()
     };
     assert_eq!(
-        doc.validate(limits).map_err(|error| error.kind),
+        doc.validate(limits)
+            .map(|view| view.node_count())
+            .map_err(|error| error.kind),
         Err(Error::PayloadBytes)
     );
     assert_eq!(
         doc.validate(ValidationLimits {
             payload_bytes: 6,
             ..limits
-        }),
+        })
+        .map(|view| view.node_count()),
         Ok(2)
     );
 
-    let huge = Document {
+    let huge = MutableDocument {
         source: String::new(),
         children: vec![Node::leaf(
             Span { start: 0, end: 0 },
@@ -255,14 +292,14 @@ fn payload_limit_counts_native_node_data_before_consumption() {
         )],
     };
     assert!(matches!(
-        ValidatedDocument::new(&huge).map_err(|error| error.kind),
+        DocumentView::new(&huge).map_err(|error| error.kind),
         Err(Error::PayloadBytes)
     ));
 }
 
 #[test]
 fn diagnostics_and_scoped_walk_share_tree_coordinates() {
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "abcd".into(),
         children: vec![
             Node::new(
@@ -273,7 +310,7 @@ fn diagnostics_and_scoped_walk_share_tree_coordinates() {
             leaf(3, 4),
         ],
     };
-    let validated = ValidatedDocument::new(&document).unwrap();
+    let validated = DocumentView::new(&document).unwrap();
     assert_eq!(
         validated
             .walk()
@@ -291,13 +328,60 @@ fn diagnostics_and_scoped_walk_share_tree_coordinates() {
     assert_eq!(seen, [(0, 0), (0, 1), (1, 1), (3, 0)]);
 
     document.children[0].children[1]
-        .get_mut::<Data>()
+        .payload_mut::<Data>()
         .unwrap()
         .0 = false;
-    let error = ValidatedDocument::new(&document).unwrap_err();
+    let error = DocumentView::new(&document).unwrap_err();
     assert_eq!(error.kind, Error::InvalidNode);
     assert_eq!(error.path, [0, 1]);
     assert_eq!(error.span, Some(Span { start: 1, end: 3 }));
     assert_eq!(error.payload_type, Some(std::any::type_name::<Data>()));
     assert_eq!(error.code(), "invalid_node");
+}
+
+#[test]
+fn checked_owner_reuses_validation_and_editing_discards_the_proof() {
+    use markdown_ast::DocumentInput;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    #[derive(Debug, Clone)]
+    struct Counted(Arc<AtomicUsize>);
+    impl PartialEq for Counted {
+        fn eq(&self, other: &Self) -> bool {
+            Arc::ptr_eq(&self.0, &other.0)
+        }
+    }
+    impl NodeData for Counted {
+        fn payload_bytes(&self) -> usize {
+            0
+        }
+        fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
+            self.0.fetch_add(1, Ordering::Relaxed);
+            Ok(())
+        }
+    }
+    let calls = Arc::new(AtomicUsize::new(0));
+    let document = MutableDocument {
+        source: "x".into(),
+        children: vec![Node::leaf(
+            Span { start: 0, end: 1 },
+            Counted(calls.clone()),
+        )],
+    }
+    .finish()
+    .unwrap();
+    for _ in 0..3 {
+        (&document)
+            .into_view()
+            .unwrap()
+            .check_limits(ValidationLimits::default())
+            .unwrap();
+    }
+    assert_eq!(calls.load(Ordering::Relaxed), 1);
+    let mut draft = document.into_mutable();
+    draft.children[0].span.end = 2;
+    assert_eq!(draft.finish().unwrap_err().kind, Error::InvalidSpan);
+    assert_eq!(calls.load(Ordering::Relaxed), 1);
 }

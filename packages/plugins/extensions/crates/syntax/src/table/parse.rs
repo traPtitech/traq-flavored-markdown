@@ -1,14 +1,13 @@
 use super::{Alignment, Cell, HeaderRow, Row, Table, cells};
 use markdown_commonmark::blocks::Interrupt;
-use markdown_parser::engine::block::LineIndex;
+use markdown_parser::rules::block::LineIndex;
 
-use markdown_parser::{
-    ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch, DraftContent, DraftNode},
-    },
-};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::DraftContent;
+use markdown_parser::rules::block::DraftNode;
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
@@ -36,7 +35,7 @@ pub(super) fn parse(
 
     Ok(Some(input.matched(
         end,
-        markdown_parser::NodeKind::new(Table { alignments: align }),
+        markdown_parser::AnyPayload::new(Table { alignments: align }),
         DraftContent::Nodes(children),
     )?))
 }
@@ -67,9 +66,9 @@ fn row(
     Ok(DraftNode::nodes(
         source.span_for(line.start..line.end)?,
         if header {
-            markdown_parser::NodeKind::new(HeaderRow {})
+            markdown_parser::AnyPayload::new(HeaderRow {})
         } else {
-            markdown_parser::NodeKind::new(Row {})
+            markdown_parser::AnyPayload::new(Row {})
         },
         children,
     ))
@@ -87,7 +86,7 @@ fn cell(input: &BlockInput<'_>, range: std::ops::Range<usize>) -> Result<DraftNo
 
     Ok(DraftNode::inline(
         source.span_for(source.range(start..end)?)?,
-        markdown_parser::NodeKind::new(Cell {}),
+        markdown_parser::AnyPayload::new(Cell {}),
         source.join(&pieces)?,
     ))
 }

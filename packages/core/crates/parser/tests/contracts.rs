@@ -1,12 +1,20 @@
-use markdown_definitions::Plugin as Declaration;
-use markdown_parser::{
-    GrammarBuilder, Limits, Node, NodeData, NodeRole, ParseError, Parser, Plugin, Span,
-    ValidationLimits,
-    engine::{
-        block::{BlockMatch, BlockRule, DraftContent},
-        inline::{InlineAction, InlineMatch, InlineRule},
-    },
-};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_parser::GrammarBuilder;
+use markdown_parser::Limits;
+use markdown_parser::Node;
+use markdown_parser::NodeData;
+use markdown_parser::NodeRole;
+use markdown_parser::ParseError;
+use markdown_parser::Parser;
+use markdown_parser::Span;
+use markdown_parser::SyntaxPlugin;
+use markdown_parser::ValidationLimits;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::BlockRule;
+use markdown_parser::rules::block::DraftContent;
+use markdown_parser::rules::inline::InlineAction;
+use markdown_parser::rules::inline::InlineMatch;
+use markdown_parser::rules::inline::InlineRule;
 
 #[derive(Default)]
 struct CustomState(Option<String>);
@@ -49,13 +57,13 @@ impl NodeData for Invalid {
     }
 }
 
-fn plugin() -> Plugin {
-    let mut plugin = Plugin::new(&Declaration::new("test"));
+fn plugin() -> SyntaxPlugin {
+    let mut plugin = SyntaxPlugin::new(&Declaration::new("test"));
     plugin.text(Text);
     plugin
 }
 
-fn parser(plugin: &Plugin) -> Parser {
+fn parser(plugin: &SyntaxPlugin) -> Parser {
     let mut builder = GrammarBuilder::new();
     builder.add(plugin).unwrap();
     Parser::new(&builder.build().unwrap())
@@ -75,7 +83,7 @@ fn invalid_plugin_results_never_return_partial_documents() {
                 _ => InlineMatch {
                     end: start + 3,
                     action: InlineAction::Node {
-                        kind: Text("parent".into()).into(),
+                        payload: Text("parent".into()).into(),
                         inhibit_brackets: false,
                         children: vec![Node::leaf(
                             Span { start: 1, end: 2 },
@@ -89,14 +97,14 @@ fn invalid_plugin_results_never_return_partial_documents() {
 
         assert!(matches!(
             parser(&plugin).parse_inline("日"),
-            Err(ParseError::InvalidRuleOutput { .. } | ParseError::InvalidDocument { .. })
+            Err(ParseError::InvalidRuleOutput { .. } | ParseError::InvalidDocument(_))
         ));
     }
 }
 
 #[test]
 fn malformed_rule_results_report_the_rule_phase_source_position_and_cause() {
-    use markdown_parser::engine::ParsePhase;
+    use markdown_parser::ParsePhase;
     let mut implementation = plugin();
     implementation.add(
         InlineRule::new(b"!", |input, _| {
@@ -134,8 +142,8 @@ fn invalid_payload_diagnostics_keep_the_original_tree_location() {
     );
     let error = parser(&plugin).parse_inline("日!").unwrap_err();
     assert!(
-        matches!(error, ParseError::InvalidDocument { ref path, start: Some(3), end: Some(4), payload_type: Some(ref payload), ref reason }
-        if path == &[1] && payload.ends_with("Invalid") && reason.contains("custom payload invariant")),
+        matches!(error, ParseError::InvalidDocument(ref cause)
+        if cause.path == [1] && cause.span == Some(Span { start: 3, end: 4 }) && cause.payload_type.unwrap().ends_with("Invalid") && cause.payload.as_ref().unwrap().expected == "custom payload invariant"),
         "{error:?}"
     );
 }
@@ -155,7 +163,7 @@ fn unsuccessful_rules_still_consume_the_work_budget() {
     });
 
     assert!(matches!(parser.parse_inline("x"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work"));
 }
 
 #[test]
@@ -164,7 +172,7 @@ fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
     rejected.add(InlineRule::new(b"x", |_, _| Ok(None)));
     assert!(
         matches!(parser(&rejected).with_limits(Limits { work: 1, ..Limits::default() }).parse_inline("x"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "work")
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
     );
 
     let mut accepted = plugin();
@@ -176,7 +184,7 @@ fn rule_dispatch_and_accepted_cursor_moves_charge_work_automatically() {
     }));
     assert!(
         matches!(parser(&accepted).with_limits(Limits { work: 9, ..Limits::default() }).parse_inline("abcdefgh"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "work")
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
     );
 }
 
@@ -192,7 +200,7 @@ fn parser_charges_plugin_owned_payload_bytes() {
     });
     assert!(matches!(
         parser.parse_inline("abc"),
-        Err(ParseError::ResourceLimit { resource }) if resource == "payload_bytes"
+        Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "payload_bytes"
     ));
 }
 
@@ -213,10 +221,10 @@ fn source_helpers_reject_invalid_ranges() {
                 .map(Some),
             _ => input
                 .blocks(
-                    markdown_parser::engine::block::LineIndex::new(1),
+                    markdown_parser::rules::block::LineIndex::new(1),
                     Text(String::new()).into(),
-                    markdown_parser::engine::block::LineIndex::new(0)
-                        ..markdown_parser::engine::block::LineIndex::new(99),
+                    markdown_parser::rules::block::LineIndex::new(0)
+                        ..markdown_parser::rules::block::LineIndex::new(99),
                 )
                 .map(Some),
         }));
@@ -264,13 +272,13 @@ fn accepted_block_matches_share_parse_scoped_state_with_inline_rules() {
     let parser = parser(&plugin);
     let with_definition = parser.parse("x\ndef:found").unwrap();
     assert_eq!(
-        with_definition.children[0].children[0].get::<Text>(),
+        with_definition.children[0].children[0].payload::<Text>(),
         Some(&Text("found".into()))
     );
 
     let without_definition = parser.parse("x").unwrap();
     assert_eq!(
-        without_definition.children[0].children[0].get::<Text>(),
+        without_definition.children[0].children[0].payload::<Text>(),
         Some(&Text("missing".into()))
     );
 }
@@ -320,7 +328,9 @@ fn accepted_block_commits_obey_the_work_budget() {
         })
         .parse("x");
 
-    assert!(matches!(result, Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+    assert!(
+        matches!(result, Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
+    );
 }
 
 #[test]
@@ -361,7 +371,7 @@ fn final_validation_stops_at_the_remaining_work_budget() {
         Ok(Some(InlineMatch {
             end: input.position + 1,
             action: InlineAction::Node {
-                kind: Text("parent".into()).into(),
+                payload: Text("parent".into()).into(),
                 inhibit_brackets: false,
                 children: (0..30)
                     .map(|_| Node::leaf(Span { start: 0, end: 0 }, Counted))
@@ -377,7 +387,9 @@ fn final_validation_stops_at_the_remaining_work_budget() {
         })
         .parse_inline("x");
 
-    assert!(matches!(result, Err(ParseError::ResourceLimit { resource }) if resource == "work"));
+    assert!(
+        matches!(result, Err(ParseError::ResourceLimit { resource }) if resource.as_str() == "work")
+    );
     assert!(CHECKS.load(Ordering::Relaxed) <= 20);
     CHECKS.store(0, Ordering::Relaxed);
 

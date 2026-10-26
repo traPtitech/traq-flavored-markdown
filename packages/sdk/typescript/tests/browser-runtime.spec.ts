@@ -23,7 +23,9 @@ test('browser runtime loads the packaged Wasm once', async () => {
 
   const parser = first.createParser(presets.traq.v1)
   try {
-    expect(parser.parseInline(':stamp:').children[0].kind).toBe(names.Stamp)
+    expect(parser.parseInline(':stamp:').document.children[0].kind).toBe(
+      names.Stamp
+    )
   } finally {
     parser.dispose()
   }

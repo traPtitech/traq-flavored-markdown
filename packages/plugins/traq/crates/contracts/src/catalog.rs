@@ -1,19 +1,30 @@
-//! The traQ wire contract catalog. Adding a payload starts here.
-
-use markdown_definitions::implement_wire_kinds;
-
+//! Plugin-owned features and payload identities share one catalog.
 #[macro_export]
-macro_rules! node_catalog {
-    ($consumer:ident) => {
-        $consumer! {
-            "trap";
-            $crate::Stamp => "traq.stamp",
-            $crate::Reference => "traq.reference",
-            $crate::Embedding => "traq.embedding",
-            $crate::Spoiler => "traq.spoiler",
-            $crate::BlankLine => "traq.blank_line",
+macro_rules! feature_catalog {
+    ($consumer:path $(, $argument:ident)*) => {
+        $consumer! { $($argument;)*
+            "traq";
+            Stamp => &$crate::declarations().stamp; [
+                $crate::Stamp => "traq.stamp",
+            ],
+            References => &$crate::declarations().references; [
+                $crate::Reference => "traq.reference",
+                $crate::Embedding => "traq.embedding",
+            ],
+            Spoiler => &$crate::declarations().spoiler; [
+                $crate::Spoiler => "traq.spoiler",
+            ],
+            Spacing => &$crate::declarations().spacing; [
+                $crate::BlankLine => "traq.blank_line",
+            ],
         }
     };
 }
 
-node_catalog!(implement_wire_kinds);
+#[macro_export]
+macro_rules! node_catalog {
+    ($consumer:ident) => {
+        $crate::feature_catalog!($crate::__nodes_from_features, $consumer);
+    };
+}
+feature_catalog!(markdown_definitions::define_feature_contracts);

@@ -1,9 +1,9 @@
 import * as rendering from '@traq-flavored-markdown/sdk/renderer'
-import { renderer } from '@traq-flavored-markdown/core/renderer'
+import { createRenderer } from '@traq-flavored-markdown/core/renderer'
 import { file } from 'bun'
 import { expect, test } from 'bun:test'
 
-import { parser } from './setup.ts'
+import { parser } from './setup.js'
 
 const fixtures = JSON.parse(
   await file(
@@ -11,7 +11,7 @@ const fixtures = JSON.parse(
   ).text()
 )
 
-const view = renderer(rendering.htmlPreset())
+const view = createRenderer(rendering.createHtmlPreset())
 
 for (const { name, markdown, html } of fixtures)
   test('corpus regression: ' + name, () => {

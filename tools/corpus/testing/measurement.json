@@ -1,0 +1,46 @@
+{
+  "warmups": 1,
+  "max": 3,
+  "sources": ["equal", "different", "failure", "ignored"],
+  "before": {
+    "equal": "same",
+    "different": "before",
+    "failure": "unchanged",
+    "ignored": "ignored"
+  },
+  "after": {
+    "equal": "same",
+    "different": "after",
+    "failure": "synthetic failure",
+    "ignored": "ignored"
+  },
+  "errors": ["failure"],
+  "order": [
+    "before:equal",
+    "after:equal",
+    "before:equal",
+    "after:equal",
+    "after:different",
+    "before:different",
+    "before:failure",
+    "after:failure"
+  ],
+  "differences": [
+    {
+      "runId": "shared-fixture",
+      "index": 1,
+      "profile": "plainText",
+      "source": "different",
+      "before": { "kind": "text", "value": "before" },
+      "after": { "kind": "text", "value": "after" }
+    },
+    {
+      "runId": "shared-fixture",
+      "index": 2,
+      "profile": "plainText",
+      "source": "failure",
+      "before": { "kind": "text", "value": "unchanged" },
+      "after": { "kind": "error", "value": "synthetic failure" }
+    }
+  ]
+}

@@ -7,11 +7,11 @@ pub mod html;
 pub mod inlines;
 pub(crate) mod references;
 
-use markdown_parser::engine::Plugin;
+use markdown_parser::grammar::SyntaxPlugin;
 
 /// CommonMark rules expose typed anchors for extension composition.
 pub struct Syntax {
-    pub plugin: Plugin,
+    pub plugin: SyntaxPlugin,
     pub inline: inlines::Rules,
     pub block: blocks::Rules,
 }
@@ -21,7 +21,7 @@ impl Syntax {
         let inline = inlines::rules();
         let block = blocks::rules();
 
-        let mut plugin = Plugin::new(&markdown_commonmark_contracts::declarations().plugin);
+        let mut plugin = SyntaxPlugin::new(&markdown_commonmark_contracts::declarations().plugin);
         plugin.block_policy(blocks::CommonmarkBlocks);
         plugin.text(|value| markdown_commonmark_contracts::Text { value });
 

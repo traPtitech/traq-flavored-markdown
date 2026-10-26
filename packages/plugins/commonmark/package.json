@@ -15,8 +15,8 @@
   },
   "exports": {
     "./nodes": {
-      "types": "./dist/generated/commonmark.d.ts",
-      "import": "./dist/generated/commonmark.js"
+      "types": "./dist/generated/nodes.d.ts",
+      "import": "./dist/generated/nodes.js"
     },
     "./renderer": {
       "types": "./dist/renderer/index.d.ts",
@@ -25,10 +25,6 @@
     "./highlight": {
       "types": "./dist/renderer/highlight.d.ts",
       "import": "./dist/renderer/highlight.js"
-    },
-    "./policy": {
-      "types": "./dist/renderer/policy.d.ts",
-      "import": "./dist/renderer/policy.js"
     }
   },
   "files": [
@@ -45,12 +41,16 @@
     "typecheck": "bun run ../../../scripts/tsc.ts -p typescript/tsconfig.json"
   },
   "peerDependencies": {
-    "@traq-flavored-markdown/core": "0.1.7"
+    "@traq-flavored-markdown/core": "0.1.7",
+    "highlight.js": "11.12.0"
   },
   "devDependencies": {
-    "@traq-flavored-markdown/core": "workspace:*"
-  },
-  "dependencies": {
+    "@traq-flavored-markdown/core": "workspace:*",
     "highlight.js": "11.12.0"
+  },
+  "peerDependenciesMeta": {
+    "highlight.js": {
+      "optional": true
+    }
   }
 }

@@ -6,7 +6,10 @@ pub mod html;
 mod rules;
 use markdown_ast::Node;
 use markdown_commonmark_contracts::{Link, LinkForm};
-use markdown_renderer::{Context, Output, Plugin, Result};
+use markdown_renderer::Context;
+use markdown_renderer::Output;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::Result;
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -45,18 +48,18 @@ pub struct Options {
 }
 
 /// A shared implementation snapshot; callers may customize it with replace.
-pub fn plugin() -> Plugin {
-    static PLUGIN: LazyLock<Plugin> =
+pub fn plugin() -> RenderPlugin {
+    static PLUGIN: LazyLock<RenderPlugin> =
         LazyLock::new(|| build(Options::default()).expect("valid CommonMark text plugin"));
     PLUGIN.clone()
 }
 
-pub fn plugin_with_options(options: Options) -> Plugin {
+pub fn plugin_with_options(options: Options) -> RenderPlugin {
     build(options).expect("valid CommonMark text plugin")
 }
 
-fn build(options: Options) -> Result<Plugin> {
-    let mut plugin = Plugin::new(&markdown_commonmark_contracts::declarations().plugin);
+fn build(options: Options) -> Result<RenderPlugin> {
+    let mut plugin = RenderPlugin::new(&markdown_commonmark_contracts::declarations().plugin);
     rules::register(&mut plugin, options)?;
     Ok(plugin)
 }

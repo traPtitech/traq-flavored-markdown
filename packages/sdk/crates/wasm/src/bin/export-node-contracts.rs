@@ -21,7 +21,7 @@ mod compatibility_tests;
 
 use traq_markdown_processing::extraction::{Extraction, ExtractorOptions};
 use traq_markdown_processing::pipeline::{ProcessingResult, ProcessorOptions};
-use traq_markdown_processing::rendering::RendererOptions;
+use traq_markdown_processing::rendering::PlainTextOptions;
 
 fn main() -> markdown_contract_export::Result<()> {
     use markdown_contract_export::{ArtifactContract, Direction, Provenance, schema, write};
@@ -38,7 +38,7 @@ fn main() -> markdown_contract_export::Result<()> {
         abi: abi::descriptor()?,
         directions: BTreeMap::from([
             ("ExtractorOptions".into(), Direction::Request),
-            ("RendererOptions".into(), Direction::Request),
+            ("PlainTextOptions".into(), Direction::Request),
             ("Extraction".into(), Direction::Response),
             ("ProcessorOptions".into(), Direction::Request),
             ("ProcessorConfiguration".into(), Direction::Request),
@@ -50,8 +50,8 @@ fn main() -> markdown_contract_export::Result<()> {
                 schema::<ExtractorOptions>(Contract::Deserialize),
             ),
             (
-                "RendererOptions".into(),
-                schema::<RendererOptions>(Contract::Deserialize),
+                "PlainTextOptions".into(),
+                schema::<PlainTextOptions>(Contract::Deserialize),
             ),
             (
                 "Extraction".into(),
@@ -70,9 +70,27 @@ fn main() -> markdown_contract_export::Result<()> {
                 schema::<ProcessingResult>(Contract::Serialize),
             ),
         ]),
-        presets: serde_json::from_value(traq_markdown_grammar::bindings::preset_exports())?,
-        limits: serde_json::from_value(limits::metadata())?,
+        presets: traq_markdown_grammar::bindings::preset_exports()
+            .into_iter()
+            .map(|(name, entry)| Ok((name, preset_entry(entry)?)))
+            .collect::<Result<_, Box<dyn std::error::Error>>>()?,
+        limits: limits::metadata().into(),
         nodes: node_metadata::export()?.nodes,
     };
     write(directory, &manifest)
+}
+
+fn preset_entry(
+    entry: traq_markdown_grammar::bindings::ExportEntry<traq_markdown_grammar::bindings::PresetId>,
+) -> Result<markdown_contract_export::PresetEntry, Box<dyn std::error::Error>> {
+    use traq_markdown_grammar::bindings::ExportEntry;
+    Ok(match entry {
+        ExportEntry::Id(id) => markdown_contract_export::PresetEntry::Id(id.0.try_into()?),
+        ExportEntry::Group(group) => markdown_contract_export::PresetEntry::Group(
+            group
+                .into_iter()
+                .map(|(name, entry)| Ok((name, preset_entry(entry)?)))
+                .collect::<Result<_, Box<dyn std::error::Error>>>()?,
+        ),
+    })
 }

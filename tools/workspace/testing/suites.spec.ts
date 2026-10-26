@@ -12,9 +12,7 @@ test('test resources are explicit across owner, runtime, compiler, and workspace
   expect(suiteFor('packages/sdk/typescript/tests/processing.spec.ts')).toBe(
     'wasm'
   )
-  expect(suiteFor('tools/contracts/typescript/go-contract.spec.ts')).toBe(
-    'codegen'
-  )
+  expect(suiteFor('tools/contracts/tests/go-contract.spec.ts')).toBe('codegen')
   expect(suiteFor('tools/workspace/package-graph.spec.ts')).toBe('workspace')
 })
 

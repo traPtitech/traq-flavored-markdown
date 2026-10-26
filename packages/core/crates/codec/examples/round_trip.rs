@@ -1,10 +1,10 @@
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
 use markdown_codec::Codec;
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "example.heading")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "example.heading")]
 struct Heading {
     level: u8,
 }
@@ -29,8 +29,8 @@ impl NodeData for Heading {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, NodeType)]
-#[node_type(key = "example.text")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
+#[wire_type(key = "example.text")]
 struct Text {
     value: String,
 }
@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     codec.register::<Heading>()?;
     codec.register::<Text>()?;
 
-    let document = Document {
+    let document = MutableDocument {
         source: "# hello".into(),
         children: vec![Node::new(
             Span { start: 0, end: 7 },
@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json = codec.encode(&document)?;
     let decoded = codec.decode(&json)?;
 
-    assert_eq!(document, decoded);
+    assert_eq!(*decoded, document);
     println!("{}", String::from_utf8(json)?);
 
     Ok(())

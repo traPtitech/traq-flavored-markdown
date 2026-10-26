@@ -1,7 +1,7 @@
 use super::{apply, delimiters, text, token::*, tree};
 
 use crate::{
-    Node, NodeKind,
+    AnyPayload, Node,
     engine::{
         Budget, Grammar, ParseError, ParsePhase, ParseState,
         source::{SourceView, ViewOffset, ViewRange},
@@ -44,7 +44,7 @@ impl TextInput<'_> {
 pub struct TextMatch {
     pub start: ViewOffset,
     pub end: ViewOffset,
-    pub kind: NodeKind,
+    pub payload: AnyPayload,
     pub children: Vec<Node>,
 }
 

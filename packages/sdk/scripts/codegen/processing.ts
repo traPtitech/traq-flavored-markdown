@@ -1,14 +1,14 @@
 import {
   emitGoDeclarations,
   goFile
-} from '../../../../tools/contracts/typescript/go.ts'
+} from '../../../../tools/contracts/emitters/go.ts'
+import { emitContractValidators } from '../../../../tools/contracts/emitters/typescript-validators.ts'
+import { emitTypeScriptDeclarations } from '../../../../tools/contracts/emitters/typescript.ts'
 import {
   type Direction,
   normalizeContracts
-} from '../../../../tools/contracts/typescript/ir.ts'
-import type { RawSchema } from '../../../../tools/contracts/typescript/schema.ts'
-import { emitContractValidators } from '../../../../tools/contracts/typescript/typescript-validators.ts'
-import { emitTypeScriptDeclarations } from '../../../../tools/contracts/typescript/typescript.ts'
+} from '../../../../tools/contracts/model/ir.ts'
+import type { RawSchema } from '../../../../tools/contracts/model/schema.ts'
 
 export function processingFiles(
   schemas: Record<string, RawSchema>,

@@ -1,9 +1,9 @@
-import { validateImage as defaultImagePolicy } from '@traq-flavored-markdown/commonmark-plugin/policy'
 import type { DeepReadonly } from '@traq-flavored-markdown/core'
+import { validateImage as defaultImagePolicy } from '@traq-flavored-markdown/core/html'
 import { escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { Stamp as MutableStamp } from '@traq-flavored-markdown/traq-plugin/nodes'
 
-import type { Options } from './types.js'
+import type { HtmlRendererOptions } from './types.js'
 
 type Stamp = DeepReadonly<MutableStamp>
 
@@ -54,26 +54,15 @@ function renderImage(
 export function stampRenderer({
   resolveStamp,
   validateStampImage = defaultImagePolicy
-}: Options = {}) {
+}: HtmlRendererOptions = {}) {
   return (stamp: Stamp): string => {
     const { kind } = stamp
 
     switch (kind.type) {
-      case 'normal': {
-        const value = resolveStamp?.(kind)
-        return value
-          ? renderImage(
-              stamp,
-              kind.name,
-              value.title ?? kind.name,
-              value.url,
-              validateStampImage
-            )
-          : escapeHtml(stamp.literal)
-      }
+      case 'normal':
       case 'user': {
         const value = resolveStamp?.(kind)
-        const label = '@' + kind.name
+        const label = (kind.type === 'user' ? '@' : '') + kind.name
         return value
           ? renderImage(
               stamp,

@@ -2,8 +2,12 @@ import { readFile } from 'node:fs/promises'
 
 import * as rendering from '@traq-flavored-markdown/sdk/renderer'
 import { plugin } from '@traq-flavored-markdown/commonmark-plugin/renderer'
-import { PresetBuilder, renderer } from '@traq-flavored-markdown/core/renderer'
+import {
+  PresetBuilder,
+  createRenderer
+} from '@traq-flavored-markdown/core/renderer'
 import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
+import { withDefaultAdapters } from '@traq-flavored-markdown/sdk/adapters'
 
 const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
@@ -36,7 +40,9 @@ const runtime = await createRuntime(
 try {
   const parser = runtime.createParser(presets.traq.v1)
   const document = parser.parse('**package** $x$ !!hidden!! :0xff0000:')
-  const output = renderer(rendering.htmlPreset()).render(document)
+  const output = createRenderer(
+    rendering.createHtmlPreset(withDefaultAdapters())
+  ).render(document)
   for (const text of [
     '<strong>package</strong>',
     'katex',
@@ -58,7 +64,7 @@ try {
     messages.standard.render(message).cards[0].type === 'file',
     'Packed standard renderer did not extract the file card'
   )
-  const custom = renderer(new PresetBuilder().add(plugin()).build())
+  const custom = createRenderer(new PresetBuilder().add(plugin()).build())
   check(
     custom.render(parser.parseInline('**shared declaration**')) ===
       '<strong>shared declaration</strong>',

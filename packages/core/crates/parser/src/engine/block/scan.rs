@@ -164,7 +164,7 @@ fn resolve_blocks(
     };
     let mut node = ResolvedBlock {
         span: draft.span,
-        kind: draft.kind,
+        payload: draft.payload,
         content,
         metadata,
     };
@@ -199,7 +199,7 @@ fn resolve_inlines(
         };
 
         budget.node()?;
-        nodes.push(Node::new(draft.span, draft.kind, children));
+        nodes.push(Node::new(draft.span, draft.payload, children));
     }
 
     Ok(nodes)

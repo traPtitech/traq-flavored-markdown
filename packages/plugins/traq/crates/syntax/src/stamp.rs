@@ -1,12 +1,9 @@
-use markdown_parser::{
-    ParseError,
-    engine::{
-        Plugin,
-        inline::{InlineMatch, InlineRule},
-    },
-};
-pub use markdown_trap_contracts::Stamp;
-use markdown_trap_contracts::{StampAnimation, StampEffects, StampKind, StampSize};
+use markdown_parser::ParseError;
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::inline::InlineMatch;
+use markdown_parser::rules::inline::InlineRule;
+pub use markdown_traq_contracts::Stamp;
+use markdown_traq_contracts::{StampAnimation, StampEffects, StampKind, StampSize};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -17,8 +14,8 @@ pub fn inline_rule() -> &'static InlineRule {
 }
 
 fn parse(
-    input: &markdown_parser::engine::inline::InlineInput<'_>,
-    budget: &mut markdown_parser::engine::Budget,
+    input: &markdown_parser::rules::inline::InlineInput<'_>,
+    budget: &mut markdown_parser::rules::Budget,
 ) -> Result<Option<InlineMatch>, ParseError> {
     let tail = input.tail();
     let limit = tail[1..].find(':').map_or(tail.len(), |n| n + 2);
@@ -33,7 +30,7 @@ fn parse(
 
     Ok(Some(InlineMatch::leaf(
         input.position + limit,
-        markdown_parser::NodeKind::new(data),
+        markdown_parser::AnyPayload::new(data),
     )))
 }
 
@@ -135,9 +132,9 @@ fn parse_effects(suffix: &str) -> Option<StampEffects> {
     Some(effects)
 }
 
-pub fn plugin() -> &'static Plugin {
-    static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_trap_contracts::declarations().stamp);
+pub fn plugin() -> &'static SyntaxPlugin {
+    static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
+        let mut plugin = SyntaxPlugin::new(&markdown_traq_contracts::declarations().stamp);
         plugin.add(inline_rule());
         plugin
     });

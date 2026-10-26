@@ -5,7 +5,7 @@ pub mod entities;
 pub mod links;
 pub mod url;
 
-use markdown_parser::engine::inline::InlineRule;
+use markdown_parser::rules::inline::InlineRule;
 
 pub struct Rules {
     pub escape: InlineRule,
@@ -32,7 +32,7 @@ pub(crate) fn rules() -> Rules {
     }
 }
 impl Rules {
-    pub(crate) fn register(&self, plugin: &mut markdown_parser::engine::Plugin) {
+    pub(crate) fn register(&self, plugin: &mut markdown_parser::grammar::SyntaxPlugin) {
         plugin.add(&self.escape);
         plugin.add(&self.code);
         plugin.add(&self.emphasis);

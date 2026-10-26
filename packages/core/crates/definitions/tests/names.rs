@@ -1,8 +1,10 @@
-use markdown_definitions::{NameCollision, Plugin, validate_names};
+use markdown_definitions::NameCollision;
+use markdown_definitions::PluginDeclaration;
+use markdown_definitions::validate_names;
 
 #[test]
 fn selected_declarations_share_groups_but_not_sibling_names() {
-    let generic = Plugin::group("generic");
+    let generic = PluginDeclaration::group("generic");
     let first = generic.plugin("math");
     let other = generic.plugin("math");
     let marks = generic.plugin("marks");
@@ -28,14 +30,14 @@ fn selected_declarations_share_groups_but_not_sibling_names() {
 
 #[test]
 fn scope_uses_parent_identity_not_a_joined_display_path() {
-    let root = Plugin::group("generic");
+    let root = PluginDeclaration::group("generic");
     let one = root.group("one");
     let two = root.group("two");
     let left = one.plugin("math");
     let right = two.plugin("math");
 
     assert!(validate_names([&left, &right]).is_ok());
-    assert!(validate_names([&left, &Plugin::new("generic/one/math")]).is_ok());
+    assert!(validate_names([&left, &PluginDeclaration::new("generic/one/math")]).is_ok());
 
     assert_eq!(
         validate_names([&left, &one.plugin("math")]),
@@ -46,7 +48,7 @@ fn scope_uses_parent_identity_not_a_joined_display_path() {
     );
 
     // Distinct group instances with equal names collide when both are selected.
-    let unrelated = Plugin::group("generic").plugin("other");
+    let unrelated = PluginDeclaration::group("generic").plugin("other");
     assert_eq!(
         validate_names([&left, &unrelated]),
         Err(NameCollision {

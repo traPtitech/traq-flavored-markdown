@@ -1,5 +1,6 @@
 use markdown_commonmark_contracts::Link;
-use markdown_parser::{GrammarBuilder, Parser};
+use markdown_parser::GrammarBuilder;
+use markdown_parser::Parser;
 
 fn parser(tld_pattern: &str) -> Parser {
     let commonmark = markdown_commonmark::Syntax::new();
@@ -22,7 +23,7 @@ fn top_level_domain_policy_belongs_to_the_selected_profile() {
         let links: Vec<_> = document
             .children
             .iter()
-            .filter_map(|node| node.get::<Link>())
+            .filter_map(|node| node.payload::<Link>())
             .collect();
         assert_eq!(links.len(), 1);
         assert_eq!(links[0].destination, expected);

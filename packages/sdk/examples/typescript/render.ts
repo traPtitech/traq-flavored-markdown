@@ -7,7 +7,7 @@ const parserWasmUrl = new URL(
 const runtime = await createRuntime(await Bun.file(parserWasmUrl).bytes())
 try {
   const parser = runtime.createParser(presets.traq.v1)
-  const view = rendering.html()
+  const view = rendering.createHtmlRenderer()
 
   console.log(
     view.render(

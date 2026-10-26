@@ -1,14 +1,14 @@
 import {
   type DifferenceRow,
-  type Mode,
+  type ProfileId,
   type ReportMetadata,
   type ReportPayload,
-  byMode,
-  modes,
-  pageSize
-} from '../report-schema.ts'
-import { ignoreMask } from '../scripts/ignore-differences.ts'
-import { parseReport } from '../shared/report-data.ts'
+  byProfile,
+  pageSize,
+  profileIds
+} from '../protocol/report.ts'
+import { parseReport } from '../protocol/report.ts'
+import { isWhitespaceOnlyDifference } from './filter.ts'
 
 export async function aggregateDifferences(
   rows: AsyncIterable<DifferenceRow>,
@@ -16,11 +16,11 @@ export async function aggregateDifferences(
 ) {
   if (!Number.isSafeInteger(size) || size <= 0)
     throw new Error('Invalid report page size')
-  const filterMasks = byMode<number[]>(() => []),
-    payload: ReportPayload = byMode<string[]>(() => []),
-    pending = byMode<DifferenceRow[]>(() => []),
-    counts = byMode(() => 0)
-  const flush = (mode: Mode) => {
+  const filterMasks = byProfile<number[]>(() => []),
+    payload: ReportPayload = byProfile<string[]>(() => []),
+    pending = byProfile<DifferenceRow[]>(() => []),
+    counts = byProfile(() => 0)
+  const flush = (mode: ProfileId) => {
     if (!pending[mode].length) return
     payload[mode].push(
       Bun.gzipSync(JSON.stringify(pending[mode]), { level: 9 }).toBase64()
@@ -28,17 +28,20 @@ export async function aggregateDifferences(
     pending[mode] = []
   }
   for await (const row of rows) {
-    if (row.before === row.after && row.beforeType === row.afterType)
+    if (
+      row.before.value === row.after.value &&
+      row.before.kind === row.after.kind
+    )
       throw new Error('Equal result in difference list')
-    filterMasks[row.mode].push(ignoreMask(row))
-    pending[row.mode].push(row)
-    counts[row.mode]++
-    if (pending[row.mode].length === size) flush(row.mode)
+    filterMasks[row.profile].push(Number(isWhitespaceOnlyDifference(row)))
+    pending[row.profile].push(row)
+    counts[row.profile]++
+    if (pending[row.profile].length === size) flush(row.profile)
   }
-  for (const mode of modes) flush(mode)
-  const filters = byMode(() => ''),
-    excluded = byMode(() => ({ whitespace: 0 }))
-  for (const mode of modes) {
+  for (const mode of profileIds) flush(mode)
+  const filters = byProfile(() => ''),
+    excluded = byProfile(() => ({ whitespace: 0 }))
+  for (const mode of profileIds) {
     filters[mode] = filterMasks[mode].join('')
     excluded[mode].whitespace = filterMasks[mode].filter(
       value => value & 1

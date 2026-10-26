@@ -5,6 +5,8 @@
 **/target/
 *.tsbuildinfo
 .eslintcache
+test-results/
+playwright-report/
 
 # Local-only files
 **/.private/

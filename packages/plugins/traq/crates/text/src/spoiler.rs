@@ -1,15 +1,17 @@
-use markdown_renderer::{Plugin, Result};
-use markdown_trap_contracts::Spoiler;
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::Result;
+use markdown_traq_contracts::Spoiler;
 
 use std::sync::LazyLock;
 
-pub fn plugin() -> Plugin {
-    static PLUGIN: LazyLock<Plugin> = LazyLock::new(|| build().expect("valid spoiler text plugin"));
+pub fn plugin() -> RenderPlugin {
+    static PLUGIN: LazyLock<RenderPlugin> =
+        LazyLock::new(|| build().expect("valid spoiler text plugin"));
     PLUGIN.clone()
 }
 
-fn build() -> Result<Plugin> {
-    let mut spoiler = Plugin::new(&markdown_trap_contracts::declarations().spoiler);
+fn build() -> Result<RenderPlugin> {
+    let mut spoiler = RenderPlugin::new(&markdown_traq_contracts::declarations().spoiler);
 
     spoiler.on::<Spoiler>(|_, nodes, ctx, output| {
         let content = ctx.capture_children(nodes)?;

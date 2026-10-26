@@ -1,8 +1,12 @@
 //! Named native grammars and SDK metadata owned by this distribution.
 mod catalog;
 mod composition;
-pub use catalog::{Catalog, PresetSpec, RuleSpec};
+mod exports;
+mod ids;
+pub use catalog::{Catalog, CatalogDescription, PresetSpec, RulePhase, RuleSpec};
 pub use composition::{Composition, GroupSpec, PluginSpec};
+pub use exports::{CatalogExports, ExportEntry, ExportTree};
+pub use ids::{GroupId, PluginId, PresetId, RuleId};
 
 mod presets;
 pub(crate) use presets::PRESETS;
@@ -29,15 +33,15 @@ pub fn grammars() -> &'static std::collections::BTreeMap<String, crate::Grammar>
 }
 
 /// Resolve the exact stored identifier; unknown versions never use a fallback.
-pub fn grammar(version: &str) -> Result<crate::Grammar, crate::engine::BuildError> {
+pub fn grammar(version: &str) -> Result<crate::Grammar, crate::grammar::BuildError> {
     grammars()
         .get(version)
         .cloned()
-        .ok_or_else(|| crate::engine::BuildError::InvalidDefinition {
+        .ok_or_else(|| crate::grammar::BuildError::InvalidDefinition {
             reason: format!("unknown grammar version: {version}"),
         })
 }
 
-pub fn parser(version: &str) -> Result<crate::Parser, crate::engine::BuildError> {
+pub fn parser(version: &str) -> Result<crate::Parser, crate::grammar::BuildError> {
     grammar(version).map(|grammar| crate::Parser::new(&grammar))
 }

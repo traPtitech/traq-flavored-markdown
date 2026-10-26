@@ -1,5 +1,6 @@
 use super::inlines::destination::{parse_title, skip_spaces, target};
-use markdown_parser::{ParseError, engine::Budget};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
 use std::collections::HashMap;
 
 #[derive(Default)]

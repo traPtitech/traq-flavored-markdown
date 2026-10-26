@@ -1,52 +1,87 @@
 import { expect, test } from 'bun:test'
 
-import { createApiClient } from './client.ts'
-import { sampleMessages, selectChannels } from './sampling.ts'
+import type { MessagePage } from './gateway.ts'
+import {
+  type SampleProgress,
+  sampleMessages,
+  selectChannels
+} from './sampling.ts'
 
-test('sampling bounds and deduplication do not depend on a network or filesystem', async () => {
+test('sampling deduplicates across actual pages and caps the inspected window', async () => {
+  const pages: MessagePage[] = []
+  const progress: SampleProgress[] = []
   const records = []
   for await (const record of sampleMessages(
     {
-      get: async relative =>
-        relative.startsWith('channels?')
-          ? { public: [{ id: 'c' }] }
+      publicChannels: async () => [{ id: 'c' }],
+      messages: async (_channel, page) => {
+        pages.push(page)
+        return page.offset === 0
+          ? Array.from({ length: 200 }, (_, id) => ({
+              id: String(id),
+              content: String(id)
+            }))
           : [
-              { id: '1', content: 'one' },
-              { id: '1', content: 'duplicate' },
-              { id: '2', content: 'two' }
+              { id: '0', content: 'duplicate' },
+              { id: '200', content: 'last' }
             ]
+      }
+    },
+    {
+      maxMessages: 300,
+      maxChannels: 1,
+      channelOffset: 0,
+      perChannel: 202,
+      until: '2026-01-01'
+    },
+    state => progress.push(state)
+  ))
+    records.push(record)
+  expect(pages.map(page => [page.limit, page.offset])).toEqual([
+    [200, 0],
+    [2, 200]
+  ])
+  expect(records).toHaveLength(201)
+  expect(records[200]).toEqual({ id: '200', channel: 'c', source: 'last' })
+  expect(progress[0].sampledChannels).toBe(0)
+  expect(progress[1].sampledChannels).toBe(1)
+  expect(
+    selectChannels([{ id: 'b' }, { id: 'a' }, { id: 'a' }], 0, 2, id => id).map(
+      channel => channel.id
+    )
+  ).toEqual(['a', 'b'])
+})
+
+test('inaccessible channels are counted and message bounds stop further requests', async () => {
+  const channels = selectChannels([{ id: 'a' }, { id: 'b' }, { id: 'c' }], 0, 3)
+  const requested: string[] = []
+  const progress: SampleProgress[] = []
+  const records = []
+  for await (const record of sampleMessages(
+    {
+      publicChannels: async () => channels,
+      messages: async channel => {
+        requested.push(channel)
+        return channel === channels[0].id
+          ? null
+          : [{ id: 'one', content: 'one' }]
+      }
     },
     {
       maxMessages: 1,
-      maxChannels: 1,
+      maxChannels: 3,
       channelOffset: 0,
-      perChannel: 1,
+      perChannel: 10,
       until: '2026-01-01'
-    }
+    },
+    state => progress.push(state)
   ))
     records.push(record)
-  expect(records).toEqual([{ id: '1', channel: 'c', source: 'one' }])
-  expect(selectChannels([{ id: 'b' }, { id: 'a' }], 0, 1, id => id)[0].id).toBe(
-    'a'
-  )
-})
-
-test('API retries are bounded and scheduling can be injected', async () => {
-  let requests = 0
-  const sleeps: number[] = []
-  const client = createApiClient({
-    baseUrl: 'https://example.test',
-    token: 'test',
-    delayMs: 3,
-    fetchImpl: async () =>
-      ++requests === 1
-        ? new Response('', { status: 503 })
-        : Response.json({ okay: true }),
-    sleep: async ms => {
-      sleeps.push(ms)
-    }
+  expect(requested).toHaveLength(2)
+  expect(records).toHaveLength(1)
+  expect(progress.at(-1)).toEqual({
+    availableChannels: 3,
+    sampledChannels: 2,
+    inaccessibleChannels: 1
   })
-  expect(await client.get('channels')).toEqual({ okay: true })
-  expect(requests).toBe(2)
-  expect(sleeps).toEqual([1000, 3])
 })

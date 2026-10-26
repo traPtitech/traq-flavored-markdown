@@ -1,5 +1,5 @@
 [package]
-name = "markdown-trap-extraction"
+name = "markdown-traq-extraction"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,7 @@ contracts = ["dep:schemars"]
 
 [dependencies]
 markdown-extractor.workspace = true
-markdown-trap-contracts = { path = "../contracts" }
+markdown-traq-contracts = { path = "../contracts" }
 serde = { version = "=1.0.229", features = ["derive"] }
 schemars = { version = "=1.2.3", optional = true }
 

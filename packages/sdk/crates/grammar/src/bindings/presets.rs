@@ -29,18 +29,29 @@ impl Preset {
 
 /// SDK export paths without constructing a Catalog or compiling any grammar.
 /// Numeric leaves retain the existing metadata format, not runtime lookup IDs.
-pub fn preset_exports() -> serde_json::Value {
-    let mut exports = serde_json::json!({});
+pub fn preset_exports() -> super::ExportTree<super::PresetId> {
+    let mut exports = super::ExportTree::new();
     for (index, preset) in PRESETS.iter().enumerate() {
-        let mut member = &mut exports;
-        for part in preset.path {
-            member = member
-                .as_object_mut()
-                .expect("preset namespace")
-                .entry(*part)
-                .or_insert_with(|| serde_json::json!({}));
+        let (leaf, path) = preset.path.split_last().expect("preset export path");
+        let mut group = &mut exports;
+        for part in path {
+            let entry = group
+                .entry((*part).into())
+                .or_insert_with(|| super::ExportEntry::Group(super::ExportTree::new()));
+            let super::ExportEntry::Group(nested) = entry else {
+                panic!("conflicting preset export path")
+            };
+            group = nested;
         }
-        *member = index.into();
+        assert!(
+            group
+                .insert(
+                    (*leaf).into(),
+                    super::ExportEntry::Id(super::PresetId(index))
+                )
+                .is_none(),
+            "duplicate preset export"
+        );
     }
     exports
 }

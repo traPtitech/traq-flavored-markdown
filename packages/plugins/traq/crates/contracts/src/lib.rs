@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 
 mod catalog;
+pub use catalog::Feature;
 mod declarations;
 pub use declarations::{PluginDeclarations, declarations};
 
@@ -19,3 +20,9 @@ pub use spacing::*;
 
 mod embedding;
 pub use embedding::*;
+
+mod identity;
+pub use identity::{ReferenceId, ReferenceIdentity};
+
+#[doc(hidden)]
+pub use markdown_definitions::nodes_from_features as __nodes_from_features;

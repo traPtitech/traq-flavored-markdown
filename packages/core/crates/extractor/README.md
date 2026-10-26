@@ -5,9 +5,11 @@ the AST and shared declarations, not on a grammar, parser, renderer, codec, or
 traQ-specific result type.
 
 ```rust
-use markdown_ast::{Document, Node, NodeData, NodeRole, Span};
-use markdown_definitions::Plugin as Declaration;
-use markdown_extractor::{Extractor, Plugin, PresetBuilder};
+use markdown_ast::{MutableDocument, Node, NodeData, NodeRole, Span};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_extractor::Extractor;
+use markdown_extractor::ExtractionPlugin;
+use markdown_extractor::ExtractionPresetBuilder;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Reference(String);
@@ -21,15 +23,15 @@ impl NodeData for Reference {
     fn payload_bytes(&self) -> usize { self.0.len() }
 }
 
-let mut plugin = Plugin::<Vec<String>>::new(&Declaration::new("references"));
-plugin.on::<Reference>(|reference, result| {
+let mut plugin = ExtractionPlugin::<Vec<String>>::new(&Declaration::new("references"));
+plugin.on::<Reference>(|reference, _, result| {
     result.push(reference.0.clone());
     Ok(())
 })?;
-let mut builder = PresetBuilder::new();
+let mut builder = ExtractionPresetBuilder::new();
 builder.add(&plugin)?;
 let extractor = Extractor::new(&builder.build()?);
-let document = Document {
+let document = MutableDocument {
     source: String::new(),
     children: vec![Node::leaf(Span { start: 0, end: 0 }, Reference("id".into()))],
 };
@@ -46,11 +48,21 @@ an existing builder, preset, or extractor. Duplicate handlers are rejected.
 `register` returns a stable registration handle; `remove` consumes its identity
 independently of later edits to the original plugin.
 
-`extract` validates the whole tree and visits every node in document order
+`extract` reuses a checked document or validates an editable draft before
+visiting every node in document order
 (parent, descendants, next sibling). Unhandled nodes are still validated and
 traversed. The default validation limits are 65,536 source bytes, 8 MiB of payload, 16,384 nodes,
 and depth 64. Handlers own the limits of their work and result sizes.
 
-Use `extract_validated(ValidatedDocument)` to avoid repeating validation when
+Use `extract(DocumentView)` to avoid repeating validation when
 sharing an immutable document with other consumers. It still creates a fresh
 result and traverses all nodes.
+
+`Collector` describes scoped analyses, and `collect(document, &mut collector)`
+runs them in source order. The callback receives `AnalysisContext` with the
+node's source, parent, sibling index, and depth. Its returned scope is inherited
+by descendants without leaking to siblings. Tuple collectors share one traversal.
+`extractor.collector::<E>()` participates in the same composition and returns
+its accumulated result through `finish()`; `E` converts extractor errors into
+the enclosing analysis error type. Typed plugin handlers also receive this
+context, so source-aware operations need no second extraction framework.

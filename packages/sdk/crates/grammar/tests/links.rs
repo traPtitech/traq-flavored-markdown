@@ -13,7 +13,7 @@ fn direct_and_reference_images_share_the_same_node_contract() {
         let document = parser.parse(source).unwrap();
         let paragraph = &document.children[0];
         assert_eq!(paragraph.children.len(), 1, "{source}");
-        let image = paragraph.children[0].get::<Image>().unwrap();
+        let image = paragraph.children[0].payload::<Image>().unwrap();
         assert_eq!(image.label_source, "alt");
         assert!(image.destination.ends_with("/a.png"));
     }
@@ -23,7 +23,7 @@ fn direct_and_reference_images_share_the_same_node_contract() {
 fn links_cannot_contain_other_links() {
     fn assert_no_nested_links(nodes: &[Node], inside_link: bool) {
         for node in nodes {
-            let is_link = node.get::<Link>().is_some();
+            let is_link = node.payload::<Link>().is_some();
             assert!(!(inside_link && is_link), "{node:?}");
             assert_no_nested_links(&node.children, inside_link || is_link);
         }
@@ -41,7 +41,7 @@ fn links_cannot_contain_other_links() {
             document
                 .children
                 .iter()
-                .any(|node| node.get::<Link>().is_some())
+                .any(|node| node.payload::<Link>().is_some())
         );
     }
 }
@@ -51,16 +51,16 @@ fn images_remain_valid_inside_links_and_can_contain_autolink_labels() {
     let parser = presets::traq::v1::parser();
     let document = parser.parse_inline("[![alt](/image)](/page)").unwrap();
     let link = &document.children[0];
-    assert_eq!(link.get::<Link>().unwrap().destination, "/page");
-    assert!(link.children[0].get::<Image>().is_some());
+    assert_eq!(link.payload::<Link>().unwrap().destination, "/page");
+    assert!(link.children[0].payload::<Image>().is_some());
 
     let document = parser
         .parse_inline("![<https://example.com>](/image)")
         .unwrap();
     let image = &document.children[0];
-    assert!(image.get::<Image>().is_some());
+    assert!(image.payload::<Image>().is_some());
     assert_eq!(
-        image.children[0].get::<Link>().unwrap().form,
+        image.children[0].payload::<Link>().unwrap().form,
         LinkForm::Autolink
     );
 }
@@ -81,7 +81,7 @@ fn destination_syntax_is_independent_of_rendering_policy() {
             format!("[x][r]\n\n[r]: {destination}"),
         ] {
             let document = parser.parse(&source).unwrap();
-            let link = document.children[0].children[0].get::<Link>().unwrap();
+            let link = document.children[0].children[0].payload::<Link>().unwrap();
             assert_eq!(link.destination, destination, "{source}");
         }
 
@@ -89,7 +89,7 @@ fn destination_syntax_is_independent_of_rendering_policy() {
             .parse_inline(&format!("![x]({destination})"))
             .unwrap();
         assert_eq!(
-            document.children[0].get::<Image>().unwrap().destination,
+            document.children[0].payload::<Image>().unwrap().destination,
             destination
         );
     }
@@ -106,7 +106,7 @@ fn destinations_are_encoded_without_losing_source_notation() {
         let document = parser.parse_inline(source).unwrap();
         assert_eq!(document.source, source);
         assert_eq!(
-            document.children[0].get::<Link>().unwrap().destination,
+            document.children[0].payload::<Link>().unwrap().destination,
             "https://example.com/%E6%97%A5%E6%9C%AC"
         );
     }
@@ -123,7 +123,7 @@ fn malformed_unicode_hosts_do_not_panic_or_lose_ports() {
         let document = parser.parse_inline(&source).unwrap();
         assert_eq!(document.source, source);
         assert_eq!(
-            document.children[0].get::<Link>().unwrap().destination,
+            document.children[0].payload::<Link>().unwrap().destination,
             encoded
         );
     }

@@ -1,4 +1,4 @@
-import { nodeGroup } from '../../../../tools/contracts/typescript/groups.ts'
+import { nodeGroup } from '../../../../tools/contracts/model/groups.ts'
 
 export function goNodes(manifest: {
   nodes: Record<string, { group: string }>
@@ -20,9 +20,9 @@ export function goNodes(manifest: {
       )
       .join('\n') +
     '\n)\n' +
-    'type Document = ast.Document\ntype Node = ast.Node\ntype Span = ast.Span\ntype Payload = ast.Payload\n' +
+    'type Document = ast.Document\ntype Node = ast.Node\ntype MutableDocument = ast.MutableDocument\ntype MutableNode = ast.MutableNode\ntype Span = ast.Span\ntype Payload = ast.Payload\n' +
     'func DecodeDocument(raw []byte) (*Document,error) { return ast.DecodeDocument(raw, newPayload) }\n' +
-    'func ValidateDocument(document *Document) (*ast.ValidatedDocument,error) { return ast.ValidateDocument(document, newPayload) }\n' +
+    'func NewDocument(document *MutableDocument) (*Document,error) { return ast.NewDocument(document, newPayload) }\n' +
     'func newPayload(kind string) ast.Payload {\n' +
     groups
       .map(

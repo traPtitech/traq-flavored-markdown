@@ -1,12 +1,11 @@
 use super::entities::decode_entity;
 
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        inline::{InlineAction, InlineInput, InlineMatch},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::inline::InlineAction;
+use markdown_parser::rules::inline::InlineInput;
+use markdown_parser::rules::inline::InlineMatch;
 
 pub(super) fn escape(
     input: &InlineInput<'_>,
@@ -25,7 +24,7 @@ pub(super) fn escape(
 
             Ok(Some(InlineMatch::leaf(
                 end,
-                NodeKind::new(markdown_commonmark_contracts::Hardbreak {}),
+                AnyPayload::new(markdown_commonmark_contracts::Hardbreak {}),
             )))
         }
 
@@ -56,10 +55,10 @@ pub(super) fn newline(
         end,
         action: InlineAction::TrimmedNode {
             trim,
-            kind: if trim >= 2 {
-                NodeKind::new(markdown_commonmark_contracts::Hardbreak {})
+            payload: if trim >= 2 {
+                AnyPayload::new(markdown_commonmark_contracts::Hardbreak {})
             } else {
-                NodeKind::new(markdown_commonmark_contracts::Softbreak {})
+                AnyPayload::new(markdown_commonmark_contracts::Softbreak {})
             },
         },
     }))
@@ -104,7 +103,7 @@ pub(super) fn code(
 
     Ok(Some(InlineMatch::leaf(
         input.source.offset(end)?,
-        NodeKind::new(markdown_commonmark_contracts::InlineCode { literal }),
+        AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
     )))
 }
 

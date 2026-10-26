@@ -11,7 +11,7 @@ markdown-parser.workspace = true
 markdown-definitions.workspace = true
 markdown-commonmark.workspace = true
 markdown-extensions-syntax.workspace = true
-markdown-trap-syntax.workspace = true
+markdown-traq-syntax.workspace = true
 serde_json = "=1.0.154"
 serde = { version = "=1.0.229", features = ["derive"] }
 
@@ -19,4 +19,4 @@ serde = { version = "=1.0.229", features = ["derive"] }
 markdown-ast.workspace = true
 markdown-commonmark-contracts.workspace = true
 markdown-extensions-contracts.workspace = true
-markdown-trap-contracts.workspace = true
+markdown-traq-contracts.workspace = true

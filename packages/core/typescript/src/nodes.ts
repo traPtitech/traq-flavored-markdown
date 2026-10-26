@@ -1,6 +1,6 @@
-import type { DeepReadonly, ReadonlyNode as Node } from './ast.js'
+import type { DeepReadonly, ReadonlyNode as Node, NodeVariant } from './ast.js'
 
-export type NodeKind = { kind: string; data: unknown }
+export type { NodeVariant } from './ast.js'
 
 export type NodeRole = 'block' | 'inline' | 'structural' | 'opaque'
 export interface NodeStructure {
@@ -103,14 +103,14 @@ function snapshotStructure(value: NodeStructure): NodeStructure {
 }
 
 /** The shared identity and payload validator for a node kind. */
-export interface NodeDefinition<K extends NodeKind = NodeKind> {
+export interface NodeDefinition<K extends NodeVariant = NodeVariant> {
   readonly kind: K['kind']
   readonly validateData: (data: unknown) => boolean
   readonly structure: NodeStructure
-  is<T extends NodeKind>(node: T): node is T & DeepReadonly<K>
+  is<T extends NodeVariant>(node: T): node is T & DeepReadonly<K>
 }
 
-export function defineNode<K extends NodeKind>(
+export function defineNode<K extends NodeVariant>(
   kind: K['kind'],
   validateData: (data: unknown) => boolean,
   structure: NodeStructure = { role: 'opaque', children: { kind: 'any' } }
@@ -121,7 +121,7 @@ export function defineNode<K extends NodeKind>(
     kind,
     validateData,
     structure: snapshotStructure(structure),
-    is<T extends NodeKind>(node: T): node is T & DeepReadonly<K> {
+    is<T extends NodeVariant>(node: T): node is T & DeepReadonly<K> {
       return node.kind === kind && validateData(node.data)
     }
   })

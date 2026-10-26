@@ -1,4 +1,4 @@
-# markdown-trap-contracts
+# markdown-traq-contracts
 
 Defines the five traQ payload types—`Reference`, `Stamp`,
 `Embedding`, `Spoiler`, and `BlankLine`—plus their supporting types.

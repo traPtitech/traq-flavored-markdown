@@ -1,5 +1,5 @@
 use markdown_ast::{
-    Document, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
+    MutableDocument, Node, NodeData, NodeRole, Span, ValidationErrorKind, ValidationLimits,
 };
 use markdown_extensions_contracts::{
     Alignment, BlockMath, Cell, HeaderRow, InlineMath, Row, Table,
@@ -17,16 +17,16 @@ fn row(header: bool, cells: Vec<Node>) -> Node {
     Node::new(
         span(),
         if header {
-            markdown_ast::NodeKind::new(HeaderRow {})
+            markdown_ast::AnyPayload::new(HeaderRow {})
         } else {
-            markdown_ast::NodeKind::new(Row {})
+            markdown_ast::AnyPayload::new(Row {})
         },
         cells,
     )
 }
 
-fn table(rows: Vec<Node>) -> Document {
-    Document {
+fn table(rows: Vec<Node>) -> MutableDocument {
+    MutableDocument {
         source: String::new(),
         children: vec![Node::new(
             span(),
@@ -69,7 +69,7 @@ fn tables_have_one_header_and_columns_are_defined_once() {
     }
     let mut empty_columns = table(vec![header()]);
     empty_columns.children[0]
-        .get_mut::<Table>()
+        .payload_mut::<Table>()
         .unwrap()
         .alignments
         .clear();

@@ -1,5 +1,5 @@
-use crate::{Error, Preset, Result};
-use markdown_ast::{Document, Node, ValidatedDocument};
+use crate::{Error, RenderPreset, Result};
+use markdown_ast::Node;
 use std::cell::Cell;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,11 +18,11 @@ impl Default for RenderLimits {
 }
 
 pub struct Renderer {
-    preset: Preset,
+    preset: RenderPreset,
     limits: RenderLimits,
 }
 impl Renderer {
-    pub fn new(preset: &Preset) -> Self {
+    pub fn new(preset: &RenderPreset) -> Self {
         Self {
             preset: preset.clone(),
             limits: RenderLimits::default(),
@@ -32,19 +32,17 @@ impl Renderer {
         self.limits = limits;
         self
     }
-    pub fn render(&self, document: &Document) -> Result<String> {
-        self.render_validated(ValidatedDocument::new(document)?)
-    }
     /// Validation and handler support cover even descendants hidden by a handler.
-    pub fn render_validated(&self, document: ValidatedDocument<'_>) -> Result<String> {
+    pub fn render<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<String> {
+        let document = document.into_view()?;
         for visit in document.walk() {
             if !self
                 .preset
                 .handlers
-                .contains_key(&visit.node.data_type_id())
+                .contains_key(&visit.node.payload_type_id())
             {
                 return Err(Error::UnsupportedNode {
-                    payload_type: visit.node.data_type_name(),
+                    payload_type: visit.node.payload_type_name(),
                 });
             }
         }
@@ -75,9 +73,9 @@ impl Context<'_> {
             .renderer
             .preset
             .handlers
-            .get(&node.data_type_id())
+            .get(&node.payload_type_id())
             .ok_or(Error::UnsupportedNode {
-                payload_type: node.data_type_name(),
+                payload_type: node.payload_type_name(),
             })?;
         handler(node, self, output)
     }

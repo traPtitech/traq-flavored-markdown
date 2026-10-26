@@ -143,38 +143,12 @@ func (value EmbeddedKind) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(value))
 }
 
-type LookupKind string
-
-const (
-	LookupKindUser    LookupKind = "user"
-	LookupKindGroup   LookupKind = "group"
-	LookupKindChannel LookupKind = "channel"
-)
-
-func (value *LookupKind) UnmarshalJSON(raw []byte) error {
-	var decoded string
-	if err := contract.Decode(raw, &decoded); err != nil {
-		return err
-	}
-	if err := contract.Enum(decoded, "user", "group", "channel"); err != nil {
-		return err
-	}
-	*value = LookupKind(decoded)
-	return nil
-}
-func (value LookupKind) MarshalJSON() ([]byte, error) {
-	if err := contract.Enum(string(value), "user", "group", "channel"); err != nil {
-		return nil, err
-	}
-	return json.Marshal(string(value))
-}
-
 type ReferenceEmbeddingCandidate struct {
-	End   uint32     `json:"end"`
-	Kind  LookupKind `json:"kind"`
-	Name  string     `json:"name"`
-	Raw   string     `json:"raw"`
-	Start uint32     `json:"start"`
+	End   uint32        `json:"end"`
+	Kind  ReferenceKind `json:"kind"`
+	Name  string        `json:"name"`
+	Raw   string        `json:"raw"`
+	Start uint32        `json:"start"`
 }
 
 func (value *ReferenceEmbeddingCandidate) UnmarshalJSON(raw []byte) error {
@@ -203,7 +177,7 @@ func (value *ReferenceEmbeddingCandidate) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("missing required field %q", "end")
 	}
 	if raw, present := object["kind"]; present {
-		if err := (contract.Decode[LookupKind])(raw, &decoded.Kind); err != nil {
+		if err := (contract.Decode[ReferenceKind])(raw, &decoded.Kind); err != nil {
 			return fmt.Errorf("field %q: %w", "kind", err)
 		}
 	} else {
@@ -278,6 +252,32 @@ func (value *ReferenceEmbeddingPlan) UnmarshalJSON(raw []byte) error {
 	}
 	*value = ReferenceEmbeddingPlan(decoded)
 	return nil
+}
+
+type ReferenceKind string
+
+const (
+	ReferenceKindUser    ReferenceKind = "user"
+	ReferenceKindGroup   ReferenceKind = "group"
+	ReferenceKindChannel ReferenceKind = "channel"
+)
+
+func (value *ReferenceKind) UnmarshalJSON(raw []byte) error {
+	var decoded string
+	if err := contract.Decode(raw, &decoded); err != nil {
+		return err
+	}
+	if err := contract.Enum(decoded, "user", "group", "channel"); err != nil {
+		return err
+	}
+	*value = ReferenceKind(decoded)
+	return nil
+}
+func (value ReferenceKind) MarshalJSON() ([]byte, error) {
+	if err := contract.Enum(string(value), "user", "group", "channel"); err != nil {
+		return nil, err
+	}
+	return json.Marshal(string(value))
 }
 
 type References struct {
@@ -374,6 +374,68 @@ func (value *ExtractorOptions) UnmarshalJSON(raw []byte) error {
 	}
 	*value = ExtractorOptions(decoded)
 	return nil
+}
+
+type PlainTextOptions struct {
+	Origin     string           `json:"origin,omitempty"`
+	Whitespace WhitespacePolicy `json:"whitespace,omitempty"`
+}
+
+func (value *PlainTextOptions) UnmarshalJSON(raw []byte) error {
+	object, err := contract.Object(raw)
+	if err != nil {
+		return err
+	}
+	type wire PlainTextOptions
+	var decoded wire
+	if err := contract.Fields(object, "origin", "whitespace"); err != nil {
+		return err
+	}
+	if raw, present := object["origin"]; present {
+		if err := (contract.Decode[string])(raw, &decoded.Origin); err != nil {
+			return fmt.Errorf("field %q: %w", "origin", err)
+		}
+	} else {
+		if err := (contract.Decode[string])(json.RawMessage("\"\""), &decoded.Origin); err != nil {
+			return err
+		}
+	}
+	if raw, present := object["whitespace"]; present {
+		if err := (contract.Decode[WhitespacePolicy])(raw, &decoded.Whitespace); err != nil {
+			return fmt.Errorf("field %q: %w", "whitespace", err)
+		}
+	} else {
+		if err := (contract.Decode[WhitespacePolicy])(json.RawMessage("\"collapse\""), &decoded.Whitespace); err != nil {
+			return err
+		}
+	}
+	*value = PlainTextOptions(decoded)
+	return nil
+}
+
+type WhitespacePolicy string
+
+const (
+	WhitespacePolicyPreserve WhitespacePolicy = "preserve"
+	WhitespacePolicyCollapse WhitespacePolicy = "collapse"
+)
+
+func (value *WhitespacePolicy) UnmarshalJSON(raw []byte) error {
+	var decoded string
+	if err := contract.Decode(raw, &decoded); err != nil {
+		return err
+	}
+	if err := contract.Enum(decoded, "preserve", "collapse"); err != nil {
+		return err
+	}
+	*value = WhitespacePolicy(decoded)
+	return nil
+}
+func (value WhitespacePolicy) MarshalJSON() ([]byte, error) {
+	if err := contract.Enum(string(value), "preserve", "collapse"); err != nil {
+		return nil, err
+	}
+	return json.Marshal(string(value))
 }
 
 type ProcessingResult struct {
@@ -478,67 +540,5 @@ func (value *ProcessorOptions) UnmarshalJSON(raw []byte) error {
 		}
 	}
 	*value = ProcessorOptions(decoded)
-	return nil
-}
-
-type WhitespacePolicy string
-
-const (
-	WhitespacePolicyPreserve WhitespacePolicy = "preserve"
-	WhitespacePolicyCollapse WhitespacePolicy = "collapse"
-)
-
-func (value *WhitespacePolicy) UnmarshalJSON(raw []byte) error {
-	var decoded string
-	if err := contract.Decode(raw, &decoded); err != nil {
-		return err
-	}
-	if err := contract.Enum(decoded, "preserve", "collapse"); err != nil {
-		return err
-	}
-	*value = WhitespacePolicy(decoded)
-	return nil
-}
-func (value WhitespacePolicy) MarshalJSON() ([]byte, error) {
-	if err := contract.Enum(string(value), "preserve", "collapse"); err != nil {
-		return nil, err
-	}
-	return json.Marshal(string(value))
-}
-
-type RendererOptions struct {
-	Origin     string           `json:"origin,omitempty"`
-	Whitespace WhitespacePolicy `json:"whitespace,omitempty"`
-}
-
-func (value *RendererOptions) UnmarshalJSON(raw []byte) error {
-	object, err := contract.Object(raw)
-	if err != nil {
-		return err
-	}
-	type wire RendererOptions
-	var decoded wire
-	if err := contract.Fields(object, "origin", "whitespace"); err != nil {
-		return err
-	}
-	if raw, present := object["origin"]; present {
-		if err := (contract.Decode[string])(raw, &decoded.Origin); err != nil {
-			return fmt.Errorf("field %q: %w", "origin", err)
-		}
-	} else {
-		if err := (contract.Decode[string])(json.RawMessage("\"\""), &decoded.Origin); err != nil {
-			return err
-		}
-	}
-	if raw, present := object["whitespace"]; present {
-		if err := (contract.Decode[WhitespacePolicy])(raw, &decoded.Whitespace); err != nil {
-			return fmt.Errorf("field %q: %w", "whitespace", err)
-		}
-	} else {
-		if err := (contract.Decode[WhitespacePolicy])(json.RawMessage("\"collapse\""), &decoded.Whitespace); err != nil {
-			return err
-		}
-	}
-	*value = RendererOptions(decoded)
 	return nil
 }

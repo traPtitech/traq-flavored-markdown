@@ -3,13 +3,13 @@ import { MarkdownError } from './runtime/errors.js'
 
 export {
   embedReferences,
-  isPreset,
+  isGrammarPresetId,
   mentionsUser,
   presets,
   MarkdownError
 } from './index.js'
 export type {
-  Preset,
+  GrammarPresetId,
   MarkdownErrorCode,
   Parser,
   Extractor,

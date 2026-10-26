@@ -1,13 +1,12 @@
 use super::tags;
-use markdown_parser::engine::block::LineIndex;
+use markdown_parser::rules::block::LineIndex;
 
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch, DraftNode},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::DraftNode;
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -102,7 +101,7 @@ pub(super) fn parse(
         end,
         DraftNode::leaf(
             span,
-            NodeKind::new(markdown_commonmark_contracts::HtmlBlock { literal }),
+            AnyPayload::new(markdown_commonmark_contracts::HtmlBlock { literal }),
         ),
     )))
 }

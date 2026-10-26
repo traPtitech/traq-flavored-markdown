@@ -7,7 +7,7 @@ layers of the engine.
 | ------------------------------------ | ----------------------------- | --------------------------------------------- |
 | [ast](ast/README.md)                 | `markdown-ast`                | Typed AST with no grammar or serde dependency |
 | [definitions](definitions/README.md) | `markdown-definitions`        | Shared plugin declarations and node metadata  |
-| `definitions-derive`                 | `markdown-definitions-derive` | `NodeType` derive implementation              |
+| `definitions-derive`                 | `markdown-definitions-derive` | `WireTypeKey` derive implementation           |
 | [parser](parser/README.md)           | `markdown-parser`             | Grammar composition and rule execution        |
 | [renderer](renderer/README.md)       | `markdown-renderer`           | Typed handler-based rendering                 |
 | [extractor](extractor/README.md)     | `markdown-extractor`          | Typed handler-based extraction                |

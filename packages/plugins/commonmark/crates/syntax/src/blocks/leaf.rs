@@ -1,13 +1,12 @@
 use super::markers::*;
-use markdown_parser::engine::block::LineIndex;
+use markdown_parser::rules::block::LineIndex;
 
-use markdown_parser::{
-    NodeKind, ParseError,
-    engine::{
-        Budget,
-        block::{BlockInput, BlockMatch, DraftNode},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::BlockInput;
+use markdown_parser::rules::block::BlockMatch;
+use markdown_parser::rules::block::DraftNode;
 
 pub(super) fn fenced(
     input: &BlockInput<'_>,
@@ -38,7 +37,7 @@ pub(super) fn fenced(
         end,
         DraftNode::leaf(
             source.span_for(lines[first].start..lines[end - 1].end)?,
-            NodeKind::new(markdown_commonmark_contracts::CodeBlock {
+            AnyPayload::new(markdown_commonmark_contracts::CodeBlock {
                 fenced: true,
                 info,
                 literal,
@@ -92,7 +91,7 @@ pub(super) fn indented(
         end,
         DraftNode::leaf(
             source.span_for(lines[first].start..lines[end - 1].end)?,
-            NodeKind::new(markdown_commonmark_contracts::CodeBlock {
+            AnyPayload::new(markdown_commonmark_contracts::CodeBlock {
                 fenced: false,
                 info: String::new(),
                 literal,
@@ -172,7 +171,7 @@ pub(super) fn atx(
         input.start + 1,
         DraftNode::inline(
             source.span_for(line.start..line.end)?,
-            NodeKind::new(markdown_commonmark_contracts::Heading { level }),
+            AnyPayload::new(markdown_commonmark_contracts::Heading { level }),
             view,
         ),
     )))
@@ -197,7 +196,7 @@ pub(super) fn thematic_break(
         input.start + 1,
         DraftNode::leaf(
             input.source.span_for(line.start..line.end)?,
-            NodeKind::new(markdown_commonmark_contracts::ThematicBreak { marker }),
+            AnyPayload::new(markdown_commonmark_contracts::ThematicBreak { marker }),
         ),
     )))
 }

@@ -6,7 +6,7 @@ pub fn syntax() -> &'static commonmark::Syntax {
 }
 
 pub fn builder() -> GrammarBuilder {
-    traq_markdown_features::Profile::Commonmark
+    traq_markdown_features::GrammarProfile::Commonmark
         .grammar_builder()
         .expect("valid profile definition")
 }

@@ -1,4 +1,4 @@
-use crate::Plugin;
+use crate::PluginDeclaration;
 use std::sync::Arc;
 
 /// The identity of one registration in a builder. Editing an implementation
@@ -6,17 +6,17 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct RegistrationHandle {
     identity: Arc<()>,
-    plugin: Plugin,
+    plugin: PluginDeclaration,
 }
 
 impl RegistrationHandle {
-    pub fn new(plugin: &Plugin) -> Self {
+    pub fn new(plugin: &PluginDeclaration) -> Self {
         Self {
             identity: Arc::new(()),
             plugin: plugin.clone(),
         }
     }
-    pub fn plugin(&self) -> &Plugin {
+    pub fn plugin(&self) -> &PluginDeclaration {
         &self.plugin
     }
 }
@@ -46,7 +46,7 @@ pub struct RegistrationError {
 impl RegistrationError {
     pub(crate) fn new(
         kind: RegistrationErrorKind,
-        plugin: &Plugin,
+        plugin: &PluginDeclaration,
         payload_type: Option<&'static str>,
     ) -> Self {
         Self {

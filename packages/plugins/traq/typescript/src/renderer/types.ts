@@ -24,7 +24,7 @@ export type StampResolver = (
 ) => Readonly<ResolvedStamp> | undefined
 
 /** Ports supply display data; application state and routing stay with the caller. */
-export interface Options {
+export interface HtmlRendererOptions {
   resolveReference?: ReferenceResolver
   resolveStamp?: StampResolver
   validateLink?(destination: string): boolean

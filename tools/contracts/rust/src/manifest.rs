@@ -117,14 +117,14 @@ impl Operation {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Signature {
     pub params: Vec<WasmType>,
     pub results: Vec<WasmType>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct AbiContract {
     pub version: u32,
     pub operations: BTreeMap<String, Operation>,

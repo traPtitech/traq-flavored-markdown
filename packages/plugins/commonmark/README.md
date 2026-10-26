@@ -21,24 +21,26 @@ This package depends on core and does not know about traP syntax, traQ presets,
 or application policy. Those responsibilities belong to the traQ plugin and SDK.
 
 The TypeScript package exports generated node types and HTML renderers.
-`plugin(options)` creates editable CommonMark handlers. `html(options)` returns
+`plugin(options)` creates immutable CommonMark handlers. `createHtmlRenderer(options)` returns
 a renderer that escapes raw HTML and applies the safe link and image policies
-below. `specHtml(options)` returns a renderer for the CommonMark 0.31.2 HTML
+below. `createSpecHtmlRenderer(options)` returns a renderer for the CommonMark 0.31.2 HTML
 specified by the 652 examples, including raw HTML, XHTML-style void tags, and
 links with arbitrary valid schemes. **Do not render untrusted Markdown with
-`specHtml()`**: specification HTML can contain executable markup and URLs.
-Use `htmlPreset(options)` or `specHtmlPreset(options)` when composing handlers
-with the core `renderer()` function. A composed renderer such as the SDK passes
+`createSpecHtmlRenderer()`**: specification HTML can contain executable markup and URLs.
+Use `createHtmlPreset(options)` or `createSpecHtmlPreset(options)` when composing handlers
+with the core `createRenderer()` function. A composed renderer such as the SDK passes
 its display policy explicitly to `plugin(options)`. The Go
 module is `github.com/traPtitech/traq-flavored-markdown/packages/plugins/commonmark/go`;
 its payloads and node factories are generated from these Rust contracts. The
 shared AST and Wasm runtime remain in the core Go module.
 
-The `html(options)` link policy accepts relative URLs and the `http`, `https`,
+The `createHtmlRenderer(options)` link policy accepts relative URLs and the `http`, `https`,
 `mailto`, `ftp`, `tel`, `sms`, and `geo` schemes. Images accept relative, `http`,
 and `https` URLs. A rejected link renders as escaped Markdown source, so its
 destination and any autolink angle brackets remain visible. Hosts can override
-these defaults with `validateLink` and `validateImage`.
+these defaults with `validateLink` and `validateImage`. A rejected image becomes
+a link prefixed with `!` when its destination passes the link policy; otherwise
+the escaped Markdown source remains visible.
 
 A custom `highlight` callback returns `{ kind: 'content', html }` for HTML to
 place inside `<code>`, `{ kind: 'block', html }` for a complete `<pre>` block, or
@@ -46,7 +48,10 @@ place inside `<code>`, `{ kind: 'block', html }` for a complete `<pre>` block, o
 An empty `html` string is an explicit result. The optional
 `@traq-flavored-markdown/commonmark-plugin/highlight` adapter exposes
 `createHighlighter({ preClass, caption, autoLanguages })`; importing node
-contracts does not load that adapter.
+contracts does not load that adapter. `highlight.js` is an optional peer dependency:
+install it only when using `/highlight`. The generic URL helpers are exported from
+`@traq-flavored-markdown/core/html`. Generated `/nodes` exports a standalone
+`schema`; provide it to `createRenderer(preset, { schema })` when rendering raw trees.
 
 Attribution and licensing for the 652 CommonMark examples are in the
 [shared fixtures](../../../tests/fixtures/README.md).

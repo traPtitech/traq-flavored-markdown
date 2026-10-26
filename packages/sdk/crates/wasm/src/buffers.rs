@@ -1,9 +1,6 @@
 use crate::abi::{Error, ErrorCode};
 use serde::{Serialize, ser::SerializeMap};
-use std::{
-    cell::RefCell,
-    io::{self, Write},
-};
+use std::cell::RefCell;
 
 use crate::limits::{MAX_INPUT, MAX_OUTPUT};
 
@@ -16,12 +13,12 @@ pub struct Buffers {
 thread_local! { pub static IO: RefCell<Buffers> = RefCell::default(); }
 
 impl Buffers {
-    pub fn document(&self) -> Result<markdown_ast::ValidatedDocumentBuf, Error> {
+    pub fn document(&self) -> Result<markdown_ast::Document, Error> {
         let source = self.source()?;
         crate::nodes::codec()
-            .decode_validated_with_limits(
+            .decode_with_limits(
                 source.as_bytes(),
-                markdown_codec::DecodeLimits {
+                markdown_codec::CodecLimits {
                     json_bytes: MAX_INPUT,
                     ..Default::default()
                 },
@@ -29,56 +26,13 @@ impl Buffers {
             .map_err(Error::document)
     }
 
-    pub fn reply_document(&mut self, result: &Result<markdown_ast::ValidatedDocumentBuf, Error>) {
-        let result = match result {
-            Ok(document) => self.encode_document(document),
-            Err(error) => Err(error.clone()),
-        };
-        match result {
-            Ok(bytes) => self.write_document(&bytes),
-            Err(error) => self.reply_document_error(&error),
-        }
-    }
-
-    pub(crate) fn encode_document(
-        &self,
-        document: &markdown_ast::ValidatedDocumentBuf,
-    ) -> Result<Vec<u8>, Error> {
-        let bytes = crate::nodes::codec()
-            .encode_validated_with_limits(
-                document.validated(),
-                markdown_codec::CodecLimits {
-                    json_bytes: MAX_OUTPUT - 7,
-                    ..Default::default()
-                },
-            )
-            .map_err(|error| {
-                if error.resource() == Some("json_bytes") {
-                    Error::limit("output_bytes")
-                } else {
-                    let is_limit = error.resource().is_some();
-                    let mut reply = Error::document(error);
-                    if !is_limit {
-                        reply.code = ErrorCode::InternalError;
-                    }
-                    reply
-                }
-            })?;
-        if bytes.len() + 7 > MAX_OUTPUT {
-            return Err(Error::limit("output_bytes"));
-        }
-        Ok(bytes)
-    }
-
-    fn write_document(&mut self, bytes: &[u8]) {
-        self.output.clear();
-        self.output.extend_from_slice(b"{\"ok\":");
-        self.output.extend_from_slice(bytes);
-        self.output.push(b'}');
-    }
-
-    fn reply_document_error(&mut self, error: &Error) {
-        self.reply::<()>(&Err(error.clone()));
+    pub fn reply_document(&mut self, result: &Result<markdown_ast::Document, Error>) {
+        let result = result.as_ref().map_err(Clone::clone).and_then(|document| {
+            crate::nodes::codec()
+                .serialization_view(document, Default::default())
+                .map_err(Error::encoding)
+        });
+        self.reply(&result);
     }
 
     pub fn source(&self) -> Result<&str, Error> {
@@ -97,15 +51,25 @@ impl Buffers {
 
     pub fn reply<T: Serialize>(&mut self, result: &Result<T, Error>) -> bool {
         self.output.clear();
-        let success =
-            serde_json::to_writer(LimitedOutput(&mut self.output), &Reply(result)).is_ok();
-        if !success {
-            self.output.clear();
-            self.output.extend_from_slice(
-                b"{\"error\":{\"code\":\"resource_limit\",\"message\":\"output_bytes limit exceeded\",\"resource\":\"output_bytes\"}}",
-            );
+        match markdown_codec::write_json(&mut self.output, &Reply(result), MAX_OUTPUT) {
+            Ok(()) => true,
+            Err(error) => {
+                self.output.clear();
+                // The fallback has bounded, static text even for custom serializers.
+                let error = if error.resource() == Some("json_bytes") {
+                    Error::limit("output_bytes")
+                } else {
+                    Error::new(ErrorCode::InternalError, "response serialization failed")
+                };
+                let fallback = Err::<(), _>(error);
+                if markdown_codec::write_json(&mut self.output, &Reply(&fallback), MAX_OUTPUT)
+                    .is_err()
+                {
+                    self.output.clear();
+                }
+                false
+            }
         }
-        success
     }
 }
 
@@ -119,21 +83,6 @@ impl<T: Serialize> Serialize for Reply<'_, T> {
             Err(error) => map.serialize_entry("error", error)?,
         }
         map.end()
-    }
-}
-
-struct LimitedOutput<'a>(&'a mut Vec<u8>);
-
-impl Write for LimitedOutput<'_> {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if bytes.len() > MAX_OUTPUT.saturating_sub(self.0.len()) {
-            return Err(io::ErrorKind::FileTooLarge.into());
-        }
-        self.0.extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
     }
 }
 
@@ -196,11 +145,24 @@ mod tests {
     }
 
     #[test]
+    fn serialization_failures_are_not_reported_as_resource_limits() {
+        struct Broken;
+        impl Serialize for Broken {
+            fn serialize<S: serde::Serializer>(&self, _: S) -> Result<S::Ok, S::Error> {
+                Err(serde::ser::Error::custom("broken payload serializer"))
+            }
+        }
+        let mut io = Buffers::default();
+        assert!(!io.reply(&Ok(Broken)));
+        let reply: serde_json::Value = serde_json::from_slice(&io.output).unwrap();
+        assert_eq!(reply["error"]["code"], "internal_error");
+        assert!(reply["error"].get("resource").is_none());
+    }
+
+    #[test]
     fn parsed_documents_reuse_the_validated_owner() {
         let parser = traq_markdown_grammar::presets::traq::v1::parser();
-        let result = parser
-            .parse_validated("\u{feff}é\r\n\0😀")
-            .map_err(Error::from);
+        let result = parser.parse("\u{feff}é\r\n\0😀").map_err(Error::from);
         let mut io = Buffers::default();
         io.reply_document(&result);
         let reply: serde_json::Value = serde_json::from_slice(&io.output).unwrap();

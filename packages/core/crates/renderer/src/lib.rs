@@ -9,8 +9,8 @@ mod rendering;
 
 pub use error::Error;
 pub use markdown_definitions::RegistrationHandle;
-pub use plugin::Plugin;
-pub use preset::{Preset, PresetBuilder};
+pub use plugin::RenderPlugin;
+pub use preset::{RenderPreset, RenderPresetBuilder};
 pub use rendering::{Context, Output, RenderLimits, Renderer};
 
 pub type Result<T> = std::result::Result<T, Error>;

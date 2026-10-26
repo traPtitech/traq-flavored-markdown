@@ -204,61 +204,61 @@ func (value *HeaderRow) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-const BlockMathName = "generic.block_math"
+const BlockMathName = "extensions.block_math"
 
 func (*BlockMath) NodePayload() {}
 func (*BlockMath) NodeStructure() ast.NodeStructure {
 	return ast.NodeStructure{Role: "block", Children: ast.ChildStructure{Kind: "leaf"}}
 }
 
-const CellName = "generic.cell"
+const CellName = "extensions.cell"
 
 func (*Cell) NodePayload() {}
 func (*Cell) NodeStructure() ast.NodeStructure {
 	return ast.NodeStructure{Role: "structural", Children: ast.ChildStructure{Kind: "roles", Roles: []string{"inline"}, Nonempty: false}}
 }
 
-const InlineMathName = "generic.inline_math"
+const InlineMathName = "extensions.inline_math"
 
 func (*InlineMath) NodePayload() {}
 func (*InlineMath) NodeStructure() ast.NodeStructure {
 	return ast.NodeStructure{Role: "inline", Children: ast.ChildStructure{Kind: "leaf"}}
 }
 
-const MarkName = "generic.mark"
+const MarkName = "extensions.mark"
 
 func (*Mark) NodePayload() {}
 func (*Mark) NodeStructure() ast.NodeStructure {
 	return ast.NodeStructure{Role: "inline", Children: ast.ChildStructure{Kind: "roles", Roles: []string{"inline"}, Nonempty: false}}
 }
 
-const RowName = "generic.row"
+const RowName = "extensions.row"
 
 func (*Row) NodePayload() {}
 func (*Row) NodeStructure() ast.NodeStructure {
-	return ast.NodeStructure{Role: "structural", Children: ast.ChildStructure{Kind: "types", Types: []string{"generic.cell"}, Nonempty: true}}
+	return ast.NodeStructure{Role: "structural", Children: ast.ChildStructure{Kind: "types", Types: []string{"extensions.cell"}, Nonempty: true}}
 }
 
-const StrikethroughName = "generic.strikethrough"
+const StrikethroughName = "extensions.strikethrough"
 
 func (*Strikethrough) NodePayload() {}
 func (*Strikethrough) NodeStructure() ast.NodeStructure {
 	return ast.NodeStructure{Role: "inline", Children: ast.ChildStructure{Kind: "roles", Roles: []string{"inline"}, Nonempty: false}}
 }
 
-const TableName = "generic.table"
+const TableName = "extensions.table"
 
 func (*Table) NodePayload() {}
 func (*Table) NodeStructure() ast.NodeStructure {
-	return ast.NodeStructure{Role: "block", Children: ast.ChildStructure{Kind: "sequence", Prefix: []string{"generic.table_header_row"}, Rest: "generic.row", HasArity: true}}
+	return ast.NodeStructure{Role: "block", Children: ast.ChildStructure{Kind: "sequence", Prefix: []string{"extensions.table_header_row"}, Rest: "extensions.row", HasArity: true}}
 }
 func (value *Table) ChildArity() int { return len(value.Alignments) }
 
-const HeaderRowName = "generic.table_header_row"
+const HeaderRowName = "extensions.table_header_row"
 
 func (*HeaderRow) NodePayload() {}
 func (*HeaderRow) NodeStructure() ast.NodeStructure {
-	return ast.NodeStructure{Role: "structural", Children: ast.ChildStructure{Kind: "types", Types: []string{"generic.cell"}, Nonempty: true}}
+	return ast.NodeStructure{Role: "structural", Children: ast.ChildStructure{Kind: "types", Types: []string{"extensions.cell"}, Nonempty: true}}
 }
 func NewPayload(kind string) ast.Payload {
 	switch kind {

@@ -1,11 +1,12 @@
-use markdown_ast::{Document, Node, Span};
-use markdown_extractor::{Extractor, PresetBuilder};
-use markdown_trap_contracts::{Reference, ReferenceKind};
-use markdown_trap_extraction::{References, references};
+use markdown_ast::{MutableDocument, Node, Span};
+use markdown_extractor::ExtractionPresetBuilder;
+use markdown_extractor::Extractor;
+use markdown_traq_contracts::{Reference, ReferenceKind};
+use markdown_traq_extraction::{References, references};
 
 #[test]
 fn normalized_references_preserve_order_duplicates_and_categories() {
-    let mut builder = PresetBuilder::new();
+    let mut builder = ExtractionPresetBuilder::new();
     builder.add(&references::plugin()).unwrap();
 
     let extractor = Extractor::new(&builder.build().unwrap());
@@ -24,7 +25,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
         "あ".repeat(12),
     ];
 
-    let mut document = Document {
+    let mut document = MutableDocument {
         source: "x".repeat(forms.len() * 3),
         children: vec![],
     };
@@ -43,7 +44,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
                 },
                 Reference {
                     target,
-                    id: id.clone(),
+                    id: id.clone().into(),
                     label: "label".into(),
                 },
             ));

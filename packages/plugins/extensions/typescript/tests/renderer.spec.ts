@@ -1,18 +1,25 @@
-import type { Document, Node } from '@traq-flavored-markdown/core'
+import type {
+  ReadonlyDocument,
+  ReadonlyNode
+} from '@traq-flavored-markdown/core'
 import { defineNode } from '@traq-flavored-markdown/core'
 import { PluginDeclaration } from '@traq-flavored-markdown/core/definitions'
 import {
   PresetBuilder,
   RenderPlugin,
-  renderer
+  createRenderer
 } from '@traq-flavored-markdown/core/renderer'
+import {
+  definitions,
+  names,
+  schema
+} from '@traq-flavored-markdown/extensions-plugin/nodes'
 import { expect, test } from 'bun:test'
 
-import { definitions, names } from '../src/generated/nodes.js'
 import { plugin } from '../src/renderer/index.js'
 
-function document(): Document {
-  const cell = (start: number): Node => ({
+function document(): ReadonlyDocument {
+  const cell = (start: number): ReadonlyNode => ({
     kind: names.Cell,
     data: {},
     span: { start, end: start + 4 },
@@ -50,21 +57,25 @@ test('table nodes share dispatch, ancestry, column alignment and node-bound plan
   const [header, body] = table.children!
   const cell = header.children![0]
   const ancestry: string[][] = []
-  const text = new RenderPlugin(new PluginDeclaration('test-text')).on(
-    defineNode('text', () => true, {
-      role: 'inline',
-      children: { kind: 'leaf' }
-    }),
+  const textDefinition = defineNode('text', () => true, {
+    role: 'inline',
+    children: { kind: 'leaf' }
+  })
+  const text = new RenderPlugin(new PluginDeclaration('test-text')).withHandler(
+    textDefinition,
     (node, ctx) => {
       ancestry.push(ctx.ancestors.map(node => node.kind))
       return ctx.sourceSlice(node.span)
     }
   )
-  const extensions = plugin().replace(
+  const extensions = plugin().withReplacedHandler(
     definitions.Row,
     (_node, ctx) => '<tr class="custom">' + ctx.renderChildren() + '</tr>\n'
   )
-  const view = renderer(new PresetBuilder().add(extensions).add(text).build())
+  const view = createRenderer(
+    new PresetBuilder().add(extensions).add(text).build(),
+    { schema: schema.extend([textDefinition]) }
+  )
   expect(view.render(input)).toContain('<th style="text-align:right">head</th>')
   expect(view.render(input)).toContain('<tr class="custom">')
   expect(ancestry[0]).toEqual([names.Table, names.HeaderRow, names.Cell])
@@ -91,7 +102,9 @@ test('custom math adapters are optional and missing adapters preserve escaped so
     ]
   }
   expect(
-    renderer(new PresetBuilder().add(plugin()).build()).render(input)
+    createRenderer(new PresetBuilder().add(plugin()).build(), {
+      schema
+    }).render(input)
   ).toBe('$&lt;x&gt;$')
   const seen: unknown[][] = []
   const custom = plugin({
@@ -100,8 +113,10 @@ test('custom math adapters are optional and missing adapters preserve escaped so
       return '<math />'
     }
   })
-  expect(renderer(new PresetBuilder().add(custom).build()).render(input)).toBe(
-    '<math />'
-  )
+  expect(
+    createRenderer(new PresetBuilder().add(custom).build(), { schema }).render(
+      input
+    )
+  ).toBe('<math />')
   expect(seen).toEqual([['<x>', false]])
 })

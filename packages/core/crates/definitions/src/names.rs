@@ -1,4 +1,4 @@
-use crate::{Plugin, PluginGroup};
+use crate::{PluginDeclaration, PluginGroup};
 
 /// A display-name collision among selected declarations, not an identity error.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,7 +21,7 @@ impl std::error::Error for NameCollision {}
 /// scope; a slash in a display name does not create a namespace. This checks
 /// neither implementation identity nor rule/handler registration.
 pub fn validate_names<'a>(
-    plugins: impl IntoIterator<Item = &'a Plugin>,
+    plugins: impl IntoIterator<Item = &'a PluginDeclaration>,
 ) -> Result<(), NameCollision> {
     let plugins: Vec<_> = plugins.into_iter().collect();
     let groups = collect_groups(&plugins);
@@ -48,7 +48,7 @@ pub fn validate_names<'a>(
     Ok(())
 }
 
-fn collect_groups<'a>(plugins: &[&'a Plugin]) -> Vec<&'a PluginGroup> {
+fn collect_groups<'a>(plugins: &[&'a PluginDeclaration]) -> Vec<&'a PluginGroup> {
     let mut groups = vec![];
 
     for plugin in plugins {

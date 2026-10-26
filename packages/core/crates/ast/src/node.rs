@@ -1,51 +1,51 @@
-use crate::{NodeData, NodeKind, NodeRole, Span};
+use crate::{AnyPayload, NodeData, NodeRole, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
     pub span: Span,
-    pub kind: NodeKind,
+    pub payload: AnyPayload,
     pub children: Vec<Node>,
 }
 
 impl Node {
-    pub fn new(span: Span, data: impl Into<NodeKind>, children: Vec<Node>) -> Self {
+    pub fn new(span: Span, data: impl Into<AnyPayload>, children: Vec<Node>) -> Self {
         Self {
             span,
-            kind: data.into(),
+            payload: data.into(),
             children,
         }
     }
 
-    pub fn leaf(span: Span, data: impl Into<NodeKind>) -> Self {
+    pub fn leaf(span: Span, data: impl Into<AnyPayload>) -> Self {
         Self::new(span, data, vec![])
     }
 
-    pub fn get<T: NodeData>(&self) -> Option<&T> {
-        self.kind.get()
+    pub fn payload<T: NodeData>(&self) -> Option<&T> {
+        self.payload.downcast_ref()
     }
 
-    pub fn get_mut<T: NodeData>(&mut self) -> Option<&mut T> {
-        self.kind.get_mut()
+    pub fn payload_mut<T: NodeData>(&mut self) -> Option<&mut T> {
+        self.payload.downcast_mut()
     }
 
-    pub fn data_type_id(&self) -> std::any::TypeId {
-        self.kind.data_type_id()
+    pub fn payload_type_id(&self) -> std::any::TypeId {
+        self.payload.payload_type_id()
     }
 
-    pub fn data_type_name(&self) -> &'static str {
-        self.kind.data_type_name()
+    pub fn payload_type_name(&self) -> &'static str {
+        self.payload.payload_type_name()
     }
 
     pub fn role(&self) -> NodeRole {
-        self.kind.role()
+        self.payload.role()
     }
 
     pub fn payload_bytes(&self) -> usize {
-        self.kind.payload_bytes()
+        self.payload.payload_bytes()
     }
 
     /// Calls only this node's type-owned check. Does not validate descendants or spans.
     pub fn validate(&self) -> Result<(), crate::PayloadError> {
-        self.kind.validate(&self.children)
+        self.payload.validate(&self.children)
     }
 }

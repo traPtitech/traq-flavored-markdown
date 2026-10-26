@@ -11,7 +11,7 @@ let document = codec.decode(&json)?;
 ```
 
 Core has no fixed list of node types. A registered type implements `NodeData`,
-`NodeType`, `Serialize`, and `DeserializeOwned`; `#[derive(NodeType)]` generates
+`WireTypeKey`, `Serialize`, and `DeserializeOwned`; `#[derive(WireTypeKey)]` generates
 its transport metadata. Each external plugin type declares its `NodeRole` and
 owned payload byte count through `NodeData`, including every dynamic string.
 Plugins and explicit contract-version IDs are not part of registration.
@@ -41,6 +41,13 @@ limits too. The tree limits come from `markdown_ast::ValidationLimits`;
 `CodecLimits` adds the JSON byte limit. `encode_with_limits` and
 `decode_with_limits` accept the same explicit limits when a producer uses a
 larger tree budget. Pass `CodecLimits::document` to
-`ValidatedDocument::with_limits` before rendering or extraction. The
+`DocumentView::with_limits` before rendering or extraction. The
 `DecodeLimits` name remains an alias for `CodecLimits`. Grammar selection and
 parser or renderer lifecycle management are outside this crate.
+
+`encode_to_writer(document, writer, limits)` streams JSON into a caller-owned
+sink. `serialization_view(document, validation_limits)` returns a borrowed
+`SerializableDocument` that can be a field of another serializable response.
+It checks registered payload support once without constructing a JSON tree.
+`write_json(writer, value, byte_limit)` bounds the whole response, including
+its envelope, and distinguishes byte limits from payload or writer failures.

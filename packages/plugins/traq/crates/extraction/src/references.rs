@@ -1,5 +1,6 @@
-use markdown_extractor::{Plugin, Result};
-use markdown_trap_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
+use markdown_extractor::ExtractionPlugin;
+use markdown_extractor::Result;
+use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference, ReferenceKind};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -15,7 +16,7 @@ pub enum EmbeddedKind {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EmbeddedInfo {
     pub raw: String,
     #[serde(rename = "type")]
@@ -34,21 +35,22 @@ pub struct References {
 }
 
 /// Repeated calls share the default implementation; editing a value is isolated.
-pub fn plugin() -> Plugin<References> {
-    static PLUGIN: std::sync::LazyLock<Plugin<References>> =
+pub fn plugin() -> ExtractionPlugin<References> {
+    static PLUGIN: std::sync::LazyLock<ExtractionPlugin<References>> =
         std::sync::LazyLock::new(|| build().expect("valid reference extraction plugin"));
     PLUGIN.clone()
 }
 
-fn build() -> Result<Plugin<References>> {
-    let mut plugin = Plugin::<References>::new(&markdown_trap_contracts::declarations().references);
+fn build() -> Result<ExtractionPlugin<References>> {
+    let mut plugin =
+        ExtractionPlugin::<References>::new(&markdown_traq_contracts::declarations().references);
 
-    plugin.on::<Reference>(|reference, result| {
+    plugin.on::<Reference>(|reference, _, result| {
         result.record_reference(reference);
         Ok(())
     })?;
 
-    plugin.on::<Embedding>(|embedding, result| {
+    plugin.on::<Embedding>(|embedding, _, result| {
         result.record_embedding(embedding);
         Ok(())
     })?;
@@ -67,18 +69,18 @@ impl References {
                     ReferenceKind::Group => EmbeddedKind::Group,
                     ReferenceKind::Channel => EmbeddedKind::Channel,
                 },
-                id: reference.id.clone(),
+                id: reference.id.as_str().to_owned(),
             });
         }
 
-        if let Some(id) = crate::uuid::normalize(&reference.id) {
+        if let Some(id) = reference.id.canonical() {
             let ids = match reference.target {
                 ReferenceKind::User => &mut self.mentions,
                 ReferenceKind::Group => &mut self.group_mentions,
                 ReferenceKind::Channel => &mut self.channel_links,
             };
 
-            ids.push(id);
+            ids.push(id.to_string());
         }
     }
 
@@ -91,7 +93,7 @@ impl References {
                     EmbeddingKind::File => EmbeddedKind::File,
                     EmbeddingKind::Message => EmbeddedKind::Message,
                 },
-                id: embedding.id.clone(),
+                id: embedding.id.as_str().to_owned(),
             });
         }
     }

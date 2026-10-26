@@ -4,7 +4,8 @@ mod parse;
 
 pub use markdown_extensions_contracts::{Alignment, Cell, HeaderRow, Row, Table};
 
-use markdown_parser::engine::{Plugin, block::BlockRule};
+use markdown_parser::grammar::SyntaxPlugin;
+use markdown_parser::rules::block::BlockRule;
 
 pub fn block_rule() -> &'static BlockRule {
     static RULE: std::sync::LazyLock<BlockRule> = std::sync::LazyLock::new(|| {
@@ -20,9 +21,9 @@ pub fn block_rule() -> &'static BlockRule {
     &RULE
 }
 
-pub fn plugin() -> &'static Plugin {
-    static PLUGIN: std::sync::LazyLock<Plugin> = std::sync::LazyLock::new(|| {
-        let mut plugin = Plugin::new(&markdown_extensions_contracts::declarations().table);
+pub fn plugin() -> &'static SyntaxPlugin {
+    static PLUGIN: std::sync::LazyLock<SyntaxPlugin> = std::sync::LazyLock::new(|| {
+        let mut plugin = SyntaxPlugin::new(&markdown_extensions_contracts::declarations().table);
         plugin.add(block_rule());
         plugin
     });

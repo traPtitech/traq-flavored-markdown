@@ -1,10 +1,10 @@
-import type { Node } from '@traq-flavored-markdown/core/renderer'
+import type { ReadonlyNode } from '@traq-flavored-markdown/core/renderer'
 
 /** HTML returned by a highlighter is trusted. `block` includes its own `<pre>`. */
 export type HighlightResult =
   { kind: 'content'; html: string } | { kind: 'block'; html: string }
 
-export interface Options {
+export interface HtmlRendererOptions {
   validateLink?(destination: string): boolean
   validateImage?(destination: string): boolean
   breaks?: boolean
@@ -17,5 +17,5 @@ export interface Options {
   linkAttributes?: Readonly<Record<string, string>>
 
   /** Identify extension nodes that supply their own spacing inside tight lists. */
-  isBlockSpacing?(node: Node): boolean
+  isBlockSpacing?(node: ReadonlyNode): boolean
 }

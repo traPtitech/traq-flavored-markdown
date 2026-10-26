@@ -1,6 +1,6 @@
 //! traQ URL meaning, independent of Markdown nodes and output formats.
 //! Exact lexical matching shared with TypeScript through traq-links.json.
-use markdown_trap_extraction::is_canonical_reference_id;
+use markdown_traq_contracts::ReferenceId;
 
 const MAX_ORIGIN_BYTES: usize = 2048;
 
@@ -41,7 +41,7 @@ impl TraqUrlClassifier {
         let path = url.strip_prefix(origin)?.split(['?', '#']).next()?;
         if let Some(id) = path
             .strip_prefix("/files/")
-            .filter(|id| is_canonical_reference_id(id))
+            .filter(|id| ReferenceId::is_hyphenated(id))
         {
             Some(Target::File {
                 id: id.to_ascii_lowercase(),
@@ -49,7 +49,7 @@ impl TraqUrlClassifier {
         } else {
             let id = path
                 .strip_prefix("/messages/")
-                .filter(|id| is_canonical_reference_id(id))?;
+                .filter(|id| ReferenceId::is_hyphenated(id))?;
             Some(Target::Message {
                 id: id.to_ascii_lowercase(),
             })

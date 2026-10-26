@@ -1,7 +1,7 @@
 use crate::nodes;
-use markdown_ast::{Document, Node, Span};
+use markdown_ast::{MutableDocument, Node, Span};
 use markdown_commonmark_contracts::{Heading, Text};
-use markdown_definitions::NodeType;
+use markdown_definitions::WireTypeKey;
 use serde_json::Value;
 
 #[test]
@@ -10,7 +10,7 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
 
     let payloads: usize = traq_markdown_features::all()
         .iter()
-        .map(|feature| feature.payloads.len())
+        .map(|feature| feature.contract.payloads.len())
         .sum();
     assert_eq!(metadata.len(), payloads);
     let commonmark = traq_markdown_grammar::presets::commonmark::parser();
@@ -59,14 +59,14 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
 
 #[test]
 fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
-    let document = Document {
+    let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::leaf(Span { start: 0, end: 1 }, Heading { level: 7 })],
     };
 
     assert!(nodes::codec().encode(&document).is_err());
     let json = serde_json::json!({"source":"x", "children":[{
-        "kind":Heading::type_key(),"span":{"start":0,"end":1},"data":{"level":7}
+        "kind":Heading::wire_key(),"span":{"start":0,"end":1},"data":{"level":7}
     }]});
     assert!(
         nodes::codec()
@@ -75,7 +75,7 @@ fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
     );
 
     let child = Node::leaf(Span { start: 0, end: 1 }, Text { value: "x".into() });
-    let document = Document {
+    let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::new(
             Span { start: 0, end: 1 },

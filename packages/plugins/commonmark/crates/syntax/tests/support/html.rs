@@ -14,11 +14,12 @@ fn plain(nodes: &[Node]) -> String {
     nodes
         .iter()
         .map(|node| {
-            if let Some(text) = node.get::<Text>() {
+            if let Some(text) = node.payload::<Text>() {
                 text.value.clone()
-            } else if let Some(code) = node.get::<InlineCode>() {
+            } else if let Some(code) = node.payload::<InlineCode>() {
                 code.literal.clone()
-            } else if node.get::<Softbreak>().is_some() || node.get::<Hardbreak>().is_some() {
+            } else if node.payload::<Softbreak>().is_some() || node.payload::<Hardbreak>().is_some()
+            {
                 "\n".into()
             } else {
                 plain(&node.children)
@@ -45,19 +46,19 @@ fn title(value: &Option<String>) -> String {
 fn render_node(node: &Node, tight: bool) -> String {
     let nested = || render_with(&node.children, false);
 
-    if let Some(value) = node.get::<Text>() {
+    if let Some(value) = node.payload::<Text>() {
         escape(&value.value)
-    } else if node.get::<Paragraph>().is_some() {
+    } else if node.payload::<Paragraph>().is_some() {
         if tight {
             nested()
         } else {
             format!("<p>{}</p>\n", nested())
         }
-    } else if let Some(Heading { level }) = node.get::<Heading>() {
+    } else if let Some(Heading { level }) = node.payload::<Heading>() {
         format!("<h{level}>{}</h{level}>\n", nested())
-    } else if node.get::<Blockquote>().is_some() {
+    } else if node.payload::<Blockquote>().is_some() {
         format!("<blockquote>\n{}</blockquote>\n", nested())
-    } else if let Some(list) = node.get::<List>() {
+    } else if let Some(list) = node.payload::<List>() {
         let (tag, start) = match list.kind {
             ListKind::Ordered { start, .. } => (
                 "ol",
@@ -74,18 +75,18 @@ fn render_node(node: &Node, tight: bool) -> String {
             "<{tag}{start}>\n{}</{tag}>\n",
             render_with(&node.children, list.tight)
         )
-    } else if node.get::<ListItem>().is_some() {
+    } else if node.payload::<ListItem>().is_some() {
         let mut content = render_with(&node.children, tight);
 
         if node
             .children
             .first()
-            .is_some_and(|n| !tight || n.get::<Paragraph>().is_none())
+            .is_some_and(|n| !tight || n.payload::<Paragraph>().is_none())
         {
             content.insert(0, '\n');
         }
 
-        if tight && node.children.len() > 1 && node.children[0].get::<Paragraph>().is_some() {
+        if tight && node.children.len() > 1 && node.children[0].payload::<Paragraph>().is_some() {
             content = format!(
                 "{}\n{}",
                 render_with(&node.children[..1], true),
@@ -94,7 +95,7 @@ fn render_node(node: &Node, tight: bool) -> String {
         }
 
         format!("<li>{content}</li>\n")
-    } else if let Some(code) = node.get::<CodeBlock>() {
+    } else if let Some(code) = node.payload::<CodeBlock>() {
         let class = code
             .info
             .split_whitespace()
@@ -103,37 +104,37 @@ fn render_node(node: &Node, tight: bool) -> String {
             .unwrap_or_default();
 
         format!("<pre><code{class}>{}</code></pre>\n", escape(&code.literal))
-    } else if node.get::<ThematicBreak>().is_some() {
+    } else if node.payload::<ThematicBreak>().is_some() {
         "<hr />\n".into()
-    } else if node.get::<Softbreak>().is_some() {
+    } else if node.payload::<Softbreak>().is_some() {
         "\n".into()
-    } else if node.get::<Hardbreak>().is_some() {
+    } else if node.payload::<Hardbreak>().is_some() {
         "<br />\n".into()
-    } else if let Some(code) = node.get::<InlineCode>() {
+    } else if let Some(code) = node.payload::<InlineCode>() {
         format!("<code>{}</code>", escape(&code.literal))
-    } else if node.get::<Emphasis>().is_some() {
+    } else if node.payload::<Emphasis>().is_some() {
         format!("<em>{}</em>", nested())
-    } else if node.get::<Strong>().is_some() {
+    } else if node.payload::<Strong>().is_some() {
         format!("<strong>{}</strong>", nested())
-    } else if let Some(link) = node.get::<Link>() {
+    } else if let Some(link) = node.payload::<Link>() {
         format!(
             "<a href=\"{}\"{}>{}</a>",
             escape(&link.destination),
             title(&link.title),
             nested()
         )
-    } else if let Some(image) = node.get::<Image>() {
+    } else if let Some(image) = node.payload::<Image>() {
         format!(
             "<img src=\"{}\" alt=\"{}\"{} />",
             escape(&image.destination),
             escape(&plain(&node.children)),
             title(&image.title)
         )
-    } else if let Some(html) = node.get::<HtmlInline>() {
+    } else if let Some(html) = node.payload::<HtmlInline>() {
         html.literal.clone()
-    } else if let Some(html) = node.get::<HtmlBlock>() {
+    } else if let Some(html) = node.payload::<HtmlBlock>() {
         html.literal.clone()
     } else {
-        panic!("Unexpected node in CommonMark: {:?}", node.kind)
+        panic!("Unexpected node in CommonMark: {:?}", node.payload)
     }
 }

@@ -1,5 +1,6 @@
 use markdown_extensions_contracts::*;
-use markdown_renderer::{Plugin, Result};
+use markdown_renderer::RenderPlugin;
+use markdown_renderer::Result;
 
 use std::sync::LazyLock;
 
@@ -15,18 +16,18 @@ pub struct Options {
     pub style: Style,
 }
 
-pub fn plugin() -> Plugin {
-    static PLUGIN: LazyLock<Plugin> =
+pub fn plugin() -> RenderPlugin {
+    static PLUGIN: LazyLock<RenderPlugin> =
         LazyLock::new(|| build(Options::default()).expect("valid math text plugin"));
     PLUGIN.clone()
 }
 
-pub fn plugin_with_options(options: Options) -> Plugin {
+pub fn plugin_with_options(options: Options) -> RenderPlugin {
     build(options).expect("valid math text plugin")
 }
 
-fn build(options: Options) -> Result<Plugin> {
-    let mut math = Plugin::new(&markdown_extensions_contracts::declarations().math);
+fn build(options: Options) -> Result<RenderPlugin> {
+    let mut math = RenderPlugin::new(&markdown_extensions_contracts::declarations().math);
     math.on::<InlineMath>(move |v, _, _, output| {
         if options.style == Style::DelimitedTex {
             output.push("$")?;

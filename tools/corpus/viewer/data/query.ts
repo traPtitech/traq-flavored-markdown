@@ -1,7 +1,7 @@
-import type { DifferenceRow, Mode } from '../../report-schema.ts'
+import type { DifferenceRow, ProfileId } from '../../protocol/report.ts'
 
 export type Query = {
-  mode: Mode
+  profile: ProfileId
   search: string
   ignoreWhitespace: boolean
   page: number

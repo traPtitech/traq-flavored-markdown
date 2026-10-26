@@ -1,4 +1,6 @@
-use markdown_parser::engine::{Budget, ParseError, source::SourceView};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::source::SourceView;
 
 /// Original byte positions of paragraph continuation lines without `>`.
 #[derive(Clone)]

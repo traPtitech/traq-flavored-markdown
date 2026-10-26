@@ -13838,7 +13838,7 @@
               }
             },
             {
-              "kind": "generic.inline_math",
+              "kind": "extensions.inline_math",
               "span": {
                 "end": 30,
                 "start": 25
@@ -58755,7 +58755,7 @@
                       "data": {
                         "destination": "moon.jpg",
                         "title": null,
-                        "label_source": "moon"
+                        "labelSource": "moon"
                       },
                       "children": [
                         {
@@ -58802,7 +58802,7 @@
                   "data": {
                     "destination": "moon.jpg",
                     "title": null,
-                    "label_source": "moon"
+                    "labelSource": "moon"
                   },
                   "children": [
                     {
@@ -59166,7 +59166,7 @@
                   "data": {
                     "destination": "uri3",
                     "title": null,
-                    "label_source": "[[foo](uri1)](uri2)"
+                    "labelSource": "[[foo](uri1)](uri2)"
                   },
                   "children": [
                     {
@@ -59233,7 +59233,7 @@
               "data": {
                 "destination": "uri3",
                 "title": null,
-                "label_source": "[[foo](uri1)](uri2)"
+                "labelSource": "[[foo](uri1)](uri2)"
               },
               "children": [
                 {
@@ -60423,7 +60423,7 @@
                       "data": {
                         "destination": "moon.jpg",
                         "title": null,
-                        "label_source": "moon"
+                        "labelSource": "moon"
                       },
                       "children": [
                         {
@@ -60468,7 +60468,7 @@
               "data": {
                 "destination": "moon.jpg",
                 "title": null,
-                "label_source": "moon"
+                "labelSource": "moon"
               },
               "children": [
                 {
@@ -65350,7 +65350,7 @@
                   "data": {
                     "destination": "/url",
                     "title": "title",
-                    "label_source": "foo"
+                    "labelSource": "foo"
                   },
                   "children": [
                     {
@@ -65383,7 +65383,7 @@
               "data": {
                 "destination": "/url",
                 "title": "title",
-                "label_source": "foo"
+                "labelSource": "foo"
               },
               "children": [
                 {
@@ -65434,7 +65434,7 @@
                   },
                   "data": {
                     "destination": "train.jpg",
-                    "label_source": "foo *bar*",
+                    "labelSource": "foo *bar*",
                     "title": "train & tracks"
                   },
                   "children": [
@@ -65612,7 +65612,7 @@
                   "data": {
                     "destination": "/url2",
                     "title": null,
-                    "label_source": "foo ![bar](/url)"
+                    "labelSource": "foo ![bar](/url)"
                   },
                   "children": [
                     {
@@ -65634,7 +65634,7 @@
                       "data": {
                         "destination": "/url",
                         "title": null,
-                        "label_source": "bar"
+                        "labelSource": "bar"
                       },
                       "children": [
                         {
@@ -65669,7 +65669,7 @@
               "data": {
                 "destination": "/url2",
                 "title": null,
-                "label_source": "foo ![bar](/url)"
+                "labelSource": "foo ![bar](/url)"
               },
               "children": [
                 {
@@ -65691,7 +65691,7 @@
                   "data": {
                     "destination": "/url",
                     "title": null,
-                    "label_source": "bar"
+                    "labelSource": "bar"
                   },
                   "children": [
                     {
@@ -65745,7 +65745,7 @@
                   "data": {
                     "destination": "/url2",
                     "title": null,
-                    "label_source": "foo [bar](/url)"
+                    "labelSource": "foo [bar](/url)"
                   },
                   "children": [
                     {
@@ -65802,7 +65802,7 @@
               "data": {
                 "destination": "/url2",
                 "title": null,
-                "label_source": "foo [bar](/url)"
+                "labelSource": "foo [bar](/url)"
               },
               "children": [
                 {
@@ -65877,7 +65877,7 @@
                   },
                   "data": {
                     "destination": "train.jpg",
-                    "label_source": "foo *bar*",
+                    "labelSource": "foo *bar*",
                     "title": "train & tracks"
                   },
                   "children": [
@@ -66054,7 +66054,7 @@
                   },
                   "data": {
                     "destination": "train.jpg",
-                    "label_source": "foo *bar*",
+                    "labelSource": "foo *bar*",
                     "title": "train & tracks"
                   },
                   "children": [
@@ -66202,7 +66202,7 @@
                   "data": {
                     "destination": "train.jpg",
                     "title": null,
-                    "label_source": "foo"
+                    "labelSource": "foo"
                   },
                   "children": [
                     {
@@ -66235,7 +66235,7 @@
               "data": {
                 "destination": "train.jpg",
                 "title": null,
-                "label_source": "foo"
+                "labelSource": "foo"
               },
               "children": [
                 {
@@ -66297,7 +66297,7 @@
                   "data": {
                     "destination": "/path/to/train.jpg",
                     "title": "title",
-                    "label_source": "foo bar"
+                    "labelSource": "foo bar"
                   },
                   "children": [
                     {
@@ -66340,7 +66340,7 @@
               "data": {
                 "destination": "/path/to/train.jpg",
                 "title": "title",
-                "label_source": "foo bar"
+                "labelSource": "foo bar"
               },
               "children": [
                 {
@@ -66392,7 +66392,7 @@
                   "data": {
                     "destination": "url",
                     "title": null,
-                    "label_source": "foo"
+                    "labelSource": "foo"
                   },
                   "children": [
                     {
@@ -66425,7 +66425,7 @@
               "data": {
                 "destination": "url",
                 "title": null,
-                "label_source": "foo"
+                "labelSource": "foo"
               },
               "children": [
                 {
@@ -66477,7 +66477,7 @@
                   "data": {
                     "destination": "/url",
                     "title": null,
-                    "label_source": ""
+                    "labelSource": ""
                   }
                 }
               ]
@@ -66498,7 +66498,7 @@
               "data": {
                 "destination": "/url",
                 "title": null,
-                "label_source": ""
+                "labelSource": ""
               }
             },
             {
@@ -66537,7 +66537,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "foo",
+                    "labelSource": "foo",
                     "title": null
                   },
                   "children": [
@@ -66634,7 +66634,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "foo",
+                    "labelSource": "foo",
                     "title": null
                   },
                   "children": [
@@ -66731,7 +66731,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "foo",
+                    "labelSource": "foo",
                     "title": "title"
                   },
                   "children": [
@@ -66828,7 +66828,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "*foo* bar",
+                    "labelSource": "*foo* bar",
                     "title": "title"
                   },
                   "children": [
@@ -67005,7 +67005,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "Foo",
+                    "labelSource": "Foo",
                     "title": "title"
                   },
                   "children": [
@@ -67102,7 +67102,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "foo",
+                    "labelSource": "foo",
                     "title": "title"
                   },
                   "children": [
@@ -67235,7 +67235,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "foo",
+                    "labelSource": "foo",
                     "title": "title"
                   },
                   "children": [
@@ -67332,7 +67332,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "*foo* bar",
+                    "labelSource": "*foo* bar",
                     "title": "title"
                   },
                   "children": [
@@ -67612,7 +67612,7 @@
                   },
                   "data": {
                     "destination": "/url",
-                    "label_source": "Foo",
+                    "labelSource": "Foo",
                     "title": "title"
                   },
                   "children": [

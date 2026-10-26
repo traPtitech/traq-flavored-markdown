@@ -10,3 +10,7 @@ All entries have valid UTF-8 spans so failures isolate payload and child contrac
 leaf nodes, inline roles, list items, table headers and column widths. Pure
 TypeScript validation, native Wasm operations, and Go decoding consume
 the same JSON.
+
+The 2026-10-24 wire-name migration mechanically changed the structure fixture's
+`generic.*` kind names to `extensions.*`. Validity, source spans, payload values,
+and child order were preserved; the CommonMark specification data is unchanged.

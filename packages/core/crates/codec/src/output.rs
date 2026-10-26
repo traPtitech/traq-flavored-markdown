@@ -1,82 +1,86 @@
-use super::{Codec, CodecLimits, Error, ErrorKind, Result as CodecResult};
-use markdown_ast::{Document, Node, ValidatedDocument};
+use super::{Codec, Error, ErrorKind, Result as CodecResult};
+use markdown_ast::{DocumentInput, MutableDocument, Node, ValidationLimits};
 use serde::{Serialize, Serializer};
+use std::io::Write;
 
-pub(super) fn encode(
-    document: &Document,
-    codec: &Codec,
-    limits: CodecLimits,
-) -> CodecResult<Vec<u8>> {
-    // Check before recursive serialization, including subtrees a renderer may hide.
-    let document = ValidatedDocument::with_limits(document, limits.document)?;
-    encode_validated(document, codec, limits)
+/// A checked serialization view borrowing its native document and contract registry.
+/// Construct it through Codec::serialization_view; no JSON tree is allocated.
+pub struct SerializableDocument<'a> {
+    document: &'a MutableDocument,
+    codec: &'a Codec,
+}
+impl<'a> SerializableDocument<'a> {
+    pub(crate) fn new(
+        codec: &'a Codec,
+        document: impl DocumentInput<'a>,
+        limits: ValidationLimits,
+    ) -> CodecResult<Self> {
+        let document = document.into_view_with_limits(limits)?;
+        let mut path = vec![];
+        for visit in document.walk() {
+            path.truncate(visit.depth - 1);
+            path.push(visit.index);
+            if !codec.entries.contains_key(&visit.node.payload_type_id()) {
+                return Err(Error::new(ErrorKind::UnregisteredPayload {
+                    payload_type: visit.node.payload_type_name(),
+                })
+                .at(&path, Some(visit.node.span)));
+            }
+        }
+
+        Ok(Self {
+            document: document.document(),
+            codec,
+        })
+    }
 }
 
-pub(super) fn encode_validated(
-    document: ValidatedDocument<'_>,
-    codec: &Codec,
-    limits: CodecLimits,
-) -> CodecResult<Vec<u8>> {
-    document.check_limits(limits.document)?;
-    let mut path = vec![];
-    for visit in document.walk() {
-        path.truncate(visit.depth - 1);
-        path.push(visit.index);
-        if !codec.entries.contains_key(&visit.node.data_type_id()) {
-            return Err(Error::new(ErrorKind::UnregisteredPayload {
-                payload_type: visit.node.data_type_name(),
-            })
-            .at(&path, Some(visit.node.span)));
-        }
-    }
-    let document = document.document();
-
+/// Serialize into a caller-owned sink, counting actual encoded JSON bytes.
+/// A sink or payload serialization error is distinct from the byte budget.
+pub fn write_json<W: Write, T: Serialize + ?Sized>(
+    writer: W,
+    value: &T,
+    limit: usize,
+) -> CodecResult<()> {
     let mut output = LimitedOutput {
-        bytes: vec![],
-        limit: limits.json_bytes,
+        writer,
+        written: 0,
+        limit,
         exceeded: false,
     };
-
-    if let Err(error) = serde_json::to_writer(&mut output, &DocumentOutput { document, codec }) {
-        return Err(if output.exceeded {
+    serde_json::to_writer(&mut output, value).map_err(|error| {
+        if output.exceeded {
             Error::new(ErrorKind::ResourceLimit {
                 resource: "json_bytes",
-                limit: limits.json_bytes,
+                limit,
             })
         } else {
             error.into()
-        });
-    }
-    Ok(output.bytes)
+        }
+    })
 }
-
-struct LimitedOutput {
-    bytes: Vec<u8>,
+struct LimitedOutput<W> {
+    writer: W,
+    written: usize,
     limit: usize,
     exceeded: bool,
 }
-
-impl std::io::Write for LimitedOutput {
+impl<W: Write> Write for LimitedOutput<W> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        if bytes.len() > self.limit.saturating_sub(self.bytes.len()) {
+        if bytes.len() > self.limit.saturating_sub(self.written) {
             self.exceeded = true;
             return Err(std::io::Error::other("json byte limit"));
         }
-        self.bytes.extend_from_slice(bytes);
-        Ok(bytes.len())
+        let written = self.writer.write(bytes)?;
+        self.written += written;
+        Ok(written)
     }
-
     fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
+        self.writer.flush()
     }
 }
 
-pub(super) struct DocumentOutput<'a> {
-    pub document: &'a Document,
-    pub codec: &'a Codec,
-}
-
-impl Serialize for DocumentOutput<'_> {
+impl Serialize for SerializableDocument<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         #[derive(Serialize)]
         struct Frame<'a> {
@@ -104,7 +108,7 @@ impl Serialize for NodeOutput<'_> {
         let entry = self
             .codec
             .entries
-            .get(&self.node.kind.data_type_id())
+            .get(&self.node.payload.payload_type_id())
             .ok_or_else(|| serde::ser::Error::custom("unregistered node type"))?;
 
         #[derive(Serialize)]
@@ -128,7 +132,7 @@ impl Serialize for NodeOutput<'_> {
                 start: self.node.span.start,
                 end: self.node.span.end,
             },
-            data: (entry.borrow)(&self.node.kind),
+            data: (entry.borrow)(&self.node.payload),
             children: Children {
                 nodes: &self.node.children,
                 codec: self.codec,

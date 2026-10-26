@@ -5,8 +5,12 @@ handles delimiters, composes grammars, and enforces resource limits. It contains
 no CommonMark or traQ grammar, node contracts, or codec dependency.
 
 ```rust
-use markdown_definitions::Plugin as Declaration;
-use markdown_parser::{GrammarBuilder, NodeData, NodeRole, Parser, Plugin};
+use markdown_definitions::PluginDeclaration as Declaration;
+use markdown_parser::GrammarBuilder;
+use markdown_parser::NodeData;
+use markdown_parser::NodeRole;
+use markdown_parser::Parser;
+use markdown_parser::SyntaxPlugin;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
@@ -21,13 +25,13 @@ impl NodeData for Text {
 }
 
 let declaration = Declaration::new("text");
-let mut plugin = Plugin::new(&declaration);
+let mut plugin = SyntaxPlugin::new(&declaration);
 plugin.text(Text);
 let mut builder = GrammarBuilder::new();
 builder.add(&plugin)?;
 let parser = Parser::new(&builder.build()?);
 let document = parser.parse_inline("hello")?;
-assert_eq!(document.children[0].get::<Text>(), Some(&Text("hello".into())));
+assert_eq!(document.children[0].payload::<Text>(), Some(&Text("hello".into())));
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
@@ -42,7 +46,7 @@ uses the same `ValidationLimits` as codecs and AST consumers. Its defaults are
 65,536 source bytes, 8 MiB of payload, 16,384 nodes, and depth 64;
 `Limits::work` is specific to parsing. A parser configured with
 `Parser::with_limits` can pass its document to consumers through
-`ValidatedDocument::with_limits` using the same `Limits::document` value.
+`DocumentView::with_limits` using the same `Limits::document` value.
 
 Inline and text rules exchange `ViewOffset` and `ViewRange`; block rules receive
 `LineIndex` values and typed view ranges for their lines. `SourceView::span_for`
@@ -56,9 +60,13 @@ and charge the shared work budget.
 with `plugin(&plugin)` and validated preset compositions with `preset(&builder)`.
 Its numeric handles are internal binding references, not persistent IDs. Normal
 applications should use the preset instances from their distribution package.
-Serde is used for binding configuration and errors; AST JSON belongs to
-`markdown-codec`.
+The parser has no serde or schema dependency. Distribution bindings own their
+configuration and error DTOs; AST JSON belongs to `markdown-codec`.
 
 The public TypeScript and Go SDKs use this core through the Wasm distribution
 layer. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for notices covering
 third-party algorithms.
+
+Public APIs are organized by responsibility: `grammar` supplies composition,
+`rules` supplies block/inline matches, budgets, and parse state, and `source`
+supplies checked source coordinates. The parser execution engine is private.

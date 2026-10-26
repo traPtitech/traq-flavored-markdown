@@ -1,18 +1,18 @@
-use markdown_definitions::Plugin;
+use markdown_definitions::PluginDeclaration;
 use std::sync::LazyLock;
 
 /// Shared declarations, not an executable syntax or rendering preset.
 pub struct PluginDeclarations {
-    pub math: Plugin,
-    pub table: Plugin,
-    pub mark: Plugin,
-    pub strikethrough: Plugin,
-    pub linkify: Plugin,
+    pub math: PluginDeclaration,
+    pub table: PluginDeclaration,
+    pub mark: PluginDeclaration,
+    pub strikethrough: PluginDeclaration,
+    pub linkify: PluginDeclaration,
 }
 
 pub fn declarations() -> &'static PluginDeclarations {
     static CONTRACTS: LazyLock<PluginDeclarations> = LazyLock::new(|| {
-        let extensions = Plugin::group("extensions");
+        let extensions = PluginDeclaration::group("extensions");
         PluginDeclarations {
             math: extensions.plugin("math"),
             table: extensions.plugin("table"),

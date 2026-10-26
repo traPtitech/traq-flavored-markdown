@@ -5,13 +5,13 @@ use super::{
 use crate::references;
 use markdown_commonmark_contracts::LinkForm;
 
-use markdown_parser::{
-    Node, NodeKind, ParseError,
-    engine::{
-        Budget,
-        inline::{InlineAction, InlineInput, InlineMatch},
-    },
-};
+use markdown_parser::AnyPayload;
+use markdown_parser::Node;
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::inline::InlineAction;
+use markdown_parser::rules::inline::InlineInput;
+use markdown_parser::rules::inline::InlineMatch;
 
 pub fn link(
     input: &InlineInput<'_>,
@@ -59,14 +59,14 @@ pub fn link(
         reference
     };
 
-    let kind = if image {
-        NodeKind::new(markdown_commonmark_contracts::Image {
+    let payload = if image {
+        AnyPayload::new(markdown_commonmark_contracts::Image {
             destination: target,
             title,
             label_source: source[bracket.label_start.get()..pos.get()].into(),
         })
     } else {
-        NodeKind::new(markdown_commonmark_contracts::Link {
+        AnyPayload::new(markdown_commonmark_contracts::Link {
             destination: target,
             title,
             form: LinkForm::Explicit,
@@ -76,7 +76,7 @@ pub fn link(
     Ok(Some(InlineMatch {
         end: input.source.offset(end)?,
         action: InlineAction::CloseBracket {
-            kind,
+            payload,
             inhibit_brackets: !image,
         },
     }))
@@ -158,7 +158,7 @@ pub fn autolink(
     Ok(Some(InlineMatch {
         end: end + 1,
         action: InlineAction::Node {
-            kind: NodeKind::new(markdown_commonmark_contracts::Link {
+            payload: AnyPayload::new(markdown_commonmark_contracts::Link {
                 destination,
                 title: None,
                 form: LinkForm::Autolink,

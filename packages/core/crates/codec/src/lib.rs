@@ -10,6 +10,6 @@ mod registry;
 
 pub use error::{Error, ErrorKind};
 pub use limits::CodecLimits;
-pub use limits::CodecLimits as DecodeLimits;
+pub use output::{SerializableDocument, write_json};
 pub use registry::Codec;
 pub type Result<T> = std::result::Result<T, Error>;

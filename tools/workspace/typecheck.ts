@@ -6,6 +6,9 @@ import { corpusRoot, packageRoot, repositoryRoot } from './paths.ts'
 await $.cwd(
   repositoryRoot
 )`${Bun.argv[0]} run tools/workspace/tsc.ts -p tsconfig.json`
+await $.cwd(
+  repositoryRoot
+)`${Bun.argv[0]} run tools/workspace/tsc.ts -p tests/browser/tsconfig.json`
 const { graph } = await readNpmPackageGraph()
 for (const name of graph.order) {
   // Production sources also compile without Bun or browser DOM globals.

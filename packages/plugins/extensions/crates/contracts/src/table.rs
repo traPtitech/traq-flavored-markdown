@@ -14,7 +14,7 @@ pub enum Alignment {
 #[markdown_definitions::node(structure = table_structure)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Table {
     #[constraint(length(min = 1))]
     pub alignments: Vec<Option<Alignment>>,
@@ -23,19 +23,19 @@ pub struct Table {
 #[markdown_definitions::node(role = Structural, child_type = Cell, nonempty)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct HeaderRow {}
 
 #[markdown_definitions::node(role = Structural, child_type = Cell, nonempty)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Row {}
 
 #[markdown_definitions::node(role = Structural, children = Inline)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Cell {}
 
 fn table_structure() -> &'static markdown_ast::NodeStructure {

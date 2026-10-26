@@ -12,7 +12,7 @@ import (
 func EmbedReferences(
 	source string,
 	plan ReferenceEmbeddingPlan,
-	resolve func(LookupKind, string) (string, bool),
+	resolve func(ReferenceKind, string) (string, bool),
 ) (string, error) {
 	text, err := ast.NewSourceText(source)
 	if err != nil {
@@ -29,7 +29,7 @@ func EmbedReferences(
 		if !utf8.ValidString(candidate.Name) {
 			return "", fmt.Errorf("embedding candidate is not valid UTF-8")
 		}
-		if candidate.Kind != LookupKindUser && candidate.Kind != LookupKindGroup && candidate.Kind != LookupKindChannel {
+		if candidate.Kind != ReferenceKindUser && candidate.Kind != ReferenceKindGroup && candidate.Kind != ReferenceKindChannel {
 			return "", fmt.Errorf("invalid embedding lookup kind")
 		}
 	}
@@ -49,9 +49,9 @@ func EmbedReferences(
 		}
 
 		value := struct {
-			Type LookupKind `json:"type"`
-			Raw  string     `json:"raw"`
-			ID   string     `json:"id"`
+			Type ReferenceKind `json:"type"`
+			Raw  string        `json:"raw"`
+			ID   string        `json:"id"`
 		}{candidate.Kind, candidate.Raw, id}
 
 		encoded, err := json.Marshal(value)

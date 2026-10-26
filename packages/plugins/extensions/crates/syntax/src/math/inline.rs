@@ -1,12 +1,9 @@
 use super::InlineMath;
 
-use markdown_parser::{
-    ParseError,
-    engine::{
-        Budget,
-        inline::{InlineInput, InlineMatch},
-    },
-};
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::inline::InlineInput;
+use markdown_parser::rules::inline::InlineMatch;
 
 pub(super) fn parse(
     input: &InlineInput<'_>,
@@ -42,7 +39,7 @@ pub(super) fn parse(
 
             return Ok(Some(InlineMatch::leaf(
                 end + 1,
-                markdown_parser::NodeKind::new(data),
+                markdown_parser::AnyPayload::new(data),
             )));
         }
 
