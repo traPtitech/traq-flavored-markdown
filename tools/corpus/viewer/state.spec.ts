@@ -25,7 +25,7 @@ test('out-of-range page input becomes the navigation state, not only the display
   ).toBe(2)
 })
 
-test('search, profile, and whitespace changes reset pagination as one state transition', () => {
+test('search, profile, and filter changes reset pagination as one state transition', () => {
   let state = viewerReducer(initialViewerState, {
     type: 'page',
     page: 3,
@@ -39,10 +39,30 @@ test('search, profile, and whitespace changes reset pagination as one state tran
     profile: 'render',
     search: 'find me',
     page: 1,
-    ignoreWhitespace: false
+    ignoreWhitespace: false,
+    ignoreCase: false,
+    ignoreLinkedImages: false,
+    ignoreHtmlSerialization: false,
+    ignoreKatexErrors: false,
+    excludeBots: false
   })
   state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
   state = viewerReducer(state, { type: 'whitespace', ignore: true })
+  expect(state.query.page).toBe(1)
+  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
+  state = viewerReducer(state, { type: 'case', ignore: true })
+  expect(state.query.page).toBe(1)
+  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
+  state = viewerReducer(state, { type: 'linkedImages', ignore: true })
+  expect(state.query.page).toBe(1)
+  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
+  state = viewerReducer(state, { type: 'htmlSerialization', ignore: true })
+  expect(state.query.page).toBe(1)
+  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
+  state = viewerReducer(state, { type: 'katexErrors', ignore: true })
+  expect(state.query.page).toBe(1)
+  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
+  state = viewerReducer(state, { type: 'bots', exclude: true })
   expect(state.query.page).toBe(1)
   state = viewerReducer(state, { type: 'profile', profile: 'plainText' })
   expect(state.searchDraft).toBe('')
@@ -50,6 +70,11 @@ test('search, profile, and whitespace changes reset pagination as one state tran
     profile: 'plainText',
     search: '',
     page: 1,
-    ignoreWhitespace: true
+    ignoreWhitespace: true,
+    ignoreCase: true,
+    ignoreLinkedImages: true,
+    ignoreHtmlSerialization: true,
+    ignoreKatexErrors: true,
+    excludeBots: true
   })
 })

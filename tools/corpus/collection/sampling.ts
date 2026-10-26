@@ -71,7 +71,8 @@ export async function* sampleMessages(
         yield {
           id: message.id,
           channel: channel.id,
-          source: message.content
+          source: message.content,
+          ...(message.isBot === undefined ? {} : { isBot: message.isBot })
         }
       }
       offset += messages.length

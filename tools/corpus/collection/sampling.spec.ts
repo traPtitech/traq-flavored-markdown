@@ -23,7 +23,7 @@ test('sampling deduplicates across actual pages and caps the inspected window', 
             }))
           : [
               { id: '0', content: 'duplicate' },
-              { id: '200', content: 'last' }
+              { id: '200', content: 'last', isBot: false }
             ]
       }
     },
@@ -42,7 +42,12 @@ test('sampling deduplicates across actual pages and caps the inspected window', 
     [2, 200]
   ])
   expect(records).toHaveLength(201)
-  expect(records[200]).toEqual({ id: '200', channel: 'c', source: 'last' })
+  expect(records[200]).toEqual({
+    id: '200',
+    channel: 'c',
+    source: 'last',
+    isBot: false
+  })
   expect(progress[0].sampledChannels).toBe(0)
   expect(progress[1].sampledChannels).toBe(1)
   expect(

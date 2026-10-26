@@ -4,7 +4,7 @@ import {
   type ProfileResult,
   byProfile
 } from '../protocol/comparison.ts'
-import type { ReportMetadata } from '../protocol/report.ts'
+import { type ReportMetadata, filterMaskWidth } from '../protocol/report.ts'
 
 export const fixtureDigest = 'a'.repeat(64)
 export function fixturePlan(
@@ -82,7 +82,10 @@ export function fixtureMetadata(
   return {
     messages,
     counts,
-    filters: byProfile(profile => '0'.repeat(counts[profile])),
+    filters: byProfile(profile =>
+      '0'.repeat(counts[profile] * filterMaskWidth)
+    ),
+    authors: byProfile(profile => 'u'.repeat(counts[profile])),
     results: byProfile(profile =>
       fixtureResult(messages, { differences: counts[profile] })
     ),
@@ -124,3 +127,41 @@ export const fixtureRows: DifferenceRow[] = [
     after: { kind: 'text', value: 'd' }
   }
 ]
+
+export const fixtureLinkedImage: DifferenceRow = {
+  ...fixtureRows[0],
+  source:
+    '[![badge](https://images.example.test/badge.svg)](https://example.test/docs)',
+  before: {
+    kind: 'html',
+    value:
+      '[!<a href="https://images.example.test/badge.svg">badge</a>](<a href="https://example.test/docs">https://example.test/docs</a>)'
+  },
+  after: {
+    kind: 'html',
+    value: '<a href="https://example.test/docs">!badge</a>'
+  }
+}
+
+export const fixtureHtmlSerialization: DifferenceRow = {
+  ...fixtureRows[0],
+  source: 'HTML spelling',
+  before: {
+    kind: 'html',
+    value: `<span title='a&#039;b' class='error'>a&#39;b</span>`
+  },
+  after: { kind: 'html', value: `<span class="error" title="a'b">a'b</span>` }
+}
+
+export const fixtureKatexError: DifferenceRow = {
+  ...fixtureRows[0],
+  source: 'KaTeX error only',
+  before: {
+    kind: 'html',
+    value: `<p class='katex-block katex-error is-scroll' title='old diagnostic'>\\invalid-before</p>`
+  },
+  after: {
+    kind: 'html',
+    value: `<p class="katex-block katex-error is-scroll" title="new diagnostic">\\invalid-after</p>`
+  }
+}

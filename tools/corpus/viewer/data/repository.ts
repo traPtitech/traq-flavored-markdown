@@ -2,6 +2,7 @@ import {
   type DifferenceRow,
   type ProfileId,
   type ReportMetadata,
+  filterMaskAt,
   parseDifferenceRow
 } from '../../protocol/report.ts'
 import { type ReportData, parseReport } from '../../protocol/report.ts'
@@ -87,11 +88,19 @@ export class ReportRepository {
     progress: (value: Progress) => void = () => undefined
   ): Promise<QueryResult> {
     const search = query.search.trim().toLowerCase()
-    const key = JSON.stringify([query.profile, search, query.ignoreWhitespace])
+    // Bits enumerate nonempty combinations of the five normalization options.
+    const combination =
+      Number(query.ignoreWhitespace) |
+      (Number(query.ignoreCase) << 1) |
+      (Number(query.ignoreLinkedImages) << 2) |
+      (Number(query.ignoreHtmlSerialization) << 3) |
+      (Number(query.ignoreKatexErrors) << 4)
+    const mask = combination ? 1 << (combination - 1) : 0
+    const key = JSON.stringify([query.profile, search, mask, query.excludeBots])
     let hits = this.filters.get(key)
     signal?.throwIfAborted()
     if (hits === undefined) {
-      if (!search && !query.ignoreWhitespace) hits = null
+      if (!search && !mask && !query.excludeBots) hits = null
       else {
         const found: Hit[] = [],
           total = this.data.payload[query.profile].length
@@ -106,10 +115,17 @@ export class ReportRepository {
           )
           for (let index = 0; index < length; index++) {
             if (
-              query.ignoreWhitespace &&
-              this.metadata.filters[query.profile][
+              query.excludeBots &&
+              this.metadata.authors[query.profile][
                 chunk * this.metadata.pageSize + index
-              ] === '1'
+              ] === 'b'
+            )
+              continue
+            if (
+              filterMaskAt(
+                this.metadata.filters[query.profile],
+                chunk * this.metadata.pageSize + index
+              ) & mask
             )
               continue
             if (!search || rows![index].source.toLowerCase().includes(search))

@@ -123,6 +123,7 @@ export async function collect({
         id: anonymous(message.id),
         channel: anonymous(message.channel),
         source: message.source,
+        ...(message.isBot === undefined ? {} : { isBot: message.isBot }),
         syntaxVersion: 1
       })
       report.messages++

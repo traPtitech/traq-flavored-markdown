@@ -17,6 +17,7 @@ import {
 } from '../protocol/comparison.ts'
 import { buildReport } from '../report/build.ts'
 import { candidateArtifacts } from './artifacts.ts'
+import { writeAuthorIndex } from './authors.ts'
 import { prepareBaseline } from './baseline.ts'
 import { completeRun } from './run-files.ts'
 
@@ -43,6 +44,7 @@ export async function executeRun(plan: ComparisonPlan, workers: RunWorkers) {
     throw new Error('Corpus changed before comparison')
   await workers.frontend(plan)
   await workers.plainText(plan)
+  await writeAuthorIndex(plan)
   if ((await sha256(plan.corpus)) !== plan.corpusSha256)
     throw new Error('Corpus changed during comparison')
   await workers.verifyCandidate?.(plan)

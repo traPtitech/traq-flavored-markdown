@@ -8,7 +8,17 @@ export type ViewerState = {
   outputView: OutputView
 }
 export const initialViewerState: ViewerState = {
-  query: { profile: 'render', search: '', ignoreWhitespace: false, page: 1 },
+  query: {
+    profile: 'render',
+    search: '',
+    ignoreWhitespace: false,
+    ignoreCase: false,
+    ignoreLinkedImages: false,
+    ignoreHtmlSerialization: false,
+    ignoreKatexErrors: false,
+    excludeBots: false,
+    page: 1
+  },
   searchDraft: '',
   outputView: 'rendered'
 }
@@ -17,6 +27,11 @@ export type ViewerAction =
   | { type: 'draft'; text: string }
   | { type: 'search' }
   | { type: 'whitespace'; ignore: boolean }
+  | { type: 'case'; ignore: boolean }
+  | { type: 'linkedImages'; ignore: boolean }
+  | { type: 'htmlSerialization'; ignore: boolean }
+  | { type: 'katexErrors'; ignore: boolean }
+  | { type: 'bots'; exclude: boolean }
   | { type: 'page'; page: number; totalPages: number }
   | { type: 'output'; view: OutputView }
 
@@ -44,6 +59,25 @@ export function viewerReducer(
         ...state,
         query: { ...state.query, ignoreWhitespace: action.ignore, page: 1 }
       }
+    case 'case':
+      return {
+        ...state,
+        query: { ...state.query, ignoreCase: action.ignore, page: 1 }
+      }
+    case 'linkedImages':
+      return {
+        ...state,
+        query: { ...state.query, ignoreLinkedImages: action.ignore, page: 1 }
+      }
+    case 'htmlSerialization':
+      return {
+        ...state,
+        query: {
+          ...state.query,
+          ignoreHtmlSerialization: action.ignore,
+          page: 1
+        }
+      }
     case 'page':
       return {
         ...state,
@@ -51,6 +85,16 @@ export function viewerReducer(
           ...state.query,
           page: normalizePage(action.page, action.totalPages)
         }
+      }
+    case 'bots':
+      return {
+        ...state,
+        query: { ...state.query, excludeBots: action.exclude, page: 1 }
+      }
+    case 'katexErrors':
+      return {
+        ...state,
+        query: { ...state.query, ignoreKatexErrors: action.ignore, page: 1 }
       }
     case 'output':
       return { ...state, outputView: action.view }

@@ -1,3 +1,4 @@
+import { validAuthorKinds } from './authors.ts'
 import {
   byProfile,
   parseDifferenceRow,
@@ -24,10 +25,47 @@ export type {
   Timing
 } from './comparison.ts'
 export const pageSize = 50
+const outputDifferenceFilters = {
+  whitespace: 1,
+  case: 2,
+  whitespaceAndCase: 4,
+  linkedImages: 8,
+  whitespaceAndLinkedImages: 16,
+  caseAndLinkedImages: 32,
+  whitespaceAndCaseAndLinkedImages: 64,
+  htmlSerialization: 128,
+  whitespaceAndHtmlSerialization: 256,
+  caseAndHtmlSerialization: 512,
+  whitespaceAndCaseAndHtmlSerialization: 1024,
+  linkedImagesAndHtmlSerialization: 2048,
+  whitespaceAndLinkedImagesAndHtmlSerialization: 4096,
+  caseAndLinkedImagesAndHtmlSerialization: 8192,
+  whitespaceAndCaseAndLinkedImagesAndHtmlSerialization: 16384
+} as const
+export const differenceFilters = {
+  ...outputDifferenceFilters,
+  katexErrors: 1 << 15,
+  ...(Object.fromEntries(
+    Object.entries(outputDifferenceFilters).map(([name, mask]) => [
+      `${name}AndKatexErrors`,
+      mask << 16
+    ])
+  ) as Record<`${keyof typeof outputDifferenceFilters}AndKatexErrors`, number>)
+}
+/** Eight hex digits per row record equality for all 31 filter combinations. */
+export const filterMaskWidth = 8
+export const encodeFilterMasks = (masks: readonly number[]) =>
+  masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')
+export const filterMaskAt = (encoded: string, index: number) =>
+  Number.parseInt(
+    encoded.slice(index * filterMaskWidth, (index + 1) * filterMaskWidth),
+    16
+  )
 export const metadataSchema = object('ReportMetadata', {
   messages: count,
   counts: keyedRecord(count, profileIds),
   filters: keyedRecord(string, profileIds),
+  authors: keyedRecord(string, profileIds),
   results: keyedRecord(profileResultSchema, profileIds),
   run: runSummarySchema,
   generated: string,
@@ -46,8 +84,10 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
   for (const profile of profileIds) {
     const result = meta.results[profile]
     if (
-      meta.filters[profile].length !== meta.counts[profile] ||
-      !/^[01]*$/.test(meta.filters[profile]) ||
+      meta.filters[profile].length !== meta.counts[profile] * filterMaskWidth ||
+      !/^(?:[0-7][0-9a-f]{7})*$/.test(meta.filters[profile]) ||
+      meta.authors[profile].length !== meta.counts[profile] ||
+      !validAuthorKinds(meta.authors[profile]) ||
       chunks[profile].length !== Math.ceil(meta.counts[profile] / meta.pageSize)
     )
       throw new Error('Invalid report profile: ' + profile)
