@@ -29,6 +29,10 @@ export function useViewerController(repository: ReportRepository) {
     empty: response.status === 'ready' && totalHits === 0,
     controls: {
       counts: repository.metadata.counts,
+      authors: repository.metadata.authors[state.query.profile],
+      hasAuthorData: Object.values(repository.metadata.authors).some(authors =>
+        /[bh]/.test(authors)
+      ),
       query: state.query,
       searchDraft: state.searchDraft,
       outputView: state.outputView,
@@ -41,6 +45,14 @@ export function useViewerController(repository: ReportRepository) {
       onSearch: () => dispatch({ type: 'search' }),
       onWhitespace: (ignore: boolean) =>
         dispatch({ type: 'whitespace', ignore }),
+      onCase: (ignore: boolean) => dispatch({ type: 'case', ignore }),
+      onLinkedImages: (ignore: boolean) =>
+        dispatch({ type: 'linkedImages', ignore }),
+      onHtmlSerialization: (ignore: boolean) =>
+        dispatch({ type: 'htmlSerialization', ignore }),
+      onKatexErrors: (ignore: boolean) =>
+        dispatch({ type: 'katexErrors', ignore }),
+      onBots: (exclude: boolean) => dispatch({ type: 'bots', exclude }),
       onPage: (page: number) => dispatch({ type: 'page', page, totalPages }),
       onOutput: (view: OutputView) => dispatch({ type: 'output', view })
     }

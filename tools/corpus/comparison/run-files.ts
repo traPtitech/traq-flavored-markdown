@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import { sha256, writeJson } from '../infrastructure/files.ts'
+import { parseAuthorIndex } from '../protocol/authors.ts'
 import {
   type ComparisonPlan,
   type CompletedRun,
@@ -10,6 +11,7 @@ import {
   parseCompletedRun,
   parseWorkerResults
 } from '../protocol/comparison.ts'
+import { authorIndexFile } from './authors.ts'
 
 export const resultFiles = [
   'frontend-results.json',
@@ -52,9 +54,19 @@ export async function readResults(
 }
 
 export async function completeRun(plan: ComparisonPlan): Promise<CompletedRun> {
-  await readResults(plan)
+  const results = await readResults(plan)
+  const authors = parseAuthorIndex(
+    await Bun.file(path.join(plan.output, authorIndexFile)).json()
+  )
+  validateAuthors(plan, authors, results.render.messages)
+  if (
+    Object.values(results).some(
+      result => result.messages !== authors.kinds.length
+    )
+  )
+    throw new Error('Author index message counts mismatch')
   const files = await Promise.all(
-    runFiles.map(async file => ({
+    [...runFiles, authorIndexFile].map(async file => ({
       path: file,
       sha256: await sha256(path.join(plan.output, file))
     }))
@@ -74,10 +86,15 @@ export async function readCompletedRun(directory: string) {
   const manifest = parseCompletedRun(
     await Bun.file(path.join(directory, 'complete.json')).json()
   )
+  const names = manifest.files.map(file => file.path)
+  // Six-file runs predate account metadata and remain portable and verifiable.
+  const expected = names.includes(authorIndexFile)
+    ? [...runFiles, authorIndexFile]
+    : runFiles
   if (
-    manifest.files.length !== runFiles.length ||
-    new Set(manifest.files.map(file => file.path)).size !== runFiles.length ||
-    !runFiles.every(file => manifest.files.some(entry => entry.path === file))
+    names.length !== expected.length ||
+    new Set(names).size !== expected.length ||
+    !expected.every(file => names.includes(file))
   )
     throw new Error('Invalid comparison run file manifest')
   for (const file of manifest.files)
@@ -93,4 +110,18 @@ export async function readCompletedRun(directory: string) {
     throw new Error('Completion manifest belongs to a different run')
   // Reports can be regenerated after moving an immutable completed run directory.
   return { plan: { ...plan, output: path.resolve(directory) }, manifest }
+}
+
+export function validateAuthors(
+  plan: ComparisonPlan,
+  authors: ReturnType<typeof parseAuthorIndex>,
+  messages: number
+) {
+  if (
+    authors.runId !== plan.runId ||
+    authors.corpusSha256 !== plan.corpusSha256
+  )
+    throw new Error('Author index belongs to a different comparison run')
+  if (authors.kinds.length !== messages)
+    throw new Error('Author index message counts mismatch')
 }

@@ -105,6 +105,57 @@ func TestFixtureAST(t *testing.T) {
 	}
 }
 
+func TestHexStampPayloadsPreserveShortRGBAndFullRGBA(t *testing.T) {
+	ctx := context.Background()
+	p := parserFor(t, GrammarTraqV1)
+	for _, example := range []struct {
+		source string
+		value  uint32
+		alpha  bool
+	}{
+		{":0xf00:", 0xff0000, false},
+		{":0x0aF:", 0x00aaff, false},
+		{":0xF008.rotate.small:", 0xff000088, true},
+		{":0x0000:", 0, true},
+		{":0x00000001:", 1, true},
+		{":0xff000080:", 0xff000080, true},
+		{":0xFFFFFFFF:", 0xffffffff, true},
+	} {
+		document, err := p.ParseInline(ctx, example.source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(document.Children()) != 1 {
+			t.Fatalf("%s: expected one stamp", example.source)
+		}
+		var stamp traq.Stamp
+		if err := document.Children()[0].DecodePayload(&stamp); err != nil {
+			t.Fatal(err)
+		}
+		if stamp.Literal != example.source {
+			t.Fatalf("literal changed: %q", stamp.Literal)
+		}
+		if example.alpha {
+			if stamp.Kind.HexRgbaColor == nil || stamp.Kind.HexRgbaColor.Rgba != example.value {
+				t.Fatalf("%s: incorrect RGBA payload: %#v", example.source, stamp.Kind)
+			}
+		} else if stamp.Kind.HexColor == nil || stamp.Kind.HexColor.Rgb != example.value {
+			t.Fatalf("%s: incorrect RGB payload: %#v", example.source, stamp.Kind)
+		}
+		encoded, err := json.Marshal(stamp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var roundTrip traq.Stamp
+		if err := json.Unmarshal(encoded, &roundTrip); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(stamp, roundTrip) {
+			t.Fatalf("%s: payload changed during JSON round trip", example.source)
+		}
+	}
+}
+
 func TestLifecycleAndBounds(t *testing.T) {
 	ctx := context.Background()
 	p := parserFor(t, GrammarTraqV1)

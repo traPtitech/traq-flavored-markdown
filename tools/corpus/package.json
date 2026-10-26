@@ -15,7 +15,9 @@
     "typecheck": "bun run --bun ../../scripts/tsc.ts -p tsconfig.browser.json && bun run --bun ../../scripts/tsc.ts -p tsconfig.json"
   },
   "dependencies": {
+    "entities": "8.1.0",
     "jest-diff": "30.5.2",
+    "parse5": "8.0.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

@@ -3,6 +3,11 @@
 This owner supplies optional math, table, mark, strikethrough, and linkify
 features. It is separate from CommonMark and from the traQ display profile.
 
+Display math accepts `$$` after zero to three spaces of indentation, relative to
+its enclosing list or quote. A closing `$$` followed only by whitespace closes
+both single-line and multiline formulas; subsequent text stays outside the
+formula. Indented and fenced code blocks retain their usual interpretation.
+
 | Crate                           | Purpose                         |
 | ------------------------------- | ------------------------------- |
 | `markdown-extensions-contracts` | Typed extension node payloads   |

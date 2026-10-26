@@ -88,6 +88,10 @@ export type StampKind =
       type: 'hex_color'
     }
   | {
+      rgba: number
+      type: 'hex_rgba_color'
+    }
+  | {
       hue: number
       lightness: number
       saturation: number
@@ -210,6 +214,19 @@ function validateStampKind(value: unknown): boolean {
               value >= 0 &&
               value <= 16777215,
             type: oneOf('hex_color')
+          },
+          {}
+        ),
+      (value: unknown) =>
+        fields(
+          value,
+          {
+            rgba: (value: unknown) =>
+              typeof value === 'number' &&
+              Number.isInteger(value) &&
+              value >= 0 &&
+              value <= 4294967295,
+            type: oneOf('hex_rgba_color')
           },
           {}
         ),

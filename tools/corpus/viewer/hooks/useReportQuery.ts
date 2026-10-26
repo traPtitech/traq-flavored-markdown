@@ -12,10 +12,40 @@ export function useReportQuery(
   repository: ReportRepository,
   query: Query
 ): QueryState {
-  const { profile, search, ignoreWhitespace, page } = query
+  const {
+    profile,
+    search,
+    ignoreWhitespace,
+    ignoreCase,
+    ignoreLinkedImages,
+    ignoreHtmlSerialization,
+    ignoreKatexErrors,
+    excludeBots,
+    page
+  } = query
   const request = useMemo(
-    () => ({ profile, search, ignoreWhitespace, page }),
-    [profile, search, ignoreWhitespace, page]
+    () => ({
+      profile,
+      search,
+      ignoreWhitespace,
+      ignoreCase,
+      ignoreLinkedImages,
+      ignoreHtmlSerialization,
+      ignoreKatexErrors,
+      excludeBots,
+      page
+    }),
+    [
+      profile,
+      search,
+      ignoreWhitespace,
+      ignoreCase,
+      ignoreLinkedImages,
+      ignoreHtmlSerialization,
+      ignoreKatexErrors,
+      excludeBots,
+      page
+    ]
   )
   const [state, setState] = useState<{
     repository: ReportRepository

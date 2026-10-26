@@ -26,6 +26,9 @@ pub enum StampKind {
         #[constraint(range(min = 0, max = 16_777_215))]
         rgb: u32,
     },
+    HexRgbaColor {
+        rgba: u32,
+    },
     HslColor {
         #[constraint(range(min = 0, max = 359))]
         hue: u16,

@@ -9,6 +9,8 @@ import { createJsonlSink } from '../infrastructure/jsonl.ts'
 import { type ComparisonPlan, byProfile } from '../protocol/comparison.ts'
 import { buildReport } from '../report/build.ts'
 import { fixturePlan, fixtureResult } from '../testing/fixtures.ts'
+import { ReportRepository, parseReport } from '../viewer/data/repository.ts'
+import { initialViewerState } from '../viewer/state.ts'
 import { readCompletedRun } from './run-files.ts'
 import { createRun, executeRun } from './run.ts'
 
@@ -116,4 +118,50 @@ test('summaries from another run are rejected even with identical message counts
     expect(
       await Bun.file(path.join(plan.output, 'complete.json')).exists()
     ).toBe(false)
+  }))
+
+test('verified account metadata is portable and tampering is rejected', async () =>
+  withRun(async plan => {
+    await Bun.write(plan.corpus, '{"source":"synthetic","isBot":true}\n')
+    plan = { ...plan, corpusSha256: await sha256(plan.corpus) }
+    await writeJson(path.join(plan.output, 'run.json'), plan)
+    await executeRun(plan, { frontend, plainText })
+    // Report regeneration needs no access to the original input or API.
+    await rm(plan.corpus)
+    const report = await buildReport(plan.output, template)
+    expect(report.metadata.authors.render).toBe('b')
+    const payload = JSON.parse(
+      report.html.match(/id="payload">([^<]*)<\/script>/)![1]
+    )
+    const repository = new ReportRepository(
+      parseReport(report.metadata, payload)
+    )
+    expect(
+      (
+        await repository.query({
+          ...initialViewerState.query,
+          excludeBots: true
+        })
+      ).totalHits
+    ).toBe(0)
+    await Bun.write(path.join(plan.output, 'authors.json'), '{}')
+    await expect(buildReport(plan.output, template)).rejects.toThrow(
+      'digest mismatch'
+    )
+  }))
+
+test('legacy completed runs remain readable and unknown authors remain visible', async () =>
+  withRun(async plan => {
+    await executeRun(plan, { frontend, plainText })
+    const completion = await Bun.file(
+      path.join(plan.output, 'complete.json')
+    ).json()
+    completion.files = completion.files.filter(
+      (file: { path: string }) => file.path !== 'authors.json'
+    )
+    await writeJson(path.join(plan.output, 'complete.json'), completion)
+    await rm(plan.corpus)
+    const report = await buildReport(plan.output, template)
+    expect(report.metadata.authors.render).toBe('u')
+    expect(report.metadata.counts.render).toBe(1)
   }))

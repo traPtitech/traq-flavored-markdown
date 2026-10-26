@@ -4,6 +4,11 @@ export type Query = {
   profile: ProfileId
   search: string
   ignoreWhitespace: boolean
+  ignoreCase: boolean
+  ignoreLinkedImages: boolean
+  ignoreHtmlSerialization: boolean
+  ignoreKatexErrors: boolean
+  excludeBots: boolean
   page: number
 }
 export type QueryResult = {

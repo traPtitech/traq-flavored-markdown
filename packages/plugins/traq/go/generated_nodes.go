@@ -337,10 +337,11 @@ func (value *StampEffects) UnmarshalJSON(raw []byte) error {
 }
 
 type StampKind struct {
-	Normal   *StampKindNormal
-	User     *StampKindUser
-	HexColor *StampKindHexColor
-	HslColor *StampKindHslColor
+	Normal       *StampKindNormal
+	User         *StampKindUser
+	HexColor     *StampKindHexColor
+	HexRgbaColor *StampKindHexRgbaColor
+	HslColor     *StampKindHslColor
 }
 type StampKindNormal struct {
 	Name string `json:"name"`
@@ -350,6 +351,9 @@ type StampKindUser struct {
 }
 type StampKindHexColor struct {
 	Rgb uint32 `json:"rgb"`
+}
+type StampKindHexRgbaColor struct {
+	Rgba uint32 `json:"rgba"`
 }
 type StampKindHslColor struct {
 	Hue        uint16  `json:"hue"`
@@ -417,6 +421,28 @@ func (value *StampKind) UnmarshalJSON(raw []byte) error {
 		}
 		*value = StampKind{HexColor: &decoded}
 		return nil
+	case "hex_rgba_color":
+		var decoded StampKindHexRgbaColor
+		if err := contract.Fields(object, "type", "rgba"); err != nil {
+			return err
+		}
+		if raw, present := object["rgba"]; present {
+			if err := (func(raw json.RawMessage, value *uint32) error {
+				if err := contract.Decode(raw, value); err != nil {
+					return err
+				}
+				if *value < 0 || *value > 4294967295 {
+					return fmt.Errorf("number outside schema range")
+				}
+				return nil
+			})(raw, &decoded.Rgba); err != nil {
+				return fmt.Errorf("field %q: %w", "rgba", err)
+			}
+		} else {
+			return fmt.Errorf("missing required field %q", "rgba")
+		}
+		*value = StampKind{HexRgbaColor: &decoded}
+		return nil
 	case "hsl_color":
 		var decoded StampKindHslColor
 		if err := contract.Fields(object, "type", "hue", "lightness", "saturation"); err != nil {
@@ -483,6 +509,9 @@ func (value StampKind) MarshalJSON() ([]byte, error) {
 	if value.HexColor != nil {
 		count++
 	}
+	if value.HexRgbaColor != nil {
+		count++
+	}
 	if value.HslColor != nil {
 		count++
 	}
@@ -508,6 +537,12 @@ func (value StampKind) MarshalJSON() ([]byte, error) {
 			Type string `json:"type"`
 			*StampKindHexColor
 		}{Type: "hex_color", StampKindHexColor: value.HexColor})
+	}
+	if value.HexRgbaColor != nil {
+		raw, err = json.Marshal(struct {
+			Type string `json:"type"`
+			*StampKindHexRgbaColor
+		}{Type: "hex_rgba_color", StampKindHexRgbaColor: value.HexRgbaColor})
 	}
 	if value.HslColor != nil {
 		raw, err = json.Marshal(struct {

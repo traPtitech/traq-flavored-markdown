@@ -1,22 +1,27 @@
+import type { AuthorKind } from '../protocol/authors.ts'
 import {
   type DifferenceRow,
   type ProfileId,
   type ReportMetadata,
   type ReportPayload,
   byProfile,
+  differenceFilters,
+  encodeFilterMasks,
   pageSize,
   profileIds
 } from '../protocol/report.ts'
 import { parseReport } from '../protocol/report.ts'
-import { isWhitespaceOnlyDifference } from './filter.ts'
+import { differenceFilterMask } from './filter.ts'
 
 export async function aggregateDifferences(
   rows: AsyncIterable<DifferenceRow>,
-  size = pageSize
+  size = pageSize,
+  authorAt: (index: number) => AuthorKind = () => 'u'
 ) {
   if (!Number.isSafeInteger(size) || size <= 0)
     throw new Error('Invalid report page size')
   const filterMasks = byProfile<number[]>(() => []),
+    authorKinds = byProfile<AuthorKind[]>(() => []),
     payload: ReportPayload = byProfile<string[]>(() => []),
     pending = byProfile<DifferenceRow[]>(() => []),
     counts = byProfile(() => 0)
@@ -33,21 +38,37 @@ export async function aggregateDifferences(
       row.before.kind === row.after.kind
     )
       throw new Error('Equal result in difference list')
-    filterMasks[row.profile].push(Number(isWhitespaceOnlyDifference(row)))
+    filterMasks[row.profile].push(differenceFilterMask(row))
+    authorKinds[row.profile].push(authorAt(row.index))
     pending[row.profile].push(row)
     counts[row.profile]++
     if (pending[row.profile].length === size) flush(row.profile)
   }
   for (const mode of profileIds) flush(mode)
   const filters = byProfile(() => ''),
-    excluded = byProfile(() => ({ whitespace: 0 }))
+    excluded = byProfile(
+      () =>
+        Object.fromEntries(
+          Object.keys(differenceFilters).map(filter => [filter, 0])
+        ) as Record<keyof typeof differenceFilters, number>
+    )
   for (const mode of profileIds) {
-    filters[mode] = filterMasks[mode].join('')
-    excluded[mode].whitespace = filterMasks[mode].filter(
-      value => value & 1
-    ).length
+    filters[mode] = encodeFilterMasks(filterMasks[mode])
+    for (const filter of Object.keys(
+      differenceFilters
+    ) as (keyof typeof differenceFilters)[])
+      excluded[mode][filter] = filterMasks[mode].filter(
+        value => value & differenceFilters[filter]
+      ).length
   }
-  return { payload, counts, filters, excluded, pageSize: size }
+  return {
+    payload,
+    counts,
+    filters,
+    authors: byProfile(profile => authorKinds[profile].join('')),
+    excluded,
+    pageSize: size
+  }
 }
 
 export function reportDocument(

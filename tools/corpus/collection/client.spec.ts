@@ -42,3 +42,41 @@ test('gateway rejects malformed fields and oversized pages without including bod
     ).rejects.toThrow('body omitted')
   }
 })
+
+test('gateway snapshots bot categories once and retains unknown accounts without guessing', async () => {
+  for (const users of [
+    [
+      { id: 'bot', bot: true },
+      { id: 'human', bot: false }
+    ],
+    null
+  ]) {
+    const calls: string[] = []
+    const gateway = createMessageGateway({
+      get: async endpoint => {
+        calls.push(endpoint)
+        return endpoint.startsWith('users?')
+          ? users
+          : [
+              { id: 'a', userId: 'bot', content: 'Hello' },
+              { id: 'b', userId: 'human', content: 'BOT says hello' },
+              { id: 'c', userId: 'missing', content: 'BOT' }
+            ]
+      }
+    })
+    for (let offset = 0; offset < 2; offset++) {
+      const rows = await gateway.messages('channel', {
+        limit: 3,
+        offset,
+        until: '2026-01-01'
+      })
+      expect(rows?.map(row => row.isBot)).toEqual(
+        users ? [true, false, undefined] : [undefined, undefined, undefined]
+      )
+      expect(rows?.some(row => 'userId' in row)).toBe(false)
+    }
+    expect(
+      calls.filter(endpoint => endpoint.startsWith('users?'))
+    ).toHaveLength(1)
+  }
+})

@@ -43,6 +43,47 @@ test('real browser applies plugin layout, spoiler and stamp styles', async ({
   await expect(page.locator('#image img')).toHaveJSProperty('naturalWidth', 8)
 })
 
+test('RGB and RGBA stamps apply their parsed alpha values in the browser', async ({
+  page
+}) => {
+  const stamps = page.locator('#colors .emoji')
+  const colors = [
+    'ff0000',
+    'ff000088',
+    'ff0000',
+    'ff000080',
+    'ff000000',
+    'ff0000ff'
+  ]
+  await expect(stamps).toHaveCount(colors.length)
+  for (const [index, color] of colors.entries())
+    await expect(stamps.nth(index)).toHaveAttribute(
+      'style',
+      `background-color: #${color};`
+    )
+  // CSSOM may serialize 0x80 alpha as either 0.5 or 0.502. Compare pixels.
+  const pixels = await stamps.evaluateAll(elements => {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 1
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Canvas unavailable')
+    return elements.map(element => {
+      context.clearRect(0, 0, 1, 1)
+      context.fillStyle = getComputedStyle(element).backgroundColor
+      context.fillRect(0, 0, 1, 1)
+      return Array.from(context.getImageData(0, 0, 1, 1).data)
+    })
+  })
+  expect(pixels).toEqual([
+    [255, 0, 0, 255],
+    [255, 0, 0, 136],
+    [255, 0, 0, 255],
+    [255, 0, 0, 128],
+    [0, 0, 0, 0],
+    [255, 0, 0, 255]
+  ])
+})
+
 test('optional math and highlighting adapters work with the published browser modules', async ({
   page
 }) => {

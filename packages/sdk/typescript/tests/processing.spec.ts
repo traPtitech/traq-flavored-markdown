@@ -45,6 +45,18 @@ test('fused processing returns the same AST, extraction and text as independent 
   }
 })
 
+test('plain-text processing preserves authored RGB and RGBA stamp notation', async () => {
+  const runtime = await createRuntime(bytes)
+  try {
+    const processor = runtime.createProcessor(presets.traq.v1)
+    const source =
+      ':0xF00: :0xF008.rotate.small: :0xff000080: :0x00000001: :0xFFFFFFFF:'
+    expect(processor.processInline(source).plainText).toBe(source)
+  } finally {
+    runtime.dispose()
+  }
+})
+
 test('native Wasm operations follow the shared cross-language structure contract', async () => {
   const runtime = await createRuntime(bytes)
   try {

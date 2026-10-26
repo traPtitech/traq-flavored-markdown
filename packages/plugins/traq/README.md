@@ -46,7 +46,17 @@ applied after resolution, independently for links and stamp images.
 
 `spacing` preserves additional source blank lines in their original containers.
 An empty quote needs no synthetic node; the SDK display profile controls its
-visibility. Stamps store semantic colors (numeric RGB or canonical HSL) and keep
+visibility. Stamps store semantic colors (numeric RGB, RGBA, or canonical HSL) and keep
 their literal source separately.
+
+Hex color stamps accept exactly 3, 4, 6, or 8 hexadecimal digits after `0x`.
+Three-digit RGB and four-digit RGBA forms duplicate each digit, so `:0xf00:`
+is red (`#ff0000`) and `:0xf008:` is translucent red (`#ff000088`). Six-digit
+RGB keeps the existing `hex_color` payload; four- and eight-digit RGBA use
+`hex_rgba_color` with an unsigned 32-bit `rgba` value in `RRGGBBAA` order.
+HTML uses lowercase six- or eight-digit colors and labels, preserving alpha
+and leading zeros. Plain-text rendering retains the authored notation.
+Effects and sizes apply to all color forms. Other lengths and invalid hex
+digits remain ordinary stamp names, with no truncation or zero-padding guess.
 
 The SDK processing crate owns the traQ composition and runnable native examples.

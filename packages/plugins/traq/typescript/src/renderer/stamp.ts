@@ -73,8 +73,11 @@ export function stampRenderer({
             )
           : escapeHtml(stamp.literal)
       }
-      case 'hex_color': {
-        const digits = kind.rgb.toString(16).padStart(6, '0')
+      case 'hex_color':
+      case 'hex_rgba_color': {
+        const digits = (kind.type === 'hex_color' ? kind.rgb : kind.rgba)
+          .toString(16)
+          .padStart(kind.type === 'hex_color' ? 6 : 8, '0')
         const color = '#' + digits
         const label = '0x' + digits
         return renderWithStyle(

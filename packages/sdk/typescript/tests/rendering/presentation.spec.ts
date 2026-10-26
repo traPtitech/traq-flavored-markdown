@@ -108,6 +108,50 @@ test('stamp presentation uses parsed kinds and effects without matching color su
   ).toBe(':wave.rotate.rotate.rotate.rotate.rotate.rotate:')
 })
 
+test('hex color stamps render complete RGB and RGBA values without resolving image stamps', () => {
+  const view = createRenderer(
+    rendering.createHtmlPreset({
+      stamps: {
+        resolve: () => {
+          throw new Error('Colors must not resolve image stamps')
+        }
+      }
+    })
+  )
+  for (const [literal, kind, value, digits] of [
+    [':0xF00:', 'hex_color', 0xff0000, 'ff0000'],
+    [':0x0aF:', 'hex_color', 0x00aaff, '00aaff'],
+    [':0xff0000:', 'hex_color', 0xff0000, 'ff0000'],
+    [':0xF008.rotate.small:', 'hex_rgba_color', 0xff000088, 'ff000088'],
+    [':0x0aF0:', 'hex_rgba_color', 0x00aaff00, '00aaff00'],
+    [':0xff000080:', 'hex_rgba_color', 0xff000080, 'ff000080'],
+    [':0x00000001:', 'hex_rgba_color', 1, '00000001'],
+    [':0xFFFFFFFF:', 'hex_rgba_color', 0xffffffff, 'ffffffff']
+  ] as const) {
+    const document = parser.parseInline(literal)
+    expect(document.document.children).toHaveLength(1)
+    expect(document.document.children[0].data).toMatchObject({
+      literal,
+      kind: { type: kind, [kind === 'hex_color' ? 'rgb' : 'rgba']: value }
+    })
+    const html = view.render(document)
+    expect(html).toContain(`background-color: #${digits};`)
+    expect(html).toContain(`title=":0x${digits}:"`)
+    if (literal.includes('.rotate.small'))
+      expect(html).toContain('emoji-effect rotate small')
+  }
+  const unresolved = createRenderer(rendering.createHtmlPreset())
+  for (const name of [
+    '0x12',
+    '0x12345',
+    '0xff7383f',
+    '0x123456789',
+    '0x1234567z',
+    'foo0xf00'
+  ])
+    expect(unresolved.render(parser.parseInline(`:${name}:`))).toBe(`:${name}:`)
+})
+
 test('reference highlighting and link/image policies belong to each renderer', () => {
   const view = createRenderer(
     rendering.createHtmlPreset({

@@ -29,11 +29,18 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
           public: [{ id: 'channel-a' }],
           dm: [{ id: 'private-dm' }]
         })
+      if (url.pathname.endsWith('/users')) {
+        expect(url.searchParams.get('include-suspended')).toBe('true')
+        return Response.json([
+          { id: 'author', bot: true },
+          { id: 'person', bot: false }
+        ])
+      }
       expect(url.toString()).not.toContain('private-dm')
       expect(url.searchParams.get('limit')).toBe('2')
       return Response.json([
         { id: 'a', userId: 'author', content: '**private text**' },
-        { id: 'b', content: '`code`' }
+        { id: 'b', userId: 'person', content: '`code`' }
       ])
     }
     const result = await collect({
@@ -49,7 +56,7 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
       }
     })
     expect(result.messages).toBe(2)
-    expect(calls.length).toBe(2)
+    expect(calls.length).toBe(3)
     const saved = (
       await Bun.file(path.join(directory, 'messages.jsonl')).text()
     )
@@ -59,6 +66,9 @@ test('corpus collection respects bounds, credentials, and no-overwrite behavior'
     expect(saved[0].source).toBe('**private text**')
     expect(saved[0].id).not.toBe('a')
     expect(saved[0].userId).toBeUndefined()
+    expect(saved[0].isBot).toBe(true)
+    expect(saved[1].isBot).toBe(false)
+    expect(saved[1].userId).toBeUndefined()
     expect(JSON.stringify(result)).not.toContain('private text')
     expect(JSON.stringify(logs)).not.toContain('test-token')
     await expect(
