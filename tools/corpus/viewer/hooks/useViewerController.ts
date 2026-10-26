@@ -52,6 +52,8 @@ export function useViewerController(repository: ReportRepository) {
         dispatch({ type: 'htmlSerialization', ignore }),
       onKatexErrors: (ignore: boolean) =>
         dispatch({ type: 'katexErrors', ignore }),
+      onLinkPolicy: (ignore: boolean) =>
+        dispatch({ type: 'linkPolicy', ignore }),
       onBots: (exclude: boolean) => dispatch({ type: 'bots', exclude }),
       onPage: (page: number) => dispatch({ type: 'page', page, totalPages }),
       onOutput: (view: OutputView) => dispatch({ type: 'output', view })

@@ -77,7 +77,9 @@ function reportFixture(extraRows: DifferenceRow[] = []): ReportData {
   const base = fixtureMetadata(counts, 1, 6 + extraRows.length)
   const filters = byProfile(profile =>
     encodeFilterMasks(
-      rows.filter(row => row.profile === profile).map(differenceFilterMask)
+      rows
+        .filter(row => row.profile === profile)
+        .map(row => differenceFilterMask(row))
     )
   )
   const metadata = {
@@ -246,6 +248,85 @@ test('KaTeX-only checkbox composes with search and other filters while retaining
   await expect(page.locator('#status')).toHaveText('4 件 / 全 7 件')
   await page.locator('#profiles button').nth(2).click()
   await expect(page.locator('#rows .source')).toHaveText('Plain')
+})
+
+test('link policy checkbox composes with search, profiles and all output filters', async ({
+  page
+}) => {
+  const url = 'https://trap.jp'
+  const link = `<a href="${url}">${url}</a>`
+  await openReport(
+    page,
+    reportFixture([
+      {
+        runId: 'synthetic-run',
+        index: 5,
+        profile: 'render',
+        source: 'Link policy only ' + url,
+        before: { kind: 'html', value: `<p>${link}</p>` },
+        after: { kind: 'html', value: `<p>${url}</p>` }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 6,
+        profile: 'render',
+        source: 'Link policy case ' + url,
+        before: { kind: 'html', value: `<p>HELLO ${link}</p>` },
+        after: { kind: 'html', value: `<p>hello ${url}</p>` }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 7,
+        profile: 'render',
+        source: 'Link policy other ' + url,
+        before: { kind: 'html', value: `<p>before ${link}</p>` },
+        after: { kind: 'html', value: `<p>after ${url}</p>` }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 8,
+        profile: 'render',
+        source: 'Link policy failure ' + url,
+        before: { kind: 'error', value: 'before' },
+        after: { kind: 'error', value: 'after' }
+      }
+    ])
+  )
+  await expect(page.locator('#status')).toHaveText('7 件')
+  const policy = page.getByLabel('リンク仕様変更による差分を除外')
+  await expect(policy).not.toBeChecked()
+  await page.getByRole('button', { name: '次のページ' }).click()
+  await policy.check()
+  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
+  await expect(page.locator('#status')).toHaveText('6 件 / 全 7 件')
+  await page.getByLabel('原文を検索').fill('Link policy')
+  await page.getByLabel('原文を検索').press('Enter')
+  await expect(page.locator('#status')).toHaveText('3 件 / 全 7 件')
+  for (const label of [
+    '大文字・小文字の違いのみを除外',
+    'ホワイトスペースのみを除外',
+    'リンク付き画像の表示差分を除外',
+    'HTMLの表記差分のみを除外',
+    'KaTeXエラー部分のみの差分を除外'
+  ])
+    await page.getByLabel(label).check()
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 7 件')
+  await expect(page.locator('#rows .source')).toHaveText(
+    'Link policy other ' + url
+  )
+  await page.getByRole('button', { name: '次のページ' }).click()
+  await expect(page.locator('#rows .source')).toHaveText(
+    'Link policy failure ' + url
+  )
+  await page.locator('#profiles button').nth(2).click()
+  await expect(policy).toBeChecked()
+  await expect(page.locator('#status')).toHaveText('1 件')
+  await page.locator('#profiles button').first().click()
+  await page.getByLabel('原文を検索').fill('Link policy')
+  await page.getByLabel('原文を検索').press('Enter')
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 7 件')
+  await policy.uncheck()
+  await expect(page.locator('#status')).toHaveText('4 件 / 全 7 件')
 })
 
 test('real gzip data drives pagination, filters, search, profiles and error summaries', async ({

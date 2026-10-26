@@ -42,24 +42,38 @@ const outputDifferenceFilters = {
   caseAndLinkedImagesAndHtmlSerialization: 8192,
   whitespaceAndCaseAndLinkedImagesAndHtmlSerialization: 16384
 } as const
-export const differenceFilters = {
-  ...outputDifferenceFilters,
-  katexErrors: 1 << 15,
+const existingDifferenceFilters = {
+  ...(Object.fromEntries(
+    Object.entries(outputDifferenceFilters).map(([name, mask]) => [
+      name,
+      BigInt(mask)
+    ])
+  ) as Record<keyof typeof outputDifferenceFilters, bigint>),
+  katexErrors: 1n << 15n,
   ...(Object.fromEntries(
     Object.entries(outputDifferenceFilters).map(([name, mask]) => [
       `${name}AndKatexErrors`,
-      mask << 16
+      BigInt(mask) << 16n
     ])
-  ) as Record<`${keyof typeof outputDifferenceFilters}AndKatexErrors`, number>)
+  ) as Record<`${keyof typeof outputDifferenceFilters}AndKatexErrors`, bigint>)
 }
-/** Eight hex digits per row record equality for all 31 filter combinations. */
-export const filterMaskWidth = 8
-export const encodeFilterMasks = (masks: readonly number[]) =>
+export const differenceFilters = {
+  ...existingDifferenceFilters,
+  linkPolicy: 1n << 31n,
+  ...(Object.fromEntries(
+    Object.entries(existingDifferenceFilters).map(([name, mask]) => [
+      `${name}AndLinkPolicy`,
+      mask << 32n
+    ])
+  ) as Record<`${keyof typeof existingDifferenceFilters}AndLinkPolicy`, bigint>)
+}
+/** Sixteen hex digits per row record equality for all 63 filter combinations. */
+export const filterMaskWidth = 16
+export const encodeFilterMasks = (masks: readonly bigint[]) =>
   masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')
 export const filterMaskAt = (encoded: string, index: number) =>
-  Number.parseInt(
-    encoded.slice(index * filterMaskWidth, (index + 1) * filterMaskWidth),
-    16
+  BigInt(
+    '0x' + encoded.slice(index * filterMaskWidth, (index + 1) * filterMaskWidth)
   )
 export const metadataSchema = object('ReportMetadata', {
   messages: count,
@@ -85,7 +99,7 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
     const result = meta.results[profile]
     if (
       meta.filters[profile].length !== meta.counts[profile] * filterMaskWidth ||
-      !/^(?:[0-7][0-9a-f]{7})*$/.test(meta.filters[profile]) ||
+      !/^(?:[0-7][0-9a-f]{15})*$/.test(meta.filters[profile]) ||
       meta.authors[profile].length !== meta.counts[profile] ||
       !validAuthorKinds(meta.authors[profile]) ||
       chunks[profile].length !== Math.ceil(meta.counts[profile] / meta.pageSize)

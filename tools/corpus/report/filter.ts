@@ -1,7 +1,14 @@
 import { type DifferenceRow, isFailure } from '../protocol/comparison.ts'
-import { differenceFilters } from '../protocol/report.ts'
 import { normalizeHtmlSerialization } from './html.ts'
 import { normalizeKatexErrors } from './katex.ts'
+import { normalizeLinkPolicy } from './link-policy.ts'
+
+const textFilters = {
+  whitespace: 1,
+  case: 2,
+  whitespaceAndCase: 4,
+  linkedImages: 8
+}
 
 const withoutWhitespace = (value: string) => value.replace(/[ \t\r\n\f]/g, '')
 
@@ -17,12 +24,12 @@ const normalizeLinkedImages = (value: string) =>
 function textFilterMask(before: string, after: string) {
   let mask = 0
   if (withoutWhitespace(before) === withoutWhitespace(after))
-    mask |= differenceFilters.whitespace
+    mask |= textFilters.whitespace
   const beforeLower = before.toLowerCase()
   const afterLower = after.toLowerCase()
-  if (beforeLower === afterLower) mask |= differenceFilters.case
+  if (beforeLower === afterLower) mask |= textFilters.case
   if (withoutWhitespace(beforeLower) === withoutWhitespace(afterLower))
-    mask |= differenceFilters.whitespaceAndCase
+    mask |= textFilters.whitespaceAndCase
   return mask
 }
 
@@ -87,16 +94,14 @@ function outputFilterMask({
       : htmlFilterMask(imageHtmlBefore, imageHtmlAfter)
   return includeFilterSupersets(
     mask |
-      (imageBefore === imageAfter ? differenceFilters.linkedImages : 0) |
+      (imageBefore === imageAfter ? textFilters.linkedImages : 0) |
       (imageTextMask << 4) |
       (spellingMask << 7) |
       (imageSpellingMask << 11)
   )
 }
 
-export function differenceFilterMask(
-  row: Pick<DifferenceRow, 'before' | 'after'>
-) {
+function existingFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
   const mask = outputFilterMask(row)
   const { before, after } = row
   if (before.kind !== 'html' || after.kind !== 'html')
@@ -114,4 +119,32 @@ export function differenceFilterMask(
         1)
   }
   return includeFilterSupersets(mask | (katexMask << 15), 32)
+}
+
+export function differenceFilterMask(
+  row: Pick<DifferenceRow, 'before' | 'after'> &
+    Partial<Pick<DifferenceRow, 'source' | 'profile'>>,
+  origin?: string
+) {
+  const existing = BigInt(existingFilterMask(row))
+  // Existing exclusions also apply when the new checkbox is selected.
+  let mask = existing | (existing << 32n)
+  const normalized = normalizeLinkPolicy(row, origin)
+  if (
+    normalized &&
+    (normalized.before !== row.before.value ||
+      normalized.after !== row.after.value)
+  ) {
+    const linkMask =
+      normalized.before === normalized.after
+        ? 0xffffffffn
+        : BigInt(
+            existingFilterMask({
+              before: { kind: row.before.kind, value: normalized.before },
+              after: { kind: row.after.kind, value: normalized.after }
+            })
+          ) << 1n
+    mask |= linkMask << 31n
+  }
+  return mask
 }

@@ -68,6 +68,7 @@ test('aggregation, validation, filtering and cached querying share the same run 
     ignoreLinkedImages: false,
     ignoreHtmlSerialization: false,
     ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
     excludeBots: false,
     page: 99
   }
@@ -111,6 +112,7 @@ test('query cancellation cannot publish a partially scanned filter index', async
     ignoreLinkedImages: false,
     ignoreHtmlSerialization: false,
     ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
     excludeBots: false,
     page: 1
   }
@@ -175,6 +177,7 @@ test('case and whitespace filters compose with cached queries without decoding e
     ignoreLinkedImages: false,
     ignoreHtmlSerialization: false,
     ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
     excludeBots: false,
     page: 1
   }
@@ -299,6 +302,7 @@ test('linked-image indexes preserve mixed differences and compose all filter com
     ignoreLinkedImages: true,
     ignoreHtmlSerialization: false,
     ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
     excludeBots: false,
     page: 1
   }
@@ -390,6 +394,7 @@ test('HTML spelling filters compose with cached search and reject the previous i
     ignoreLinkedImages: false,
     ignoreHtmlSerialization: true,
     ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
     excludeBots: false,
     page: 1
   }
