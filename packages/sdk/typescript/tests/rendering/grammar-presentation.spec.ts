@@ -2,9 +2,49 @@ import * as common from '@traq-flavored-markdown/commonmark-plugin/renderer'
 import * as traq from '@traq-flavored-markdown/sdk/renderer'
 import { names } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import type { ReadonlyNode } from '@traq-flavored-markdown/core/renderer'
+import { math } from '@traq-flavored-markdown/extensions-plugin/math'
+import { names as extensionNames } from '@traq-flavored-markdown/extensions-plugin/nodes'
 import { expect, test } from 'bun:test'
 
 import { commonParser, parser } from './setup.js'
+
+test('display math tolerates trailing whitespace and up to three spaces without consuming following text', () => {
+  const view = traq.createHtmlRenderer({ math: { render: math } })
+  for (const indent of ['', ' ', '  ', '   ']) {
+    for (const suffix of [' ', '\t', ' \t  ']) {
+      const document = parser.parse(
+        `説明\n${indent}$$x^2 + y^2$$${suffix}\n続く説明`
+      )
+      expect(document.document.children.map(node => node.kind)).toEqual([
+        names.Paragraph,
+        extensionNames.BlockMath,
+        names.Paragraph
+      ])
+      const html = view.render(document)
+      expect(html).toContain('katex-display')
+      expect(html).not.toContain('katex-error')
+      expect(html).toEndWith('<p>続く説明</p>\n')
+    }
+  }
+})
+
+test('indented math after a list remains a display formula in its own block', () => {
+  const document = parser.parse(
+    ' 8. 項目\n\n    $$x + y$$\n\n   $$x - y$$\n\n続く説明'
+  )
+  expect(document.document.children.map(node => node.kind)).toEqual([
+    names.List,
+    extensionNames.BlockMath,
+    names.Paragraph
+  ])
+  const html = traq
+    .createHtmlRenderer({ math: { render: math } })
+    .render(document)
+  expect(html.match(/class="katex-display"/g)).toHaveLength(2)
+  expect(html).not.toContain('katex-error')
+  expect(html).not.toContain('$$')
+  expect(html).toEndWith('<p>続く説明</p>\n')
+})
 
 test('empty quote visibility belongs to traQ presentation without synthetic AST children', () => {
   const document = parser.parse('>')
@@ -183,6 +223,35 @@ test('rejected images remain safe links without creating nested anchors', () => 
     const html = view.render(parser.parseInline(`![image](${destination})`))
     expect(html).not.toContain('<a')
     expect(html).not.toContain('<img')
+  }
+})
+
+test('linked direct and reference images retain the outer link across display policies', () => {
+  const image = 'https://images.example.test/badge.svg'
+  const page = 'https://example.test/docs'
+  const attributes = ' target="_blank" rel="nofollow noopener noreferrer"'
+  for (const source of [
+    `[![**badge**](${image} "image title")](${page} "page title")`,
+    `[![**badge**][image]][page]\n\n[image]: ${image} "image title"\n[page]: ${page} "page title"`
+  ]) {
+    const document = parser.parse(source)
+    const outerLink = (content: string) =>
+      `<p><a href="${page}"${attributes} title="page title">${content}</a></p>\n`
+    expect(
+      traq
+        .createHtmlRenderer({ images: { validate: () => true } })
+        .render(document)
+    ).toBe(outerLink(`<img src="${image}" alt="badge" title="image title">`))
+    for (const validate of [undefined, (url: string) => url === page]) {
+      expect(
+        traq
+          .createHtmlRenderer({
+            images: { validate: () => false },
+            links: { validate }
+          })
+          .render(document)
+      ).toBe(outerLink('!badge'))
+    }
   }
 })
 

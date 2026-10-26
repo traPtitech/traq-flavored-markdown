@@ -17,7 +17,7 @@ pub fn block_rule() -> &'static BlockRule {
     static RULE: std::sync::LazyLock<BlockRule> = std::sync::LazyLock::new(|| {
         BlockRule::new(block::parse)
             .named("math")
-            .interrupts(|probe| probe.line.starts_with("$$"))
+            .interrupts(|probe| block::opening(probe.line).is_some())
     });
     &RULE
 }

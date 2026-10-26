@@ -21,11 +21,16 @@ and container structure. Empty quote visibility is a presentation choice: the
 standard traQ renderer supplies a line break without inserting an AST node.
 Links and both direct and reference images use CommonMark parsing. URL encoding
 belongs to parsing; URL scheme and image domain restrictions belong to each
-renderer. The standard traQ view displays HTTPS images from its allowed domains
-and renders rejected images as links when the link policy allows their URL.
-If both policies reject the URL, the escaped source remains visible. Applications can supply
-`images.validate` and `links.validate` independently. Explicit `undefined` options
-use the same display defaults as omitted options.
+renderer. The standard traQ view displays HTTPS images from its allowed domains.
+An image inside a link preserves the outer destination: an allowed image renders
+inside that link, and a rejected image becomes the plain label `!alt` inside it.
+No nested image-URL link is created, and the image URL need not pass the link
+policy when it is only replaced with text. The outer destination must still pass
+the link policy. A rejected standalone image becomes a link to its image URL when
+the link policy allows it, prefixed with `!`; otherwise the escaped source remains
+visible. These rules apply to both direct and reference images. Applications can
+supply `images.validate` and `links.validate` independently. Explicit `undefined`
+options use the same display defaults as omitted options.
 
 ## Contents
 

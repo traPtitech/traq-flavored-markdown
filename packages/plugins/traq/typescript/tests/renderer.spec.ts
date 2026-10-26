@@ -83,6 +83,42 @@ test('standalone stamp handlers preserve parsed color variants and ordered effec
   ).toThrow(/payload/)
 })
 
+test('RGBA stamp handlers retain all four bytes and reject invalid payload values', () => {
+  const renderer = view()
+  for (const [rgba, digits] of [
+    [0, '00000000'],
+    [1, '00000001'],
+    [0x00aaff00, '00aaff00'],
+    [0xff000088, 'ff000088'],
+    [0xffffffff, 'ffffffff']
+  ] as const) {
+    const output = renderer.render(
+      leaf(
+        names.Stamp,
+        stamp(
+          { type: 'hex_rgba_color', rgba },
+          { size: 'small', animations: ['rotate'] }
+        )
+      )
+    )
+    expect(output).toContain(`background-color: #${digits};`)
+    expect(output).toContain(`title=":0x${digits}:"`)
+    expect(output).toContain(`>:0x${digits}:</i>`)
+    expect(output).toContain('emoji-effect rotate small')
+  }
+  for (const rgba of [-1, 1.5, 0x100000000, NaN, Infinity, undefined, null]) {
+    expect(() =>
+      renderer.render(
+        leaf(names.Stamp, {
+          literal: ':color:',
+          kind: { type: 'hex_rgba_color', rgba },
+          effects: { animations: [], size: 'none' }
+        })
+      )
+    ).toThrow()
+  }
+})
+
 test('standalone reference handlers use caller labels and reject unsafe links', () => {
   for (const type of ['user', 'group', 'channel'] as const) {
     const reference: Reference = { type, id: 'identity', label: '<label>' }

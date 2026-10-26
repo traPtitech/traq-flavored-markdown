@@ -76,14 +76,12 @@ export function registerInlineHandlers(
   result = result.withHandler(definitions.Image, (n, ctx) => {
     const label = imageLabelText(n.children, ctx.sourceSlice, ctx.matches)
     if (!validateImage(n.data.destination)) {
-      if (!validateLink(n.data.destination)) return ctx.fallback(n)
       const content = escapeHtml(label)
-      return (
-        '!' +
-        (ctx.ancestors.some(node => node.kind === definitions.Link.kind)
-          ? content
-          : link(n.data.destination, n.data.title, content))
-      )
+      // The enclosing link owns the destination; no image URL is emitted.
+      if (ctx.ancestors.some(node => node.kind === definitions.Link.kind))
+        return '!' + content
+      if (!validateLink(n.data.destination)) return ctx.fallback(n)
+      return '!' + link(n.data.destination, n.data.title, content)
     }
 
     return (

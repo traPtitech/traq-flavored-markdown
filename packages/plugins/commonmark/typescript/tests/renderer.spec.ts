@@ -99,6 +99,46 @@ test('rejected images use the link policy and escape their labels and attributes
   ).toBe('![&lt;image&gt;&amp;](https://example.test/a.png?a=1&amp;b=2)')
 })
 
+test('a rejected image inside a link keeps the enclosing destination even when its own URL is rejected', () => {
+  const destination = 'https://example.test/page'
+  const imageUrl = 'https://blocked.test/badge.svg'
+  const source = `[![badge](${imageUrl})](${destination})`
+  const document = {
+    source,
+    children: [
+      {
+        kind: names.Link,
+        data: { destination, title: null, form: 'explicit' },
+        span: { start: 0, end: source.length },
+        children: [
+          {
+            kind: names.Image,
+            data: {
+              destination: imageUrl,
+              title: null,
+              labelSource: 'badge'
+            },
+            span: { start: 1, end: source.indexOf(')]') + 1 },
+            children: [
+              {
+                kind: names.Text,
+                data: { value: 'badge' },
+                span: { start: 3, end: 8 }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  expect(
+    createHtmlRenderer({
+      validateImage: () => false,
+      validateLink: url => url === destination
+    }).render(document)
+  ).toBe(`<a href="${destination}">!badge</a>`)
+})
+
 test('list layout uses visible children and applies item replacement through renderChildren', () => {
   const text = (start: number): ReadonlyNode => ({
     kind: names.Text,

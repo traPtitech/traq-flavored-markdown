@@ -26,6 +26,7 @@ const samples = {
   blocks: '# Heading\n\n- first\n- second\n\n> quoted\n\n##### Small heading\n\n###### Smallest heading',
   table: '| left | right |\n| :--- | ---: |\n| a | b |\n| c | d |',
   inline: '**bold** *italic* ~~gone~~ ==marked== !!**secret**!! :0xff0000:',
+  colors: ':0xf00: :0xf008: :0xff0000: :0xff000080: :0xf000: :0xff0000ff:',
   math: '$x^2$\n\n```js\nconst answer = 42\n```',
   safe: '<img src=x onerror="document.body.dataset.injected=1"> [unsafe](javascript:alert(1)) [safe](https://example.test)',
   image: '![alternative](/tests/browser/fixtures/pixel.svg)'
