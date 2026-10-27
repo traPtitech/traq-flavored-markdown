@@ -236,7 +236,19 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
       '- outer\n  - inner\n\n  - loose',
       '- outer\n  > quote',
       '1. parent\n   - child\n     > quote',
-      '- **strong**\n\n  paragraph'
+      '- **strong**\n\n  paragraph',
+      '> - parent\n    - child',
+      '> - 親\r\n\t- 子',
+      '> - parent\n    1. child',
+      '> - parent\n>   - child',
+      '> paragraph\n7. item\nnext',
+      '> paragraph\n> 7. item',
+      'paragraph\n7. item',
+      '- example\n  ```\n  code\n  ```\n  explanation',
+      '- example\n  ```\n  code\n  ```\n\n  explanation',
+      '1. parent\n   - first\n   - example\n     ```\n     code\n     ```\n     explanation\n\n2. next',
+      '- parent\n  - child\n   ```\n   code\n  ```\n  explanation',
+      '- parent\n  - child\n\n  explanation'
     ]) {
       expect(view.render(local.parse(source))).toBe(md.render(source))
     }

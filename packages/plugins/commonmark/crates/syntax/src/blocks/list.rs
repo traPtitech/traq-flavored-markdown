@@ -175,9 +175,10 @@ fn collect_continuation(
 
         if indent >= marker.width {
             ranges.push(lines[i].start + marker.width..lines[i].end);
-        } else if lazy
-            && !input.interrupts_text(continuation, None, Interrupt::LazyContinuation)
-            && item(continuation).is_none()
+        } else if super::super::context::is_lazy(source, lines[i].clone())?
+            || (lazy
+                && !input.interrupts_text(continuation, None, Interrupt::LazyContinuation)
+                && item(continuation).is_none())
         {
             ranges.push(lines[i].clone());
         } else {
@@ -212,17 +213,6 @@ fn finish_list(node: &mut ResolvedBlock) {
         item.metadata
             .get::<super::policy::BlockSpacing>()
             .is_some_and(|spacing| spacing.loose)
-            || item
-                .children()
-                .iter()
-                .filter(|child| {
-                    child
-                        .payload
-                        .downcast_ref::<markdown_commonmark_contracts::Paragraph>()
-                        .is_some()
-                })
-                .count()
-                > 1
     });
 
     if let Some(list) = node

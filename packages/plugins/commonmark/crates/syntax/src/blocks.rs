@@ -55,7 +55,9 @@ pub(crate) fn rules() -> Rules {
             .named("list")
             .interrupts(|probe| {
                 markers::item(probe.line).is_some_and(|m| {
-                    (!m.ordered || m.start == 1) && !markers::blank(&probe.line[m.content..])
+                    probe.context::<Interrupt>() == Some(&Interrupt::QuoteContinuation)
+                        || ((!m.ordered || m.start == 1)
+                            && !markers::blank(&probe.line[m.content..]))
                 })
             }),
 
