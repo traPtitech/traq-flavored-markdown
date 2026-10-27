@@ -212,7 +212,7 @@ test('all 63 output filter combinations preserve every independently selected di
   for (let required = 1; required < 64; required++) {
     let label = required & 2 ? "BADGE'S" : "badge's"
     if (required & 1) label = label.slice(0, 2) + ' ' + label.slice(2)
-    if (required & 8) label = label.replace("'", '&#039;')
+    if (required & 8) label = label.replace(/'/g, '&#039;')
     const opening =
       required & 8
         ? `<a title='page' href='https://example.test/docs'>`
