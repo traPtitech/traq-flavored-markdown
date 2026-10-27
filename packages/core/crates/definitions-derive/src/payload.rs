@@ -105,7 +105,7 @@ pub fn expand(mut item: DeriveInput, options: Option<NodeOptions>) -> syn::Resul
     let (implementation, arguments, clause) = generics.split_for_impl();
     let fields = quote! {
         impl #implementation #ast::PayloadFields for #name #arguments #clause {
-            fn heap_bytes(&self) -> usize { #heap }
+            fn dynamic_payload_bytes(&self) -> usize { #heap }
             fn validate_fields(&self) -> ::core::result::Result<(), #ast::PayloadError> { #validation }
         }
     };
@@ -114,6 +114,22 @@ pub fn expand(mut item: DeriveInput, options: Option<NodeOptions>) -> syn::Resul
         node_generics.make_where_clause().predicates.push(parse_quote!(
             #name #arguments: ::core::any::Any + ::core::clone::Clone + ::core::cmp::PartialEq + ::core::fmt::Debug + ::core::marker::Send + ::core::marker::Sync
         ));
+        // Concrete children are checked in the method body. Add a bound for
+        // generic children, but never make a recursive node's implementation
+        // depend on the very NodeData implementation being generated.
+        if let Some(child) = &options.child_type
+            && !item.generics.params.is_empty()
+            && !child.is_ident("Self")
+            && child
+                .segments
+                .last()
+                .is_some_and(|segment| segment.ident != *name)
+        {
+            node_generics
+                .make_where_clause()
+                .predicates
+                .push(parse_quote!(#child: #ast::NodeData));
+        }
         let (node_implementation, node_arguments, node_clause) = node_generics.split_for_impl();
         let structure = if let Some(path) = options.structure {
             quote!(#path())
@@ -121,25 +137,36 @@ pub fn expand(mut item: DeriveInput, options: Option<NodeOptions>) -> syn::Resul
             let role = options.role.expect("validated role");
             let value = if let Some(child) = options.child_type {
                 let nonempty = options.nonempty;
-                quote!(#ast::NodeStructure::children::<#child>(#ast::NodeRole::#role, #nonempty))
+                quote!(#ast::NodeStructure {
+                    role: #ast::NodeRole::#role,
+                    children: #ast::ChildStructure::Types {
+                        types: ::std::borrow::Cow::Borrowed(&[#ast::PayloadType::of::<#child>()]),
+                        nonempty: #nonempty,
+                    },
+                })
             } else if let Some(child) = options.children {
                 if child.is_ident("Any") {
                     quote!(#ast::NodeStructure { role: #ast::NodeRole::#role, children: #ast::ChildStructure::Any })
                 } else {
-                    quote!(#ast::NodeStructure::roles(#ast::NodeRole::#role, #ast::NodeRole::#child))
+                    quote!(#ast::NodeStructure {
+                        role: #ast::NodeRole::#role,
+                        children: #ast::ChildStructure::Roles {
+                            roles: ::std::borrow::Cow::Borrowed(&[#ast::NodeRole::#child]),
+                            nonempty: false,
+                        },
+                    })
                 }
             } else {
                 quote!(#ast::NodeStructure::leaf(#ast::NodeRole::#role))
             };
             quote! {
-                static STRUCTURE: ::std::sync::LazyLock<#ast::NodeStructure> = ::std::sync::LazyLock::new(|| #value);
-                &STRUCTURE
+                const { &#value }
             }
         };
         quote! {
             impl #node_implementation #ast::NodeData for #name #node_arguments #node_clause {
                 fn structure() -> &'static #ast::NodeStructure { #structure }
-                fn payload_bytes(&self) -> usize { #ast::PayloadFields::heap_bytes(self) }
+                fn payload_bytes(&self) -> usize { #ast::PayloadFields::dynamic_payload_bytes(self) }
                 fn validate_payload(&self, _: &[#ast::Node]) -> ::core::result::Result<(), #ast::PayloadError> { #ast::PayloadFields::validate_fields(self) }
             }
         }
@@ -179,7 +206,8 @@ fn field_operations(
         checks.push(quote!(#ast::PayloadFields::validate_fields(#access)?;));
         accesses.push(access);
     }
-    let heap = quote!(0usize #(.saturating_add(#ast::PayloadFields::heap_bytes(#accesses)))*);
+    let heap =
+        quote!(0usize #(.saturating_add(#ast::PayloadFields::dynamic_payload_bytes(#accesses)))*);
     let validation = quote!({ #(#checks)* Ok(()) });
     if let Some(variant) = variant {
         let pattern = if unit {

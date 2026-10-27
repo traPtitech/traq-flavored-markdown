@@ -3,10 +3,11 @@ pub use markdown_extensions_contracts::Strikethrough;
 use markdown_parser::AnyPayload;
 use markdown_parser::grammar::SyntaxPlugin;
 use markdown_parser::rules::inline::InlineRule;
+use std::num::NonZeroUsize;
 
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> = std::sync::LazyLock::new(|| {
-        paired_rule(b"~", "strikethrough", 2, || {
+        paired_rule(b"~", "strikethrough", NonZeroUsize::new(2).unwrap(), || {
             AnyPayload::new(Strikethrough {})
         })
     });

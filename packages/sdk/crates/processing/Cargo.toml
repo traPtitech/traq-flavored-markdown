@@ -6,7 +6,7 @@ license.workspace = true
 publish.workspace = true
 
 [features]
-contracts = ["markdown-traq-extraction/contracts", "dep:schemars"]
+contracts = ["markdown-traq-extraction/contracts", "markdown-traq-contracts/contracts", "dep:schemars"]
 
 
 [dependencies]
@@ -26,3 +26,6 @@ markdown-extensions-text.workspace = true
 markdown-traq-text.workspace = true
 traq-markdown-grammar = { path = "../grammar" }
 serde_json = "=1.0.154"
+
+[lints]
+workspace = true

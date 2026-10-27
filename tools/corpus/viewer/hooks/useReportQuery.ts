@@ -20,6 +20,7 @@ export function useReportQuery(
     ignoreLinkedImages,
     ignoreHtmlSerialization,
     ignoreKatexErrors,
+    ignoreLinkPolicy,
     excludeBots,
     page
   } = query
@@ -32,6 +33,7 @@ export function useReportQuery(
       ignoreLinkedImages,
       ignoreHtmlSerialization,
       ignoreKatexErrors,
+      ignoreLinkPolicy,
       excludeBots,
       page
     }),
@@ -43,6 +45,7 @@ export function useReportQuery(
       ignoreLinkedImages,
       ignoreHtmlSerialization,
       ignoreKatexErrors,
+      ignoreLinkPolicy,
       excludeBots,
       page
     ]

@@ -94,16 +94,25 @@ these wrappers is normalized. Error-like text in code, scripts, templates, or
 ordinary text is left intact. One-sided math failures, error count changes,
 inline/block changes, and different surrounding content remain visible.
 
-The five output checkboxes compose: whitespace, letter case, linked-image fallback,
-HTML spelling, and KaTeX error differences can be ignored together. Execution errors and changes of output
+The link-policy checkbox ignores the accepted changes from disabling bare URL,
+domain, and email linkification and enabling scheme-less angle autolinks. It
+checks the original Markdown and automatic link destinations before removing
+only the corresponding markup. Explicit links, unexpected link attributes,
+wrong destinations, newly linkified bare text, and missing forced links remain
+visible. Resource label and trailing-card changes use the comparison's exact
+configured origin. Ambiguous notation and opaque code/math contexts are retained
+conservatively; the filter does not execute Markdown or HTML.
+
+The six output checkboxes compose: whitespace, letter case, linked-image fallback,
+HTML spelling, KaTeX errors, and link-policy differences can be ignored together. Execution errors and changes of output
 kind always remain visible. These
 filters use indexes computed when generating the report, so toggling them does
-not decompress every chunk. Each row uses eight hexadecimal digits for the 31
+not decompress every chunk. Each row uses sixteen hexadecimal digits for the 63
 filter combinations. Old report formats are deliberately rejected; regenerate
 `differences.html` with `corpus:report` to add the checkbox to an existing run.
 
 The separate BOT checkbox excludes every difference belonging to a known BOT
-post, including errors, and composes with the five output filters and source
+post, including errors, and composes with the six output filters and source
 search. It defaults off. Unknown authors remain visible and their count is
 shown when author metadata is available. If no profile contains known author
 metadata, the BOT switch and author status are omitted. Otherwise the switch

@@ -1,7 +1,7 @@
 use markdown_ast::ValidationLimits;
 
 /// JSON framing and document limits shared by encoding and decoding.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CodecLimits {
     pub json_bytes: usize,
     pub document: ValidationLimits,

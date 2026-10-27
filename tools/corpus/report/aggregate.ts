@@ -16,11 +16,12 @@ import { differenceFilterMask } from './filter.ts'
 export async function aggregateDifferences(
   rows: AsyncIterable<DifferenceRow>,
   size = pageSize,
-  authorAt: (index: number) => AuthorKind = () => 'u'
+  authorAt: (index: number) => AuthorKind = () => 'u',
+  origin?: string
 ) {
   if (!Number.isSafeInteger(size) || size <= 0)
     throw new Error('Invalid report page size')
-  const filterMasks = byProfile<number[]>(() => []),
+  const filterMasks = byProfile<bigint[]>(() => []),
     authorKinds = byProfile<AuthorKind[]>(() => []),
     payload: ReportPayload = byProfile<string[]>(() => []),
     pending = byProfile<DifferenceRow[]>(() => []),
@@ -38,7 +39,7 @@ export async function aggregateDifferences(
       row.before.kind === row.after.kind
     )
       throw new Error('Equal result in difference list')
-    filterMasks[row.profile].push(differenceFilterMask(row))
+    filterMasks[row.profile].push(differenceFilterMask(row, origin))
     authorKinds[row.profile].push(authorAt(row.index))
     pending[row.profile].push(row)
     counts[row.profile]++

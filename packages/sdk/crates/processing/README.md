@@ -35,6 +35,8 @@ otherwise it is limited to 2,048 UTF-8 bytes. Exact `/files/{uuid}` and
 `/messages/{uuid}` URLs below that origin are recognized after removing a query
 or fragment. UUIDs normalize to lowercase. Other paths and URLs requiring
 normalization are ordinary links.
+The standalone `presets::traq::message::Extractor::new(origin)` constructor also
+checks this byte limit and returns `Result<Extractor>`.
 
 ## Extraction and embeddings
 

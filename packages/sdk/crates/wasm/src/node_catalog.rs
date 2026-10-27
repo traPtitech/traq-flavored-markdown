@@ -6,3 +6,5 @@ macro_rules! selected_node_catalogs {
         markdown_traq_contracts::node_catalog!($consumer);
     };
 }
+
+pub(crate) use selected_node_catalogs;

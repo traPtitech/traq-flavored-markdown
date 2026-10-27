@@ -48,9 +48,8 @@ pub struct Extractor {
 }
 impl Extractor {
     pub fn new(options: ExtractorOptions) -> Result<Self> {
-        crate::links::validate_origin(&options.origin)?;
         Ok(Self {
-            message: traq::message::Extractor::new(&options.origin),
+            message: traq::message::Extractor::new(&options.origin)?,
             references: markdown_extractor::Extractor::new(&traq::references::preset()?),
         })
     }

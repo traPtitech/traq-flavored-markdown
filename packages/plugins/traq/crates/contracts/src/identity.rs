@@ -94,7 +94,7 @@ impl From<&str> for ReferenceIdentity {
     }
 }
 impl markdown_ast::PayloadFields for ReferenceIdentity {
-    fn heap_bytes(&self) -> usize {
+    fn dynamic_payload_bytes(&self) -> usize {
         self.raw.len()
     }
 }
@@ -131,7 +131,7 @@ mod tests {
                 identity
             );
             assert_eq!(
-                markdown_ast::PayloadFields::heap_bytes(&identity),
+                markdown_ast::PayloadFields::dynamic_payload_bytes(&identity),
                 raw.len()
             );
         }

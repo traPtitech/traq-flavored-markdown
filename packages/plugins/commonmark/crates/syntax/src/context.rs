@@ -1,10 +1,11 @@
 use markdown_parser::ParseError;
 use markdown_parser::rules::Budget;
 use markdown_parser::source::SourceView;
+use std::collections::HashSet;
 
 /// Original byte positions of paragraph continuation lines without `>`.
 #[derive(Clone)]
-struct LazyLines(Vec<usize>);
+struct LazyLines(HashSet<usize>);
 
 pub(super) fn is_lazy(view: &SourceView, original: usize) -> bool {
     view.context::<LazyLines>()
@@ -20,14 +21,14 @@ pub(super) fn mark_lazy(
         return Ok(());
     }
 
-    let state = if let Some(inherited) = view.context::<LazyLines>() {
-        budget.spend(inherited.0.len() + lines.len())?;
-        let mut state = inherited.clone();
-        state.0.extend(lines);
-        state
+    budget.spend(lines.len())?;
+    let mut state = if let Some(inherited) = view.context::<LazyLines>() {
+        budget.spend(inherited.0.len())?;
+        inherited.clone()
     } else {
-        LazyLines(lines)
+        LazyLines(HashSet::with_capacity(lines.len()))
     };
+    state.0.extend(lines);
 
     view.set_context(state);
 

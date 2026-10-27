@@ -17,10 +17,11 @@ pub struct Extractor {
 }
 
 impl Extractor {
-    pub fn new(origin: &str) -> Self {
-        Self {
-            links: TraqUrlClassifier::new(origin),
-        }
+    /// The origin is limited to 2,048 UTF-8 bytes, as in the combined extractor.
+    pub fn new(origin: &str) -> crate::Result<Self> {
+        Ok(Self {
+            links: TraqUrlClassifier::new(origin)?,
+        })
     }
 
     /// Reuse an immutable validation, including explicitly configured tree limits.

@@ -24,3 +24,6 @@ markdown-renderer = { workspace = true, optional = true }
 markdown-commonmark-text = { workspace = true, optional = true }
 markdown-extensions-text = { workspace = true, optional = true }
 markdown-traq-text = { workspace = true, optional = true }
+
+[lints]
+workspace = true

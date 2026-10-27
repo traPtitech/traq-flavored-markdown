@@ -139,6 +139,7 @@ impl SourceView {
             .map(|tab| tab.start - self.range.start..tab.end - self.range.start)
     }
 
+    #[must_use]
     pub fn expand_tabs(&self) -> Self {
         let mut text = String::with_capacity(self.text().len());
         let mut offsets = vec![self.offsets()[0]];
@@ -185,6 +186,7 @@ impl SourceView {
         Cow::Owned(text)
     }
 
+    #[must_use]
     pub fn restore_tabs(self) -> Self {
         if self.tabs_in(&(0..self.text().len())).next().is_none() {
             return self;

@@ -1,4 +1,4 @@
-use crate::{ChildStructure, Node, NodeStructure};
+use crate::{Node, NodeStructure};
 use std::{
     any::{Any, TypeId},
     fmt::Debug,
@@ -15,20 +15,29 @@ pub enum NodeRole {
 }
 
 /// A concrete payload, defined and validated by its owning contract package.
+/// Every payload must explicitly declare its structural contract.
+///
+/// Shared access and cloning must preserve the structural contract, payload
+/// validity, and logical byte count. Checked documents reuse those validation
+/// facts, so interior mutability must not invalidate them.
+///
+/// ```compile_fail
+/// #[derive(Debug, Clone, PartialEq)]
+/// struct MissingStructure;
+/// impl markdown_ast::NodeData for MissingStructure {
+///     fn payload_bytes(&self) -> usize { 0 }
+/// }
+/// ```
 pub trait NodeData: Any + Clone + PartialEq + Debug + Send + Sync {
-    /// Count bytes owned by this payload, including all dynamic string fields.
-    /// Every payload implementation must account for its own heap content.
+    /// Count logical bytes in this payload's populated dynamic fields.
+    /// Include string contents and populated collection storage, excluding spare
+    /// capacity and allocation overhead. This is a payload budget, not a bound
+    /// on the allocator's retained memory.
     fn payload_bytes(&self) -> usize;
 
-    /// Structural metadata is shared with distribution exporters. Custom opaque
-    /// payloads may opt into unrestricted children.
-    fn structure() -> &'static NodeStructure {
-        static STRUCTURE: NodeStructure = NodeStructure {
-            role: NodeRole::Opaque,
-            children: ChildStructure::Any,
-        };
-        &STRUCTURE
-    }
+    /// Structural metadata shared with distribution exporters. Use
+    /// `NodeStructure::opaque()` to explicitly allow unrestricted children.
+    fn structure() -> &'static NodeStructure;
 
     /// Additional payload invariants, including semantic relationships with
     /// immediate children. Structural validation always runs before this hook.
@@ -52,11 +61,24 @@ impl PayloadError {
         }
     }
 
+    #[must_use]
     pub fn actual(mut self, value: impl Into<String>) -> Self {
         self.actual = Some(value.into());
         self
     }
 }
+
+impl std::fmt::Display for PayloadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "expected {}", self.expected)?;
+        if let Some(actual) = &self.actual {
+            write!(f, ", got {actual}")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for PayloadError {}
 
 trait Payload: Debug + Send + Sync {
     fn any(&self) -> &dyn Any;

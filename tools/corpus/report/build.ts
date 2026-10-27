@@ -38,7 +38,8 @@ export async function buildReport(directory: string, template: string) {
         }
     })(),
     pageSize,
-    index => (kinds?.[index] ?? 'u') as AuthorKind
+    index => (kinds?.[index] ?? 'u') as AuthorKind,
+    plan.origin
   )
   const metadata: ReportMetadata = {
     filters: aggregated.filters,

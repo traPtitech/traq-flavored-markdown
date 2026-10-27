@@ -48,9 +48,14 @@ complete output size before allocating the result.
 Every external plugin node must implement `NodeData::structure` and
 `NodeData::payload_bytes`. A role declares block, inline, structural, or opaque
 placement; existing parent contracts accept external nodes according to that
-declaration without registering their types in core. `payload_bytes` counts
-owned heap content, including every string field. `NodeData::validate_payload` checks a node and
-its direct children. Use `document.validate(limits)` for a complete tree check:
+declaration without registering their types in core. Deliberately unrestricted
+opaque nodes explicitly return `NodeStructure::opaque()` from their structure
+implementation. `payload_bytes` counts logical dynamic payload content:
+UTF-8 string bytes, populated collection storage, boxed values, and their nested
+dynamic fields. `PayloadFields::dynamic_payload_bytes` supplies that field
+accounting. Spare capacity and allocator overhead are excluded; this budget
+does not bound retained allocator memory. `NodeData::validate_payload` checks a
+node and its direct children. Use `document.validate(limits)` for a complete tree check:
 it validates source and payload size, node count, depth, UTF-8 spans,
 containment, source-ordered non-overlapping siblings, and every node's data. The
 default limits are 65,536 source bytes, 8 MiB of payload bytes, 16,384 nodes,

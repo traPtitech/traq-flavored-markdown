@@ -12,3 +12,6 @@ markdown-definitions = { path = "../definitions" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.154", features = ["raw_value"] }
 erased-serde = "=0.4.10"
+
+[lints]
+workspace = true

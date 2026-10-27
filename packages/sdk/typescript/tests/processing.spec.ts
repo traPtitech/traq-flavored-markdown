@@ -204,7 +204,7 @@ test('AST processing configuration and instances have independent lifetimes', as
     const parser = runtime.createParser(presets.traq.v1)
     const source =
       'https://q.example.test/files/00000000-0000-0000-0000-000000000001'
-    const document = parser.parse(source)
+    const document = parser.parse(`<${source}>`)
     const options = { origin: 'https://q.example.test' }
     const configured = runtime.createExtractor(options)
     options.origin = 'changed'
@@ -221,7 +221,7 @@ test('AST processing configuration and instances have independent lifetimes', as
     configured.dispose()
     configured.dispose()
     expect(() => configured.extract(document)).toThrow(/disposed/)
-    expect(plain.extract(document).messageText).toBe(source)
+    expect(plain.extract(document).messageText).toBe(`<${source}>`)
     runtime.dispose()
     expect(() => plain.extract(document)).toThrow(/disposed/)
     expect(() => runtime.createExtractor({ origin: '' })).toThrow(/disposed/)

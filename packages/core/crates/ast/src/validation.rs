@@ -88,10 +88,7 @@ impl std::fmt::Display for ValidationError {
             write!(f, " at children{:?}", self.path)?;
         }
         if let Some(payload) = &self.payload {
-            write!(f, ": expected {}", payload.expected)?;
-            if let Some(actual) = &payload.actual {
-                write!(f, ", got {actual}")?;
-            }
+            write!(f, ": {payload}")?;
         }
         Ok(())
     }

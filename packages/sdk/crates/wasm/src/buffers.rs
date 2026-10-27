@@ -10,7 +10,13 @@ pub struct Buffers {
     pub output: Vec<u8>,
     valid: bool,
 }
-thread_local! { pub static IO: RefCell<Buffers> = RefCell::default(); }
+thread_local! {
+    pub static IO: RefCell<Buffers> = const { RefCell::new(Buffers {
+        input: Vec::new(),
+        output: Vec::new(),
+        valid: false,
+    }) };
+}
 
 impl Buffers {
     pub fn document(&self) -> Result<markdown_ast::Document, Error> {

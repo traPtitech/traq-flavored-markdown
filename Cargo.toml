@@ -52,6 +52,15 @@ markdown-traq-syntax = { path = "packages/plugins/traq/crates/syntax" }
 markdown-traq-text = { path = "packages/plugins/traq/crates/text" }
 traq-markdown-features = { path = "packages/sdk/crates/features", default-features = false }
 
+[workspace.lints.rust]
+elided_lifetimes_in_paths = "warn"
+
+[workspace.lints.clippy]
+mod_module_files = "warn"
+allow_attributes_without_reason = "warn"
+return_self_not_must_use = "warn"
+filter_map_next = "warn"
+
 [profile.release]
 opt-level = 2
 lto = true

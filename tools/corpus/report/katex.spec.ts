@@ -76,11 +76,11 @@ test('KaTeX-only exclusion retains success/error transitions, counts, layout and
         before: { kind, value: old },
         after: { kind, value: error('new') }
       }) & differenceFilters.katexErrors
-    ).toBe(0)
+    ).toBe(0n)
   expect(
     differenceFilterMask({
       before: { kind: 'html', value: old },
       after: { kind: 'error', value: error('new') }
     })
-  ).toBe(0)
+  ).toBe(0n)
 })

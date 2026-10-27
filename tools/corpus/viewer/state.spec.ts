@@ -44,6 +44,7 @@ test('search, profile, and filter changes reset pagination as one state transiti
     ignoreLinkedImages: false,
     ignoreHtmlSerialization: false,
     ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
     excludeBots: false
   })
   state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
@@ -62,6 +63,9 @@ test('search, profile, and filter changes reset pagination as one state transiti
   state = viewerReducer(state, { type: 'katexErrors', ignore: true })
   expect(state.query.page).toBe(1)
   state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
+  state = viewerReducer(state, { type: 'linkPolicy', ignore: true })
+  expect(state.query.page).toBe(1)
+  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
   state = viewerReducer(state, { type: 'bots', exclude: true })
   expect(state.query.page).toBe(1)
   state = viewerReducer(state, { type: 'profile', profile: 'plainText' })
@@ -75,6 +79,7 @@ test('search, profile, and filter changes reset pagination as one state transiti
     ignoreLinkedImages: true,
     ignoreHtmlSerialization: true,
     ignoreKatexErrors: true,
+    ignoreLinkPolicy: true,
     excludeBots: true
   })
 })

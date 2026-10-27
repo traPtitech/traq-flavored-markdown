@@ -17,6 +17,7 @@ impl Parser {
         }
     }
 
+    #[must_use]
     pub fn with_limits(mut self, limits: Limits) -> Self {
         self.limits = limits;
         self

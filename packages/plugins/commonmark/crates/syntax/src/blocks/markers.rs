@@ -1,5 +1,26 @@
+use markdown_parser::ParseError;
+use markdown_parser::rules::Budget;
+use markdown_parser::rules::block::{BlockInput, LineIndex};
+
 pub(super) fn blank(line: &str) -> bool {
     line.bytes().all(|b| b == b' ' || b == b'\t')
+}
+
+/// Charge lookahead even when its caller leaves the blank lines unconsumed.
+pub(super) fn next_nonblank(
+    input: &BlockInput<'_>,
+    mut index: LineIndex,
+    budget: &mut Budget,
+) -> Result<Option<LineIndex>, ParseError> {
+    while index < input.lines.end() {
+        let range = &input.lines[index];
+        budget.spend(range.end - range.start)?;
+        if !blank(input.line(index)) {
+            return Ok(Some(index));
+        }
+        index += 1;
+    }
+    Ok(None)
 }
 
 pub(super) fn ascii_space(ch: char) -> bool {

@@ -11,3 +11,6 @@ markdown-definitions = { path = "../definitions" }
 
 [dev-dependencies]
 markdown-parser = { path = "../parser" }
+
+[lints]
+workspace = true

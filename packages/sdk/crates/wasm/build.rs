@@ -6,7 +6,7 @@ mod memory;
 // An accidental-mismatch identifier, not an authenticity signature. Hash bytes
 // directly and normalize text/paths so Windows and Unix export the same ID.
 fn input(path: &Path, hash: &mut DefaultHasher) {
-    println!("cargo:rerun-if-changed={}", path.display());
+    println!("cargo::rerun-if-changed={}", path.display());
     if path.is_dir() {
         let mut entries: Vec<_> = fs::read_dir(path)
             .unwrap()
@@ -30,7 +30,7 @@ fn input(path: &Path, hash: &mut DefaultHasher) {
 }
 
 fn crate_sources(root: &Path, hash: &mut DefaultHasher) {
-    println!("cargo:rerun-if-changed={}", root.display());
+    println!("cargo::rerun-if-changed={}", root.display());
     let mut crates: Vec<_> = fs::read_dir(root)
         .unwrap()
         .map(|entry| entry.unwrap().path())
@@ -50,11 +50,11 @@ fn crate_sources(root: &Path, hash: &mut DefaultHasher) {
 fn main() {
     if std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("wasm32") {
         println!(
-            "cargo:rustc-link-arg-cdylib=--max-memory={}",
+            "cargo::rustc-link-arg-cdylib=--max-memory={}",
             memory::MEMORY_BYTES
         );
     }
-    println!("cargo:rerun-if-env-changed=MARKDOWN_CONTRACT_ID");
+    println!("cargo::rerun-if-env-changed=MARKDOWN_CONTRACT_ID");
     let mut hash = DefaultHasher::new();
     for path in [
         "src",
@@ -83,7 +83,7 @@ fn main() {
         crate_sources(Path::new(root), &mut hash);
     }
     println!(
-        "cargo:rustc-env=MARKDOWN_SOURCE_FINGERPRINT={:016x}",
+        "cargo::rustc-env=MARKDOWN_SOURCE_FINGERPRINT={:016x}",
         hash.finish()
     );
 }

@@ -61,15 +61,30 @@ fn one_ast_supports_plain_text_and_reference_collection() {
 fn preset_configuration_is_independent_and_bounded() {
     let parser = traq_markdown_grammar::presets::traq::v1::parser();
     let source = "https://q.example.test/files/00000000-0000-0000-0000-000000000001";
-    let document = parser.parse(source).unwrap();
+    let document = parser.parse(&format!("<{source}>")).unwrap();
     let special = Renderer::new(&traq::plain_text::preset("https://q.example.test").unwrap());
     let ordinary = Renderer::new(&traq::plain_text::preset("").unwrap());
     assert_eq!(special.render(&document).unwrap().trim(), "[添付ファイル]");
     assert_eq!(ordinary.render(&document).unwrap().trim(), source);
     assert_eq!(special.render(&document).unwrap().trim(), "[添付ファイル]");
     assert!(traq::plain_text::builder(&"x".repeat(2048)).is_ok());
+    assert!(traq::message::Extractor::new(&"x".repeat(2048)).is_ok());
     assert_eq!(
         traq::plain_text::builder(&"x".repeat(2049))
+            .err()
+            .map(|error| error.resource()),
+        Some(Some("origin_bytes"))
+    );
+    assert_eq!(
+        traq::message::Extractor::new(&"x".repeat(2049))
+            .err()
+            .map(|error| error.resource()),
+        Some(Some("origin_bytes"))
+    );
+    // The contract is a byte limit, including multibyte origins.
+    assert!(traq::message::Extractor::new(&"é".repeat(1024)).is_ok());
+    assert_eq!(
+        traq::message::Extractor::new(&"é".repeat(1025))
             .err()
             .map(|error| error.resource()),
         Some(Some("origin_bytes"))

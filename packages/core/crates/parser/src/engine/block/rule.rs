@@ -29,6 +29,7 @@ impl BlockRule {
         })
     }
 
+    #[must_use]
     pub fn interrupts<F>(mut self, probe: F) -> Self
     where
         F: Fn(&BlockProbe<'_>) -> bool + Send + Sync + 'static,

@@ -5,10 +5,7 @@ struct Score(f64);
 
 impl NodeData for Score {
     fn structure() -> &'static markdown_ast::NodeStructure {
-        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
-            role: NodeRole::Opaque,
-            children: markdown_ast::ChildStructure::Any,
-        };
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure::opaque();
         &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
@@ -28,10 +25,7 @@ struct Container;
 
 impl NodeData for Container {
     fn structure() -> &'static markdown_ast::NodeStructure {
-        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
-            role: NodeRole::Opaque,
-            children: markdown_ast::ChildStructure::Any,
-        };
+        static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure::opaque();
         &STRUCTURE
     }
     fn payload_bytes(&self) -> usize {
@@ -99,4 +93,95 @@ fn custom_payload_validation_cannot_bypass_the_declared_structure() {
     assert!(valid.validate().is_ok());
     let invalid = Node::new(span, Leaf, vec![valid]);
     assert_eq!(invalid.validate().unwrap_err().expected, "no children");
+}
+
+#[test]
+fn child_arity_validation_rejects_mismatched_payload_types_without_panicking() {
+    use markdown_ast::{ChildArity, ChildStructure, NodeStructure, PayloadType};
+
+    let structure = NodeStructure {
+        role: NodeRole::Block,
+        children: ChildStructure::Sequence {
+            prefix: vec![],
+            rest: PayloadType::of::<Container>(),
+            child_arity: Some(ChildArity::new::<Container>("columns", |_| 1)),
+        },
+    };
+    let span = Span { start: 0, end: 0 };
+    let child = Node::new(span, Container, vec![Node::leaf(span, Score(1.0))]);
+    assert!(structure.validate(&Container, &[child]).is_ok());
+
+    let error = structure.validate(&Score(1.0), &[]).unwrap_err();
+    assert_eq!(error.expected, "payload matching the child arity accessor");
+    assert_eq!(
+        error.actual,
+        Some(format!(
+            "payload is not {}",
+            std::any::type_name::<Container>()
+        ))
+    );
+}
+
+#[test]
+fn generic_structures_borrow_const_metadata_for_each_payload_type() {
+    use markdown_ast::{ChildStructure, NodeStructure, PayloadType};
+    use std::{any::TypeId, borrow::Cow};
+
+    fn structure<T: NodeData>() -> &'static NodeStructure {
+        const {
+            &NodeStructure {
+                role: NodeRole::Block,
+                children: ChildStructure::Types {
+                    types: Cow::Borrowed(&[PayloadType::of::<T>()]),
+                    nonempty: true,
+                },
+            }
+        }
+    }
+
+    let ChildStructure::Types { types, nonempty } = &structure::<Score>().children else {
+        panic!("expected a typed child structure");
+    };
+    assert!(matches!(types, Cow::Borrowed(_)));
+    assert!(nonempty);
+    assert_eq!(types[0].id(), TypeId::of::<Score>());
+    assert_eq!(types[0].name(), std::any::type_name::<Score>());
+    assert!(format!("{:?}", types[0]).contains(std::any::type_name::<Score>()));
+
+    let span = Span { start: 0, end: 0 };
+    let score = Node::leaf(span, Score(1.0));
+    assert!(
+        structure::<Score>()
+            .validate(&(), std::slice::from_ref(&score))
+            .is_ok()
+    );
+    assert!(structure::<Container>().validate(&(), &[score]).is_err());
+}
+
+#[test]
+fn payload_validation_errors_propagate_through_standard_error_boundaries() {
+    use markdown_ast::PayloadError;
+
+    fn validate() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        Node::new(
+            Span { start: 0, end: 0 },
+            Score(1.0),
+            vec![Node::leaf(Span { start: 0, end: 0 }, Container)],
+        )
+        .validate()?;
+        Ok(())
+    }
+
+    let error = validate().unwrap_err();
+    assert_eq!(
+        error.downcast_ref::<PayloadError>().unwrap().expected,
+        "custom payload invariant"
+    );
+    assert_eq!(error.to_string(), "expected custom payload invariant");
+    assert_eq!(
+        PayloadError::new("one child")
+            .actual("two children")
+            .to_string(),
+        "expected one child, got two children"
+    );
 }

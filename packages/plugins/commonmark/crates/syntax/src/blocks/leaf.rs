@@ -76,13 +76,13 @@ fn fenced_literal(input: &BlockInput<'_>, end: LineIndex, indent: usize) -> Stri
 
 pub(super) fn indented(
     input: &BlockInput<'_>,
-    _: &mut Budget,
+    budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     if !input.current().starts_with("    ") {
         return Ok(None);
     }
 
-    let (end, literal) = indented_content(input);
+    let (end, literal) = indented_content(input, budget)?;
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
@@ -100,7 +100,10 @@ pub(super) fn indented(
     )))
 }
 
-fn indented_content(input: &BlockInput<'_>) -> (LineIndex, String) {
+fn indented_content(
+    input: &BlockInput<'_>,
+    budget: &mut Budget,
+) -> Result<(LineIndex, String), ParseError> {
     let source = input.source;
     let lines = input.lines;
 
@@ -110,17 +113,22 @@ fn indented_content(input: &BlockInput<'_>) -> (LineIndex, String) {
     // A blank line belongs to an indented block only when another indented
     // line follows it.
     while end < lines.end() {
+        budget.spend(lines[end].end - lines[end].start)?;
         let raw = &source[lines[end].clone()];
 
         if blank(input.line(end)) {
-            let next = lines
-                .indices(end + 1..lines.end())
-                .find(|i| !blank(input.line(*i)));
+            let next = next_nonblank(input, end + 1, budget)?;
 
-            if next.is_some_and(|i| input.line(i).starts_with("    ")) {
-                let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());
-                literal.push_str(&source.literal(lines[end].start + remove..lines[end].end));
-                end += 1;
+            if let Some(next) = next.filter(|&i| input.line(i).starts_with("    ")) {
+                // Consume the whole inspected run instead of searching it again
+                // for every blank line.
+                for line in &lines[end..next] {
+                    budget.spend(line.end - line.start)?;
+                    let raw = &source[line.clone()];
+                    let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());
+                    literal.push_str(&source.literal(line.start + remove..line.end));
+                }
+                end = next;
                 continue;
             }
             break;
@@ -137,7 +145,7 @@ fn indented_content(input: &BlockInput<'_>) -> (LineIndex, String) {
     if !literal.ends_with('\n') {
         literal.push('\n');
     }
-    (end, literal)
+    Ok((end, literal))
 }
 
 pub(super) fn atx(

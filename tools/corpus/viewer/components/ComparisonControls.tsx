@@ -24,6 +24,7 @@ export function ComparisonControls({
   onLinkedImages,
   onHtmlSerialization,
   onKatexErrors,
+  onLinkPolicy,
   onBots,
   onPage,
   onOutput
@@ -46,6 +47,7 @@ export function ComparisonControls({
   onLinkedImages: (ignore: boolean) => void
   onHtmlSerialization: (ignore: boolean) => void
   onKatexErrors: (ignore: boolean) => void
+  onLinkPolicy: (ignore: boolean) => void
   onBots: (exclude: boolean) => void
   onPage: (page: number) => void
   onOutput: (view: OutputView) => void
@@ -200,6 +202,15 @@ export function ComparisonControls({
             onChange={event => onKatexErrors(event.target.checked)}
           />
           KaTeXエラー部分のみの差分を除外
+        </label>
+        <label title="裸のURL・メールの自動リンク化廃止、山括弧で囲んだ省略URLのリンク化と、それに伴うリソース表示の差分だけを非表示にします。原文とリンク先を確認し、本文・明示的なリンク・エラーなどの別の差分は残します。他の除外条件とも併用できます。">
+          <input
+            type="checkbox"
+            id="ignore-link-policy"
+            checked={query.ignoreLinkPolicy}
+            onChange={event => onLinkPolicy(event.currentTarget.checked)}
+          />
+          リンク仕様変更による差分を除外
         </label>
       </div>
     </>

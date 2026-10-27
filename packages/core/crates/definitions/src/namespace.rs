@@ -49,6 +49,7 @@ impl Eq for PluginDeclaration {}
 pub struct PluginGroup(Arc<Declaration>);
 
 impl PluginGroup {
+    #[must_use]
     pub fn group(&self, name: impl Into<String>) -> Self {
         Self(Declaration::new(Some(self), name))
     }

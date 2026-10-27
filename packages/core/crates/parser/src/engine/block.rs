@@ -44,6 +44,7 @@ impl BlockMatch {
     }
 
     /// Runs after the parser accepts this match, before resolving its block children.
+    #[must_use]
     pub fn on_accept(
         mut self,
         commit: impl FnOnce(&mut ParseState, &mut Budget) -> Result<(), ParseError> + 'static,

@@ -262,6 +262,7 @@ dependencies = [
 name = "markdown-definitions"
 version = "0.1.0"
 dependencies = [
+ "markdown-ast",
  "markdown-definitions-derive",
 ]
 
@@ -702,6 +703,7 @@ dependencies = [
  "markdown-definitions",
  "markdown-extensions-contracts",
  "markdown-parser",
+ "markdown-renderer",
  "markdown-traq-contracts",
  "schemars",
  "serde",

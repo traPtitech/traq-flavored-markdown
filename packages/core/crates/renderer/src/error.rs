@@ -44,8 +44,8 @@ impl From<RegistrationError> for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Validation(error) => error.fmt(f),
-            Self::Registration(error) => error.fmt(f),
+            Self::Validation(_) => f.write_str("rendering requires a valid document"),
+            Self::Registration(_) => f.write_str("render handler registration failed"),
             Self::UnsupportedNode { payload_type } => write!(f, "unsupported node: {payload_type}"),
             Self::InvalidPayload { expected } => write!(f, "expected payload {expected}"),
             Self::ResourceLimit { resource, limit } => write!(f, "{resource} limit: {limit}"),

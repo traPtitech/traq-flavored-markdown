@@ -94,25 +94,25 @@ test('image-like text, errors and kind changes are never hidden by the image fil
         before: { kind, value: before.value },
         after: { kind, value: after.value }
       }) & differenceFilters.linkedImages
-    ).toBe(0)
+    ).toBe(0n)
   for (const kind of ['text', 'error'] as const)
-    expect(differenceFilterMask({ before, after: { ...after, kind } })).toBe(0)
+    expect(differenceFilterMask({ before, after: { ...after, kind } })).toBe(0n)
 })
 
 test('output filters never hide errors or changes of output kind', () => {
-  expect(differenceFilterMask(fixtureRows[1])).toBe(0)
+  expect(differenceFilterMask(fixtureRows[1])).toBe(0n)
   expect(
     differenceFilterMask({
       before: { kind: 'html', value: 'SAME ' },
       after: { kind: 'text', value: 'same' }
     })
-  ).toBe(0)
+  ).toBe(0n)
   expect(
     differenceFilterMask({
       before: { kind: 'error', value: 'Error ' },
       after: { kind: 'error', value: 'error' }
     })
-  ).toBe(0)
+  ).toBe(0n)
 })
 
 test('all 31 filter combinations ignore exactly their selected differences', () => {
@@ -139,7 +139,7 @@ test('all 31 filter combinations ignore exactly their selected differences', () 
       after: { kind: 'html', value: after + error('bad-after') }
     })
     for (let selected = 1; selected < 32; selected++)
-      expect(Boolean(mask & (1 << (selected - 1)))).toBe(
+      expect(Boolean(mask & (1n << BigInt(selected - 1)))).toBe(
         (required & selected) === required
       )
   }
@@ -158,17 +158,17 @@ test('HTML spelling filtering preserves substantive changes, non-HTML text and f
         before,
         after: { kind: 'html', value: changed }
       }) & differenceFilters.htmlSerialization
-    ).toBe(0)
+    ).toBe(0n)
   for (const kind of ['text', 'error'] as const) {
     expect(
       differenceFilterMask({
         before: { kind, value: before.value },
         after: { kind, value: after.value }
       }) & differenceFilters.htmlSerialization
-    ).toBe(0)
+    ).toBe(0n)
     expect(
       differenceFilterMask({ before, after: { kind, value: after.value } })
-    ).toBe(0)
+    ).toBe(0n)
   }
 })
 
@@ -178,7 +178,7 @@ test('adding HTML or image filtering cannot reveal an already excluded differenc
     before: { kind: 'html', value: malformed },
     after: { kind: 'html', value: malformed.replace('A b', 'ab') }
   })
-  expect(whitespaceCase & differenceFilters.htmlSerialization).toBe(0)
+  expect(whitespaceCase & differenceFilters.htmlSerialization).toBe(0n)
   expect(
     whitespaceCase & differenceFilters.whitespaceAndCaseAndHtmlSerialization
   ).toBeTruthy()
@@ -193,6 +193,6 @@ test('adding HTML or image filtering cannot reveal an already excluded differenc
   for (const mask of [whitespaceCase, spelling])
     for (let subset = 1; subset < 32; subset++)
       for (let selected = 1; selected < 32; selected++)
-        if ((subset & selected) === subset && mask & (1 << (subset - 1)))
-          expect(mask & (1 << (selected - 1))).toBeTruthy()
+        if ((subset & selected) === subset && mask & (1n << BigInt(subset - 1)))
+          expect(mask & (1n << BigInt(selected - 1))).toBeTruthy()
 })

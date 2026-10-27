@@ -88,15 +88,21 @@ export class ReportRepository {
     progress: (value: Progress) => void = () => undefined
   ): Promise<QueryResult> {
     const search = query.search.trim().toLowerCase()
-    // Bits enumerate nonempty combinations of the five normalization options.
+    // Bits enumerate nonempty combinations of the six normalization options.
     const combination =
       Number(query.ignoreWhitespace) |
       (Number(query.ignoreCase) << 1) |
       (Number(query.ignoreLinkedImages) << 2) |
       (Number(query.ignoreHtmlSerialization) << 3) |
-      (Number(query.ignoreKatexErrors) << 4)
-    const mask = combination ? 1 << (combination - 1) : 0
-    const key = JSON.stringify([query.profile, search, mask, query.excludeBots])
+      (Number(query.ignoreKatexErrors) << 4) |
+      (Number(query.ignoreLinkPolicy) << 5)
+    const mask = combination ? 1n << BigInt(combination - 1) : 0n
+    const key = JSON.stringify([
+      query.profile,
+      search,
+      combination,
+      query.excludeBots
+    ])
     let hits = this.filters.get(key)
     signal?.throwIfAborted()
     if (hits === undefined) {

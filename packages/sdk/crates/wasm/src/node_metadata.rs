@@ -1,3 +1,5 @@
+use crate::node_catalog::selected_node_catalogs;
+
 pub(crate) fn export() -> markdown_contract_export::Result<markdown_contract_export::NodeManifest> {
     let mut exporter = markdown_contract_export::NodeExporter::default();
     macro_rules! register {

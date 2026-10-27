@@ -50,7 +50,7 @@ test('URL meaning follows the shared Rust contract', () => {
   )
 })
 
-test('message rendering extracts cards, trims trailing bare links, and keeps the AST reusable', () => {
+test('message rendering keeps bare URLs as text and keeps the AST reusable', () => {
   const source = '本文\n' + file + '\n' + quote,
     document = parser.parse(source),
     snapshot = document.toMutable()
@@ -64,13 +64,10 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
     expect(Object.keys(renderer)).toEqual(['render'])
   const normal = view.standard.render(document),
     condensed = view.condensed.render(document)
-  expect(normal.html).toBe('<p>本文</p>\n')
-  expect(condensed.html).toBe('本文')
+  expect(normal.html).toBe(`<p>本文<br>\n${file}<br>\n${quote}</p>\n`)
+  expect(condensed.html).toBe(`本文 ${file} ${quote}`)
   expect(normal.rawText).toBe(source)
-  expect(normal.cards).toEqual([
-    { type: 'file', id: fileId },
-    { type: 'message', id: messageId }
-  ])
+  expect(normal.cards).toEqual([])
   expect(condensed.cards).toEqual(normal.cards)
   expect(document.document).toEqual(snapshot)
   expect(view.standard.render(document).html).toBe(normal.html)
@@ -83,16 +80,17 @@ test('message rendering extracts cards, trims trailing bare links, and keeps the
 
 test('card extraction respects Markdown context and preserves external URL candidates', () => {
   const source =
+    '<' +
     file +
-    ' mid ' +
+    '> mid <' +
     file +
-    '\n[quoted](' +
+    '>\n[quoted](' +
     quote +
     ')\n!!' +
     quote +
     '!!\n`' +
     quote +
-    '`\nhttps://example.com\nhttps://example.com'
+    '`\n<https://example.com>\n<https://example.com>'
   expect(view.standard.render(parser.parse(source)).cards).toEqual([
     { type: 'file', id: fileId },
     { type: 'message', id: messageId },
@@ -130,18 +128,18 @@ test('card extraction respects Markdown context and preserves external URL candi
   }
   expect(
     messageRenderers({ origin: origin + '///' }).standard.render(
-      parser.parse(file)
+      parser.parse('<' + file + '>')
     ).cards
   ).toEqual([{ type: 'file', id: fileId }])
 })
 
 test('condensed labels retained card links without removing explicit labels from message content', () => {
-  const document = parser.parse('[資料](' + file + ') ' + quote + ' 続き')
+  const document = parser.parse('[資料](' + file + ') <' + quote + '> 続き')
   expect(view.standard.render(document).html).toMatch(/>資料<\/a>/)
   const text = view.condensed.render(document).html
   expect(text).toMatch(/>\[\[添付ファイル\]\]<\/a>/)
-  expect(text).toMatch(/>\[\[引用メッセージ\]\]<\/a> 続き/)
-  expect(view.condensed.render(parser.parse(file)).html).toBe('')
+  expect(text).toContain('>' + quote + '</a> 続き')
+  expect(view.condensed.render(parser.parse(file)).html).toBe(file)
   expect(view.standard.render(parser.parse('<' + file + '>')).html).toMatch(
     /<a /
   )
@@ -219,7 +217,12 @@ test('condensed renders images as links and restricts math size commands', () =>
 })
 
 test('attachment spacing checks the complete AST instead of its final source line', () => {
-  expect(endsWithResourceCard(parser.parse('本文\n' + file), origin)).toBe(true)
+  expect(endsWithResourceCard(parser.parse('本文\n' + file), origin)).toBe(
+    false
+  )
+  expect(
+    endsWithResourceCard(parser.parse('本文\n<' + file + '>'), origin)
+  ).toBe(false)
   expect(endsWithResourceCard(parser.parse('本文 ' + file), origin)).toBe(false)
   expect(endsWithResourceCard(parser.parse('~~~\n' + file), origin)).toBe(false)
   expect(endsWithResourceCard(parser.parse('!!' + file + '!!'), origin)).toBe(
@@ -230,35 +233,33 @@ test('attachment spacing checks the complete AST instead of its final source lin
   ).toBe(false)
 })
 
-test('trailing bare card links are omitted independently of attachment spacing', () => {
+test('trailing bare resource URLs remain visible without cards', () => {
   const document = parser.parse('本文 ' + file)
   expect(endsWithResourceCard(document, origin)).toBe(false)
-  expect(view.standard.render(document).html).toBe('<p>本文 </p>\n')
-  expect(view.condensed.render(document).html).toBe('本文 ')
+  expect(view.standard.render(document).html).toBe(`<p>本文 ${file}</p>\n`)
+  expect(view.condensed.render(document).html).toBe(`本文 ${file}`)
+  expect(view.standard.render(document).cards).toEqual([])
 })
 
-test('trailing resource URLs are omitted after inline text and both Markdown breaks', () => {
-  for (const [url, card] of [
-    [file, { type: 'file', id: fileId }],
-    [quote, { type: 'message', id: messageId }]
-  ] as const) {
-    for (const [separator, standard, condensed] of [
-      [' ', '<p>本文 </p>\n', '本文 '],
-      ['\n', '<p>本文</p>\n', '本文'],
-      ['  \n', '<p>本文<br>\n</p>\n', '本文 '],
-      ['\\\n', '<p>本文<br>\n</p>\n', '本文 ']
+test('bare resource URLs remain text after inline text and both Markdown breaks', () => {
+  for (const url of [file, quote]) {
+    for (const [separator, standard] of [
+      [' ', `<p>本文 ${url}</p>\n`],
+      ['\n', `<p>本文<br>\n${url}</p>\n`],
+      ['  \n', `<p>本文<br>\n${url}</p>\n`],
+      ['\\\n', `<p>本文<br>\n${url}</p>\n`]
     ]) {
       const document = parser.parse('本文' + separator + url)
       const original = document.toMutable()
       const result = view.render(document)
       expect(result.standard.html).toBe(standard)
-      expect(result.condensed.html).toBe(condensed)
-      expect(result.standard.cards).toEqual([card])
-      expect(result.condensed.cards).toEqual([card])
+      expect(result.condensed.html).toBe(`本文 ${url}`)
+      expect(result.standard.cards).toEqual([])
+      expect(result.condensed.cards).toEqual([])
       expect(document.document).toEqual(original)
     }
   }
   expect(
     view.standard.render(parser.parse('本文 ' + file + '\n' + quote)).html
-  ).toBe('<p>本文 </p>\n')
+  ).toBe(`<p>本文 ${file}<br>\n${quote}</p>\n`)
 })

@@ -31,8 +31,8 @@ impl From<RegistrationError> for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Validation(error) => error.fmt(f),
-            Self::Registration(error) => error.fmt(f),
+            Self::Validation(_) => f.write_str("extraction requires a valid document"),
+            Self::Registration(_) => f.write_str("extraction handler registration failed"),
             Self::InvalidPayload { expected } => write!(f, "expected payload {expected}"),
             Self::Handler { message } => f.write_str(message),
         }

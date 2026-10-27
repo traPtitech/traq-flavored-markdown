@@ -30,6 +30,7 @@ pub(super) fn parse(
     let mut tight = true;
 
     while i < lines.end() {
+        budget.spend(lines[i].end - lines[i].start)?;
         if thematic(content(source, &lines[i])) {
             break;
         }
@@ -44,7 +45,6 @@ pub(super) fn parse(
 
         let item_start = i;
         let first_content = &content(source, &lines[i])[marker.content..];
-        let lazy = super::paragraph::paragraph_start(first_content, input);
 
         let end = if first_content.is_empty()
             && (i + 1 == lines.end() || blank(content(source, &lines[i + 1])))
@@ -62,17 +62,17 @@ pub(super) fn parse(
             &first_marker,
             &marker,
             first_content,
-            lazy,
             i,
             &mut ranges,
-        );
+            budget,
+        )?;
 
         i = next;
         tight &= item_tight;
 
         // Blank continuation lines still lose the list's indentation,
         // including when they become literal content of a fenced block.
-        unindent_blank_continuations(source, marker.width, &mut ranges);
+        unindent_blank_continuations(source, marker.width, &mut ranges, budget)?;
 
         budget.token()?;
         children.push(DraftNode::blocks(
@@ -118,28 +118,28 @@ fn collect_continuation(
     first_marker: &Marker,
     marker: &Marker,
     first_content: &str,
-    lazy: bool,
     mut i: LineIndex,
     ranges: &mut Vec<ViewRange>,
-) -> (LineIndex, bool) {
+    budget: &mut Budget,
+) -> Result<(LineIndex, bool), ParseError> {
     let source = input.source;
     let lines = input.lines;
 
     let mut item_tight = true;
+    let lazy = super::paragraph::paragraph_start(first_content, input);
 
     while i < lines.end() {
+        budget.spend(lines[i].end - lines[i].start)?;
         let continuation = content(source, &lines[i]);
 
         if blank(continuation) {
-            let next = lines
-                .indices(i + 1..lines.end())
-                .find(|j| !blank(content(source, &lines[*j])));
+            let next = next_nonblank(input, i + 1, budget)?;
 
             let Some(next) = next else {
                 if !blank(first_content) {
                     ranges.extend_from_slice(&lines[i..]);
                 }
-                return (lines.end(), item_tight);
+                return Ok((lines.end(), item_tight));
             };
 
             let next_line = content(source, &lines[next]);
@@ -148,14 +148,14 @@ fn collect_continuation(
                 item_tight = !item(next_line).is_some_and(|m| {
                     m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
                 });
-                return (next, item_tight);
+                return Ok((next, item_tight));
             }
 
             let next_indent = next_line.len() - next_line.trim_start_matches(' ').len();
 
             if next_indent >= marker.width {
-                ranges.push(lines[i].clone());
-                i += 1;
+                ranges.extend_from_slice(&lines[i..next]);
+                i = next;
                 continue;
             }
 
@@ -168,7 +168,7 @@ fn collect_continuation(
                 ranges.extend_from_slice(&lines[i..next]);
             }
 
-            return (next, item_tight);
+            return Ok((next, item_tight));
         }
 
         let indent = continuation.len() - continuation.trim_start_matches(' ').len();
@@ -181,27 +181,30 @@ fn collect_continuation(
         {
             ranges.push(lines[i].clone());
         } else {
-            return (i, item_tight);
+            return Ok((i, item_tight));
         }
 
         i += 1;
     }
 
-    (i, item_tight)
+    Ok((i, item_tight))
 }
 
 fn unindent_blank_continuations(
     source: &markdown_parser::source::SourceView,
     marker_width: usize,
     ranges: &mut [ViewRange],
-) {
+    budget: &mut Budget,
+) -> Result<(), ParseError> {
     for range in ranges.iter_mut().skip(1) {
+        budget.spend(range.end - range.start)?;
         let raw = &source[range.clone()];
 
         if blank(raw.trim_end_matches('\n')) {
             range.start += marker_width.min(raw.len() - raw.trim_start_matches(' ').len());
         }
     }
+    Ok(())
 }
 
 fn finish_list(node: &mut ResolvedBlock) {

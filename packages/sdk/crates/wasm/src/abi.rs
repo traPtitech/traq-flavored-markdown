@@ -77,7 +77,7 @@ impl Error {
         let mut reply = if let Some(resource) = error.resource() {
             Self::limit(resource)
         } else {
-            Self::new(ErrorCode::InvalidDocument, &error)
+            Self::new(ErrorCode::InvalidDocument, describe_error(&error))
         };
         reply.path = Some(wire_path(&error.path));
         reply.span = error.span.and_then(wire_span);
@@ -106,7 +106,7 @@ impl Error {
             traq_markdown_processing::ErrorCategory::ResourceLimit => ErrorCode::ResourceLimit,
             traq_markdown_processing::ErrorCategory::Internal => ErrorCode::InternalError,
         };
-        let mut reply = Self::new(code, &error);
+        let mut reply = Self::new(code, describe_error(&error));
         match error {
             traq_markdown_processing::Error::InvalidEdit { span }
             | traq_markdown_processing::Error::OverlappingEdits { span, .. } => {
@@ -130,6 +130,20 @@ impl Error {
     pub fn not_configured() -> Self {
         Self::new(ErrorCode::NotConfigured, "operation is not configured")
     }
+}
+
+// The wire format has one message string rather than an Error::source chain.
+// Render the complete chain here so native wrappers can add context without
+// repeating their causes in their own Display implementations.
+fn describe_error(error: &dyn std::error::Error) -> String {
+    let mut message = error.to_string();
+    let mut source = error.source();
+    while let Some(cause) = source {
+        message.push_str(": ");
+        message.push_str(&cause.to_string());
+        source = cause.source();
+    }
+    message
 }
 
 fn wire_path(indices: &[usize]) -> Box<str> {
@@ -221,7 +235,10 @@ pub fn configured() -> Configuration {
 }
 
 #[cfg(feature = "contracts")]
-#[allow(dead_code)] // Used by the native exporter, not the Wasm library target.
+#[allow(
+    dead_code,
+    reason = "The native exporter calls this descriptor, while the Wasm library does not"
+)]
 pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export::AbiContract> {
     use markdown_contract_export::{AbiContract, Input, Operation, Output, WasmType, schema};
     AbiContract::buffered(
@@ -291,7 +308,7 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
 
 #[cfg(test)]
 mod tests {
-    use super::Error;
+    use super::{Error, ErrorCode};
     use markdown_ast::{Span, ValidationError, ValidationErrorKind};
 
     #[test]
@@ -314,5 +331,24 @@ mod tests {
             assert_eq!(wire["path"], "$.children[1].children[2]");
             assert_eq!(wire["span"], serde_json::json!({"start": 3, "end": 7}));
         }
+    }
+
+    #[test]
+    fn wire_messages_preserve_each_cause_once() {
+        let json_error = serde_json::from_str::<serde_json::Value>("{").unwrap_err();
+        let json_message = json_error.to_string();
+        let reply = Error::document(json_error.into());
+        assert!(matches!(reply.code, ErrorCode::InvalidDocument));
+        assert_eq!(reply.message.matches(&json_message).count(), 1);
+        assert!(reply.message.ends_with(&json_message));
+        assert_ne!(reply.message, json_message);
+
+        let handler = markdown_renderer::Error::Handler {
+            message: "custom handler detail".into(),
+        };
+        let reply = Error::processing(handler.into());
+        assert!(matches!(reply.code, ErrorCode::InternalError));
+        assert_eq!(reply.message.matches("custom handler detail").count(), 1);
+        assert!(reply.message.contains(": "));
     }
 }

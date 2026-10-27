@@ -28,6 +28,7 @@ impl Renderer {
             limits: RenderLimits::default(),
         }
     }
+    #[must_use]
     pub fn with_limits(mut self, limits: RenderLimits) -> Self {
         self.limits = limits;
         self

@@ -65,3 +65,17 @@ were mechanically renamed from `generic.*`, and `label_source` keys became
 `labelSource`. Source text, spans, payload values, child order, parse failures,
 and all 787 plain-text expectations were preserved. This migration did not use
 parser output to generate expected trees.
+
+On 2026-10-26, the unreleased traQ V1 grammar stopped linkifying bare domains,
+URLs, and email addresses. Reviewed AST edits cover CommonMark examples 602,
+608, 611, and 612 and the synthetic `text links` and `link punctuation` cases:
+their former bare links become text, with adjacent text nodes merged.
+CommonMark example 610 now exercises the opt-in scheme-less angle autolink
+extension, targeting `https://foo.bar.baz` with the label `foo.bar.baz`.
+The CommonMark preset and the independent specification fixture are unchanged.
+The eight plain-text edits retain literal bare resource URLs and percent
+escapes (`bare-file`, `bare-message`, `query-file`, `public-676`, `public-688`,
+`public-699`), mask the full bare URL in `spoiler-file`, and remove the angle
+delimiters from the new autolink in `public-610`. These expectations were
+derived from the reviewed input and link policy, not regenerated from parser
+output. All fixture sources and unrelated expectations were retained.

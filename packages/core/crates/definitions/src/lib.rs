@@ -2,6 +2,7 @@
 #![doc = include_str!("../README.md")]
 #![forbid(unsafe_code)]
 
+// Derive expansions use the package name even when invoked inside this crate.
 extern crate self as markdown_definitions;
 
 mod features;

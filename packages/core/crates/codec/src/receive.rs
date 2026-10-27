@@ -188,7 +188,7 @@ impl<'de> DeserializeSeed<'de> for Children<'_, '_> {
 impl<'de> Visitor<'de> for Children<'_, '_> {
     type Value = Vec<Node>;
 
-    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("child nodes")
     }
 
