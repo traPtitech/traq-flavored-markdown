@@ -59,7 +59,28 @@ impl ParseError {
 
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
+        match self {
+            Self::ResourceLimit { resource } => write!(f, "{} limit exceeded", resource.as_str()),
+            Self::InvalidRuleOutput {
+                phase,
+                rule,
+                position,
+                reason,
+            } => {
+                let phase = match phase {
+                    ParsePhase::Block => "block",
+                    ParsePhase::Inline => "inline",
+                    ParsePhase::Text => "text",
+                };
+                write!(f, "invalid {phase} rule output")?;
+                if let Some(rule) = rule {
+                    write!(f, " from {rule:?}")?;
+                }
+                write!(f, " at byte {position}: {reason}")
+            }
+            Self::InvalidDocument(_) => f.write_str("parsed document failed validation"),
+            Self::InternalError => f.write_str("internal parser error"),
+        }
     }
 }
 
@@ -69,6 +90,46 @@ impl std::error::Error for ParseError {
             Self::InvalidDocument(error) => Some(error),
             _ => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod error_tests {
+    use super::*;
+    use markdown_ast::{Span, ValidationErrorKind};
+    use std::error::Error as _;
+
+    #[test]
+    fn rule_error_messages_keep_the_rule_phase_and_original_position() {
+        let error =
+            ParseError::invalid_rule(ParsePhase::Inline, Some("custom"), 5, "match must advance");
+        assert_eq!(
+            error.to_string(),
+            "invalid inline rule output from \"custom\" at byte 5: match must advance"
+        );
+        assert!(error.source().is_none());
+    }
+
+    #[test]
+    fn invalid_document_errors_expose_the_original_validation_failure() {
+        let error = ParseError::InvalidDocument(ValidationError {
+            kind: ValidationErrorKind::InvalidSpan,
+            path: vec![0],
+            span: Some(Span { start: 1, end: 3 }),
+            payload_type: Some("text"),
+            payload: None,
+        });
+        let ParseError::InvalidDocument(validation) = &error else {
+            panic!("expected an invalid document error");
+        };
+        let source = error.source().unwrap();
+        assert!(std::ptr::eq(
+            source.downcast_ref::<ValidationError>().unwrap(),
+            validation
+        ));
+        let report = format!("{error}: {source}");
+        assert_eq!(report.matches("invalid span").count(), 1);
+        assert!(report.contains("children[0]"));
     }
 }
 

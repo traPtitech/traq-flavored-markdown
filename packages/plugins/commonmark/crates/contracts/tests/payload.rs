@@ -37,13 +37,13 @@ fn custom() -> Custom {
 }
 
 #[test]
-fn fields_account_for_nested_owned_storage_without_per_node_bookkeeping() {
+fn fields_account_for_nested_dynamic_payload_without_per_node_bookkeeping() {
     let payload = custom();
     assert_eq!(
         payload.payload_bytes(),
         3 * std::mem::size_of::<String>() + std::mem::size_of::<Detail>() + 6
     );
-    assert_eq!(Detail::Empty.heap_bytes(), 0);
+    assert_eq!(Detail::Empty.dynamic_payload_bytes(), 0);
     assert_eq!(Wrapped("value".to_owned()).payload_bytes(), 5);
     assert!(
         Node::leaf(Span { start: 0, end: 0 }, payload)
@@ -91,7 +91,7 @@ struct UnicodeLabel {
 }
 
 #[test]
-fn string_constraints_count_unicode_scalars_while_heap_limits_count_bytes() {
+fn string_constraints_count_unicode_scalars_while_payload_limits_count_bytes() {
     let span = Span { start: 0, end: 0 };
     let value = UnicodeLabel {
         value: "日😀".into(),

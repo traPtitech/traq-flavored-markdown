@@ -20,3 +20,6 @@ markdown-ast.workspace = true
 markdown-commonmark-contracts.workspace = true
 markdown-extensions-contracts.workspace = true
 markdown-traq-contracts.workspace = true
+
+[lints]
+workspace = true

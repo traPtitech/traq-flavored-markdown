@@ -1,4 +1,9 @@
-#![allow(dead_code)]
+//! Shared fixtures stay in a subdirectory so Cargo does not discover them as
+//! a separate integration-test crate.
+#![allow(
+    dead_code,
+    reason = "Each integration-test target uses a different subset of these shared contracts"
+)]
 
 use markdown_ast::{Node, NodeData, NodeRole};
 use markdown_definitions::WireTypeKey;

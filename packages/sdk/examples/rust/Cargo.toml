@@ -8,3 +8,6 @@ publish = false
 [dependencies]
 traq-markdown-processing = { path = "../../crates/processing" }
 traq-markdown-grammar = { path = "../../crates/grammar" }
+
+[lints]
+workspace = true

@@ -44,9 +44,9 @@ pub fn export(
 ) -> crate::Result<StructureContract> {
     let name = |payload: &markdown_ast::PayloadType| {
         names
-            .get(&(payload.id)())
+            .get(&payload.id())
             .cloned()
-            .ok_or_else(|| format!("unregistered structural payload: {}", payload.name))
+            .ok_or_else(|| format!("unregistered structural payload: {}", payload.name()))
     };
     let children = match &value.children {
         ChildStructure::Any => ChildContract::Any,

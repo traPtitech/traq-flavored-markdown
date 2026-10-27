@@ -112,8 +112,9 @@ jobs:
         with:
           bun: 'false'
           rust: 'true'
+      - run: node tools/workspace/checks/rust-features.ts
       - run: cargo test --locked --workspace --all-features
-      - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+      - run: node tools/workspace/checks/rust-lint.ts
 
   go:
     name: Go workspace and Wasm

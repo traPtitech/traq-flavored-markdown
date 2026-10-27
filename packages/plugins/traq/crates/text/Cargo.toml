@@ -8,3 +8,6 @@ publish.workspace = true
 [dependencies]
 markdown-renderer.workspace = true
 markdown-traq-contracts = { path = "../contracts" }
+
+[lints]
+workspace = true

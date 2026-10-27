@@ -1,11 +1,13 @@
-#[macro_use]
-#[path = "../node_catalog.rs"]
-mod node_catalog;
 #[path = "../abi.rs"]
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "The native exporter shares ABI declarations without calling runtime error helpers"
+)]
 mod abi;
 #[path = "../limits.rs"]
 mod limits;
+#[path = "../node_catalog.rs"]
+mod node_catalog;
 #[path = "../node_metadata.rs"]
 mod node_metadata;
 #[path = "../nodes.rs"]

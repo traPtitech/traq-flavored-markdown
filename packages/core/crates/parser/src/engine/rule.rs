@@ -20,6 +20,7 @@ impl<T: Clone> Rule<T> {
         }
     }
 
+    #[must_use]
     pub fn named(mut self, name: impl Into<String>) -> Self {
         self.label = Some(name.into());
         self

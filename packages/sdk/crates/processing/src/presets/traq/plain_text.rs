@@ -10,15 +10,13 @@ use traq_markdown_features::{TextFeature, TextOptions, TextProfile};
 /// Build editable plain-text rules. An empty origin leaves URLs as text.
 /// Block separators are retained; single-line formatting belongs to the caller.
 pub fn builder(origin: &str) -> Result<RenderPresetBuilder> {
-    crate::links::validate_origin(origin)?;
-
     let options = TextOptions::default();
     let mut builder = RenderPresetBuilder::new();
     for feature in TextProfile::Traq.features() {
         let mut plugin = feature.plugin(options);
         match feature {
             TextFeature::Core => {
-                let links = TraqUrlClassifier::new(origin);
+                let links = TraqUrlClassifier::new(origin)?;
                 plugin.replace::<Link>(move |link, nodes, ctx, output| {
                     if link.form != LinkForm::Explicit
                         && let Some(target) = links.classify(&link.destination)

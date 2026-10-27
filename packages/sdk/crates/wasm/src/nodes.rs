@@ -1,3 +1,4 @@
+use crate::node_catalog::selected_node_catalogs;
 use markdown_codec::Codec;
 use std::sync::LazyLock;
 

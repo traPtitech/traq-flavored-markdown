@@ -9,3 +9,6 @@ description = "Typed Markdown parsing mechanics, independent of syntax presets."
 [dependencies]
 markdown-ast = { path = "../ast" }
 markdown-definitions = { path = "../definitions" }
+
+[lints]
+workspace = true

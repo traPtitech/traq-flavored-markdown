@@ -3,10 +3,13 @@ use markdown_parser::AnyPayload;
 use markdown_parser::grammar::SyntaxPlugin;
 use markdown_parser::rules::inline::InlineRule;
 pub use markdown_traq_contracts::Spoiler;
+use std::num::NonZeroUsize;
 
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> = std::sync::LazyLock::new(|| {
-        paired_rule(b"!", "spoiler", 2, || AnyPayload::new(Spoiler {}))
+        paired_rule(b"!", "spoiler", NonZeroUsize::new(2).unwrap(), || {
+            AnyPayload::new(Spoiler {})
+        })
     });
     &RULE
 }

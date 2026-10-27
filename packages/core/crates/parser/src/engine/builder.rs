@@ -81,8 +81,8 @@ impl GrammarBuilder {
     }
 
     /// Order two rules in the same phase. Other phases are a compile-time error.
-    /// ```compile_fail
-    /// use markdown_parser::{GrammarBuilder, engine::{inline::InlineRule, block::BlockRule}};
+    /// ```compile_fail,E0308
+    /// use markdown_parser::{GrammarBuilder, rules::{inline::InlineRule, block::BlockRule}};
     /// let mut builder = GrammarBuilder::new();
     /// let inline = InlineRule::new(b"x", |_, _| Ok(None));
     /// let block = BlockRule::new(|_, _| Ok(None));
@@ -226,8 +226,7 @@ impl GrammarBuilder {
 
         let block_policy = self
             .plugins()
-            .filter_map(|plugin| plugin.definition.block_policy.as_ref())
-            .next()
+            .find_map(|plugin| plugin.definition.block_policy.as_ref())
             .cloned();
         let mut grammar = super::registry::Compilation {
             block_policy,

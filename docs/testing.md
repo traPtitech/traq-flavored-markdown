@@ -4,6 +4,23 @@ Run `bun run check` before submitting a broad change. CI splits its checks
 across jobs. TypeScript, corpus, architecture, and package checks run on Ubuntu
 and Windows; the remaining checks run on Ubuntu.
 
+`bun run test:rust` first builds each workspace library independently with every
+combination of its declared features, then runs the workspace tests and doctests
+with all features. Independent builds catch missing dependency-feature
+propagation that workspace feature unification can otherwise hide.
+
+`bun run lint:rust` runs Clippy for all workspace targets and features. Its Node
+runner sets `CARGO_BUILD_WARNINGS=deny`, enforcing warning-free CI with Cargo
+1.97+ without changing compiler flags or invalidating build caches. CI uses the
+same runner.
+
+Every Rust crate inherits the selected lint policy from `workspace.lints` in
+the root `Cargo.toml`. The policy favors named module files, explicit lifetimes
+in type paths, documented lint exceptions, checked use of self-returning APIs,
+and `find_map` for the first matching conversion. Keep exceptions as narrow as
+their reason permits. Use `expect` when a warning should remain present; use a
+reasoned `allow` when a shared file legitimately differs across build targets.
+
 ## Choose the smallest useful check
 
 | Change                     | Check                                                                |

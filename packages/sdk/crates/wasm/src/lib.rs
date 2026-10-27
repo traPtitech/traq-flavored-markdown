@@ -5,11 +5,10 @@ mod contract;
 mod extraction;
 mod grammar;
 mod limits;
-mod pipeline;
-mod rendering;
-#[macro_use]
 mod node_catalog;
 mod nodes;
+mod pipeline;
+mod rendering;
 
 use abi::Error;
 use buffers::IO;

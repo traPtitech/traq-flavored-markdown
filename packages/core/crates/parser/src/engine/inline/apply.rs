@@ -121,16 +121,15 @@ fn apply_delimiter(
     pairing: Pairing,
 ) -> Result<(), ParseError> {
     validate_delimiter(state.source, start, end, pairing)?;
+    let width = pairing.width.get();
 
-    for offset in (0..end - start).step_by(pairing.width) {
+    for offset in (0..end - start).step_by(width) {
         let token = state.tokens.len();
 
         state.push(
             start + offset,
-            start + offset + pairing.width,
-            TokenKind::Marker(
-                state.source.text()[start + offset..start + offset + pairing.width].into(),
-            ),
+            start + offset + width,
+            TokenKind::Marker(state.source.text()[start + offset..start + offset + width].into()),
         )?;
 
         state.delimiters.push(Delimiter {
@@ -153,11 +152,7 @@ fn validate_delimiter(
     end: usize,
     pairing: Pairing,
 ) -> Result<(), ParseError> {
-    if pairing.width == 0 {
-        return Err(ParseError::InternalError);
-    }
-
-    if !(end - start).is_multiple_of(pairing.width)
+    if !(end - start).is_multiple_of(pairing.width.get())
         || !source.text().as_bytes()[start..end]
             .iter()
             .all(|byte| *byte == pairing.marker)

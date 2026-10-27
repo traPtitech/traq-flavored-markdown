@@ -354,6 +354,10 @@ fn checked_owner_reuses_validation_and_editing_discards_the_proof() {
         }
     }
     impl NodeData for Counted {
+        fn structure() -> &'static markdown_ast::NodeStructure {
+            static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure::opaque();
+            &STRUCTURE
+        }
         fn payload_bytes(&self) -> usize {
             0
         }

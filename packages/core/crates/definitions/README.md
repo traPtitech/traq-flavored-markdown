@@ -4,12 +4,15 @@ Shared plugin declarations and node-type metadata for parser and renderer
 implementations. This crate does not depend on parser, renderer, AST, or serde;
 the derive dependency is compile-time only.
 
-`#[node(role = Inline)]` derives a leaf node's structural contract, heap-byte
+`#[node(role = Inline)]` derives a leaf node's structural contract, dynamic-payload
 accounting, and payload validation. Use `children = Inline` for allowed child
 roles, `child_type = Item, nonempty` for typed children, or `structure = function`
 for an explicit Rust structural contract. `#[payload]` derives field accounting
 and validation for nested structs and enums. Consumers of these attributes
 depend on `markdown-ast`; the declarations crate retains no runtime AST dependency.
+Generic node types can declare `child_type = T`; each concrete instantiation
+accepts the corresponding concrete child type, and the derive adds the required
+`T: NodeData` bound.
 
 Field attributes `#[constraint(range(min = 1, max = 6))]` and
 `#[constraint(length(max = 5))]` generate both native checks and Schemars metadata
@@ -18,10 +21,13 @@ field's type, including floating-point bounds for floating-point fields.
 Length constraints count Unicode scalar values in strings and elements in
 vectors or arrays. Floating-point fields must be finite even without a range
 constraint, matching their JSON number contract.
-Nested strings, options, vectors, arrays, and boxes participate in heap accounting
-and validation automatically. Custom payload field types implement
-`markdown_ast::PayloadFields`; handwritten `NodeData` implementations remain
-available for invariants outside these basic constraints.
+Nested strings, options, vectors, arrays, and boxes participate in logical
+dynamic-payload accounting and validation automatically. Custom payload field
+types implement `markdown_ast::PayloadFields::dynamic_payload_bytes`. Accounting
+includes string contents and populated collection storage, excluding spare
+capacity and allocation overhead; it is not an allocator memory limit.
+Handwritten `NodeData` implementations remain available for invariants outside
+these basic constraints and must explicitly declare their structural contract.
 
 The `handlers` module supplies the registration snapshots shared by renderers
 and extractors. It manages atomic add, replace, and remove operations plus

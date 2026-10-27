@@ -7,6 +7,7 @@ use markdown_parser::rules::inline::InlineInput;
 use markdown_parser::rules::inline::InlineMatch;
 use markdown_parser::rules::inline::InlineRule;
 use markdown_parser::rules::inline::Pairing;
+use std::num::NonZeroUsize;
 
 use unicode_general_category::{GeneralCategory as G, get_general_category};
 
@@ -52,10 +53,16 @@ fn flanking(prev: char, next: char, marker: u8) -> (bool, bool) {
 }
 
 /// Construct a fixed-width extension using CommonMark flanking and pairing.
+/// Zero-width delimiters cannot be configured.
+///
+/// ```compile_fail,E0308
+/// use markdown_commonmark::inlines::emphasis::paired_rule;
+/// let rule = paired_rule(b"~", "custom", 0, || unreachable!());
+/// ```
 pub fn paired_rule(
     markers: &'static [u8],
     name: &'static str,
-    width: usize,
+    width: NonZeroUsize,
     make: fn() -> AnyPayload,
 ) -> InlineRule {
     InlineRule::new(markers, move |input, budget| {
@@ -68,7 +75,7 @@ pub fn paired_rule(
 pub fn paired(
     input: &InlineInput<'_>,
     budget: &mut Budget,
-    width: usize,
+    width: NonZeroUsize,
     policy: DelimiterPolicy,
 ) -> Result<Option<InlineMatch>, ParseError> {
     let source = &input.source.text();
@@ -80,7 +87,7 @@ pub fn paired(
         end += 1;
     }
     let length = end - pos;
-    if length < width {
+    if length < width.get() {
         return Ok(None);
     }
     let prev = source[..pos.get()].chars().next_back().unwrap_or(' ');
@@ -95,7 +102,7 @@ pub fn paired(
         policy,
     };
     Ok(Some(InlineMatch {
-        end: pos + length / width * width,
+        end: pos + length / width.get() * width.get(),
         action: InlineAction::Delimiter(pairing),
     }))
 }
@@ -107,7 +114,7 @@ pub(super) fn emphasis(
     paired(
         input,
         budget,
-        1,
+        NonZeroUsize::MIN,
         DelimiterPolicy {
             accepts: |opening, closing| {
                 !((opening.close || closing.open)

@@ -4,7 +4,7 @@ use markdown_traq_contracts::ReferenceId;
 
 const MAX_ORIGIN_BYTES: usize = 2048;
 
-pub(crate) fn validate_origin(origin: &str) -> crate::Result<()> {
+fn validate_origin(origin: &str) -> crate::Result<()> {
     if origin.len() > MAX_ORIGIN_BYTES {
         Err(crate::Error::ResourceLimit {
             resource: "origin_bytes",
@@ -29,11 +29,12 @@ pub struct TraqUrlClassifier {
 }
 
 impl TraqUrlClassifier {
-    pub fn new(origin: &str) -> Self {
+    pub fn new(origin: &str) -> crate::Result<Self> {
+        validate_origin(origin)?;
         let origin = origin.trim_end_matches('/');
-        Self {
+        Ok(Self {
             origin: (!origin.is_empty()).then(|| origin.into()),
-        }
+        })
     }
 
     pub fn classify(&self, url: &str) -> Option<Target> {
@@ -73,7 +74,10 @@ mod tests {
         let fixtures: Vec<Fixture> =
             serde_json::from_str(include_str!("../../../tests/fixtures/traq-links.json")).unwrap();
         for fixture in fixtures {
-            let target = match TraqUrlClassifier::new(&fixture.origin).classify(&fixture.url) {
+            let target = match TraqUrlClassifier::new(&fixture.origin)
+                .unwrap()
+                .classify(&fixture.url)
+            {
                 Some(Target::File { id }) => serde_json::json!({"type": "file", "id": id}),
                 Some(Target::Message { id }) => serde_json::json!({"type": "message", "id": id}),
                 None => serde_json::Value::Null,

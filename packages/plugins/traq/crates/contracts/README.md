@@ -4,7 +4,7 @@ Defines the five traQ payload types—`Reference`, `Stamp`,
 `Embedding`, `Spoiler`, and `BlankLine`—plus their supporting types.
 It does not depend on parser, renderer, or codec implementations.
 
-`preset()` returns shared declarations for reference, stamp, spoiler, and
+`declarations()` returns shared declarations for reference, stamp, spoiler, and
 spacing plugins. Parser, renderer, and extractor implementations use those
 same declaration instances, while grammar and rendering presets choose their
 actual implementations separately.

@@ -105,11 +105,13 @@ impl Operation {
         }
     }
 
+    #[must_use]
     pub fn request_schema(mut self, name: &str) -> Self {
         self.request_schema = Some(name.into());
         self
     }
 
+    #[must_use]
     pub fn response_schema(mut self, name: &str) -> Self {
         self.response_schema = Some(name.into());
         self

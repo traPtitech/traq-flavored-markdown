@@ -1,10 +1,11 @@
 use crate::{Node, NodeData, NodeRole, PayloadError};
 use std::{
     any::{Any, TypeId},
+    borrow::Cow,
     sync::Arc,
 };
 
-type ArityAccessor = dyn Fn(&dyn Any) -> usize + Send + Sync;
+type ArityAccessor = dyn Fn(&dyn Any) -> Result<usize, PayloadError> + Send + Sync;
 
 /// A payload field whose length constrains each child's number of children.
 /// The native accessor and exported field name describe the same relationship.
@@ -18,11 +19,11 @@ impl ChildArity {
         Self {
             field,
             length: Arc::new(move |payload| {
-                length(
-                    payload
-                        .downcast_ref::<T>()
-                        .expect("structure belongs to its payload type"),
-                )
+                let payload = payload.downcast_ref::<T>().ok_or_else(|| {
+                    PayloadError::new("payload matching the child arity accessor")
+                        .actual(format!("payload is not {}", std::any::type_name::<T>()))
+                })?;
+                Ok(length(payload))
             }),
         }
     }
@@ -37,20 +38,34 @@ impl std::fmt::Debug for ChildArity {
 
 /// A native payload identity. Distribution exporters resolve this through their
 /// contract registry; the AST does not depend on persisted wire names.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct PayloadType {
-    pub id: fn() -> TypeId,
-    pub name: &'static str,
+    id: fn() -> TypeId,
+    name: fn() -> &'static str,
 }
 impl PayloadType {
-    pub fn of<T: NodeData>() -> Self {
+    pub const fn of<T: NodeData>() -> Self {
         Self {
             id: TypeId::of::<T>,
-            name: std::any::type_name::<T>(),
+            name: std::any::type_name::<T>,
         }
     }
+    pub fn id(self) -> TypeId {
+        (self.id)()
+    }
+    pub fn name(self) -> &'static str {
+        (self.name)()
+    }
     fn matches(self, node: &Node) -> bool {
-        (self.id)() == node.payload_type_id()
+        self.id() == node.payload_type_id()
+    }
+}
+impl std::fmt::Debug for PayloadType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PayloadType")
+            .field("id", &self.id())
+            .field("name", &self.name())
+            .finish()
     }
 }
 
@@ -66,11 +81,11 @@ pub enum ChildStructure {
     Any,
     Leaf,
     Roles {
-        roles: Vec<NodeRole>,
+        roles: Cow<'static, [NodeRole]>,
         nonempty: bool,
     },
     Types {
-        types: Vec<PayloadType>,
+        types: Cow<'static, [PayloadType]>,
         nonempty: bool,
     },
     Sequence {
@@ -81,7 +96,15 @@ pub enum ChildStructure {
 }
 
 impl NodeStructure {
-    pub fn leaf(role: NodeRole) -> Self {
+    /// Explicitly opt an opaque payload into unrestricted children.
+    pub const fn opaque() -> Self {
+        Self {
+            role: NodeRole::Opaque,
+            children: ChildStructure::Any,
+        }
+    }
+
+    pub const fn leaf(role: NodeRole) -> Self {
         Self {
             role,
             children: ChildStructure::Leaf,
@@ -91,7 +114,7 @@ impl NodeStructure {
         Self {
             role,
             children: ChildStructure::Roles {
-                roles: vec![child],
+                roles: vec![child].into(),
                 nonempty: false,
             },
         }
@@ -100,11 +123,13 @@ impl NodeStructure {
         Self {
             role,
             children: ChildStructure::Types {
-                types: vec![PayloadType::of::<T>()],
+                types: vec![PayloadType::of::<T>()].into(),
                 nonempty,
             },
         }
     }
+    /// Validate immediate children. An arity accessor for a different payload
+    /// type returns a payload error.
     pub fn validate(&self, payload: &dyn Any, children: &[Node]) -> Result<(), PayloadError> {
         let required = match &self.children {
             ChildStructure::Roles { nonempty, .. } | ChildStructure::Types { nonempty, .. } => {
@@ -154,7 +179,10 @@ impl NodeStructure {
                         ),
                     ));
                 }
-                let arity = child_arity.as_ref().map(|arity| (arity.length)(payload));
+                let arity = child_arity
+                    .as_ref()
+                    .map(|arity| (arity.length)(payload))
+                    .transpose()?;
                 if arity == Some(0) {
                     return Err(PayloadError::new("positive child arity"));
                 }

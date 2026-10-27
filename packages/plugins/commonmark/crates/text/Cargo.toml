@@ -9,3 +9,6 @@ publish.workspace = true
 markdown-renderer.workspace = true
 markdown-commonmark-contracts = { path = "../contracts" }
 markdown-ast.workspace = true
+
+[lints]
+workspace = true

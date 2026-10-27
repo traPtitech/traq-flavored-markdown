@@ -24,3 +24,6 @@ serde_json = "=1.0.154"
 name = "export-commonmark-types"
 path = "examples/export-types.rs"
 required-features = ["contracts"]
+
+[lints]
+workspace = true

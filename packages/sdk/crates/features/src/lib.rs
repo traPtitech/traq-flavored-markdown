@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 use markdown_definitions::FeatureContract;
+#[cfg(feature = "syntax")]
 use std::sync::LazyLock;
 
 #[cfg(feature = "syntax")]
@@ -12,25 +13,11 @@ mod table;
 #[cfg(feature = "syntax")]
 pub use linkify::syntax as traq_linkify_syntax;
 pub use profiles::{GrammarProfile, GrammarProfileDefinition, TextProfile};
+pub use table::{FeatureId, all};
 #[cfg(feature = "text")]
 mod text;
 #[cfg(feature = "text")]
 pub use text::TextFeature;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum FeatureId {
-    Core,
-    Html,
-    Math,
-    Mark,
-    Strikethrough,
-    Table,
-    Linkify,
-    Spoiler,
-    References,
-    Stamp,
-    Spacing,
-}
 
 #[derive(Debug)]
 pub struct Export {
@@ -45,20 +32,6 @@ pub struct FeatureDefinition {
     pub contract: &'static FeatureContract,
     #[cfg(feature = "syntax")]
     pub syntax: fn() -> &'static markdown_parser::grammar::SyntaxPlugin,
-}
-
-pub fn all() -> &'static [FeatureDefinition] {
-    static FEATURES: LazyLock<Vec<FeatureDefinition>> = LazyLock::new(table::definitions);
-    &FEATURES
-}
-
-impl FeatureId {
-    pub fn definition(self) -> &'static FeatureDefinition {
-        all()
-            .iter()
-            .find(|feature| feature.id == self)
-            .expect("registered SDK feature")
-    }
 }
 
 /// Ordered feature capabilities selected by the profile policy.

@@ -8,3 +8,9 @@ publish.workspace = true
 
 [dependencies]
 markdown-definitions-derive = { path = "../definitions-derive" }
+
+[dev-dependencies]
+markdown-ast.workspace = true
+
+[lints]
+workspace = true

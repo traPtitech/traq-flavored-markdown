@@ -104,6 +104,7 @@ fn source_edit_consumers_require_a_canonical_ast() {
         );
         assert_eq!(
             message::Extractor::new("")
+                .unwrap()
                 .extract(&document)
                 .unwrap_err()
                 .code(),
@@ -192,7 +193,7 @@ fn aggregate_analysis_matches_the_standalone_policies() {
     })
     .unwrap();
     let reference = ReferenceExtractor::new(&references::preset().unwrap());
-    let message = message::Extractor::new(origin);
+    let message = message::Extractor::new(origin).unwrap();
 
     for source in [
         format!("{user} {file} https://q.example.test/files/{id}"),
@@ -257,6 +258,7 @@ fn custom_parser_limits_flow_through_validated_consumers() {
     assert_eq!(extractor.extract(validated).unwrap().message_text, source);
     assert_eq!(
         message::Extractor::new("")
+            .unwrap()
             .extract(validated)
             .unwrap()
             .source_text,
@@ -290,6 +292,7 @@ fn native_reference_payload_is_bounded_before_extraction() {
     );
     assert_eq!(
         message::Extractor::new("")
+            .unwrap()
             .extract(&document)
             .unwrap_err()
             .code(),

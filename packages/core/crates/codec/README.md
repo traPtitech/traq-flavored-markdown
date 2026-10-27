@@ -41,9 +41,8 @@ limits too. The tree limits come from `markdown_ast::ValidationLimits`;
 `CodecLimits` adds the JSON byte limit. `encode_with_limits` and
 `decode_with_limits` accept the same explicit limits when a producer uses a
 larger tree budget. Pass `CodecLimits::document` to
-`DocumentView::with_limits` before rendering or extraction. The
-`DecodeLimits` name remains an alias for `CodecLimits`. Grammar selection and
-parser or renderer lifecycle management are outside this crate.
+`DocumentView::with_limits` before rendering or extraction. Grammar selection
+and parser or renderer lifecycle management are outside this crate.
 
 `encode_to_writer(document, writer, limits)` streams JSON into a caller-owned
 sink. `serialization_view(document, validation_limits)` returns a borrowed

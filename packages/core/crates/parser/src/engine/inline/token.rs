@@ -1,4 +1,5 @@
 use crate::{AnyPayload, Node, engine::source::ViewOffset};
+use std::num::NonZeroUsize;
 
 /// Syntax-owned matching policy. The engine only pairs accepted runs and
 /// caches failed searches within the policy's bounded equivalence classes.
@@ -30,7 +31,7 @@ pub struct DelimiterRun {
 #[derive(Clone, Copy)]
 pub struct Pairing {
     pub marker: u8,
-    pub width: usize,
+    pub width: NonZeroUsize,
     pub run_length: usize,
     pub open: bool,
     pub close: bool,

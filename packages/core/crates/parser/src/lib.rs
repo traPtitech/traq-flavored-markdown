@@ -1,6 +1,5 @@
 //! Reusable parsing mechanics. Syntax and node contracts are supplied by plugins.
 #![forbid(unsafe_code)]
-#![allow(clippy::single_range_in_vec_init)]
 #![doc = include_str!("../README.md")]
 
 mod engine;

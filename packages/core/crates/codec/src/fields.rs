@@ -16,7 +16,7 @@ impl<'de> Deserialize<'de> for Fields<'de> {
         impl<'de> Visitor<'de> for Object {
             type Value = Fields<'de>;
 
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.write_str("an object with distinct field names")
             }
 

@@ -33,7 +33,7 @@ fn targets_are_independent_of_display_policy() {
 fn message_extraction_and_rendering_share_resource_labels() {
     let origin = "https://q.example.test";
     let parser = traq_markdown_grammar::presets::traq::v1::parser();
-    let extractor = message::Extractor::new(origin);
+    let extractor = message::Extractor::new(origin).unwrap();
     let renderer = Renderer::new(&plain_text::preset(origin).unwrap());
 
     for (path, kind, label) in [

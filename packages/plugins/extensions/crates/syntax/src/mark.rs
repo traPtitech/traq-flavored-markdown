@@ -3,10 +3,14 @@ pub use markdown_extensions_contracts::Mark;
 use markdown_parser::AnyPayload;
 use markdown_parser::grammar::SyntaxPlugin;
 use markdown_parser::rules::inline::InlineRule;
+use std::num::NonZeroUsize;
 
 pub fn inline_rule() -> &'static InlineRule {
-    static RULE: std::sync::LazyLock<InlineRule> =
-        std::sync::LazyLock::new(|| paired_rule(b"=", "mark", 2, || AnyPayload::new(Mark {})));
+    static RULE: std::sync::LazyLock<InlineRule> = std::sync::LazyLock::new(|| {
+        paired_rule(b"=", "mark", NonZeroUsize::new(2).unwrap(), || {
+            AnyPayload::new(Mark {})
+        })
+    });
     &RULE
 }
 

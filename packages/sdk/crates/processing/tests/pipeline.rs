@@ -68,8 +68,23 @@ fn preset_configuration_is_independent_and_bounded() {
     assert_eq!(ordinary.render(&document).unwrap().trim(), source);
     assert_eq!(special.render(&document).unwrap().trim(), "[添付ファイル]");
     assert!(traq::plain_text::builder(&"x".repeat(2048)).is_ok());
+    assert!(traq::message::Extractor::new(&"x".repeat(2048)).is_ok());
     assert_eq!(
         traq::plain_text::builder(&"x".repeat(2049))
+            .err()
+            .map(|error| error.resource()),
+        Some(Some("origin_bytes"))
+    );
+    assert_eq!(
+        traq::message::Extractor::new(&"x".repeat(2049))
+            .err()
+            .map(|error| error.resource()),
+        Some(Some("origin_bytes"))
+    );
+    // The contract is a byte limit, including multibyte origins.
+    assert!(traq::message::Extractor::new(&"é".repeat(1024)).is_ok());
+    assert_eq!(
+        traq::message::Extractor::new(&"é".repeat(1025))
             .err()
             .map(|error| error.resource()),
         Some(Some("origin_bytes"))

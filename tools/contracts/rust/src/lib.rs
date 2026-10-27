@@ -91,6 +91,10 @@ mod tests {
     #[derive(Clone, Debug, PartialEq, JsonSchema)]
     struct Leaf;
     impl NodeData for Leaf {
+        fn structure() -> &'static NodeStructure {
+            static STRUCTURE: NodeStructure = NodeStructure::leaf(NodeRole::Opaque);
+            &STRUCTURE
+        }
         fn payload_bytes(&self) -> usize {
             0
         }
