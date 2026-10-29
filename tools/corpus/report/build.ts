@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { authorIndexFile } from '../comparison/authors.ts'
 import {
-  differenceFiles,
+  differenceFilesFor,
   readCompletedRun,
   readResults,
   validateAuthors
@@ -27,12 +27,15 @@ export async function buildReport(directory: string, template: string) {
   }
   const aggregated = await aggregateDifferences(
     (async function* () {
-      for (const file of differenceFiles)
+      for (const file of differenceFilesFor(plan))
         for await (const line of readLines(path.join(directory, file))) {
           const row = parseDifferenceLine(line)
           if (row.runId !== plan.runId)
             throw new Error('Difference belongs to a different comparison run')
-          if (row.index >= results[row.profile].messages)
+          const result = results[row.profile]
+          if (!result)
+            throw new Error('Difference belongs to an uncompared profile')
+          if (row.index >= result.messages)
             throw new Error('Difference index exceeds message count')
           yield row
         }

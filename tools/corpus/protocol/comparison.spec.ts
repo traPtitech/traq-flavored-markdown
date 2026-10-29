@@ -27,8 +27,26 @@ test('source records are required but collection metadata can be retained on dis
     expect(() => parseSource(line)).toThrow()
 })
 
-test('the fixed three-profile comparison has no misleading profile selector', () => {
+test('comparison plans require frontend profiles and optionally include plain text', () => {
   expect(parseComparisonPlan(fixturePlan()).runId).toBe('synthetic-run')
+  const { plainText: _unused, ...frontend } = fixturePlan().provenance.before
+  const plan = fixturePlan({
+    provenance: { ...fixturePlan().provenance, before: frontend }
+  })
+  expect(Object.keys(parseComparisonPlan(plan).provenance.before)).toEqual([
+    'render',
+    'inline'
+  ])
+  for (const before of [
+    { render: frontend.render },
+    { ...frontend, unknown: frontend.render }
+  ])
+    expect(() =>
+      parseComparisonPlan({
+        ...plan,
+        provenance: { ...plan.provenance, before }
+      })
+    ).toThrow()
   expect(() =>
     parseComparisonPlan({ ...fixturePlan(), profiles: ['render'] })
   ).toThrow()

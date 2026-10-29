@@ -1,9 +1,11 @@
 import { validAuthorKinds } from './authors.ts'
 import {
   byProfile,
+  frontendProfileIds,
   parseDifferenceRow,
   profileIds,
   profileResultSchema,
+  profilesFor,
   runSummarySchema
 } from './comparison.ts'
 import {
@@ -17,7 +19,7 @@ import {
   string
 } from './schema.ts'
 
-export { byProfile, profileIds, parseDifferenceRow }
+export { byProfile, profileIds, profilesFor, parseDifferenceRow }
 export type {
   DifferenceRow,
   ProfileId,
@@ -80,7 +82,7 @@ export const metadataSchema = object('ReportMetadata', {
   counts: keyedRecord(count, profileIds),
   filters: keyedRecord(string, profileIds),
   authors: keyedRecord(string, profileIds),
-  results: keyedRecord(profileResultSchema, profileIds),
+  results: keyedRecord(profileResultSchema, frontendProfileIds, ['plainText']),
   run: runSummarySchema,
   generated: string,
   pageSize: positiveCount
@@ -95,6 +97,12 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
   const chunks = parse(payloadSchema, payload)
   if (!Number.isFinite(Date.parse(meta.generated)))
     throw new Error('Invalid report date')
+  const selected = profilesFor(meta.run)
+  if (
+    Object.keys(meta.results).length !== selected.length ||
+    selected.some(profile => !meta.results[profile])
+  )
+    throw new Error('Report profiles mismatch')
   for (const profile of profileIds) {
     const result = meta.results[profile]
     if (
@@ -105,6 +113,13 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
       chunks[profile].length !== Math.ceil(meta.counts[profile] / meta.pageSize)
     )
       throw new Error('Invalid report profile: ' + profile)
+    if (!result) {
+      if (meta.counts[profile] !== 0)
+        throw new Error(
+          'Uncompared report profile contains differences: ' + profile
+        )
+      continue
+    }
     if (result.differences !== meta.counts[profile])
       throw new Error('Report counts mismatch')
     if (result.messages !== meta.messages)

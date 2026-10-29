@@ -31,6 +31,9 @@ func compare() error {
 	if err != nil {
 		return err
 	}
+	if _, compared := plan.Provenance.Before["plainText"]; !compared {
+		return fmt.Errorf("plain-text comparison is not selected")
+	}
 	started := time.Now()
 	before.SetOrigin(plan.Origin)
 	beforeMS := float64(time.Since(started).Nanoseconds()) / 1e6

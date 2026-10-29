@@ -48,6 +48,8 @@ export class ReportRepository {
   }
 
   async loadChunk(profile: ProfileId, index: number) {
+    if (!this.metadata.results[profile])
+      throw new Error('Profile was not compared: ' + profile)
     const key = `${profile}:${index}`
     const previous = this.chunks.get(key)
     if (previous) return previous
@@ -87,6 +89,8 @@ export class ReportRepository {
     signal?: AbortSignal,
     progress: (value: Progress) => void = () => undefined
   ): Promise<QueryResult> {
+    if (!this.metadata.results[query.profile])
+      throw new Error('Profile was not compared: ' + query.profile)
     const search = query.search.trim().toLowerCase()
     // Bits enumerate nonempty combinations of the six normalization options.
     const combination =

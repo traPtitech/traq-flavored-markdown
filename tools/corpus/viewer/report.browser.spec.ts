@@ -117,6 +117,39 @@ async function openReport(page: Page, data = reportFixture()) {
   await page.goto(route)
 }
 
+test('frontend-only reports show only measured profiles in controls and summaries', async ({
+  page
+}) => {
+  const data = reportFixture()
+  const { plainText: _unusedResult, ...results } = data.metadata.results
+  const { plainText: _unusedBefore, ...before } =
+    data.metadata.run.provenance.before
+  await openReport(page, {
+    metadata: {
+      ...data.metadata,
+      counts: { ...data.metadata.counts, plainText: 0 },
+      filters: { ...data.metadata.filters, plainText: '' },
+      authors: { ...data.metadata.authors, plainText: '' },
+      results,
+      run: {
+        ...data.metadata.run,
+        provenance: { ...data.metadata.run.provenance, before }
+      }
+    },
+    payload: { ...data.payload, plainText: [] }
+  })
+  await expect(page.locator('#profiles button')).toHaveCount(2)
+  await expect(page.locator('.result-summary tr[data-profile]')).toHaveCount(2)
+  await expect(page.locator('#speed tbody tr')).toHaveCount(2)
+  await expect(page.locator('#footer')).not.toContainText('プレーンテキスト')
+  await page.getByLabel('ホワイトスペースのみを除外').check()
+  await page.getByRole('button', { name: /S-UI · インライン/ }).click()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
+  await page.getByLabel('原文を検索').fill('Inline')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
+})
+
 test('BOT switch uses account metadata, retains unknown authors and composes with other controls', async ({
   page
 }) => {
@@ -250,11 +283,204 @@ test('KaTeX-only checkbox composes with search and other filters while retaining
   await expect(page.locator('#rows .source')).toHaveText('Plain')
 })
 
+test('link policy checkbox hides HTTPS completion and email additions but retains bad links', async ({
+  page
+}) => {
+  const relative = '//trap.jp'
+  const email = 'info@example.unknown'
+  await openReport(
+    page,
+    reportFixture([
+      {
+        runId: 'synthetic-run',
+        index: 5,
+        profile: 'render',
+        source: relative,
+        before: {
+          kind: 'html',
+          value: `<a href="${relative}">${relative}</a>`
+        },
+        after: {
+          kind: 'html',
+          value: `<a href="https://trap.jp">${relative}</a>`
+        }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 6,
+        profile: 'render',
+        source: email,
+        before: { kind: 'html', value: email },
+        after: { kind: 'html', value: `<a href="mailto:${email}">${email}</a>` }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 7,
+        profile: 'render',
+        source: relative + ' wrong destination',
+        before: {
+          kind: 'html',
+          value: `<a href="${relative}">${relative}</a>`
+        },
+        after: {
+          kind: 'html',
+          value: `<a href="https://wrong.test">${relative}</a>`
+        }
+      }
+    ])
+  )
+  await expect(page.locator('#status')).toHaveText('6 件')
+  await page.getByLabel('リンク仕様変更による差分を除外').check()
+  await expect(page.locator('#status')).toHaveText('4 件 / 全 6 件')
+  await page.getByLabel('原文を検索').fill(relative)
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toHaveText(
+    relative + ' wrong destination'
+  )
+  await page.getByLabel('リンク仕様変更による差分を除外').uncheck()
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 6 件')
+})
+
+test('link policy checkbox excludes bare domains repeated in article links while keeping mixed image changes', async ({
+  page
+}) => {
+  const header =
+    '<a href="https://news.example.test/article">Runtime.NET の記事</a>'
+  const blog = '<a href="https://blog.example.test/entry/123">更新記事</a>'
+  const beforeBlog =
+    blog + ' <a href="http://blog.example.test">blog.example.test</a>'
+  const afterBlog = blog + ' blog.example.test'
+  await openReport(
+    page,
+    reportFixture([
+      {
+        runId: 'synthetic-run',
+        index: 5,
+        profile: 'render',
+        source:
+          '[Runtime.NET の記事](https://news.example.test/article) Runtime.NET の説明',
+        before: {
+          kind: 'html',
+          value: header + ' <a href="http://Runtime.NET">Runtime.NET</a> の説明'
+        },
+        after: { kind: 'html', value: header + ' Runtime.NET の説明' }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 6,
+        profile: 'render',
+        source:
+          '[更新記事](https://blog.example.test/entry/123) blog.example.test',
+        before: { kind: 'html', value: beforeBlog },
+        after: { kind: 'html', value: afterBlog }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 7,
+        profile: 'inline',
+        source:
+          'Mixed article [更新記事](https://blog.example.test/entry/123) blog.example.test ![image](https://images.example.test/a.png)',
+        before: {
+          kind: 'html',
+          value:
+            beforeBlog +
+            ' !<a href="https://images.example.test/a.png">image</a>'
+        },
+        after: {
+          kind: 'html',
+          value:
+            afterBlog +
+            ' <a href="https://images.example.test/a.png" data-is-image>image</a>'
+        }
+      }
+    ])
+  )
+  await expect(page.locator('#status')).toHaveText('5 件')
+  await page.getByLabel('リンク仕様変更による差分を除外').check()
+  await expect(page.locator('#status')).toHaveText('3 件 / 全 5 件')
+  await page.getByLabel('原文を検索').fill('Runtime.NET')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#empty')).toBeVisible()
+  await page.getByRole('button', { name: /S-UI · インライン/ }).click()
+  await page.getByLabel('原文を検索').fill('Mixed article')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toContainText('Mixed article')
+})
+
+test('link policy handles port domains and literal delimiters, and composes with whitespace', async ({
+  page
+}) => {
+  const port = 'node.example.test:5873'
+  const domain = 'code.example.test/team/tool.(*Command).run'
+  const email = '/go/pkg/mod/code.example.test/tool@v1.3.0'
+  const trace = 'Process trace``` ' + domain + ' ' + email + '/file.go:42 ```'
+  const before =
+    'Process trace``` <a href="http://' +
+    domain +
+    '">' +
+    domain +
+    '</a> ' +
+    email +
+    '/file.go:42<code></code>'
+  const after =
+    'Process trace``` ' +
+    domain +
+    ' <a href="mailto:' +
+    email +
+    '">' +
+    email +
+    '</a>/file.go:42<code></code>'
+  await openReport(
+    page,
+    reportFixture([
+      {
+        runId: 'synthetic-run',
+        index: 5,
+        profile: 'render',
+        source: port,
+        before: {
+          kind: 'html',
+          value: '<a href="http://' + port + '">' + port + '</a>'
+        },
+        after: { kind: 'html', value: port }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 6,
+        profile: 'render',
+        source: trace,
+        before: { kind: 'html', value: before },
+        after: { kind: 'html', value: after }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 7,
+        profile: 'inline',
+        source: trace,
+        before: { kind: 'html', value: before },
+        after: { kind: 'html', value: after.replace('<code>', ' <code>') }
+      }
+    ])
+  )
+  await expect(page.locator('#status')).toHaveText('5 件')
+  const policy = page.getByLabel('リンク仕様変更による差分を除外')
+  await policy.check()
+  await expect(page.locator('#status')).toHaveText('3 件 / 全 5 件')
+  await page.getByRole('button', { name: /S-UI · インライン/ }).click()
+  await page.getByLabel('原文を検索').fill('Process trace')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toContainText('Process trace')
+  await page.getByLabel('ホワイトスペースのみを除外').check()
+  await expect(page.locator('#empty')).toBeVisible()
+  await policy.uncheck()
+  await expect(page.locator('#rows .source')).toContainText('Process trace')
+})
+
 test('link policy checkbox composes with search, profiles and all output filters', async ({
   page
 }) => {
-  const url = 'https://trap.jp'
-  const link = `<a href="${url}">${url}</a>`
+  const url = 'trap.jp'
+  const link = `<a href="http://${url}">${url}</a>`
   await openReport(
     page,
     reportFixture([
@@ -539,6 +765,48 @@ test('HTML spelling checkbox composes with all filters and keeps text changes an
   await expect(page.locator('#rows .source')).toHaveText('Plain')
 })
 
+test('HTML spelling checkbox alone hides href HTTPS completion with a formatted custom label', async ({
+  page
+}) => {
+  const before = '<a href="//trap.jp/docs"><strong>資料</strong></a>'
+  const after = '<a href="https://trap.jp/docs"><strong>資料</strong></a>'
+  await openReport(
+    page,
+    reportFixture([
+      {
+        runId: 'synthetic-run',
+        index: 5,
+        profile: 'render',
+        source: '[**資料**](//trap.jp/docs)',
+        before: { kind: 'html', value: before },
+        after: { kind: 'html', value: after }
+      },
+      {
+        runId: 'synthetic-run',
+        index: 6,
+        profile: 'render',
+        source: '[**別資料**](//trap.jp/docs)',
+        before: { kind: 'html', value: before },
+        after: { kind: 'html', value: after.replace('/docs', '/other') }
+      }
+    ])
+  )
+  const spelling = page.getByLabel('HTMLの表記差分のみを除外')
+  await expect(
+    page.getByLabel('リンク仕様変更による差分を除外')
+  ).not.toBeChecked()
+  await expect(page.locator('#status')).toHaveText('5 件')
+  await spelling.check()
+  await expect(page.locator('#status')).toHaveText('4 件 / 全 5 件')
+  await page.getByLabel('原文を検索').fill('資料')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toHaveText(
+    '[**別資料**](//trap.jp/docs)'
+  )
+  await spelling.uncheck()
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 5 件')
+})
+
 test('HTML preview remains inert and isolates corpus classes from viewer styles', async ({
   page
 }) => {
@@ -614,7 +882,7 @@ test('chunk failures are visible and equal failures remain visible with zero out
       filters: byProfile(() => ''),
       authors: byProfile(() => ''),
       results: byProfile(profile => ({
-        ...base.metadata.results[profile],
+        ...base.metadata.results[profile]!,
         differences: 0
       }))
     },

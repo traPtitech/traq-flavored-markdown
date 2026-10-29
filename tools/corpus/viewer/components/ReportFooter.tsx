@@ -1,15 +1,15 @@
-import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
+import { type ReportMetadata, profilesFor } from '../../protocol/report.ts'
 import { profileLabels } from '../profiles.ts'
 
 export function ReportFooter({ metadata }: { metadata: ReportMetadata }) {
   return (
     <footer id="footer">
       生成 {new Date(metadata.generated).toLocaleString('ja-JP')}
-      {profileIds.map(profile => (
+      {profilesFor(metadata.run).map(profile => (
         <span key={profile}>
           {' · '}
           {profileLabels[profile]} before{' '}
-          {metadata.run.provenance.before[profile].revision.slice(0, 10)}
+          {metadata.run.provenance.before[profile]!.revision.slice(0, 10)}
         </span>
       ))}
       {' · after: '}

@@ -60,6 +60,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
       '    @a',
       '[label @a](https://example.com/@a)',
       '![alt @a](https://example.com/image.png)',
+      'info@trap.jp contact@midorimu.si',
       '\\@a &#64;a \\#a',
       reference,
       `\`${reference}\``
@@ -68,6 +69,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     for (const source of preserved) {
       expect(embed(source)).toBe(source)
     }
+    expect(embed('info@trap.jp @a')).toBe(`info@trap.jp ${reference}`)
 
     expect(embed('日本語😀 **@a**')).toBe(`日本語😀 **${reference}**`)
 

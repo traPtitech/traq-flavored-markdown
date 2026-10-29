@@ -1,16 +1,44 @@
 [
-  { "schema": "source", "valid": true, "json": "{\"source\":\"\"}" },
+  {
+    "schema": "source",
+    "valid": true,
+    "json": "{\"source\":\"\"}"
+  },
   {
     "schema": "source",
     "valid": true,
     "json": "{\"source\":\"😀\\u2028text\",\"id\":\"sample\"}"
   },
-  { "schema": "source", "valid": false, "json": "{}" },
-  { "schema": "source", "valid": false, "json": "{\"source\":null}" },
-  { "schema": "source", "valid": false, "json": "{\"source\":42}" },
-  { "schema": "source", "valid": false, "json": "null" },
-  { "schema": "source", "valid": false, "json": "[]" },
-  { "schema": "source", "valid": false, "json": "{\"source\":\"a\"} {}" },
+  {
+    "schema": "source",
+    "valid": false,
+    "json": "{}"
+  },
+  {
+    "schema": "source",
+    "valid": false,
+    "json": "{\"source\":null}"
+  },
+  {
+    "schema": "source",
+    "valid": false,
+    "json": "{\"source\":42}"
+  },
+  {
+    "schema": "source",
+    "valid": false,
+    "json": "null"
+  },
+  {
+    "schema": "source",
+    "valid": false,
+    "json": "[]"
+  },
+  {
+    "schema": "source",
+    "valid": false,
+    "json": "{\"source\":\"a\"} {}"
+  },
   {
     "schema": "difference",
     "valid": true,
@@ -40,5 +68,30 @@
     "schema": "difference",
     "valid": false,
     "json": "{\"runId\":\"test\",\"index\":9007199254740992,\"profile\":\"render\",\"source\":\"x\",\"before\":{\"kind\":\"html\",\"value\":\"same\"},\"after\":{\"kind\":\"error\",\"value\":\"same\"}}"
+  },
+  {
+    "schema": "plan",
+    "valid": true,
+    "json": "{\"format\":\"1\",\"runId\":\"synthetic-run\",\"corpus\":\"messages.jsonl\",\"corpusSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"output\":\"comparison\",\"baselineDirectory\":\"baseline\",\"wasm\":\"parser.wasm\",\"candidateDirectory\":\"dist\",\"origin\":\"https://q.example.test\",\"max\":100,\"warmups\":2,\"provenance\":{\"before\":{\"render\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"inline\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"plainText\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false}},\"after\":{\"label\":\"after\",\"revision\":\"b\",\"dirty\":false},\"artifacts\":{\"wasmSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"javascriptSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"contractId\":\"contract\",\"sourceFingerprint\":\"source\"},\"dependencies\":{}},\"environment\":{\"bun\":\"synthetic\",\"go\":\"synthetic\",\"platform\":\"test\",\"arch\":\"test\"}}"
+  },
+  {
+    "schema": "plan",
+    "valid": true,
+    "json": "{\"format\":\"1\",\"runId\":\"synthetic-run\",\"corpus\":\"messages.jsonl\",\"corpusSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"output\":\"comparison\",\"baselineDirectory\":\"baseline\",\"wasm\":\"parser.wasm\",\"candidateDirectory\":\"dist\",\"origin\":\"https://q.example.test\",\"max\":100,\"warmups\":2,\"provenance\":{\"before\":{\"render\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"inline\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false}},\"after\":{\"label\":\"after\",\"revision\":\"b\",\"dirty\":false},\"artifacts\":{\"wasmSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"javascriptSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"contractId\":\"contract\",\"sourceFingerprint\":\"source\"},\"dependencies\":{}},\"environment\":{\"bun\":\"synthetic\",\"go\":\"synthetic\",\"platform\":\"test\",\"arch\":\"test\"}}"
+  },
+  {
+    "schema": "plan",
+    "valid": false,
+    "json": "{\"format\":\"1\",\"runId\":\"synthetic-run\",\"corpus\":\"messages.jsonl\",\"corpusSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"output\":\"comparison\",\"baselineDirectory\":\"baseline\",\"wasm\":\"parser.wasm\",\"candidateDirectory\":\"dist\",\"origin\":\"https://q.example.test\",\"max\":100,\"warmups\":2,\"provenance\":{\"before\":{\"render\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false}},\"after\":{\"label\":\"after\",\"revision\":\"b\",\"dirty\":false},\"artifacts\":{\"wasmSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"javascriptSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"contractId\":\"contract\",\"sourceFingerprint\":\"source\"},\"dependencies\":{}},\"environment\":{\"bun\":\"synthetic\",\"go\":\"synthetic\",\"platform\":\"test\",\"arch\":\"test\"}}"
+  },
+  {
+    "schema": "plan",
+    "valid": false,
+    "json": "{\"format\":\"1\",\"runId\":\"synthetic-run\",\"corpus\":\"messages.jsonl\",\"corpusSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"output\":\"comparison\",\"baselineDirectory\":\"baseline\",\"wasm\":\"parser.wasm\",\"candidateDirectory\":\"dist\",\"origin\":\"https://q.example.test\",\"max\":100,\"warmups\":2,\"provenance\":{\"before\":{\"render\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"inline\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"unknown\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false}},\"after\":{\"label\":\"after\",\"revision\":\"b\",\"dirty\":false},\"artifacts\":{\"wasmSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"javascriptSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"contractId\":\"contract\",\"sourceFingerprint\":\"source\"},\"dependencies\":{}},\"environment\":{\"bun\":\"synthetic\",\"go\":\"synthetic\",\"platform\":\"test\",\"arch\":\"test\"}}"
+  },
+  {
+    "schema": "plan",
+    "valid": false,
+    "json": "{\"format\":\"1\",\"runId\":\"synthetic-run\",\"corpus\":\"messages.jsonl\",\"corpusSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"output\":\"comparison\",\"baselineDirectory\":\"baseline\",\"wasm\":\"parser.wasm\",\"candidateDirectory\":\"dist\",\"origin\":\"https://q.example.test\",\"max\":100,\"warmups\":2,\"provenance\":{\"before\":{\"render\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"inline\":{\"label\":\"before\",\"revision\":\"a\",\"dirty\":false},\"plainText\":null},\"after\":{\"label\":\"after\",\"revision\":\"b\",\"dirty\":false},\"artifacts\":{\"wasmSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"javascriptSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"contractId\":\"contract\",\"sourceFingerprint\":\"source\"},\"dependencies\":{}},\"environment\":{\"bun\":\"synthetic\",\"go\":\"synthetic\",\"platform\":\"test\",\"arch\":\"test\"}}"
   }
 ]

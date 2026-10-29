@@ -11,7 +11,6 @@ import { GitRepo } from '../infrastructure/git.ts'
 import { resolveRepositoryPath } from '../infrastructure/paths.ts'
 import {
   type ComparisonPlan,
-  byProfile,
   defaultWarmups,
   parseComparisonPlan
 } from '../protocol/comparison.ts'
@@ -31,19 +30,24 @@ export type ComparisonOptions = {
   origin: string
   max: number
   warmups?: number
+  frontendOnly?: boolean
 }
 export type RunWorkers = {
   frontend(plan: ComparisonPlan): Promise<void>
-  plainText(plan: ComparisonPlan): Promise<void>
+  plainText?(plan: ComparisonPlan): Promise<void>
   verifyCandidate?(plan: ComparisonPlan): Promise<void>
 }
 
 /** A failed run never receives a completion manifest and cannot become a report. */
 export async function executeRun(plan: ComparisonPlan, workers: RunWorkers) {
+  parseComparisonPlan(plan)
   if ((await sha256(plan.corpus)) !== plan.corpusSha256)
     throw new Error('Corpus changed before comparison')
   await workers.frontend(plan)
-  await workers.plainText(plan)
+  if (plan.provenance.before.plainText) {
+    if (!workers.plainText) throw new Error('Plain-text worker is required')
+    await workers.plainText(plan)
+  }
   await writeAuthorIndex(plan)
   if ((await sha256(plan.corpus)) !== plan.corpusSha256)
     throw new Error('Corpus changed during comparison')
@@ -77,7 +81,9 @@ export async function runComparison(options: ComparisonOptions) {
     options.output ?? path.join('.private', 'corpora', 'comparisons', runId)
   )
   const sui = new GitRepo(resolveRepositoryPath(options.suiDirectory))
-  const traq = new GitRepo(resolveRepositoryPath(options.traqDirectory))
+  const traq = options.frontendOnly
+    ? undefined
+    : new GitRepo(resolveRepositoryPath(options.traqDirectory))
   const candidate = new GitRepo(repositoryRoot)
   const [
     suiRevision,
@@ -88,10 +94,12 @@ export async function runComparison(options: ComparisonOptions) {
     corpusSha256
   ] = await Promise.all([
     sui.revParse(options.suiRef),
-    traq.revParse(options.traqRef),
+    traq?.revParse(options.traqRef),
     candidate.revParse('HEAD'),
     candidate.exec(['status', '--porcelain']),
-    captureProcess('go', ['version'], repositoryRoot),
+    options.frontendOnly
+      ? Promise.resolve('Go not used (frontend-only)')
+      : captureProcess('go', ['version'], repositoryRoot),
     sha256(corpus)
   ])
   const candidateDirectory = path.join(sdkRoot, 'dist')
@@ -118,11 +126,19 @@ export async function runComparison(options: ComparisonOptions) {
       max: options.max,
       warmups,
       provenance: {
-        before: byProfile(profile => ({
-          label: profile === 'plainText' ? 'traQ' : 'traQ_S-UI',
-          revision: profile === 'plainText' ? traqRevision : suiRevision,
-          dirty: false
-        })),
+        before: {
+          render: { label: 'traQ_S-UI', revision: suiRevision, dirty: false },
+          inline: { label: 'traQ_S-UI', revision: suiRevision, dirty: false },
+          ...(traqRevision
+            ? {
+                plainText: {
+                  label: 'traQ',
+                  revision: traqRevision,
+                  dirty: false
+                }
+              }
+            : {})
+        },
         after: {
           label: 'traQ Markdown SDK',
           revision: candidateRevision,

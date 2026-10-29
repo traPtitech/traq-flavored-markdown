@@ -1,11 +1,10 @@
-import type { ProfileResult } from '../../protocol/comparison.ts'
-import { type ProfileId, profileIds } from '../../protocol/report.ts'
+import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
 import { profileLabels } from '../profiles.ts'
 
 export function ComparisonSummary({
   results
 }: {
-  results: Record<ProfileId, ProfileResult>
+  results: ReportMetadata['results']
 }) {
   return (
     <section className="result-summary" aria-label="比較結果">
@@ -23,22 +22,26 @@ export function ComparisonSummary({
           </tr>
         </thead>
         <tbody>
-          {profileIds.map(profile => {
-            const result = results[profile]
-            return (
-              <tr key={profile} data-profile={profile}>
-                <th>{profileLabels[profile]}</th>
-                <td>{result.differences.toLocaleString('ja-JP')}</td>
-                <td className={result.beforeErrors ? 'has-errors' : undefined}>
-                  {result.beforeErrors.toLocaleString('ja-JP')}
-                </td>
-                <td className={result.afterErrors ? 'has-errors' : undefined}>
-                  {result.afterErrors.toLocaleString('ja-JP')}
-                </td>
-                <td>{result.embeddingDifferences.toLocaleString('ja-JP')}</td>
-              </tr>
-            )
-          })}
+          {profileIds
+            .filter(profile => results[profile])
+            .map(profile => {
+              const result = results[profile]!
+              return (
+                <tr key={profile} data-profile={profile}>
+                  <th>{profileLabels[profile]}</th>
+                  <td>{result.differences.toLocaleString('ja-JP')}</td>
+                  <td
+                    className={result.beforeErrors ? 'has-errors' : undefined}
+                  >
+                    {result.beforeErrors.toLocaleString('ja-JP')}
+                  </td>
+                  <td className={result.afterErrors ? 'has-errors' : undefined}>
+                    {result.afterErrors.toLocaleString('ja-JP')}
+                  </td>
+                  <td>{result.embeddingDifferences.toLocaleString('ja-JP')}</td>
+                </tr>
+              )
+            })}
         </tbody>
       </table>
     </section>

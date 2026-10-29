@@ -8,20 +8,27 @@ import { expect, test } from 'bun:test'
 
 import { commonParser, parser } from './setup.js'
 
-test('angle links complete destinations while bare URLs and email addresses remain text', () => {
+test('scheme URLs, email addresses and angle links are linked while bare domains remain text', () => {
   const view = traq.createHtmlRenderer()
-  for (const source of [
-    'trap.jp',
-    'example.com',
-    'README.md',
-    'https://trap.jp',
-    '//trap.jp',
-    'info@trap.jp',
-    'contact@midorimu.si',
-    '@gmai.com'
-  ])
+  for (const source of ['trap.jp', 'example.com', 'README.md', '@gmai.com'])
     expect(view.render(parser.parseInline(source)), source).toBe(source)
   for (const [source, label, destination] of [
+    ['info@trap.jp', 'info@trap.jp', 'mailto:info@trap.jp'],
+    [
+      'contact@midorimu.si',
+      'contact@midorimu.si',
+      'mailto:contact@midorimu.si'
+    ],
+    ['mailto:info@trap.jp', 'mailto:info@trap.jp', 'mailto:info@trap.jp'],
+    ['https://trap.jp', 'https://trap.jp', 'https://trap.jp'],
+    [
+      'http://localhost:3000/a_(b)',
+      'http://localhost:3000/a_(b)',
+      'http://localhost:3000/a_(b)'
+    ],
+    ['ftp://trap.jp/file', 'ftp://trap.jp/file', 'ftp://trap.jp/file'],
+    ['//trap.jp/path', '//trap.jp/path', 'https://trap.jp/path'],
+    ['//README.md', '//README.md', 'https://readme.md'],
     ['<trap.jp>', 'trap.jp', 'https://trap.jp'],
     ['<README.md>', 'README.md', 'https://readme.md'],
     ['<//trap.jp>', '//trap.jp', 'https://trap.jp'],
@@ -305,7 +312,7 @@ test('image alt links never create message cards and rendering leaves the AST in
   }
 })
 
-test('additional blank lines retain source ranges after bare resource URLs', () => {
+test('additional blank lines retain source ranges and trailing-card presentation', () => {
   const document = parser.parse('a\n\n\nb')
   expect(traq.createHtmlRenderer().render(document)).toBe(
     '<p>a</p>\n<br>\n<p>b</p>\n'
@@ -324,6 +331,6 @@ test('additional blank lines retain source ranges after bare resource URLs', () 
   const file = origin + '/files/00000000-0000-0000-0000-000000000001'
   const view = traq.messageRenderers({ origin })
   expect(view.standard.render(parser.parse('a\n' + file + '\n\n\n')).html).toBe(
-    `<p>a<br>\n${file}</p>\n<br>\n`
+    '<p>a</p>\n'
   )
 })

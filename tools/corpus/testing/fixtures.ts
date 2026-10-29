@@ -77,7 +77,7 @@ export function fixtureMetadata(
   counts = byProfile(() => 0),
   pageSize = 50,
   messages = 3
-): ReportMetadata {
+) {
   const plan = fixturePlan()
   return {
     messages,
@@ -98,7 +98,7 @@ export function fixtureMetadata(
     },
     generated: '2026-01-01T00:00:00Z',
     pageSize
-  }
+  } satisfies ReportMetadata
 }
 
 export const fixtureRows: DifferenceRow[] = [

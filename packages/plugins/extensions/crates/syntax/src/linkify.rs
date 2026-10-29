@@ -1,12 +1,47 @@
 use markdown_commonmark_contracts::{Link, LinkForm, Text};
 use markdown_parser::grammar::SyntaxPlugin;
-use markdown_parser::rules::inline::{InlineAction, InlineMatch, InlineRule};
+use markdown_parser::rules::inline::{InlineAction, InlineMatch, InlineRule, TextMatch, TextRule};
 use markdown_parser::{AnyPayload, Node};
 
+mod path;
 mod recognize;
 
 fn inline_rule() -> InlineRule {
-    InlineRule::new(b"<", |input, budget| {
+    InlineRule::new(b"<hHfF/", |input, budget| {
+        if !input.tail().starts_with('<') {
+            if input.inside_brackets
+                || !["http://", "https://", "ftp://", "//"]
+                    .iter()
+                    .any(|prefix| {
+                        input
+                            .tail()
+                            .get(..prefix.len())
+                            .is_some_and(|value| value.eq_ignore_ascii_case(prefix))
+                    })
+            {
+                return Ok(None);
+            }
+            let length = recognize::scan_len(input.tail());
+            budget.spend(length)?;
+            let Some(found) = recognize::bare_at(input.source.text(), input.position.get(), length)
+            else {
+                return Ok(None);
+            };
+            let range = input.source.range(found.start..found.end)?;
+            let span = input.source.span_for(range.clone())?;
+            return Ok(Some(InlineMatch {
+                end: range.end,
+                action: InlineAction::Node {
+                    payload: AnyPayload::new(Link {
+                        destination: found.destination,
+                        title: None,
+                        form: LinkForm::Linkify,
+                    }),
+                    children: vec![Node::leaf(span, Text { value: found.label })],
+                    inhibit_brackets: false,
+                },
+            }));
+        }
         let start = input.position + 1;
         let mut end = start;
         let source = input.source.text();
@@ -46,18 +81,52 @@ fn inline_rule() -> InlineRule {
     .named("linkify")
 }
 
-/// Extends CommonMark autolinks with scheme-less domains inside angle brackets.
-/// Bare URLs and email addresses remain text; no TLD allowlist is needed.
+fn text_rule() -> TextRule {
+    TextRule::new(|input, _| {
+        recognize::bare_urls(input.text())
+            .into_iter()
+            .filter(|found| !(input.after_decoded_text && found.start == 0))
+            .map(|found| {
+                let start = input.range.start + found.start;
+                let end = input.range.start + found.end;
+                Ok(TextMatch {
+                    start,
+                    end,
+                    payload: AnyPayload::new(Link {
+                        destination: found.destination,
+                        title: None,
+                        form: LinkForm::Linkify,
+                    }),
+                    children: vec![Node::leaf(
+                        input.source.span_for(start..end)?,
+                        Text { value: found.label },
+                    )],
+                })
+            })
+            .collect()
+    })
+    .named("linkify")
+}
+
+/// Linkifies scheme URLs, scheme-relative URLs and email addresses, and extends
+/// angle autolinks with scheme-less domains. Bare domains remain text.
 pub struct Syntax {
     pub plugin: SyntaxPlugin,
     pub inline: InlineRule,
+    pub text: TextRule,
 }
 impl Syntax {
     pub fn new() -> Self {
         let inline = inline_rule();
+        let text = text_rule();
         let mut plugin = SyntaxPlugin::new(&markdown_extensions_contracts::declarations().linkify);
         plugin.add(&inline);
-        Self { plugin, inline }
+        plugin.add(&text);
+        Self {
+            plugin,
+            inline,
+            text,
+        }
     }
 }
 impl Default for Syntax {

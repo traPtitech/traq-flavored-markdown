@@ -79,3 +79,13 @@ escapes (`bare-file`, `bare-message`, `query-file`, `public-676`, `public-688`,
 delimiters from the new autolink in `public-610`. These expectations were
 derived from the reviewed input and link policy, not regenerated from parser
 output. All fixture sources and unrelated expectations were retained.
+
+On 2026-10-29, bare HTTP(S), FTP, and email links were enabled again. The historical
+expectations for CommonMark examples 602, 608, 611, and 612 and the synthetic
+`link punctuation` case were restored. The `text links` case restores only the
+explicit HTTPS URL and email address, retaining the bare domain as text.
+The seven plain-text expectations for `bare-file`, `bare-message`, `query-file`,
+`spoiler-file`, `public-676`, `public-688`, and `public-699` were restored from
+the earlier frozen fixtures. Sources and unrelated expectations, including
+scheme-less angle links, were preserved. No parser
+output was used to regenerate expectations.

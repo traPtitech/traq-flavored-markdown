@@ -165,3 +165,97 @@ test('legacy completed runs remain readable and unknown authors remain visible',
     expect(report.metadata.authors.render).toBe('u')
     expect(report.metadata.counts.render).toBe(1)
   }))
+
+test('frontend-only runs skip the Go worker and produce a portable two-profile report', async () =>
+  withRun(async fullPlan => {
+    const { plainText: _unused, ...before } = fullPlan.provenance.before
+    const plan = { ...fullPlan, provenance: { ...fullPlan.provenance, before } }
+    await writeJson(path.join(plan.output, 'run.json'), plan)
+    await executeRun(plan, {
+      frontend,
+      plainText: async () => {
+        throw new Error('Go worker must not run')
+      }
+    })
+    expect(
+      await Bun.file(path.join(plan.output, 'plain-text-results.json')).exists()
+    ).toBe(false)
+    expect(
+      await Bun.file(
+        path.join(plan.output, 'plain-text-differences.jsonl')
+      ).exists()
+    ).toBe(false)
+    const completion = await readCompletedRun(plan.output)
+    expect(completion.manifest.files.map(file => file.path)).not.toContain(
+      'plain-text-results.json'
+    )
+    await rm(plan.corpus)
+    const report = await buildReport(plan.output, template)
+    expect(Object.keys(report.metadata.results)).toEqual(['render', 'inline'])
+    expect(report.metadata.results.plainText).toBeUndefined()
+    expect(report.metadata.counts.plainText).toBe(0)
+    const payload = JSON.parse(
+      report.html.match(/id="payload">([^<]*)<\/script>/)![1]
+    )
+    const repository = new ReportRepository(
+      parseReport(report.metadata, payload)
+    )
+    await expect(
+      repository.query({ ...initialViewerState.query, profile: 'plainText' })
+    ).rejects.toThrow('not compared')
+    expect((await repository.query(initialViewerState.query)).totalHits).toBe(1)
+  }))
+
+test('frontend-only completion rejects missing or unexpected worker profiles', async () => {
+  for (const extra of [false, true])
+    await withRun(async fullPlan => {
+      const { plainText: _unused, ...before } = fullPlan.provenance.before
+      const plan = {
+        ...fullPlan,
+        provenance: { ...fullPlan.provenance, before }
+      }
+      await writeJson(path.join(plan.output, 'run.json'), plan)
+      await expect(
+        executeRun(plan, {
+          frontend: async current => {
+            await frontend(current)
+            await writeJson(
+              path.join(current.output, 'frontend-results.json'),
+              {
+                runId: current.runId,
+                corpusSha256: current.corpusSha256,
+                results: extra
+                  ? {
+                      render: fixtureResult(1),
+                      inline: fixtureResult(1),
+                      plainText: fixtureResult(1)
+                    }
+                  : { render: fixtureResult(1) }
+              }
+            )
+          }
+        })
+      ).rejects.toThrow('unexpected profiles')
+      expect(
+        await Bun.file(path.join(plan.output, 'complete.json')).exists()
+      ).toBe(false)
+    })
+})
+
+test('report profiles must match the recorded comparison targets', async () =>
+  withRun(async plan => {
+    await executeRun(plan, { frontend, plainText })
+    const report = await buildReport(plan.output, template)
+    const payload = JSON.parse(
+      report.html.match(/id="payload">([^<]*)<\/script>/)![1]
+    )
+    const { plainText: _unused, ...before } =
+      report.metadata.run.provenance.before
+    const run = {
+      ...report.metadata.run,
+      provenance: { ...report.metadata.run.provenance, before }
+    }
+    expect(() => parseReport({ ...report.metadata, run }, payload)).toThrow(
+      'profiles mismatch'
+    )
+  }))

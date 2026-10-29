@@ -46,11 +46,15 @@ export async function prepareBaseline({
   cache
 }: {
   sui: GitRepo
-  traq: GitRepo
+  traq?: GitRepo
   suiRevision: string
-  traqRevision: string
+  traqRevision?: string
   cache: string
 }): Promise<Baseline> {
+  if (Boolean(traq) !== Boolean(traqRevision))
+    throw new Error(
+      'Plain-text baseline requires both a repository and revision'
+    )
   const lock = JSON.parse(await sui.show(suiRevision, 'package-lock.json'))
   const rendererVersion: unknown =
     lock.packages?.['node_modules/@traptitech/traq-markdown-it']?.version
@@ -61,12 +65,14 @@ export async function prepareBaseline({
     'highlight.js',
     packageRoot('commonmark-plugin')
   )
-  const workerFiles = [
-    ...new Bun.Glob('comparison/{go,go-app}/**/*.{go,json,mod}').scanSync({
-      cwd: corpusRoot,
-      onlyFiles: true
-    })
-  ]
+  const workerFiles = traq
+    ? [
+        ...new Bun.Glob('comparison/{go,go-app}/**/*.{go,json,mod}').scanSync({
+          cwd: corpusRoot,
+          onlyFiles: true
+        })
+      ]
+    : []
   const key = new Bun.CryptoHasher('sha256')
     .update(
       JSON.stringify({
@@ -75,7 +81,7 @@ export async function prepareBaseline({
         rendererVersion,
         katex,
         highlight,
-        worker: await fingerprintFiles(corpusRoot, workerFiles),
+        worker: traq ? await fingerprintFiles(corpusRoot, workerFiles) : null,
         repositoryRoot
       })
     )
@@ -114,53 +120,55 @@ export async function prepareBaseline({
       throw new Error(
         'Comparison requires matching KaTeX and highlight.js versions'
       )
-    const goRoot = path.join(staging, 'plain-text')
-    await mkdir(path.join(goRoot, 'go-before'), { recursive: true })
-    for (const name of ['parser.go', 'spoiler.go'])
-      await Bun.write(
-        path.join(goRoot, 'go-before', name),
-        await traq.show(traqRevision, 'utils/message/' + name)
-      )
-    await Bun.write(
-      path.join(goRoot, 'main.go'),
-      await readFile(path.join(corpusRoot, 'comparison/go-app/main.go'))
-    )
-    const goMod = await traq.show(traqRevision, 'go.mod')
-    const getVersion = (name: string) => {
-      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const match = goMod.match(new RegExp('\\s' + escaped + '\\s+(\\S+)'))
-      if (!match) throw new Error('Missing baseline dependency ' + name)
-      return match[1]
-    }
-    const workerDirectory = path.join(goRoot, 'worker')
-    await mkdir(workerDirectory)
-    const workerSource = path.join(corpusRoot, 'comparison/go')
-    for (const file of new Bun.Glob('*.{go,json,mod}').scanSync({
-      cwd: workerSource,
-      onlyFiles: true
-    })) {
-      if (!file.endsWith('_test.go'))
+    if (traq && traqRevision) {
+      const goRoot = path.join(staging, 'plain-text')
+      await mkdir(path.join(goRoot, 'go-before'), { recursive: true })
+      for (const name of ['parser.go', 'spoiler.go'])
         await Bun.write(
-          path.join(workerDirectory, file),
-          await readFile(path.join(workerSource, file))
+          path.join(goRoot, 'go-before', name),
+          await traq.show(traqRevision, 'utils/message/' + name)
         )
-    }
-    await Bun.write(
-      path.join(goRoot, 'go.mod'),
-      await applicationGoModule(
-        {
-          'github.com/gofrs/uuid': getVersion('github.com/gofrs/uuid'),
-          'github.com/json-iterator/go': getVersion(
-            'github.com/json-iterator/go'
-          )
-        },
-        './worker'
+      await Bun.write(
+        path.join(goRoot, 'main.go'),
+        await readFile(path.join(corpusRoot, 'comparison/go-app/main.go'))
       )
-    )
-    await captureProcess('go', ['mod', 'tidy'], goRoot, {
-      env: { ...process.env, GOWORK: 'off' },
-      timeoutMs: installTimeoutMs
-    })
+      const goMod = await traq.show(traqRevision, 'go.mod')
+      const getVersion = (name: string) => {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const match = goMod.match(new RegExp('\\s' + escaped + '\\s+(\\S+)'))
+        if (!match) throw new Error('Missing baseline dependency ' + name)
+        return match[1]
+      }
+      const workerDirectory = path.join(goRoot, 'worker')
+      await mkdir(workerDirectory)
+      const workerSource = path.join(corpusRoot, 'comparison/go')
+      for (const file of new Bun.Glob('*.{go,json,mod}').scanSync({
+        cwd: workerSource,
+        onlyFiles: true
+      })) {
+        if (!file.endsWith('_test.go'))
+          await Bun.write(
+            path.join(workerDirectory, file),
+            await readFile(path.join(workerSource, file))
+          )
+      }
+      await Bun.write(
+        path.join(goRoot, 'go.mod'),
+        await applicationGoModule(
+          {
+            'github.com/gofrs/uuid': getVersion('github.com/gofrs/uuid'),
+            'github.com/json-iterator/go': getVersion(
+              'github.com/json-iterator/go'
+            )
+          },
+          './worker'
+        )
+      )
+      await captureProcess('go', ['mod', 'tidy'], goRoot, {
+        env: { ...process.env, GOWORK: 'off' },
+        timeoutMs: installTimeoutMs
+      })
+    }
     await writeJson(path.join(staging, 'baseline.json'), {
       key,
       suiRevision,

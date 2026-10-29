@@ -1,4 +1,4 @@
-import { type ReportMetadata, profileIds } from '../../protocol/report.ts'
+import { type ReportMetadata, profilesFor } from '../../protocol/report.ts'
 import { profileLabels } from '../profiles.ts'
 
 const number = (value: number) =>
@@ -24,19 +24,21 @@ export function ReportHeader({ metadata }: { metadata: ReportMetadata }) {
             {number(metadata.run.warmups)} 件）。before / after
             の実行順は交互。収集・ファイル出力・画面表示の時間は含みません。各モードを順に実行した際の参考値です。
           </p>
-          {profileIds.map(profile => (
+          {profilesFor(metadata.run).map(profile => (
             <p key={profile}>
               {profileLabels[profile]} ウォームアップ実施:{' '}
-              {number(metadata.results[profile].actualWarmups)} 件。初期化:
-              before {number(metadata.results[profile].initialization.beforeMs)}{' '}
-              ms / after{' '}
-              {number(metadata.results[profile].initialization.afterMs)} ms。
+              {number(metadata.results[profile]!.actualWarmups)} 件。初期化:
+              before{' '}
+              {number(metadata.results[profile]!.initialization.beforeMs)} ms /
+              after {number(metadata.results[profile]!.initialization.afterMs)}{' '}
+              ms。
             </p>
           ))}
           <p>
-            S-UI は同一の固定参照・スタンプデータを使用。traQ
-            は選択したリビジョンの Parse と Rust PlainTextRenderer
-            が返すプレーンテキストを比較。モジュール読込は除きます。
+            S-UI は同一の固定参照・スタンプデータを使用。
+            {metadata.results.plainText &&
+              'traQ は選択したリビジョンの Parse と Rust PlainTextRenderer が返すプレーンテキストを比較。'}
+            モジュール読込は除きます。
           </p>
         </div>
       </details>
@@ -57,8 +59,8 @@ function SpeedTable({ metadata }: { metadata: ReportMetadata }) {
         </tr>
       </thead>
       <tbody>
-        {profileIds.map(profile => {
-          const data = metadata.results[profile]
+        {profilesFor(metadata.run).map(profile => {
+          const data = metadata.results[profile]!
           return (
             <tr key={profile}>
               <td>{profileLabels[profile]}</td>

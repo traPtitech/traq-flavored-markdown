@@ -1264,12 +1264,70 @@
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 51,
+                    "end": 12,
                     "start": 0
                   },
                   "data": {
-                    "value": "example.com https://example.com/a_(b) a@example.com"
+                    "value": "example.com "
                   }
+                },
+                {
+                  "kind": "commonmark.link",
+                  "span": {
+                    "end": 37,
+                    "start": 12
+                  },
+                  "data": {
+                    "destination": "https://example.com/a_(b)",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "end": 37,
+                        "start": 12
+                      },
+                      "data": {
+                        "value": "https://example.com/a_(b)"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "end": 38,
+                    "start": 37
+                  },
+                  "data": {
+                    "value": " "
+                  }
+                },
+                {
+                  "kind": "commonmark.link",
+                  "span": {
+                    "end": 51,
+                    "start": 38
+                  },
+                  "data": {
+                    "destination": "mailto:a@example.com",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "end": 51,
+                        "start": 38
+                      },
+                      "data": {
+                        "value": "a@example.com"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -1283,12 +1341,70 @@
             {
               "kind": "commonmark.text",
               "span": {
-                "end": 51,
+                "end": 12,
                 "start": 0
               },
               "data": {
-                "value": "example.com https://example.com/a_(b) a@example.com"
+                "value": "example.com "
               }
+            },
+            {
+              "kind": "commonmark.link",
+              "span": {
+                "end": 37,
+                "start": 12
+              },
+              "data": {
+                "destination": "https://example.com/a_(b)",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "end": 37,
+                    "start": 12
+                  },
+                  "data": {
+                    "value": "https://example.com/a_(b)"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "commonmark.text",
+              "span": {
+                "end": 38,
+                "start": 37
+              },
+              "data": {
+                "value": " "
+              }
+            },
+            {
+              "kind": "commonmark.link",
+              "span": {
+                "end": 51,
+                "start": 38
+              },
+              "data": {
+                "destination": "mailto:a@example.com",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "end": 51,
+                    "start": 38
+                  },
+                  "data": {
+                    "value": "a@example.com"
+                  }
+                }
+              ]
             }
           ],
           "source": "example.com https://example.com/a_(b) a@example.com"
@@ -1314,11 +1430,45 @@
                 {
                   "kind": "commonmark.text",
                   "span": {
-                    "end": 28,
+                    "end": 1,
                     "start": 0
                   },
                   "data": {
-                    "value": "(https://example.com/path). "
+                    "value": "("
+                  }
+                },
+                {
+                  "kind": "commonmark.link",
+                  "span": {
+                    "end": 25,
+                    "start": 1
+                  },
+                  "data": {
+                    "destination": "https://example.com/path",
+                    "form": "linkify",
+                    "title": null
+                  },
+                  "children": [
+                    {
+                      "kind": "commonmark.text",
+                      "span": {
+                        "end": 25,
+                        "start": 1
+                      },
+                      "data": {
+                        "value": "https://example.com/path"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "end": 28,
+                    "start": 25
+                  },
+                  "data": {
+                    "value": "). "
                   }
                 },
                 {
@@ -1357,11 +1507,45 @@
             {
               "kind": "commonmark.text",
               "span": {
-                "end": 28,
+                "end": 1,
                 "start": 0
               },
               "data": {
-                "value": "(https://example.com/path). "
+                "value": "("
+              }
+            },
+            {
+              "kind": "commonmark.link",
+              "span": {
+                "end": 25,
+                "start": 1
+              },
+              "data": {
+                "destination": "https://example.com/path",
+                "form": "linkify",
+                "title": null
+              },
+              "children": [
+                {
+                  "kind": "commonmark.text",
+                  "span": {
+                    "end": 25,
+                    "start": 1
+                  },
+                  "data": {
+                    "value": "https://example.com/path"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "commonmark.text",
+              "span": {
+                "end": 28,
+                "start": 25
+              },
+              "data": {
+                "value": "). "
               }
             },
             {

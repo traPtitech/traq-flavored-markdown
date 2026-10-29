@@ -71,3 +71,59 @@ test('malformed HTML, duplicate attributes and parser-inserted elements remain u
   ])
     expect(normalize(source)).toBeUndefined()
 })
+
+test('HTML spelling treats an HTTPS prefix on scheme-relative hrefs as equivalent', () => {
+  for (const href of [
+    '//trap.jp/path?q=1&amp;x=2#part',
+    '//example.test:8443/日本',
+    '//[::1]/path'
+  ]) {
+    for (const label of ['資料', '<strong>資料</strong>']) {
+      const before = `<a title='docs' href='${href}'>${label}</a>`
+      const after = `<a href="https:${href}" title="docs">${label}</a>`
+      expect(normalize(before)).toBe(normalize(after))
+    }
+  }
+  expect(normalize('<a href="&#47;&#47;trap.jp">資料</a>')).toBe(
+    normalize('<a href="https://trap.jp">資料</a>')
+  )
+})
+
+test('href completion retains other URL, attribute and literal-text differences', () => {
+  for (const [before, after] of [
+    [
+      '<a href="//trap.jp/a">資料</a>',
+      '<a href="https://other.test/a">資料</a>'
+    ],
+    ['<a href="//trap.jp/a">資料</a>', '<a href="https://trap.jp/b">資料</a>'],
+    [
+      '<a href="//trap.jp?a=1">資料</a>',
+      '<a href="https://trap.jp?a=2">資料</a>'
+    ],
+    [
+      '<a href="//trap.jp#one">資料</a>',
+      '<a href="https://trap.jp#two">資料</a>'
+    ],
+    ['<a href="http://trap.jp">資料</a>', '<a href="https://trap.jp">資料</a>'],
+    ['<a href="/trap.jp">資料</a>', '<a href="https://trap.jp">資料</a>'],
+    [
+      '<a href="//trap.jp:65536">資料</a>',
+      '<a href="https://trap.jp:65536">資料</a>'
+    ],
+    ['<a href="///trap.jp">資料</a>', '<a href="https:///trap.jp">資料</a>'],
+    ['<img src="//trap.jp/a.png">', '<img src="https://trap.jp/a.png">'],
+    ['<a title="//trap.jp">資料</a>', '<a title="https://trap.jp">資料</a>'],
+    [
+      '<code>&lt;a href="//trap.jp"&gt;</code>',
+      '<code>&lt;a href="https://trap.jp"&gt;</code>'
+    ],
+    ['<a href="//trap.jp">before</a>', '<a href="https://trap.jp">after</a>'],
+    [
+      '<svg><use xlink:href="//trap.jp/a"/></svg>',
+      '<svg><use xlink:href="https://trap.jp/a"/></svg>'
+    ]
+  ]) {
+    expect(normalize(before)).toBeDefined()
+    expect(normalize(before)).not.toBe(normalize(after))
+  }
+})

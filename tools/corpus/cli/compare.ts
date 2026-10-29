@@ -20,6 +20,7 @@ const { values: v } = parseArgs({
     },
     'traq-ref': { type: 'string', default: 'origin/master' },
     'sui-ref': { type: 'string', default: 'origin/master' },
+    'frontend-only': { type: 'boolean', default: false },
     origin: { type: 'string', default: 'https://q.trap.jp' },
     max: { type: 'number', default: 1000000, integer: true, min: 1 },
     warmups: { type: 'number', default: defaultWarmups, integer: true, min: 0 }
@@ -37,6 +38,7 @@ printJson(
     traqRef: v['traq-ref'],
     origin: v.origin,
     max: v.max,
-    warmups: v.warmups
+    warmups: v.warmups,
+    frontendOnly: v['frontend-only']
   })
 )

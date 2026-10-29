@@ -43,11 +43,25 @@ are errors.
 
 ## Comparison runs
 
-The fixed comparison covers standard HTML, condensed HTML, and display plain
+By default, the comparison covers standard HTML, condensed HTML, and display plain
 text. It defaults to 1,000,000 messages, 200 requested warmups, and local
 `origin/master` refs in both application checkouts. Fetch these refs before
 running if necessary. `--max`, `--warmups`, `--traq-ref`, `--sui-ref`,
 `--origin`, and `--out` customize a run.
+
+Use `--frontend-only` to compare only standard and condensed HTML (the report's
+normal-rendering and inline profiles):
+
+```sh
+bun run corpus:compare -- --corpus .private/corpora/sample/messages.jsonl --sui /path/to/traQ_S-UI --frontend-only
+```
+
+This mode needs no traQ checkout or Go toolchain; `--traq` and `--traq-ref` are
+unused. It skips preparing and running the plain-text worker and omits
+`plain-text-results.json` and `plain-text-differences.jsonl`. The run records only
+the two measured profiles, and its report shows only those profiles in the tabs,
+summaries, timings, and baseline revisions. `corpus:report` can regenerate either
+kind of completed run without additional options.
 
 Every comparison creates a new directory, by default
 `.private/corpora/comparisons/<run-id>`. An explicit `--out` must also name a
@@ -77,9 +91,14 @@ The linked-image checkbox hides only the accepted fallback change for
 link to `page-url` with the label `!alt`. Other changes in the same output remain
 visible, including different link destinations, labels, and attributes.
 The HTML spelling checkbox ignores equivalent character references, attribute
-quotes and attribute order. It parses HTML without executing scripts or fetching
+quotes, attribute order, and the difference between `href="//host/path"` and
+`href="https://host/path"`. This href comparison also applies to explicit links
+and formatted labels, independently of the link-policy checkbox. Only the
+`https:` prefix is completed; the host, port, path, query, fragment, other
+attributes, and `http:` URLs retain their differences.
+It parses HTML without executing scripts or fetching
 resources, then rewrites only parsed opening tags and text. Text whitespace,
-attribute values, element order and explicit closing tags are preserved. CSS
+other attribute values, element order and explicit closing tags are preserved. CSS
 declarations and class names are not reordered. Malformed HTML, duplicate
 attributes and structures repaired by the parser are not normalized by this
 option; other selected filters can still exclude their own recognized changes. The index is
@@ -94,14 +113,25 @@ these wrappers is normalized. Error-like text in code, scripts, templates, or
 ordinary text is left intact. One-sided math failures, error count changes,
 inline/block changes, and different surrounding content remain visible.
 
-The link-policy checkbox ignores the accepted changes from disabling bare URL,
-domain, and email linkification and enabling scheme-less angle autolinks. It
+The link-policy checkbox ignores the accepted changes from disabling bare domain
+linkification, enabling bare HTTP(S)/FTP URLs and email addresses, completing
+bare `//` URLs with HTTPS, and enabling scheme-less angle autolinks. It
 checks the original Markdown and automatic link destinations before removing
 only the corresponding markup. Explicit links, unexpected link attributes,
-wrong destinations, newly linkified bare text, and missing forced links remain
-visible. Resource label and trailing-card changes use the comparison's exact
-configured origin. Ambiguous notation and opaque code/math contexts are retained
-conservatively; the filter does not execute Markdown or HTML.
+wrong destinations, unexpected linkified text, and missing required links remain
+visible. HTTPS completion of `//` resource URLs can introduce resource labels and
+trailing cards; these changes are also covered. Removing ordinary scheme URL or
+email links, or changing existing scheme URL resource/card presentation, remains
+visible. Ports and `@` characters in URL paths do not turn bare domains into
+URI schemes or email authorities. Code and math bodies are protected locally;
+literal delimiters elsewhere do not disable normalization of the entire message.
+Distinct explicit link destinations, including links with formatted labels, stay
+intact when the same domain also appears as bare text. Old automatic links inside
+escaped HTML attributes can be removed while actual HTML links remain protected.
+The `punycode` package verifies legacy bare-link destinations that used raw
+Punycode rather than WHATWG host validation. This does not expand current URL or
+email eligibility. Ambiguous notation is retained conservatively; the filter
+does not execute Markdown or HTML.
 
 The six output checkboxes compose: whitespace, letter case, linked-image fallback,
 HTML spelling, KaTeX errors, and link-policy differences can be ignored together. Execution errors and changes of output
@@ -128,7 +158,7 @@ source-only rendering protocol and timings unchanged. Report generation uses
 only the completed run, including after the original corpus is removed. Older
 completed runs without this file remain readable with unknown authors.
 
-After both workers succeed and input/artifact identities are rechecked, the tool
+After all selected workers succeed and input/artifact identities are rechecked, the tool
 writes `complete.json` with the exact digest of every run file. Report generation
 requires this manifest and verifies it before reading results. Modified,
 incomplete, or mixed-run data cannot silently become a report. Completed run

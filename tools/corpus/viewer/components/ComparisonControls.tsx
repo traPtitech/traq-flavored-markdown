@@ -1,4 +1,4 @@
-import { type ProfileId, profileIds } from '../../protocol/report.ts'
+import type { ProfileId } from '../../protocol/report.ts'
 import type { Query } from '../data/query.ts'
 import { profileLabels } from '../profiles.ts'
 import type { OutputView } from '../state.ts'
@@ -7,6 +7,7 @@ const number = (value: number) => value.toLocaleString('ja-JP')
 
 export function ComparisonControls({
   counts,
+  profiles,
   authors,
   hasAuthorData,
   query,
@@ -30,6 +31,7 @@ export function ComparisonControls({
   onOutput
 }: {
   counts: Record<ProfileId, number>
+  profiles: readonly ProfileId[]
   authors: string
   hasAuthorData: boolean
   query: Query
@@ -62,7 +64,7 @@ export function ComparisonControls({
     <>
       <nav className="toolbar">
         <div id="profiles" className="profiles" aria-label="比較対象">
-          {profileIds.map(profile => (
+          {profiles.map(profile => (
             <button
               key={profile}
               aria-pressed={query.profile === profile}
@@ -185,7 +187,7 @@ export function ComparisonControls({
           />
           リンク付き画像の表示差分を除外
         </label>
-        <label title="HTMLの属性順序、引用符、同じ文字を表す文字参照などの表記差だけを非表示にします。本文の空白・属性値・要素構造の変更や解析エラーがあるHTMLは、この条件では除外しません。他の除外条件とも併用できます。">
+        <label title="HTMLの属性順序、引用符、同じ文字を表す文字参照、hrefの // と https:// の違いを非表示にします。本文の空白・それ以外の属性値・要素構造の変更や解析エラーがあるHTMLは、この条件では除外しません。他の除外条件とも併用できます。">
           <input
             type="checkbox"
             id="ignore-html-serialization"
@@ -203,7 +205,7 @@ export function ComparisonControls({
           />
           KaTeXエラー部分のみの差分を除外
         </label>
-        <label title="裸のURL・メールの自動リンク化廃止、山括弧で囲んだ省略URLのリンク化と、それに伴うリソース表示の差分だけを非表示にします。原文とリンク先を確認し、本文・明示的なリンク・エラーなどの別の差分は残します。他の除外条件とも併用できます。">
+        <label title="裸のドメインのリンク化廃止、URL・メールのリンク化、山括弧によるリンク化、// URLのHTTPS補完とそれに伴うカード表示の差分を非表示にします。本文・明示的なリンク・誤ったリンク先・必要なリンクの消失・エラーなどの差分は残します。他の除外条件とも併用できます。">
           <input
             type="checkbox"
             id="ignore-link-policy"

@@ -11,32 +11,50 @@ export type Schema =
       allowUnknown?: boolean
     }
   | { kind: 'array'; items: Schema }
-  | { kind: 'record'; values: Schema; keys?: readonly string[] }
+  | {
+      kind: 'record'
+      values: Schema
+      keys?: readonly string[]
+      optionalKeys?: readonly string[]
+    }
 
-export type Infer<S extends Schema> = S extends { kind: 'string' }
-  ? string
-  : S extends { kind: 'number' }
-    ? number
-    : S extends { kind: 'boolean' }
-      ? boolean
-      : S extends { kind: 'enum'; values: readonly (infer V)[] }
-        ? V
-        : S extends { kind: 'array'; items: infer I extends Schema }
-          ? Infer<I>[]
-          : S extends {
-                kind: 'record'
-                values: infer V extends Schema
-                keys: readonly (infer K extends string)[]
-              }
-            ? Record<K, Infer<V>>
-            : S extends { kind: 'record'; values: infer V extends Schema }
-              ? Record<string, Infer<V>>
+type OptionalRecord<K extends string, O extends string, T> = [O] extends [never]
+  ? Record<K, T>
+  : Record<K, T> & Partial<Record<O, T>>
+
+export type Infer<S extends Schema> = Schema extends S
+  ? unknown
+  : S extends { kind: 'string' }
+    ? string
+    : S extends { kind: 'number' }
+      ? number
+      : S extends { kind: 'boolean' }
+        ? boolean
+        : S extends { kind: 'enum'; values: readonly (infer V)[] }
+          ? V
+          : S extends { kind: 'array'; items: infer I extends Schema }
+            ? Infer<I>[]
+            : S extends {
+                  kind: 'record'
+                  values: infer V extends Schema
+                  keys: readonly (infer K extends string)[]
+                  optionalKeys: readonly (infer O extends string)[]
+                }
+              ? OptionalRecord<K, O, Infer<V>>
               : S extends {
-                    kind: 'object'
-                    properties: infer P extends Record<string, Schema>
+                    kind: 'record'
+                    values: infer V extends Schema
+                    keys: readonly (infer K extends string)[]
                   }
-                ? { [K in keyof P]: Infer<P[K]> }
-                : never
+                ? Record<K, Infer<V>>
+                : S extends { kind: 'record'; values: infer V extends Schema }
+                  ? Record<string, Infer<V>>
+                  : S extends {
+                        kind: 'object'
+                        properties: infer P extends Record<string, Schema>
+                      }
+                    ? { [K in keyof P]: Infer<P[K]> }
+                    : never
 
 export const string = { kind: 'string' } as const
 export const nonempty = { kind: 'string', minLength: 1 } as const
@@ -62,13 +80,28 @@ export const array = <S extends Schema>(items: S) =>
   ({ kind: 'array', items }) as const
 export const record = <S extends Schema>(values: S) =>
   ({ kind: 'record', values }) as const
-export const keyedRecord = <
+export function keyedRecord<
   S extends Schema,
   const K extends readonly string[]
+>(values: S, keys: K): { kind: 'record'; values: S; keys: K }
+export function keyedRecord<
+  S extends Schema,
+  const K extends readonly string[],
+  const O extends readonly string[]
 >(
   values: S,
-  keys: K
-) => ({ kind: 'record', values, keys }) as const
+  keys: K,
+  optionalKeys: O
+): { kind: 'record'; values: S; keys: K; optionalKeys: O }
+export function keyedRecord(
+  values: Schema,
+  keys: readonly string[],
+  optionalKeys?: readonly string[]
+) {
+  return optionalKeys
+    ? ({ kind: 'record', values, keys, optionalKeys } as const)
+    : ({ kind: 'record', values, keys } as const)
+}
 
 export function validate(
   schema: Schema,
@@ -125,8 +158,12 @@ export function validate(
       } else {
         if (
           schema.keys &&
-          (Object.keys(fields).length !== schema.keys.length ||
-            !schema.keys.every(key => Object.hasOwn(fields, key)))
+          (!schema.keys.every(key => Object.hasOwn(fields, key)) ||
+            Object.keys(fields).some(
+              key =>
+                !schema.keys!.includes(key) &&
+                !schema.optionalKeys?.includes(key)
+            ))
         )
           fail()
         for (const [key, field] of Object.entries(fields))

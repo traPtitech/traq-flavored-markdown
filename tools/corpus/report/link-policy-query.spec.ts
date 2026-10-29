@@ -11,20 +11,26 @@ import { initialViewerState } from '../viewer/state.ts'
 import { aggregateDifferences } from './aggregate.ts'
 
 test('link policy indexes compose with cached queries and keep mixed changes and errors', async () => {
-  const url = 'https://trap.jp'
+  const url = 'trap.jp'
   const rows = [
     {
       ...fixtureRows[0],
       index: 0,
       source: url,
-      before: { kind: 'html' as const, value: `<a href="${url}">${url}</a>` },
+      before: {
+        kind: 'html' as const,
+        value: `<a href="http://${url}">${url}</a>`
+      },
       after: { kind: 'html' as const, value: url }
     },
     {
       ...fixtureRows[0],
       index: 1,
       source: 'mixed case ' + url,
-      before: { kind: 'html' as const, value: `A <a href="${url}">${url}</a>` },
+      before: {
+        kind: 'html' as const,
+        value: `A <a href="http://${url}">${url}</a>`
+      },
       after: { kind: 'html' as const, value: 'a ' + url }
     },
     {
@@ -33,7 +39,7 @@ test('link policy indexes compose with cached queries and keep mixed changes and
       source: 'mixed text ' + url,
       before: {
         kind: 'html' as const,
-        value: `before <a href="${url}">${url}</a>`
+        value: `before <a href="http://${url}">${url}</a>`
       },
       after: { kind: 'html' as const, value: 'after ' + url }
     },
@@ -119,4 +125,72 @@ test('report masks retain the highest filter combination without number truncati
   expect(encoded).toHaveLength(32)
   expect(filterMaskAt(encoded, 0)).toBe(mask)
   expect(filterMaskAt(encoded, 1)).toBe(0n)
+})
+
+test('HTTPS completion and email additions are indexed without hiding wrong destinations', async () => {
+  const rows = [
+    {
+      ...fixtureRows[0],
+      index: 0,
+      source: '//trap.jp',
+      before: {
+        kind: 'html' as const,
+        value: '<a href="//trap.jp">//trap.jp</a>'
+      },
+      after: {
+        kind: 'html' as const,
+        value: '<a href="https://trap.jp">//trap.jp</a>'
+      }
+    },
+    {
+      ...fixtureRows[0],
+      index: 1,
+      source: 'info@example.unknown',
+      before: { kind: 'html' as const, value: 'info@example.unknown' },
+      after: {
+        kind: 'html' as const,
+        value: '<a href="mailto:info@example.unknown">info@example.unknown</a>'
+      }
+    },
+    {
+      ...fixtureRows[0],
+      index: 2,
+      source: '//trap.jp',
+      before: {
+        kind: 'html' as const,
+        value: '<a href="//trap.jp">//trap.jp</a>'
+      },
+      after: {
+        kind: 'html' as const,
+        value: '<a href="https://wrong.test">//trap.jp</a>'
+      }
+    }
+  ]
+  const aggregated = await aggregateDifferences(
+    (async function* () {
+      yield* rows
+    })(),
+    1
+  )
+  const metadata = {
+    ...fixtureMetadata(aggregated.counts, 1, rows.length),
+    filters: aggregated.filters
+  }
+  const decoded: string[] = []
+  const repository = new ReportRepository(
+    parseReport(metadata, aggregated.payload),
+    async encoded => {
+      decoded.push(encoded)
+      return JSON.parse(
+        new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
+      )
+    }
+  )
+  const result = await repository.query({
+    ...initialViewerState.query,
+    ignoreLinkPolicy: true
+  })
+  expect(result.totalHits).toBe(1)
+  expect(result.rows[0].index).toBe(2)
+  expect(decoded).toEqual([aggregated.payload.render[2]])
 })

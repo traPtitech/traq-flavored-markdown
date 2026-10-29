@@ -140,6 +140,26 @@ fn scheme_less_angle_links_are_a_traq_extension() {
 }
 
 #[test]
+fn bare_scheme_urls_are_an_opt_in_traq_extension() {
+    let source = "https://trap.jp http://localhost:3000 ftp://trap.jp info@trap.jp //trap.jp";
+    let commonmark = presets::commonmark::parser().parse_inline(source).unwrap();
+    assert!(
+        commonmark
+            .children
+            .iter()
+            .all(|node| node.payload::<Link>().is_none())
+    );
+    let traq = presets::traq::v1::parser().parse_inline(source).unwrap();
+    let links: Vec<_> = traq
+        .children
+        .iter()
+        .filter_map(|node| node.payload::<Link>())
+        .collect();
+    assert_eq!(links.len(), 5);
+    assert!(links.iter().all(|link| link.form == LinkForm::Linkify));
+}
+
+#[test]
 fn malformed_unicode_hosts_do_not_panic_or_lose_ports() {
     let parser = presets::traq::v1::parser();
     for (destination, encoded) in [
