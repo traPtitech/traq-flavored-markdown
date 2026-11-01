@@ -27,7 +27,10 @@ const route = '/tools/corpus/viewer/index.html'
 const malicious =
   '<script>globalThis.previewExecuted = true</script><img src="https://external.test/image" onerror="globalThis.previewExecuted = true" alt="placeholder"><a href="https://external.test/link" onclick="globalThis.previewExecuted = true">inert link</a><iframe src="https://external.test/frame"></iframe><svg onload="globalThis.previewExecuted = true"><image href="https://external.test/svg-image" /></svg><div class="toolbar" style="background-image:url(https://external.test/css)">isolated class</div>'
 
-function reportFixture(extraRows: DifferenceRow[] = []): ReportData {
+function reportFixture(
+  extraRows: DifferenceRow[] = [],
+  origin?: string
+): ReportData {
   const rows: DifferenceRow[] = [
     {
       runId: 'synthetic-run',
@@ -79,7 +82,7 @@ function reportFixture(extraRows: DifferenceRow[] = []): ReportData {
     encodeFilterMasks(
       rows
         .filter(row => row.profile === profile)
-        .map(row => differenceFilterMask(row))
+        .map(row => differenceFilterMask(row, origin))
     )
   )
   const metadata = {
@@ -474,6 +477,45 @@ test('link policy handles port domains and literal delimiters, and composes with
   await expect(page.locator('#empty')).toBeVisible()
   await policy.uncheck()
   await expect(page.locator('#rows .source')).toContainText('Process trace')
+})
+
+test('link policy hides resource cards after a scheme stamp in both frontend profiles', async ({
+  page
+}) => {
+  const url = '//q.example.test/files/00000000-0000-0000-0000-000000000001'
+  const source = 'spoiler(!!):https:' + url
+  const stamp = '<i class="emoji message-emoji" title=":https:">:https:</i>'
+  const rows: DifferenceRow[] = (['render', 'inline'] as const).map(
+    (profile, index) => {
+      const wrap = (body: string) =>
+        profile === 'render' ? `<p>${body}</p>\n` : body
+      return {
+        runId: 'synthetic-run',
+        index: 5 + index,
+        profile,
+        source,
+        before: {
+          kind: 'html',
+          value: wrap('spoiler(!!)' + stamp + `<a href="${url}">${url}</a>`)
+        },
+        after: { kind: 'html', value: wrap('spoiler(!!)' + stamp) }
+      }
+    }
+  )
+  const data = reportFixture(rows, 'https://q.example.test')
+  await openReport(page, data)
+  await page.getByLabel('原文を検索').fill('spoiler(!!)')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toContainText(source)
+  const policy = page.getByLabel('リンク仕様変更による差分を除外')
+  await policy.check()
+  await expect(page.locator('#empty')).toBeVisible()
+  await page.getByRole('button', { name: /S-UI · インライン/ }).click()
+  await page.getByLabel('原文を検索').fill('spoiler(!!)')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#empty')).toBeVisible()
+  await policy.uncheck()
+  await expect(page.locator('#rows .source')).toContainText(source)
 })
 
 test('link policy checkbox composes with search, profiles and all output filters', async ({

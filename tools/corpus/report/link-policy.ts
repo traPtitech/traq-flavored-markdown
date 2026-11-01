@@ -547,8 +547,35 @@ function restoreResourceSuffix(
   profile: LinkRow['profile'],
   origin?: string
 ) {
+  // A preceding colon can turn the authored scheme into a stamp (:https:),
+  // leaving a scheme-relative resource URL. Require the rendered stamp too;
+  // ordinary scheme URL/card changes must remain visible.
+  const stamp = /<i\b[^>]*>:(https?):<\/i>(?:\s*<\/(?:span|p)>)*\s*$/i.exec(
+    html
+  )
+  const stampNode = stamp ? parseFragment(stamp[0]).childNodes[0] : undefined
+  const schemeStamp =
+    stampNode &&
+    'tagName' in stampNode &&
+    stampNode.tagName === 'i' &&
+    stampNode.attrs.some(
+      attr => attr.name === 'class' && attr.value.split(/\s+/).includes('emoji')
+    )
+      ? stamp![1]
+      : undefined
   const tokens = [...source.trimEnd().matchAll(/\S+/g)].flatMap(token => {
-    const relative = /(?<![:/\w])\/\/[^\s<>]+$/.exec(token[0])
+    let relative: { 0: string; index: number } | null =
+      /(?<![:/\w])\/\/[^\s<>]+$/.exec(token[0])
+    const consumed = /:(https?):(\/\/[^\s<>]+)$/i.exec(token[0])
+    if (
+      !relative &&
+      consumed &&
+      consumed[1].toLowerCase() === schemeStamp?.toLowerCase()
+    )
+      relative = {
+        0: consumed[2],
+        index: consumed.index + consumed[1].length + 2
+      }
     return relative?.index && resourceLabel(relative[0], origin)
       ? [
           { 0: token[0].slice(0, relative.index), index: token.index },

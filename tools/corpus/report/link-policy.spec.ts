@@ -653,6 +653,71 @@ test('scheme-relative resource URLs acquire HTTPS resource labels and trailing c
   }
 })
 
+test('resource tails whose authored scheme becomes a stamp follow the scheme-relative policy', () => {
+  for (const url of [file, quote]) {
+    const relative = url.replace('https:', '')
+    for (const scheme of ['http', 'https']) {
+      const source = 'spoiler(!!):' + scheme + ':' + relative
+      const stamp = `<i class="emoji message-emoji" title=":${scheme}:">:${scheme}:</i>`
+      for (const profile of ['render', 'inline'] as const) {
+        const wrap = (body: string) =>
+          profile === 'render' ? `<p>${body}</p>\n` : body
+        const before = wrap('spoiler(!!)' + stamp + anchor(relative))
+        const after = wrap('spoiler(!!)' + stamp)
+        expect(filtered(source, before, after, 'html', profile)).toBe(true)
+        expect(
+          filtered(
+            source,
+            before,
+            after.replace('spoiler', 'changed'),
+            'html',
+            profile
+          )
+        ).toBe(false)
+        expect(
+          filtered(
+            source,
+            before,
+            after.replace('class="emoji message-emoji"', ''),
+            'html',
+            profile
+          )
+        ).toBe(false)
+        expect(
+          filtered(
+            source,
+            before.replace(relative + '"', '//wrong.test/file"'),
+            after,
+            'html',
+            profile
+          )
+        ).toBe(false)
+        expect(
+          filtered(
+            source,
+            before,
+            wrap('spoiler(!!)' + stamp + relative),
+            'html',
+            profile
+          )
+        ).toBe(false)
+      }
+    }
+    // A stamp elsewhere does not authorize an ordinary HTTPS tail change.
+    const unrelated = '<i class="emoji">:https:</i> other '
+    expect(
+      filtered(
+        ':https: other ' + url,
+        unrelated + anchor(url),
+        unrelated,
+        'html',
+        'inline'
+      )
+    ).toBe(false)
+    expect(filtered(url, anchor(url), '', 'html', 'inline')).toBe(false)
+  }
+})
+
 test('HTTPS completion preserves decoded URL labels and encoded source notation', () => {
   for (const [source, label] of [
     ['//trap.jp/%E6%97%A5%E6%9C%AC?q=%2F', '//trap.jp/日本?q=%2F'],
