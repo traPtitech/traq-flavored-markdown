@@ -57,10 +57,14 @@ function configureCommonCondensed(
     escapeHtml(n.data.literal)
   )
 
-  common = common.withReplacedHandler(definitions.Image, (n, _ctx) => {
-    const label = escapeHtml(n.data.labelSource)
-
-    if (!options.validateLink(n.data.destination)) return label
+  common = common.withReplacedHandler(definitions.Image, (n, ctx) => {
+    if (
+      ctx.insideLink ||
+      !n.data.destination ||
+      !options.validateLink(n.data.destination)
+    )
+      return ctx.renderChildren()
+    const label = ctx.renderChildren('', { insideLink: true })
 
     return (
       '<a' +

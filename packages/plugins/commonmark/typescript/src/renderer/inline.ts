@@ -68,20 +68,34 @@ export function registerInlineHandlers(
   )
 
   result = result.withHandler(definitions.Link, (n, ctx) => {
-    if (!validateLink(n.data.destination)) return ctx.fallback(n)
+    if (ctx.insideLink || !validateLink(n.data.destination))
+      return ctx.renderChildren()
 
-    return link(n.data.destination, n.data.title, ctx.renderChildren())
+    return link(
+      n.data.destination,
+      n.data.title,
+      ctx.renderChildren('', { insideLink: true })
+    )
   })
 
   result = result.withHandler(definitions.Image, (n, ctx) => {
     const label = imageLabelText(n.children, ctx.sourceSlice, ctx.matches)
     if (!validateImage(n.data.destination)) {
-      const content = escapeHtml(label)
       // The enclosing link owns the destination; no image URL is emitted.
-      if (ctx.ancestors.some(node => node.kind === definitions.Link.kind))
-        return '!' + content
-      if (!validateLink(n.data.destination)) return ctx.fallback(n)
-      return '!' + link(n.data.destination, n.data.title, content)
+      if (
+        ctx.insideLink ||
+        !n.data.destination ||
+        !validateLink(n.data.destination)
+      )
+        return '!' + ctx.renderChildren()
+      return (
+        '!' +
+        link(
+          n.data.destination,
+          n.data.title,
+          ctx.renderChildren('', { insideLink: true })
+        )
+      )
     }
 
     return (

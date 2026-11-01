@@ -23,5 +23,12 @@ ASCII domain; their TLD is unrestricted. `info@trap.jp` targets
 require angle brackets or explicit Markdown links. Explicit Markdown link
 destinations are not completed.
 
+Bare URL paths follow GFM terminal punctuation rules: trailing `? ! . , : * _ ~`
+and semicolons are outside the link, while interior punctuation is preserved.
+Only excess terminal closing parentheses are removed; unmatched opening
+parentheses remain URL text. Angle autolinks and explicit destinations preserve
+terminal punctuation. A preceding hyphen is accepted as a URL boundary, following
+GitHub's current rendering behavior.
+
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for notices covering
 third-party algorithms and data.

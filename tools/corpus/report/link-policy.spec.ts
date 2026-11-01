@@ -718,6 +718,50 @@ test('resource tails whose authored scheme becomes a stamp follow the scheme-rel
   }
 })
 
+test('fuzzy Punycode labels, stamp-prefixed resources and mixed card tails follow their accepted policy', () => {
+  const label = '😭😆😇🤪😡😯🙏🥳😇😺😆😭😯.com'
+  const source = toASCII(label)
+  expect(filtered(source, anchor('http://' + source, label), source)).toBe(true)
+  expect(filtered(source, anchor('http://wrong.test', label), source)).toBe(
+    false
+  )
+  const relative = quote.replace('https:', '')
+  const stamp = '<i class="emoji message-emoji">:check_o:</i>'
+  expect(
+    filtered(
+      ':check_o:' + relative,
+      '<p>' + stamp + anchor(relative) + '</p>\n',
+      '<p>' + stamp + '</p>\n'
+    )
+  ).toBe(true)
+  expect(
+    filtered(
+      ':check_o:' + relative,
+      '<p>' + stamp + anchor(relative) + '</p>\n',
+      '<p>' + stamp.replace('emoji message-emoji', 'other') + '</p>\n'
+    )
+  ).toBe(false)
+  const mixed = file.replace('https:', '') + '\n' + quote
+  expect(
+    filtered(
+      mixed,
+      '<p>' + anchor(file.replace('https:', '')) + '</p>\n',
+      '<p></p>\n'
+    )
+  ).toBe(true)
+  expect(
+    filtered(
+      mixed,
+      '<p>' +
+        anchor(file.replace('https:', '')) +
+        '<br>\n' +
+        anchor(quote) +
+        '</p>\n',
+      '<p></p>\n'
+    )
+  ).toBe(false)
+})
+
 test('HTTPS completion preserves decoded URL labels and encoded source notation', () => {
   for (const [source, label] of [
     ['//trap.jp/%E6%97%A5%E6%9C%AC?q=%2F', '//trap.jp/日本?q=%2F'],

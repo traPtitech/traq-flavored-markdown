@@ -10,7 +10,11 @@ type LinkRow = Pick<DifferenceRow, 'before' | 'after'> &
   Partial<Pick<DifferenceRow, 'source' | 'profile'>>
 type Edit = { start: number; end: number; value: string }
 type SourceForm = 'bare' | 'angle' | undefined
-type SourceForms = (label: string, literalHtml?: boolean) => SourceForm
+type SourceForms = (
+  label: string,
+  literalHtml?: boolean,
+  stamp?: string
+) => SourceForm
 type RetainedLink = (label: string, href: string, notation: string) => boolean
 const literalContexts = new Set(
   'code pre script style textarea title listing xmp iframe noembed noframes plaintext template'.split(
@@ -186,7 +190,7 @@ function sourceForm(
           ? /[a-z0-9.!#$%&'*+/=?^_`{|}~@-]/i
           : label.startsWith('//')
             ? /[a-z0-9+\-/:;.&\\]/i
-            : /[a-z0-9+-]/i
+            : /[a-z0-9+]/i
         ).test(previous) &&
           !schemePrefix) ||
         (email
@@ -326,6 +330,22 @@ function resourceLabel(value: string, origin?: string) {
     : undefined
 }
 
+function trailingStamp(html: string) {
+  const match = /<i\b[^>]*>(:[^<>\r\n]+:)<\/i>(?:\s*<\/(?:span|p)>)*\s*$/i.exec(
+    html
+  )
+  if (!match) return undefined
+  const node = parseFragment(match[0]).childNodes[0]
+  return node &&
+    'tagName' in node &&
+    node.tagName === 'i' &&
+    node.attrs.some(
+      attr => attr.name === 'class' && attr.value.split(/\s+/).includes('emoji')
+    )
+    ? match[1]
+    : undefined
+}
+
 function normalizeHtml(
   value: string,
   formOf: SourceForms,
@@ -416,7 +436,11 @@ function normalizeHtml(
           const form: SourceForm | 'literal' =
             literalAttribute && side === 'before'
               ? 'literal'
-              : formOf(label, literalHtml)
+              : formOf(
+                  label,
+                  literalHtml,
+                  label.startsWith('//') ? trailingStamp(prefix) : undefined
+                )
           const resource = resourceLabel(href, origin)
           const legacyBare =
             side === 'before' &&
@@ -543,6 +567,7 @@ function normalizeHtml(
 
 function restoreResourceSuffix(
   html: string,
+  before: string,
   source: string,
   profile: LinkRow['profile'],
   origin?: string
@@ -550,31 +575,15 @@ function restoreResourceSuffix(
   // A preceding colon can turn the authored scheme into a stamp (:https:),
   // leaving a scheme-relative resource URL. Require the rendered stamp too;
   // ordinary scheme URL/card changes must remain visible.
-  const stamp = /<i\b[^>]*>:(https?):<\/i>(?:\s*<\/(?:span|p)>)*\s*$/i.exec(
-    html
-  )
-  const stampNode = stamp ? parseFragment(stamp[0]).childNodes[0] : undefined
-  const schemeStamp =
-    stampNode &&
-    'tagName' in stampNode &&
-    stampNode.tagName === 'i' &&
-    stampNode.attrs.some(
-      attr => attr.name === 'class' && attr.value.split(/\s+/).includes('emoji')
-    )
-      ? stamp![1]
-      : undefined
+  const stamp = trailingStamp(html)
   const tokens = [...source.trimEnd().matchAll(/\S+/g)].flatMap(token => {
     let relative: { 0: string; index: number } | null =
       /(?<![:/\w])\/\/[^\s<>]+$/.exec(token[0])
-    const consumed = /:(https?):(\/\/[^\s<>]+)$/i.exec(token[0])
-    if (
-      !relative &&
-      consumed &&
-      consumed[1].toLowerCase() === schemeStamp?.toLowerCase()
-    )
+    const consumed = /(:[^:\s<>]+:)(\/\/[^\s<>]+)$/.exec(token[0])
+    if (!relative && consumed && consumed[1] === stamp)
       relative = {
         0: consumed[2],
-        index: consumed.index + consumed[1].length + 2
+        index: consumed.index + consumed[1].length
       }
     return relative?.index && resourceLabel(relative[0], origin)
       ? [
@@ -587,9 +596,20 @@ function restoreResourceSuffix(
   for (let index = tokens.length - 1; index >= 0; index--) {
     const token = tokens[index]
     if (
+      /^https?:\/\//i.test(token[0]) &&
+      resourceLabel(token[0], origin) &&
+      sourceForm(source, token[0]) === 'bare' &&
+      !before.includes(escapeText(token[0])) &&
+      !html.includes(escapeText(token[0]))
+    )
+      continue
+    if (
       !token[0].startsWith('//') ||
       !resourceLabel(token[0], origin) ||
-      sourceForm(source, token[0]) !== 'bare'
+      sourceForm(
+        stamp ? source.replaceAll(stamp + token[0], ' ' + token[0]) : source,
+        token[0]
+      ) !== 'bare'
     )
       break
     suffix.unshift({ value: token[0], start: token.index })
@@ -681,6 +701,16 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
     const cached = spellings.get(label)
     if (cached !== undefined) return cached
     let spelling = label
+    if (
+      !source.includes(label) &&
+      /[^\p{ASCII}]/u.test(label) &&
+      !/[\s<>@]/.test(label)
+    ) {
+      const end = label.search(/[/?#]/)
+      const authority = end < 0 ? label : label.slice(0, end)
+      const encoded = toASCII(authority) + (end < 0 ? '' : label.slice(end))
+      if (source.includes(encoded)) spelling = encoded
+    }
     if (!source.includes(label) && completedDomain(label, false)) {
       try {
         const encoded = encodeURI(label).replace(/%25([0-9a-f]{2})/gi, '%$1')
@@ -689,7 +719,7 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
           (_all, a: string, b: string) =>
             `%[${a.toLowerCase()}${a.toUpperCase()}][${b.toLowerCase()}${b.toUpperCase()}]`
         )
-        spelling = source.match(new RegExp(pattern))?.[0] ?? label
+        spelling = source.match(new RegExp(pattern))?.[0] ?? spelling
       } catch {
         /* Invalid URI sequences remain unchanged. */
       }
@@ -698,10 +728,15 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
     return spelling
   }
   const forms = new Map<string, SourceForm>()
-  const formOf: SourceForms = (label, literalHtml = false) => {
-    const key = (literalHtml ? '1' : '0') + label
+  const formOf: SourceForms = (label, literalHtml = false, stamp) => {
+    const key = (literalHtml ? '1' : '0') + (stamp ?? '') + '\0' + label
     if (forms.has(key)) return forms.get(key)
-    const form = sourceForm(source, spellingOf(label), literalHtml, retained)
+    const form = sourceForm(
+      stamp ? source.replaceAll(stamp + label, ' ' + label) : source,
+      spellingOf(label),
+      literalHtml,
+      retained
+    )
     forms.set(key, form)
     return form
   }
@@ -754,6 +789,7 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       return undefined
     const restored = restoreResourceSuffix(
       right.value,
+      left.value,
       source,
       row.profile,
       origin

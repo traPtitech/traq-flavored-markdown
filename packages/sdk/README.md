@@ -23,12 +23,15 @@ Links and both direct and reference images use CommonMark parsing. URL encoding
 belongs to parsing; URL scheme and image domain restrictions belong to each
 renderer. The standard traQ view displays HTTPS images from its allowed domains.
 An image inside a link preserves the outer destination: an allowed image renders
-inside that link, and a rejected image becomes the plain label `!alt` inside it.
+inside that link, and a rejected image keeps its formatted label prefixed with `!` inside it.
 No nested image-URL link is created, and the image URL need not pass the link
 policy when it is only replaced with text. The outer destination must still pass
 the link policy. A rejected standalone image becomes a link to its image URL when
-the link policy allows it, prefixed with `!`; otherwise the escaped source remains
-visible. These rules apply to both direct and reference images. Applications can
+the link policy allows its nonempty URL, prefixed with `!`; otherwise only its
+formatted label and `!` remain. Descendant links and references retain their
+labels without creating nested anchors. Displayed images use plain-text `alt`
+attributes. Rejected ordinary links also keep their formatted labels.
+These rules apply to both direct and reference images. Applications can
 supply `images.validate` and `links.validate` independently. Explicit `undefined`
 options use the same display defaults as omitted options.
 

@@ -284,7 +284,6 @@ fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
             "https://trap.jp/@alice#channel",
         ),
         ("**https://trap.jp/path**", "https://trap.jp/path"),
-        ("[https://trap.jp/path]", "https://trap.jp/path"),
         ("[label](https://trap.jp/path)", "https://trap.jp/path"),
         (
             "[https://inner.test](https://outer.test)",
@@ -314,6 +313,7 @@ fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
         "`https://trap.jp`",
         "https\\://trap.jp",
         "xhttps://trap.jp",
+        "[https://trap.jp/path]",
         "https://",
         "https://trap.jp:65536",
         "https://trap.jp:3000abc",
@@ -330,6 +330,41 @@ fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
                 .all(|node| node.payload::<Link>().is_none()),
             "{source}"
         );
+    }
+}
+
+#[test]
+fn bare_url_paths_follow_gfm_terminal_punctuation_and_parentheses() {
+    let parser = parser();
+    for (source, expected) in [
+        ("https://trap.jp/a~", "https://trap.jp/a"),
+        ("https://trap.jp/a&copy;", "https://trap.jp/a"),
+        ("https://trap.jp/a;b", "https://trap.jp/a;b"),
+        ("https://trap.jp/a?!.,:*_~;", "https://trap.jp/a"),
+        ("https://trap.jp/__name__", "https://trap.jp/__name"),
+        (
+            "https://trap.jp/__name__/end",
+            "https://trap.jp/__name__/end",
+        ),
+        ("https://trap.jp/a~b:c_d", "https://trap.jp/a~b:c_d"),
+        ("https://trap.jp/a_(b", "https://trap.jp/a_(b"),
+        ("https://trap.jp/a_(b))", "https://trap.jp/a_(b)"),
+        ("https://trap.jp/a_(b))+ok", "https://trap.jp/a_(b))+ok"),
+        ("https://trap.jp/a_(b)).~", "https://trap.jp/a_(b)"),
+        ("-https://trap.jp/a", "https://trap.jp/a"),
+        ("word-https://trap.jp/a", "https://trap.jp/a"),
+        ("//trap.jp/a~", "https://trap.jp/a"),
+        ("<https://trap.jp/a~~>", "https://trap.jp/a~~"),
+        ("[label](https://trap.jp/a~~)", "https://trap.jp/a~~"),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        let links: Vec<_> = document
+            .children
+            .iter()
+            .filter_map(|node| node.payload::<Link>())
+            .collect();
+        assert_eq!(links.len(), 1, "{source}");
+        assert_eq!(links[0].destination, expected, "{source}");
     }
 }
 

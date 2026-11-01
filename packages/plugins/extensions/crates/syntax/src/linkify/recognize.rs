@@ -80,7 +80,7 @@ fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Opti
             } else if relative {
                 "+-/:;.&\\".contains(ch)
             } else {
-                "+-".contains(ch)
+                matches!(ch, '+' | '[')
             }
     }) {
         return None;

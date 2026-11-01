@@ -18,13 +18,13 @@ const file = origin + '/files/' + fileId,
   quote = origin + '/messages/' + messageId
 const view = messageRenderers({ origin, ...withDefaultAdapters() })
 
-test('message renderers keep telephone links and show rejected autolinks with brackets', () => {
+test('message renderers keep telephone links and preserve rejected link labels', () => {
   for (const renderer of [view.standard, view.condensed]) {
     expect(
       renderer.render(parser.parse('[090-1234-5678](tel:+819012345678)')).html
     ).toContain('href="tel:+819012345678"')
     expect(renderer.render(parser.parse('<hoge:hoge>')).html).toContain(
-      '&lt;hoge:hoge&gt;'
+      'hoge:hoge'
     )
     expect(renderer.render(parser.parse('a <em>b</em>')).html).toContain(
       'a &lt;em&gt;b&lt;/em&gt;'

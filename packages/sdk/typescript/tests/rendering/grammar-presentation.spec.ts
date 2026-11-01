@@ -238,7 +238,7 @@ test('rejected images remain safe links without creating nested anchors', () => 
       )
     )
   ).toBe(
-    `!<a href="https://example.test/a.png"${attributes} title="title">bold code &quot;</a>`
+    `!<a href="https://example.test/a.png"${attributes} title="title"><strong>bold</strong> <code>code</code> &quot;</a>`
   )
   expect(
     view.render(
@@ -288,7 +288,7 @@ test('linked direct and reference images retain the outer link across display po
             links: { validate }
           })
           .render(document)
-      ).toBe(outerLink('!badge'))
+      ).toBe(outerLink('!<strong>badge</strong>'))
     }
   }
 })

@@ -82,6 +82,11 @@ document. `ctx.renderChildren()` accepts a separator or joining callback,
 `ctx.matches(node, definition)` narrows validated nodes without rerunning payload
 guards. The default fallback emits escaped original source.
 
+Anchor handlers use `ctx.renderChildren('', { insideLink: true })` to render
+their labels. Descendants receive `ctx.insideLink` and keep their labels without
+emitting another anchor. This state is inherited through `ctx.renderNode` and
+cannot be disabled inside an existing link; it does not leak into later renders.
+
 Cached narrowing accepts snapshot nodes only. Resolve a caller's original mutable
 node with `context.node(original)` before calling `context.matches`; later edits
 to the caller's node do not acquire the snapshot's validation guarantees.

@@ -29,7 +29,8 @@ const samples = {
   colors: ':0xf00: :0xf008: :0xff0000: :0xff000080: :0xf000: :0xff0000ff:',
   math: '$x^2$\n\n```js\nconst answer = 42\n```',
   safe: '<img src=x onerror="document.body.dataset.injected=1"> [unsafe](javascript:alert(1)) [safe](https://example.test)',
-  image: '![alternative](/tests/browser/fixtures/pixel.svg)'
+  image: '![alternative](/tests/browser/fixtures/pixel.svg)',
+  fallback: '![**important** `code` !{"type":"channel","raw":"#general","id":"00000000-0000-0000-0000-000000000001"}](https://example.test/no.png)'
 }
 for (const [id, source] of Object.entries(samples)) append(id, renderer.render(parser.parse(source)))
 

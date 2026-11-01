@@ -93,11 +93,23 @@ test('optional math and highlighting adapters work with the published browser mo
     /KaTeX_Main/
   )
   await expect(page.locator('#math pre code .hljs-keyword')).toHaveText('const')
-  await expect(page.locator('#condensed')).toHaveText(
-    'hello https://q.example.test/files/00000000-0000-0000-0000-000000000001'
-  )
+  await expect(page.locator('#condensed')).toHaveText('hello')
   await expect(page.locator('#condensed a')).toHaveCount(0)
-  await expect(page.locator('#cards')).toBeEmpty()
+  await expect(page.locator('#cards')).toHaveText('file')
+})
+
+test('fallback image labels keep formatting and reference names in one link', async ({
+  page
+}) => {
+  await expect(page.locator('#fallback strong')).toHaveText('important')
+  await expect(page.locator('#fallback code')).toHaveText('code')
+  await expect(page.locator('#fallback')).toContainText('#general')
+  await expect(page.locator('#fallback')).not.toContainText('"type"')
+  await expect(page.locator('#fallback a')).toHaveCount(1)
+  await expect(page.locator('#fallback a')).toHaveAttribute(
+    'href',
+    'https://example.test/no.png'
+  )
 })
 
 test('safe rendering and explicit drafts preserve the owned document', async ({

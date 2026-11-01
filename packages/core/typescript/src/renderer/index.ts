@@ -77,13 +77,14 @@ export function createRenderer(
         return output
       }
 
-      function renderNode(value: ReadonlyNode): string {
+      function renderNode(value: ReadonlyNode, insideLink = false): string {
         const node = context.node(value)
         if (omitted.has(node)) return ''
         const handler = handlers.get(node.kind)
         if (!handler) return fallback(node)
         const { ancestors, index } = context.location(node)
         const renderContext: RenderContext = {
+          insideLink,
           source: context.source.text,
           ancestors,
           index,
@@ -95,23 +96,25 @@ export function createRenderer(
               : undefined
           },
           escape: escapeHtml,
-          renderChildren: (join = '') => {
+          renderChildren: (join = '', options = {}) => {
             const replacement = replacements.get(node)
             if (replacement !== undefined) return escapeHtml(replacement)
             const children = (node.children ?? []).filter(
               child => !omitted.has(child)
             )
+            const renderChild = (child: ReadonlyNode) =>
+              renderNode(child, insideLink || options.insideLink === true)
             return typeof join === 'string'
-              ? children.map(renderNode).join(join)
+              ? children.map(renderChild).join(join)
               : join(
                   Object.freeze(
                     children.map(node =>
-                      Object.freeze({ node, html: renderNode(node) })
+                      Object.freeze({ node, html: renderChild(node) })
                     )
                   )
                 )
           },
-          renderNode,
+          renderNode: node => renderNode(node, insideLink),
           sourceSlice: span => context.source.slice(span),
           fallback
         }
@@ -123,7 +126,7 @@ export function createRenderer(
 
       return roots
         .filter(node => !omitted.has(node))
-        .map(renderNode)
+        .map(node => renderNode(node))
         .join(plan.rootSeparator ?? '')
     }
 

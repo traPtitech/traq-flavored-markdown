@@ -60,7 +60,7 @@ pub(super) fn fence(line: &str) -> Option<(u8, usize, &str)> {
     }
 
     let count = text.bytes().take_while(|b| *b == marker).count();
-    let info = text[count..].trim();
+    let info = text[count..].trim_matches([' ', '\t']);
 
     (count >= 3 && (marker != b'`' || !info.contains('`'))).then_some((marker, count, info))
 }

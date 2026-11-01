@@ -187,7 +187,7 @@ test('reference highlighting and link/image policies belong to each renderer', (
   expect(
     custom.render(parser.parseInline('[x](https://example.com)')),
     '[x](https://example.com)'
-  ).toBe('[x](https://example.com)')
+  ).toBe('x')
 })
 
 test('reference rendering rejects script links and escapes labels', () => {

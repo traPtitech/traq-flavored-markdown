@@ -5,6 +5,7 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
 
     let mut end = start;
     let mut pairs = vec![];
+    let mut parentheses = 0isize;
     let mut quoted_until = 0;
 
     for (offset, ch) in text[start..].char_indices() {
@@ -32,14 +33,18 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
                 break;
             }
         }
+        if ch == '(' {
+            parentheses += 1;
+        } else if ch == ')' {
+            parentheses -= 1;
+        }
         if let Some(close) = match ch {
-            '(' => Some(')'),
             '[' => Some(']'),
             '{' => Some('}'),
             _ => None,
         } {
             pairs.push((close, position));
-        } else if ")]}".contains(ch) {
+        } else if "]}".contains(ch) {
             if pairs.last().is_none_or(|(close, _)| *close != ch) {
                 break;
             }
@@ -50,12 +55,31 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
     if let Some((_, open)) = pairs.first() {
         end = *open;
     }
-    let stopped_at_quote = text[end..].starts_with(['\'', '"']);
-    while end > start
-        && (text[..end].ends_with('*')
-            || !stopped_at_quote && text[..end].ends_with(['.', ',', ';', '!', '?']))
-    {
-        end -= 1;
+    // GFM excludes terminal prose/formatting punctuation, but preserves the
+    // same characters inside a path. Only excess closing parentheses at the
+    // end are removed; an unmatched opening parenthesis is valid URL text.
+    while end > start {
+        let last = text[..end].chars().next_back().unwrap();
+        if last == ';' {
+            // Inspect only the final alphanumeric run, so a long run of
+            // semicolons cannot repeatedly scan the entire path.
+            let suffix = &text[start..end - 1];
+            if let Some(index) = suffix.rfind(|ch: char| !ch.is_ascii_alphanumeric())
+                && suffix.as_bytes()[index] == b'&'
+                && index + 1 < suffix.len()
+            {
+                end = start + index;
+                continue;
+            }
+        }
+        if "?!.,:*_~;".contains(last) {
+            end -= last.len_utf8();
+        } else if last == ')' && parentheses < 0 {
+            end -= 1;
+            parentheses += 1;
+        } else {
+            break;
+        }
     }
     if end == start + 1 && !text[start..].starts_with('/') {
         start
