@@ -21,6 +21,7 @@ export function useReportQuery(
     ignoreHtmlSerialization,
     ignoreKatexErrors,
     ignoreLinkPolicy,
+    ignoreNestedLinks,
     excludeBots,
     page
   } = query
@@ -34,6 +35,7 @@ export function useReportQuery(
       ignoreHtmlSerialization,
       ignoreKatexErrors,
       ignoreLinkPolicy,
+      ignoreNestedLinks,
       excludeBots,
       page
     }),
@@ -46,6 +48,7 @@ export function useReportQuery(
       ignoreHtmlSerialization,
       ignoreKatexErrors,
       ignoreLinkPolicy,
+      ignoreNestedLinks,
       excludeBots,
       page
     ]

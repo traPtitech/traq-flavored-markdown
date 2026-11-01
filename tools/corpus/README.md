@@ -133,16 +133,40 @@ Punycode rather than WHATWG host validation. This does not expand current URL or
 email eligibility. Ambiguous notation is retained conservatively; the filter
 does not execute Markdown or HTML.
 
-The six output checkboxes compose: whitespace, letter case, linked-image fallback,
-HTML spelling, KaTeX errors, and link-policy differences can be ignored together. Execution errors and changes of output
+The link-policy index also verifies current automatic URL boundaries against the
+authored source: balanced parentheses remain inside, unmatched closers terminate
+the URL, unclosed openers and trailing punctuation remain outside, and terminal
+underscores/hyphens remain inside. Automatic scheme links immediately following
+`[` are suppressed. Required links are counted by their verified current span,
+so changes such as moving a terminal colon outside a link do not look like a
+missing link. Source-backed strikethrough/emphasis exposed by these boundary
+changes is normalized only around the affected URL. Encoded source spellings and
+decoded labels are checked together. Explicit links, incorrect truncation of
+balanced URLs, wrong destinations, literal code/math and unrelated formatting
+changes remain visible.
+
+The nested-link checkbox removes inner anchor tags while preserving the outer
+link and its rich label. This accepts a potential change of click destination
+from the inner reference to the outer URL. Outer destinations and attributes,
+label content, and surrounding text are retained. Older captured image fallback
+labels containing reference JSON are matched to the original Markdown only when
+the removed reference anchor proves the same ID, raw label, and outer URL.
+Unbalanced or ambiguous HTML is left visible. Code, preformatted text and other
+literal contexts are protected. This is separate from the link-policy and HTML
+spelling checkboxes, and defaults off.
+An explicit empty `href=""` is a valid destination and does not disable this
+filter; missing href attributes remain protected.
+
+The seven output checkboxes compose: whitespace, letter case, linked-image fallback,
+HTML spelling, KaTeX errors, link-policy differences, and nested-link removal can be ignored together. Execution errors and changes of output
 kind always remain visible. These
 filters use indexes computed when generating the report, so toggling them does
-not decompress every chunk. Each row uses sixteen hexadecimal digits for the 63
+not decompress every chunk. Each row uses thirty-two hexadecimal digits for the 127
 filter combinations. Old report formats are deliberately rejected; regenerate
 `differences.html` with `corpus:report` to add the checkbox to an existing run.
 
 The separate BOT checkbox excludes every difference belonging to a known BOT
-post, including errors, and composes with the six output filters and source
+post, including errors, and composes with the seven output filters and source
 search. It defaults off. Unknown authors remain visible and their count is
 shown when author metadata is available. If no profile contains known author
 metadata, the BOT switch and author status are omitted. Otherwise the switch

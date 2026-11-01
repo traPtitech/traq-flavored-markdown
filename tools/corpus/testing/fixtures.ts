@@ -165,3 +165,19 @@ export const fixtureKatexError: DifferenceRow = {
     value: `<p class="katex-block katex-error is-scroll" title="new diagnostic">\\invalid-after</p>`
   }
 }
+
+export const fixtureNestedLink: DifferenceRow = {
+  ...fixtureRows[0],
+  source:
+    '[!{"type":"channel","raw":"#event/test","id":"channel-id"}](https://q.example.test/channels/event/test)',
+  before: {
+    kind: 'html',
+    value:
+      '<a href="https://q.example.test/channels/event/test" target="_blank"><a href="#c-channel-id" class="message-channel-link">#event/test</a></a>'
+  },
+  after: {
+    kind: 'html',
+    value:
+      '<a href="https://q.example.test/channels/event/test" target="_blank">#event/test</a>'
+  }
+}

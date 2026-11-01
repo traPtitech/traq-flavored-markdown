@@ -11,7 +11,8 @@ import {
   fixtureHtmlSerialization,
   fixtureKatexError,
   fixtureLinkedImage,
-  fixtureMetadata
+  fixtureMetadata,
+  fixtureNestedLink
 } from '../testing/fixtures.ts'
 import type { ReportRepository } from './data/repository.ts'
 
@@ -284,6 +285,127 @@ test('KaTeX-only checkbox composes with search and other filters while retaining
   await expect(page.locator('#status')).toHaveText('4 件 / 全 7 件')
   await page.locator('#profiles button').nth(2).click()
   await expect(page.locator('#rows .source')).toHaveText('Plain')
+})
+
+test('nested-link checkbox is separate, resets pagination, composes with search and retains mixed changes', async ({
+  page
+}) => {
+  await openReport(
+    page,
+    reportFixture([
+      {
+        ...fixtureNestedLink,
+        index: 5,
+        source: 'Nested channel ' + fixtureNestedLink.source
+      },
+      {
+        ...fixtureNestedLink,
+        index: 6,
+        source: 'Nested mixed ' + fixtureNestedLink.source,
+        after: { kind: 'html', value: fixtureNestedLink.after.value + '<br>' }
+      },
+      {
+        ...fixtureNestedLink,
+        index: 7,
+        source: 'Nested case ' + fixtureNestedLink.source,
+        before: { kind: 'html', value: 'A ' + fixtureNestedLink.before.value },
+        after: { kind: 'html', value: 'a ' + fixtureNestedLink.after.value }
+      },
+      { ...fixtureNestedLink, index: 8, profile: 'inline' }
+    ])
+  )
+  const nested = page.getByLabel('入れ子リンクの解消による差分を除外')
+  await expect(nested).not.toBeChecked()
+  await page.getByLabel('リンク仕様変更による差分を除外').check()
+  await expect(page.locator('#status')).toHaveText('6 件')
+  await page.getByRole('button', { name: '次のページ' }).click()
+  await nested.check()
+  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
+  await expect(page.locator('#status')).toHaveText('5 件 / 全 6 件')
+  await page.getByLabel('原文を検索').fill('Nested')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 6 件')
+  await expect(page.locator('#rows .source')).toContainText('Nested mixed')
+  await page.getByLabel('大文字・小文字の違いのみを除外').check()
+  await expect(page.locator('#status')).toHaveText('1 件 / 全 6 件')
+  await nested.uncheck()
+  await expect(page.locator('#status')).toHaveText('3 件 / 全 6 件')
+  await nested.check()
+  await page.getByRole('button', { name: /S-UI · インライン/ }).click()
+  await expect(nested).toBeChecked()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
+  await expect(page.locator('#status')).toHaveText('1 件 / 全 2 件')
+  await nested.uncheck()
+  await expect(page.locator('#status')).toHaveText('2 件')
+  await page.getByRole('button', { name: /S-UI · 通常/ }).click()
+  await nested.check()
+  await page.getByLabel('原文を検索').fill('Beta')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('.output-error')).toContainText('実行エラー')
+})
+
+test('boundary and nested-link checkboxes hide only accepted URL changes', async ({
+  page
+}) => {
+  const url = 'https://example.test/a'
+  const anchor = (value: string) => `<a href="${value}">${value}</a>`
+  await openReport(
+    page,
+    reportFixture([
+      {
+        ...fixtureNestedLink,
+        index: 5,
+        source: 'Boundary colon ' + url + ':',
+        before: { kind: 'html', value: anchor(url + ':') },
+        after: { kind: 'html', value: anchor(url) + ':' }
+      },
+      {
+        ...fixtureNestedLink,
+        index: 6,
+        source: 'Boundary strike ~~' + url + '~~',
+        before: { kind: 'html', value: '~~' + anchor(url + '~~') },
+        after: { kind: 'html', value: '<s>' + anchor(url) + '</s>' }
+      },
+      {
+        ...fixtureNestedLink,
+        index: 7,
+        source: 'Boundary wrong ' + url + ':',
+        before: { kind: 'html', value: anchor(url + ':') },
+        after: { kind: 'html', value: anchor('https://wrong.test') + ':' }
+      },
+      {
+        ...fixtureNestedLink,
+        index: 8,
+        source: 'Boundary nested ' + fixtureNestedLink.source,
+        before: {
+          ...fixtureNestedLink.before,
+          value: fixtureNestedLink.before.value.replace(
+            'https://q.example.test/channels/event/test',
+            ''
+          )
+        },
+        after: {
+          ...fixtureNestedLink.after,
+          value: fixtureNestedLink.after.value.replace(
+            'https://q.example.test/channels/event/test',
+            ''
+          )
+        }
+      }
+    ])
+  )
+  await page.getByLabel('原文を検索').fill('Boundary')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#status')).toHaveText('4 件 / 全 7 件')
+  await page.getByLabel('リンク仕様変更による差分を除外').check()
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 7 件')
+  await page.getByLabel('入れ子リンクの解消による差分を除外').check()
+  await expect(page.locator('#status')).toHaveText('1 件 / 全 7 件')
+  await expect(page.locator('#rows .source')).toHaveText(
+    'Boundary wrong ' + url + ':'
+  )
+  await page.getByLabel('リンク仕様変更による差分を除外').uncheck()
+  await expect(page.locator('#status')).toHaveText('3 件 / 全 7 件')
 })
 
 test('link policy checkbox hides HTTPS completion and email additions but retains bad links', async ({

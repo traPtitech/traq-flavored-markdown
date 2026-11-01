@@ -2,6 +2,7 @@ import { type DifferenceRow, isFailure } from '../protocol/comparison.ts'
 import { normalizeHtmlSerialization } from './html.ts'
 import { normalizeKatexErrors } from './katex.ts'
 import { normalizeLinkPolicy } from './link-policy.ts'
+import { normalizeNestedLinks } from './nested-links.ts'
 
 const textFilters = {
   whitespace: 1,
@@ -121,11 +122,10 @@ function existingFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
   return includeFilterSupersets(mask | (katexMask << 15), 32)
 }
 
-export function differenceFilterMask(
-  row: Pick<DifferenceRow, 'before' | 'after'> &
-    Partial<Pick<DifferenceRow, 'source' | 'profile'>>,
-  origin?: string
-) {
+type FilterRow = Pick<DifferenceRow, 'before' | 'after'> &
+  Partial<Pick<DifferenceRow, 'source' | 'profile'>>
+
+function linkFilterMask(row: FilterRow, origin?: string) {
   const existing = BigInt(existingFilterMask(row))
   // Existing exclusions also apply when the new checkbox is selected.
   let mask = existing | (existing << 32n)
@@ -145,6 +145,27 @@ export function differenceFilterMask(
             })
           ) << 1n
     mask |= linkMask << 31n
+  }
+  return mask
+}
+
+export function differenceFilterMask(row: FilterRow, origin?: string) {
+  const existing = linkFilterMask(row, origin)
+  let mask = existing | (existing << 64n)
+  const normalized = normalizeNestedLinks(row)
+  if (normalized) {
+    const nestedMask =
+      normalized.before === normalized.after
+        ? (1n << 64n) - 1n
+        : linkFilterMask(
+            {
+              ...row,
+              before: { kind: 'html', value: normalized.before },
+              after: { kind: 'html', value: normalized.after }
+            },
+            origin
+          ) << 1n
+    mask |= nestedMask << 63n
   }
   return mask
 }

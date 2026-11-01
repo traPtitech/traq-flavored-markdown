@@ -9,6 +9,7 @@ export type Query = {
   ignoreHtmlSerialization: boolean
   ignoreKatexErrors: boolean
   ignoreLinkPolicy: boolean
+  ignoreNestedLinks: boolean
   excludeBots: boolean
   page: number
 }

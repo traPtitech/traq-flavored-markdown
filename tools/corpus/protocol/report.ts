@@ -59,7 +59,7 @@ const existingDifferenceFilters = {
     ])
   ) as Record<`${keyof typeof outputDifferenceFilters}AndKatexErrors`, bigint>)
 }
-export const differenceFilters = {
+const linkDifferenceFilters = {
   ...existingDifferenceFilters,
   linkPolicy: 1n << 31n,
   ...(Object.fromEntries(
@@ -69,8 +69,18 @@ export const differenceFilters = {
     ])
   ) as Record<`${keyof typeof existingDifferenceFilters}AndLinkPolicy`, bigint>)
 }
-/** Sixteen hex digits per row record equality for all 63 filter combinations. */
-export const filterMaskWidth = 16
+export const differenceFilters = {
+  ...linkDifferenceFilters,
+  nestedLinks: 1n << 63n,
+  ...(Object.fromEntries(
+    Object.entries(linkDifferenceFilters).map(([name, mask]) => [
+      `${name}AndNestedLinks`,
+      mask << 64n
+    ])
+  ) as Record<`${keyof typeof linkDifferenceFilters}AndNestedLinks`, bigint>)
+}
+/** Thirty-two hex digits record equality for all 127 filter combinations. */
+export const filterMaskWidth = 32
 export const encodeFilterMasks = (masks: readonly bigint[]) =>
   masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')
 export const filterMaskAt = (encoded: string, index: number) =>
@@ -107,7 +117,7 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
     const result = meta.results[profile]
     if (
       meta.filters[profile].length !== meta.counts[profile] * filterMaskWidth ||
-      !/^(?:[0-7][0-9a-f]{15})*$/.test(meta.filters[profile]) ||
+      !/^(?:[0-7][0-9a-f]{31})*$/.test(meta.filters[profile]) ||
       meta.authors[profile].length !== meta.counts[profile] ||
       !validAuthorKinds(meta.authors[profile]) ||
       chunks[profile].length !== Math.ceil(meta.counts[profile] / meta.pageSize)

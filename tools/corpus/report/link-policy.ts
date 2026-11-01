@@ -3,6 +3,11 @@ import { type DefaultTreeAdapterTypes, parseFragment } from 'parse5'
 import punycode from 'punycode/punycode.js'
 
 import type { DifferenceRow } from '../protocol/comparison.ts'
+import {
+  bareUrl,
+  expectedBareUrl,
+  normalizeUrlFormatting
+} from './url-boundaries.ts'
 
 const { toASCII } = punycode
 
@@ -63,7 +68,8 @@ function sourceForm(
   source: string,
   label: string,
   literalHtml = false,
-  retained?: RetainedLink
+  retained?: RetainedLink,
+  completeBoundary = false
 ): SourceForm {
   if (!label) return undefined
   // URL labels can be decoded while the authored URL uses percent escapes or
@@ -77,7 +83,13 @@ function sourceForm(
         : url.href
       for (const spelling of [encoded, canonical, canonical.replace(/\/$/, '')])
         if (spelling !== label && source.includes(spelling))
-          return sourceForm(source, spelling, literalHtml, retained)
+          return sourceForm(
+            source,
+            spelling,
+            literalHtml,
+            retained,
+            completeBoundary
+          )
     } catch {
       return undefined
     }
@@ -193,10 +205,11 @@ function sourceForm(
             : /[a-z0-9+]/i
         ).test(previous) &&
           !schemePrefix) ||
-        (email
-          ? /^(?:[\p{L}\p{N}_-]|\.[\p{L}\p{N}-])/u
-          : /^(?:[a-z0-9_/@#?%-]|\.[a-z0-9-])/i
-        ).test(following)
+        (!completeBoundary &&
+          (email
+            ? /^(?:[\p{L}\p{N}_-]|\.[\p{L}\p{N}-])/u
+            : /^(?:[a-z0-9_/@#?%-]|\.[a-z0-9-])/i
+          ).test(following))
       )
         return undefined
     }
@@ -354,7 +367,8 @@ function normalizeHtml(
   origin?: string,
   expectedLinks?: ReadonlyMap<string, number>,
   unchangedLinks?: ReadonlyMap<string, number>,
-  spellingOf: (label: string) => string = label => label
+  spellingOf: (label: string) => string = label => label,
+  boundaryOf: (label: string) => string | null | undefined = () => undefined
 ) {
   const unchanged = new Map(unchangedLinks)
   const errors: number[] = []
@@ -370,6 +384,7 @@ function normalizeHtml(
   const forced = new Map<string, number>()
   const angleText = new Map<string, number>()
   const linked = new Map<string, number>()
+  const urls = new Map<string, string>()
   while (pending.length) {
     const node = pending.pop()!
     if ('tagName' in node) {
@@ -433,7 +448,7 @@ function normalizeHtml(
             /&lt;[a-z][a-z0-9:-]*\s[^<>]*$/i.test(prefix) &&
             value.slice(location.endTag.endOffset).includes('&gt;')
           if (literalAttribute && side === 'after') continue
-          const form: SourceForm | 'literal' =
+          let form: SourceForm | 'literal' =
             literalAttribute && side === 'before'
               ? 'literal'
               : formOf(
@@ -441,6 +456,20 @@ function normalizeHtml(
                   literalHtml,
                   label.startsWith('//') ? trailingStamp(prefix) : undefined
                 )
+          const boundary = bareUrl(label) ? boundaryOf(label) : undefined
+          const expected = typeof boundary === 'string' ? boundary : undefined
+          if (
+            side === 'before' &&
+            !form &&
+            expected &&
+            expected.startsWith(spellingOf(label)) &&
+            /^[_-]+$/.test(expected.slice(spellingOf(label).length)) &&
+            expectedLinks?.has(expected) &&
+            formOf(expected) === 'bare'
+          )
+            form = 'bare'
+          const bracketed =
+            bareUrl(label) && decodeHTML(prefix.slice(-40)).endsWith('[')
           const resource = resourceLabel(href, origin)
           const legacyBare =
             side === 'before' &&
@@ -464,6 +493,12 @@ function normalizeHtml(
           let replacement: string | undefined
           if (
             form &&
+            (side === 'before' ||
+              form !== 'bare' ||
+              !bareUrl(label) ||
+              (!bracketed &&
+                boundary !== null &&
+                (!expected || expected === spellingOf(label)))) &&
             (side === 'before' || form === 'angle' || bareLink(label)) &&
             (form === 'angle' ||
               bareLink(label) ||
@@ -495,8 +530,11 @@ function normalizeHtml(
             if (form === 'angle')
               forced.set(label, (forced.get(label) ?? 0) + 1)
             else if (form !== 'literal' && (legacyEmail || bareLink(label))) {
-              const key = legacyEmail ?? label
-              linked.set(key, (linked.get(key) ?? 0) + 1)
+              if (bareUrl(label)) urls.set(label, spellingOf(label))
+              if (!bracketed) {
+                const key = legacyEmail ?? expected ?? label
+                linked.set(key, (linked.get(key) ?? 0) + 1)
+              }
             }
           } else if (
             resource &&
@@ -562,7 +600,7 @@ function normalizeHtml(
     end = edit.end
   }
   parts.push(value.slice(end))
-  return { value: parts.join(''), forced, angleText, linked }
+  return { value: parts.join(''), forced, angleText, linked, urls }
 }
 
 function restoreResourceSuffix(
@@ -711,7 +749,10 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       const encoded = toASCII(authority) + (end < 0 ? '' : label.slice(end))
       if (source.includes(encoded)) spelling = encoded
     }
-    if (!source.includes(label) && completedDomain(label, false)) {
+    if (
+      !source.includes(label) &&
+      (completedDomain(label, false) || bareUrl(label))
+    ) {
       try {
         const encoded = encodeURI(label).replace(/%25([0-9a-f]{2})/gi, '%$1')
         const pattern = escapePattern(encoded).replace(
@@ -727,6 +768,12 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
     spellings.set(label, spelling)
     return spelling
   }
+  const boundaries = new Map<string, string | null | undefined>()
+  const boundaryOf = (label: string) => {
+    if (!boundaries.has(label))
+      boundaries.set(label, expectedBareUrl(source, spellingOf(label)))
+    return boundaries.get(label)
+  }
   const forms = new Map<string, SourceForm>()
   const formOf: SourceForms = (label, literalHtml = false, stamp) => {
     const key = (literalHtml ? '1' : '0') + (stamp ?? '') + '\0' + label
@@ -735,7 +782,8 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       stamp ? source.replaceAll(stamp + label, ' ' + label) : source,
       spellingOf(label),
       literalHtml,
-      retained
+      retained,
+      bareUrl(label) && boundaryOf(label) === spellingOf(label)
     )
     forms.set(key, form)
     return form
@@ -765,7 +813,8 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       origin,
       undefined,
       unchanged,
-      spellingOf
+      spellingOf,
+      boundaryOf
     )
     if (right === undefined) return undefined
     const left = normalizeHtml(
@@ -776,7 +825,8 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       origin,
       right.linked,
       unchanged,
-      spellingOf
+      spellingOf,
+      boundaryOf
     )
     if (
       left === undefined ||
@@ -800,7 +850,12 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
         !(restored !== right.value && restored.includes(escapeText(label)))
       )
         return undefined
-    return { before: left.value, after: restored }
+    return normalizeUrlFormatting(
+      source,
+      left.value,
+      restored,
+      new Map([...left.urls, ...right.urls])
+    )
   }
   let left = before.value
   const right = after.value

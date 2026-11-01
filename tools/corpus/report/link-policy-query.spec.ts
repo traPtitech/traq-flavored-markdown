@@ -5,10 +5,107 @@ import {
   filterMaskAt,
   parseReport
 } from '../protocol/report.ts'
-import { fixtureMetadata, fixtureRows } from '../testing/fixtures.ts'
+import {
+  fixtureMetadata,
+  fixtureNestedLink,
+  fixtureRows
+} from '../testing/fixtures.ts'
 import { ReportRepository } from '../viewer/data/repository.ts'
 import { initialViewerState } from '../viewer/state.ts'
 import { aggregateDifferences } from './aggregate.ts'
+
+test('boundary changes and empty nested links compose in indexed queries without hiding wrong URLs', async () => {
+  const url = 'https://example.test/a'
+  const anchor = (value: string) => `<a href="${value}">${value}</a>`
+  const row = (
+    index: number,
+    source: string,
+    before: string,
+    after: string
+  ) => ({
+    ...fixtureRows[0],
+    index,
+    source,
+    before: { kind: 'html' as const, value: before },
+    after: { kind: 'html' as const, value: after }
+  })
+  const rows = [
+    row(0, url + ':', anchor(url + ':'), anchor(url) + ':'),
+    row(
+      1,
+      '~~' + url + '~~',
+      '~~' + anchor(url + '~~'),
+      '<s>' + anchor(url) + '</s>'
+    ),
+    row(2, 'mixed ' + url + ':', anchor(url + ':'), anchor(url) + ': extra'),
+    row(
+      3,
+      'wrong ' + url + ':',
+      anchor(url + ':'),
+      anchor('https://wrong.test') + ':'
+    ),
+    {
+      ...fixtureNestedLink,
+      index: 4,
+      before: {
+        ...fixtureNestedLink.before,
+        value: fixtureNestedLink.before.value.replace(
+          'https://q.example.test/channels/event/test',
+          ''
+        )
+      },
+      after: {
+        ...fixtureNestedLink.after,
+        value: fixtureNestedLink.after.value.replace(
+          'https://q.example.test/channels/event/test',
+          ''
+        )
+      }
+    }
+  ]
+  const aggregated = await aggregateDifferences(
+    (async function* () {
+      yield* rows
+    })(),
+    1
+  )
+  expect(aggregated.excluded.render.linkPolicy).toBe(2)
+  expect(aggregated.excluded.render.nestedLinks).toBe(1)
+  expect(aggregated.excluded.render.linkPolicyAndNestedLinks).toBe(3)
+  const metadata = {
+    ...fixtureMetadata(aggregated.counts, 1, rows.length),
+    filters: aggregated.filters
+  }
+  const decoded: string[] = []
+  const repository = new ReportRepository(
+    parseReport(metadata, aggregated.payload),
+    async encoded => {
+      decoded.push(encoded)
+      return JSON.parse(
+        new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
+      )
+    }
+  )
+  const query = {
+    ...initialViewerState.query,
+    ignoreWhitespace: true,
+    ignoreCase: true,
+    ignoreLinkedImages: true,
+    ignoreHtmlSerialization: true,
+    ignoreKatexErrors: true,
+    ignoreLinkPolicy: true,
+    ignoreNestedLinks: true
+  }
+  expect((await repository.query(query)).totalHits).toBe(2)
+  expect(decoded).toEqual([aggregated.payload.render[2]])
+  expect((await repository.query({ ...query, page: 2 })).rows[0].index).toBe(3)
+  expect(
+    (await repository.query({ ...query, search: 'mixed' })).rows[0].index
+  ).toBe(2)
+  expect(
+    (await repository.query({ ...query, ignoreLinkPolicy: false })).totalHits
+  ).toBe(4)
+})
 
 test('link policy indexes compose with cached queries and keep mixed changes and errors', async () => {
   const url = 'trap.jp'
@@ -120,9 +217,9 @@ test('link policy indexes compose with cached queries and keep mixed changes and
 })
 
 test('report masks retain the highest filter combination without number truncation', () => {
-  const mask = 1n << 62n
+  const mask = 1n << 126n
   const encoded = encodeFilterMasks([mask, 0n])
-  expect(encoded).toHaveLength(32)
+  expect(encoded).toHaveLength(64)
   expect(filterMaskAt(encoded, 0)).toBe(mask)
   expect(filterMaskAt(encoded, 1)).toBe(0n)
 })

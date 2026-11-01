@@ -92,14 +92,15 @@ export class ReportRepository {
     if (!this.metadata.results[query.profile])
       throw new Error('Profile was not compared: ' + query.profile)
     const search = query.search.trim().toLowerCase()
-    // Bits enumerate nonempty combinations of the six normalization options.
+    // Bits enumerate nonempty combinations of the seven normalization options.
     const combination =
       Number(query.ignoreWhitespace) |
       (Number(query.ignoreCase) << 1) |
       (Number(query.ignoreLinkedImages) << 2) |
       (Number(query.ignoreHtmlSerialization) << 3) |
       (Number(query.ignoreKatexErrors) << 4) |
-      (Number(query.ignoreLinkPolicy) << 5)
+      (Number(query.ignoreLinkPolicy) << 5) |
+      (Number(query.ignoreNestedLinks) << 6)
     const mask = combination ? 1n << BigInt(combination - 1) : 0n
     const key = JSON.stringify([
       query.profile,

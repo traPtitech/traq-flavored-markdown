@@ -17,6 +17,7 @@ export const initialViewerState: ViewerState = {
     ignoreHtmlSerialization: false,
     ignoreKatexErrors: false,
     ignoreLinkPolicy: false,
+    ignoreNestedLinks: false,
     excludeBots: false,
     page: 1
   },
@@ -33,6 +34,7 @@ export type ViewerAction =
   | { type: 'htmlSerialization'; ignore: boolean }
   | { type: 'katexErrors'; ignore: boolean }
   | { type: 'linkPolicy'; ignore: boolean }
+  | { type: 'nestedLinks'; ignore: boolean }
   | { type: 'bots'; exclude: boolean }
   | { type: 'page'; page: number; totalPages: number }
   | { type: 'output'; view: OutputView }
@@ -102,6 +104,11 @@ export function viewerReducer(
       return {
         ...state,
         query: { ...state.query, ignoreLinkPolicy: action.ignore, page: 1 }
+      }
+    case 'nestedLinks':
+      return {
+        ...state,
+        query: { ...state.query, ignoreNestedLinks: action.ignore, page: 1 }
       }
     case 'output':
       return { ...state, outputView: action.view }

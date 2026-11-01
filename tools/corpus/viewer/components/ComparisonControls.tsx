@@ -26,6 +26,7 @@ export function ComparisonControls({
   onHtmlSerialization,
   onKatexErrors,
   onLinkPolicy,
+  onNestedLinks,
   onBots,
   onPage,
   onOutput
@@ -50,6 +51,7 @@ export function ComparisonControls({
   onHtmlSerialization: (ignore: boolean) => void
   onKatexErrors: (ignore: boolean) => void
   onLinkPolicy: (ignore: boolean) => void
+  onNestedLinks: (ignore: boolean) => void
   onBots: (exclude: boolean) => void
   onPage: (page: number) => void
   onOutput: (view: OutputView) => void
@@ -205,7 +207,7 @@ export function ComparisonControls({
           />
           KaTeXエラー部分のみの差分を除外
         </label>
-        <label title="裸のドメインのリンク化廃止、URL・メールのリンク化、山括弧によるリンク化、// URLのHTTPS補完とそれに伴うカード表示の差分を非表示にします。本文・明示的なリンク・誤ったリンク先・必要なリンクの消失・エラーなどの差分は残します。他の除外条件とも併用できます。">
+        <label title="裸のドメインのリンク化廃止、URL・メール・山括弧によるリンク化、// URLのHTTPS補完とカード表示、URL末尾の句読点・括弧・装飾記号や角括弧との境界規則による差分を非表示にします。本文・明示的なリンク・誤ったリンク先・必要なリンクの消失・エラーなどの差分は残します。他の除外条件とも併用できます。">
           <input
             type="checkbox"
             id="ignore-link-policy"
@@ -213,6 +215,15 @@ export function ComparisonControls({
             onChange={event => onLinkPolicy(event.currentTarget.checked)}
           />
           リンク仕様変更による差分を除外
+        </label>
+        <label title="リンク内の参照や画像ラベルにある内側のaタグを外し、外側のリンク先を優先する変更による差分を非表示にします。クリック先が変わりうる変更です。外側のURL・属性や本文に別の変更がある結果は残します。他の除外条件とも併用できます。">
+          <input
+            type="checkbox"
+            id="ignore-nested-links"
+            checked={query.ignoreNestedLinks}
+            onChange={event => onNestedLinks(event.currentTarget.checked)}
+          />
+          入れ子リンクの解消による差分を除外
         </label>
       </div>
     </>
