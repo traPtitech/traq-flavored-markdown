@@ -23,12 +23,22 @@ ASCII domain; their TLD is unrestricted. `info@trap.jp` targets
 require angle brackets or explicit Markdown links. Explicit Markdown link
 destinations are not completed.
 
-Bare URL paths follow GFM terminal punctuation rules: trailing `? ! . , : * _ ~`
-and semicolons are outside the link, while interior punctuation is preserved.
-Only excess terminal closing parentheses are removed; unmatched opening
-parentheses remain URL text. Angle autolinks and explicit destinations preserve
-terminal punctuation. A preceding hyphen is accepted as a URL boundary, following
-GitHub's current rendering behavior.
+Bare URL paths preserve balanced ASCII parentheses, including nested pairs in
+Wikipedia-style URLs. An unmatched closing parenthesis immediately ends the URL,
+even when prose follows it. Only parentheses inside the URL count; enclosing
+prose parentheses are not included. If open brackets remain at the end of the
+scan, the link ends before the first unmatched opener. Terminal `_` and `-` are
+part of the URL, including in query strings and fragments. Other terminal punctuation follows
+GFM trimming: trailing `? ! . , : * ~` and semicolons are outside the link;
+interior punctuation, including `~` in `/~user/page`, is preserved.
+These parenthesis and underscore rules deliberately differ from GFM.
+Angle autolinks and explicit destinations preserve parentheses and terminal
+punctuation; use `<https://example.test/a(b)~>` to state the complete URL,
+`~~<https://example.test/a~>~~` for strikethrough, and `_<https://example.test/a_>_`
+for emphasis. A preceding hyphen is accepted as a URL boundary, following
+GitHub's current rendering behavior. Hostname validation is unchanged.
+Both inline recognition and text fallback account for unclosed-bracket
+lookahead against the parser work limit.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for notices covering
 third-party algorithms and data.

@@ -334,27 +334,67 @@ fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
 }
 
 #[test]
-fn bare_url_paths_follow_gfm_terminal_punctuation_and_parentheses() {
+fn bare_url_paths_balance_parentheses_and_preserve_terminal_identifiers() {
     let parser = parser();
     for (source, expected) in [
         ("https://trap.jp/a~", "https://trap.jp/a"),
         ("https://trap.jp/a&copy;", "https://trap.jp/a"),
         ("https://trap.jp/a;b", "https://trap.jp/a;b"),
-        ("https://trap.jp/a?!.,:*_~;", "https://trap.jp/a"),
-        ("https://trap.jp/__name__", "https://trap.jp/__name"),
+        ("https://trap.jp/a?!.,:*~;", "https://trap.jp/a"),
+        ("https://trap.jp/a?!.,:*_~;", "https://trap.jp/a?!.,:*_"),
+        ("https://trap.jp/__name__", "https://trap.jp/__name__"),
         (
             "https://trap.jp/__name__/end",
             "https://trap.jp/__name__/end",
         ),
         ("https://trap.jp/a~b:c_d", "https://trap.jp/a~b:c_d"),
-        ("https://trap.jp/a_(b", "https://trap.jp/a_(b"),
+        ("https://trap.jp/a_(b", "https://trap.jp/a_"),
         ("https://trap.jp/a_(b))", "https://trap.jp/a_(b)"),
-        ("https://trap.jp/a_(b))+ok", "https://trap.jp/a_(b))+ok"),
+        ("https://trap.jp/a_(b))+ok", "https://trap.jp/a_(b)"),
         ("https://trap.jp/a_(b)).~", "https://trap.jp/a_(b)"),
+        ("hogehoge(https://trap.jp/a)fugafuga", "https://trap.jp/a"),
+        ("hogehoge(https://trap.jp)fugafuga", "https://trap.jp"),
+        ("https://trap.jp/?q=value)rest", "https://trap.jp/?q=value"),
+        ("https://trap.jp/#part(more)", "https://trap.jp/#part(more)"),
+        ("https://trap.jp/a\"b)c\"d", "https://trap.jp/a%22b"),
+        ("https://trap.jp/tail_", "https://trap.jp/tail_"),
+        ("https://trap.jp/tail-", "https://trap.jp/tail-"),
+        ("https://trap.jp/tail_-", "https://trap.jp/tail_-"),
+        ("https://trap.jp/?id=token_", "https://trap.jp/?id=token_"),
+        ("https://trap.jp/#token-", "https://trap.jp/#token-"),
+        ("https://trap.jp/~user/page", "https://trap.jp/~user/page"),
+        ("https://trap.jp/a_~~", "https://trap.jp/a_"),
+        ("https://trap.jp/a%28b%29", "https://trap.jp/a%28b%29"),
+        ("https://trap.jp/a_(b(c))", "https://trap.jp/a_(b(c))"),
+        ("https://trap.jp/a(b)/c(d)", "https://trap.jp/a(b)/c(d)"),
+        ("https://trap.jp/a(b)c(d", "https://trap.jp/a(b)c"),
+        ("https://trap.jp/a(b(c)", "https://trap.jp/a"),
+        ("https://trap.jp/a)b(c)", "https://trap.jp/a"),
+        ("https://trap.jp/a(b).~", "https://trap.jp/a(b)"),
+        (
+            "https://trap.jp/?q=(business)",
+            "https://trap.jp/?q=(business)",
+        ),
+        ("https://trap.jp/a([b])", "https://trap.jp/a(%5Bb%5D)"),
+        ("https://trap.jp/a([b)]", "https://trap.jp/a"),
+        ("https://trap.jp/a\"(b)\"c", "https://trap.jp/a%22(b)%22c"),
+        ("https://trap.jp/a\"(b\"c", "https://trap.jp/a%22"),
+        (
+            "https://en.wikipedia.org/wiki/Function_(mathematics)",
+            "https://en.wikipedia.org/wiki/Function_(mathematics)",
+        ),
         ("-https://trap.jp/a", "https://trap.jp/a"),
         ("word-https://trap.jp/a", "https://trap.jp/a"),
         ("//trap.jp/a~", "https://trap.jp/a"),
+        ("hogehoge(//trap.jp/a_)fugafuga", "https://trap.jp/a_"),
+        ("ftp://trap.jp/a-)rest", "ftp://trap.jp/a-"),
+        ("<https://trap.jp/a(b)~_->", "https://trap.jp/a(b)~_-"),
+        ("<//trap.jp/a(b)~_->", "https://trap.jp/a(b)~_-"),
+        ("[label](https://trap.jp/a_(b))", "https://trap.jp/a_(b)"),
         ("<https://trap.jp/a~~>", "https://trap.jp/a~~"),
+        ("<https://trap.jp/a(b>", "https://trap.jp/a(b"),
+        ("<https://trap.jp/a)b>", "https://trap.jp/a)b"),
+        ("[label](<https://trap.jp/a(b>)", "https://trap.jp/a(b"),
         ("[label](https://trap.jp/a~~)", "https://trap.jp/a~~"),
     ] {
         let document = parser.parse_inline(source).unwrap();
@@ -365,6 +405,46 @@ fn bare_url_paths_follow_gfm_terminal_punctuation_and_parentheses() {
             .collect();
         assert_eq!(links.len(), 1, "{source}");
         assert_eq!(links[0].destination, expected, "{source}");
+    }
+}
+
+#[test]
+fn parenthesized_url_ranges_leave_the_surrounding_text_outside_the_link() {
+    let parser = parser();
+    for (source, raw, destination) in [
+        (
+            "hogehoge(https://trap.jp/a_)fugafuga",
+            "https://trap.jp/a_",
+            "https://trap.jp/a_",
+        ),
+        (
+            "説明(//trap.jp/a-)続き",
+            "//trap.jp/a-",
+            "https://trap.jp/a-",
+        ),
+        (
+            "hogehoge(https://trap.jp/a_(b))fugafuga",
+            "https://trap.jp/a_(b)",
+            "https://trap.jp/a_(b)",
+        ),
+        (
+            "説明(//trap.jp/a_(b(c)))続き",
+            "//trap.jp/a_(b(c))",
+            "https://trap.jp/a_(b(c))",
+        ),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        let [before, link, after] = document.children.as_slice() else {
+            panic!("expected text, link, text: {source}");
+        };
+        let start = source.find(raw).unwrap();
+        let end = start + raw.len();
+        assert_eq!(link.payload::<Link>().unwrap().destination, destination);
+        assert_eq!((link.span.start, link.span.end), (start, end));
+        assert_eq!(link.children[0].span, link.span);
+        assert_eq!(link.children[0].payload::<Text>().unwrap().value, raw);
+        assert_eq!(before.payload::<Text>().unwrap().value, source[..start]);
+        assert_eq!(after.payload::<Text>().unwrap().value, source[end..]);
     }
 }
 
@@ -445,6 +525,63 @@ fn a_long_url_containing_scheme_tokens_stays_one_link_with_linear_work() {
         .collect();
     assert_eq!(links.len(), 1);
     assert!(links[0].destination.ends_with("END"));
+}
+
+#[test]
+fn adjacent_parenthesized_urls_require_only_linear_work() {
+    for raw in ["https://trap.jp/a_", "https://trap.jp/a_(b(c))"] {
+        let source = format!("({raw})").repeat(1_000);
+        let document = parser()
+            .with_limits(markdown_parser::Limits {
+                work: source.len() * 32,
+                ..markdown_parser::Limits::default()
+            })
+            .parse_inline(&source)
+            .unwrap();
+        let links: Vec<_> = document
+            .children
+            .iter()
+            .filter_map(|node| node.payload::<Link>())
+            .collect();
+        assert_eq!(links.len(), 1_000);
+        assert!(links.iter().all(|link| link.destination == raw));
+    }
+}
+
+#[test]
+fn deep_url_parentheses_are_iterative_and_unclosed_lookahead_spends_work() {
+    let balanced = format!(
+        "https://trap.jp/a{}b{}",
+        "(".repeat(2_000),
+        ")".repeat(2_000)
+    );
+    let document = parser()
+        .with_limits(markdown_parser::Limits {
+            work: balanced.len() * 32,
+            ..markdown_parser::Limits::default()
+        })
+        .parse_inline(&balanced)
+        .unwrap();
+    assert_eq!(document.children.len(), 1);
+    assert_eq!(
+        document.children[0].payload::<Link>().unwrap().destination,
+        balanced
+    );
+
+    let unclosed = "https://trap.jp/a(".repeat(1_000);
+    for source in [&unclosed, &format!("[({unclosed}]")] {
+        let error = parser()
+            .with_limits(markdown_parser::Limits {
+                work: source.len() * 32,
+                ..markdown_parser::Limits::default()
+            })
+            .parse_inline(source)
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            markdown_parser::ParseError::ResourceLimit { .. }
+        ));
+    }
 }
 
 #[test]

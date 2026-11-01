@@ -112,6 +112,36 @@ test('fallback image labels keep formatting and reference names in one link', as
   )
 })
 
+test('URL boundaries keep surrounding prose and explicit punctuation in browser link targets', async ({
+  page
+}) => {
+  const links = page.locator('#links')
+  await expect(links).toContainText('hogehoge(https://example.test/a)fugafuga')
+  await expect(links).toContainText(
+    'hogehoge(https://en.wikipedia.org/wiki/Function_(mathematics))fugafuga'
+  )
+  expect(
+    await links
+      .locator('a')
+      .evaluateAll(elements =>
+        elements.map(element => (element as HTMLAnchorElement).href)
+      )
+  ).toEqual([
+    'https://example.test/a',
+    'https://example.test/tail_',
+    'https://example.test/tail-',
+    'https://example.test/~user/page',
+    'https://example.test/a',
+    'https://example.test/a(b)~_-',
+    'https://example.test/a_',
+    'https://en.wikipedia.org/wiki/Function_(mathematics)',
+    'https://example.test/a(b(c))',
+    'https://example.test/a'
+  ])
+  await expect(links.locator('s a')).toHaveText('https://example.test/a')
+  await expect(links.locator('em a')).toHaveText('https://example.test/a_')
+})
+
 test('safe rendering and explicit drafts preserve the owned document', async ({
   page
 }) => {

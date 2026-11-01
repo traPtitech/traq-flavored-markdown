@@ -30,7 +30,8 @@ const samples = {
   math: '$x^2$\n\n```js\nconst answer = 42\n```',
   safe: '<img src=x onerror="document.body.dataset.injected=1"> [unsafe](javascript:alert(1)) [safe](https://example.test)',
   image: '![alternative](/tests/browser/fixtures/pixel.svg)',
-  fallback: '![**important** `code` !{"type":"channel","raw":"#general","id":"00000000-0000-0000-0000-000000000001"}](https://example.test/no.png)'
+  fallback: '![**important** `code` !{"type":"channel","raw":"#general","id":"00000000-0000-0000-0000-000000000001"}](https://example.test/no.png)',
+  links: 'hogehoge(https://example.test/a)fugafuga\nhttps://example.test/tail_\nhttps://example.test/tail-\nhttps://example.test/~user/page\n~~https://example.test/a~~\n<https://example.test/a(b)~_->\n_<https://example.test/a_>_\nhogehoge(https://en.wikipedia.org/wiki/Function_(mathematics))fugafuga\nhttps://example.test/a(b(c))\nhttps://example.test/a(b'
 }
 for (const [id, source] of Object.entries(samples)) append(id, renderer.render(parser.parse(source)))
 

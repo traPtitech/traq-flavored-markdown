@@ -5,11 +5,21 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
 
     let mut end = start;
     let mut pairs = vec![];
-    let mut parentheses = 0isize;
     let mut quoted_until = 0;
 
     for (offset, ch) in text[start..].char_indices() {
         let position = start + offset;
+        // Count only brackets inside this URL, not an enclosing prose opener.
+        // Match parentheses even in quoted path segments. An unmatched closing
+        // parenthesis ends the URL immediately, before any following prose.
+        if ch == '(' {
+            pairs.push((')', position));
+        } else if ch == ')' {
+            if pairs.last().is_none_or(|(close, _)| *close != ')') {
+                break;
+            }
+            pairs.pop();
+        }
         if position < quoted_until {
             end = position + ch.len_utf8();
             continue;
@@ -33,11 +43,6 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
                 break;
             }
         }
-        if ch == '(' {
-            parentheses += 1;
-        } else if ch == ')' {
-            parentheses -= 1;
-        }
         if let Some(close) = match ch {
             '[' => Some(']'),
             '{' => Some('}'),
@@ -55,9 +60,9 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
     if let Some((_, open)) = pairs.first() {
         end = *open;
     }
-    // GFM excludes terminal prose/formatting punctuation, but preserves the
-    // same characters inside a path. Only excess closing parentheses at the
-    // end are removed; an unmatched opening parenthesis is valid URL text.
+    // Keep terminal underscores and hyphens, which commonly belong to URL
+    // identifiers. Other prose/formatting punctuation follows GFM trimming;
+    // interior tildes remain URL text. Explicit links bypass this scan.
     while end > start {
         let last = text[..end].chars().next_back().unwrap();
         if last == ';' {
@@ -72,11 +77,8 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
                 continue;
             }
         }
-        if "?!.,:*_~;".contains(last) {
+        if "?!.,:*~;".contains(last) {
             end -= last.len_utf8();
-        } else if last == ')' && parentheses < 0 {
-            end -= 1;
-            parentheses += 1;
         } else {
             break;
         }

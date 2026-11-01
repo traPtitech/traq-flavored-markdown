@@ -1,5 +1,6 @@
 use super::path::path_end;
 use markdown_commonmark::inlines::url::{encode, label};
+use markdown_parser::{ParseError, rules::Budget};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -36,8 +37,21 @@ pub(super) fn scan_len(tail: &str) -> usize {
             return 0;
         }
     }
-    tail.find(|ch: char| ch.is_whitespace() || ch.is_control())
-        .unwrap_or(tail.len())
+    // Bound the initial scan at unmatched closing parentheses too, so adjacent
+    // parenthesized URLs never rescan the full remaining line. Charge the
+    // complete lookahead for unclosed openers before path validation rolls back.
+    let mut parentheses = 0usize;
+    for (position, ch) in tail.char_indices() {
+        if ch.is_whitespace() || ch.is_control() || ch == ')' && parentheses == 0 {
+            return position;
+        }
+        if ch == '(' {
+            parentheses += 1;
+        } else if ch == ')' {
+            parentheses -= 1;
+        }
+    }
+    tail.len()
 }
 
 pub(super) fn bare_at(text: &str, position: usize, length: usize) -> Option<Match> {
@@ -48,19 +62,22 @@ pub(super) fn bare_at(text: &str, position: usize, length: usize) -> Option<Matc
     bare_match(text, candidate, position)
 }
 
-pub(super) fn bare_urls(text: &str) -> Vec<Match> {
+pub(super) fn bare_urls(text: &str, budget: &mut Budget) -> Result<Vec<Match>, ParseError> {
     let mut occupied = 0;
-    bare_pattern()
-        .captures_iter(text)
-        .filter_map(|candidate| {
-            if candidate.get(0)?.start() < occupied {
-                return None;
-            }
-            let found = bare_match(text, candidate, 0)?;
+    let mut matches = vec![];
+    for candidate in bare_pattern().captures_iter(text) {
+        if candidate.get(0).unwrap().start() < occupied {
+            continue;
+        }
+        if let Some(found) = bare_match(text, candidate, 0) {
+            // Text-rule fallback needs the same lookahead accounting as the
+            // inline rule, including portions discarded by unclosed brackets.
+            budget.spend(scan_len(&text[found.start..]))?;
             occupied = found.end;
-            Some(found)
-        })
-        .collect()
+            matches.push(found);
+        }
+    }
+    Ok(matches)
 }
 
 fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Option<Match> {

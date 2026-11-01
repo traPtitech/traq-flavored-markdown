@@ -6,23 +6,23 @@ import { expect, test } from 'bun:test'
 
 import { parser } from './setup.js'
 
-test('bare URLs trim GFM delimiters while explicit URLs preserve them', () => {
+test('bare URLs balance parentheses and trim terminal tildes while preserving identifier suffixes', () => {
   const view = createHtmlRenderer()
   for (const [source, destination, formatting] of [
     ['~~https://example.test/a~~', 'https://example.test/a', '<s>'],
     ['~~\\https://example.test/a~~', 'https://example.test/a', '<s>'],
     ['~~<https://example.test/a~~>~~', 'https://example.test/a~~', '<s>'],
     ['[label](https://example.test/a~)', 'https://example.test/a~', 'label'],
-    ['https://example.test/a_(b', 'https://example.test/a_(b', ''],
-    ['https://example.test/a_(b))', 'https://example.test/a_(b)', ''],
-    ['https://example.test/a_(b))+ok', 'https://example.test/a_(b))+ok', ''],
+    ['https://example.test/a_(b', 'https://example.test/a_', '(b'],
+    ['https://example.test/a_(b))', 'https://example.test/a_(b)', ')'],
+    ['https://example.test/a_(b))+ok', 'https://example.test/a_(b)', ')+ok'],
     ['word-https://example.test/a', 'https://example.test/a', 'word-'],
     [
       'https://example.test/__name__/end',
       'https://example.test/__name__/end',
       ''
     ],
-    ['https://example.test/__name__', 'https://example.test/__name', '']
+    ['https://example.test/__name__', 'https://example.test/__name__', '']
   ]) {
     const html = view.render(parser.parseInline(source))
     expect(html, source).toContain(`href="${destination}"`)
@@ -35,6 +35,86 @@ test('bare URLs trim GFM delimiters while explicit URLs preserve them', () => {
   expect(
     view.render(parser.parseInline('[https://example.test/__name__]'))
   ).toBe('[https://example.test/<strong>name</strong>]')
+})
+
+test('bare URL boundaries preserve surrounding prose and explicit links retain the complete URL', () => {
+  const view = createHtmlRenderer()
+  const link = (href: string, label = href) =>
+    `<a href="${href}" target="_blank" rel="nofollow noopener noreferrer">${label}</a>`
+  for (const [source, expected] of [
+    [
+      'hogehoge(https://example.test/a)fugafuga',
+      'hogehoge(' + link('https://example.test/a') + ')fugafuga'
+    ],
+    [
+      'hogehoge(https://example.test)fugafuga',
+      'hogehoge(' + link('https://example.test') + ')fugafuga'
+    ],
+    [
+      'hogehoge(https://example.test/a_(b))fugafuga',
+      'hogehoge(' + link('https://example.test/a_(b)') + ')fugafuga'
+    ],
+    [
+      '説明(//example.test/a_(b(c)))続き',
+      '説明(' +
+        link('https://example.test/a_(b(c))', '//example.test/a_(b(c))') +
+        ')続き'
+    ],
+    [
+      'https://en.wikipedia.org/wiki/Function_(mathematics)',
+      link('https://en.wikipedia.org/wiki/Function_(mathematics)')
+    ],
+    [
+      'https://ja.wikipedia.org/wiki/関数_(数学)',
+      link(
+        'https://ja.wikipedia.org/wiki/%E9%96%A2%E6%95%B0_(%E6%95%B0%E5%AD%A6)',
+        'https://ja.wikipedia.org/wiki/関数_(数学)'
+      )
+    ],
+    ['https://example.test/a(b(c))', link('https://example.test/a(b(c))')],
+    ['https://example.test/a(b)c(d', link('https://example.test/a(b)c') + '(d'],
+    ['https://example.test/a(b(c)', link('https://example.test/a') + '(b(c)'],
+    ['https://example.test/a)b(c)', link('https://example.test/a') + ')b(c)'],
+    [
+      '説明(//example.test/a_)続き',
+      '説明(' + link('https://example.test/a_', '//example.test/a_') + ')続き'
+    ],
+    [
+      'https://example.test/?id=token_',
+      link('https://example.test/?id=token_')
+    ],
+    ['https://example.test/#token-', link('https://example.test/#token-')],
+    [
+      'https://example.test/~user/page',
+      link('https://example.test/~user/page')
+    ],
+    ['https://example.test/a_~~', link('https://example.test/a_') + '~~'],
+    ['<https://example.test/a(b)~_->', link('https://example.test/a(b)~_-')],
+    ['<https://example.test/a(b>', link('https://example.test/a(b')],
+    ['<https://example.test/a)b>', link('https://example.test/a)b')],
+    [
+      '[label](<https://example.test/a(b>)',
+      link('https://example.test/a(b', 'label')
+    ],
+    [
+      '<//example.test/a(b)~_->',
+      link('https://example.test/a(b)~_-', '//example.test/a(b)~_-')
+    ],
+    [
+      '[label](https://example.test/a_(b))',
+      link('https://example.test/a_(b)', 'label')
+    ],
+    [
+      '~~<https://example.test/a~>~~',
+      '<s>' + link('https://example.test/a~') + '</s>'
+    ],
+    [
+      '_<https://example.test/a_>_',
+      '<em>' + link('https://example.test/a_') + '</em>'
+    ],
+    ['_https://example.test/a_', '_' + link('https://example.test/a_')]
+  ])
+    expect(view.render(parser.parseInline(source)), source).toBe(expected)
 })
 
 test('fallback image labels retain formatting and resolved references without nested links', () => {

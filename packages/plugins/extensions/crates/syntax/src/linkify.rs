@@ -82,8 +82,8 @@ fn inline_rule() -> InlineRule {
 }
 
 fn text_rule() -> TextRule {
-    TextRule::new(|input, _| {
-        recognize::bare_urls(input.text())
+    TextRule::new(|input, budget| {
+        recognize::bare_urls(input.text(), budget)?
             .into_iter()
             .filter(|found| !(input.after_decoded_text && found.start == 0))
             .map(|found| {
