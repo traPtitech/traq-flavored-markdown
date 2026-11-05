@@ -1,5 +1,9 @@
 import { validAuthorKinds } from './authors.ts'
 import {
+  classificationVersion,
+  validClassifications
+} from './classification.ts'
+import {
   byProfile,
   frontendProfileIds,
   parseDifferenceRow,
@@ -95,6 +99,8 @@ export const metadataSchema = object('ReportMetadata', {
   results: keyedRecord(profileResultSchema, frontendProfileIds, ['plainText']),
   run: runSummarySchema,
   generated: string,
+  classificationVersion: string,
+  classifications: keyedRecord(string, profileIds),
   pageSize: positiveCount
 })
 export type ReportMetadata = Infer<typeof metadataSchema>
@@ -105,6 +111,8 @@ export type ReportData = { metadata: ReportMetadata; payload: ReportPayload }
 export function parseReport(metadata: unknown, payload: unknown): ReportData {
   const meta = parse(metadataSchema, metadata)
   const chunks = parse(payloadSchema, payload)
+  if (meta.classificationVersion !== classificationVersion)
+    throw new Error('Unsupported classification version; regenerate the report')
   if (!Number.isFinite(Date.parse(meta.generated)))
     throw new Error('Invalid report date')
   const selected = profilesFor(meta.run)
@@ -120,6 +128,10 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
       !/^(?:[0-7][0-9a-f]{31})*$/.test(meta.filters[profile]) ||
       meta.authors[profile].length !== meta.counts[profile] ||
       !validAuthorKinds(meta.authors[profile]) ||
+      !validClassifications(
+        meta.classifications[profile],
+        meta.counts[profile]
+      ) ||
       chunks[profile].length !== Math.ceil(meta.counts[profile] / meta.pageSize)
     )
       throw new Error('Invalid report profile: ' + profile)

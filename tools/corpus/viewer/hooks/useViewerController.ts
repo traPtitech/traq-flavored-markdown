@@ -1,5 +1,6 @@
 import { useReducer } from 'react'
 
+import type { ClassificationSelection } from '../../protocol/classification.ts'
 import { type ProfileId, profilesFor } from '../../protocol/report.ts'
 import type { ReportRepository } from '../data/repository.ts'
 import { type OutputView, initialViewerState, viewerReducer } from '../state.ts'
@@ -25,15 +26,16 @@ export function useViewerController(repository: ReportRepository) {
         : `${number(totalHits)} 件${result?.filtered ? ` / 全 ${number(repository.metadata.counts[state.query.profile])} 件` : ''}`
   return {
     rows: result?.rows ?? [],
+    classifications: result?.classifications ?? [],
+    classificationCounts: result?.classificationCounts ?? {},
+    onCategory: (category: ClassificationSelection) =>
+      dispatch({ type: 'category', category }),
+    onReview: (only: boolean) => dispatch({ type: 'review', only }),
     outputView: state.outputView,
     empty: response.status === 'ready' && totalHits === 0,
     controls: {
       counts: repository.metadata.counts,
       profiles: profilesFor(repository.metadata.run),
-      authors: repository.metadata.authors[state.query.profile],
-      hasAuthorData: Object.values(repository.metadata.authors).some(authors =>
-        /[bh]/.test(authors)
-      ),
       query: state.query,
       searchDraft: state.searchDraft,
       outputView: state.outputView,
@@ -50,17 +52,6 @@ export function useViewerController(repository: ReportRepository) {
       onWhitespace: (ignore: boolean) =>
         dispatch({ type: 'whitespace', ignore }),
       onCase: (ignore: boolean) => dispatch({ type: 'case', ignore }),
-      onLinkedImages: (ignore: boolean) =>
-        dispatch({ type: 'linkedImages', ignore }),
-      onHtmlSerialization: (ignore: boolean) =>
-        dispatch({ type: 'htmlSerialization', ignore }),
-      onKatexErrors: (ignore: boolean) =>
-        dispatch({ type: 'katexErrors', ignore }),
-      onLinkPolicy: (ignore: boolean) =>
-        dispatch({ type: 'linkPolicy', ignore }),
-      onNestedLinks: (ignore: boolean) =>
-        dispatch({ type: 'nestedLinks', ignore }),
-      onBots: (exclude: boolean) => dispatch({ type: 'bots', exclude }),
       onPage: (page: number) => dispatch({ type: 'page', page, totalPages }),
       onOutput: (view: OutputView) => dispatch({ type: 'output', view })
     }

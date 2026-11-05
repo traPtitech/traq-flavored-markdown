@@ -1,4 +1,8 @@
-import DiffTable from './DiffTable.tsx'
+import { DifferenceList } from './DifferenceList.tsx'
+import {
+  ClassificationSummary,
+  ClassificationTree
+} from './components/ClassificationBrowser.tsx'
 import { ComparisonControls } from './components/ComparisonControls.tsx'
 import { ComparisonSummary } from './components/ComparisonSummary.tsx'
 import { ReportFooter } from './components/ReportFooter.tsx'
@@ -28,13 +32,32 @@ function ReportViewer({ repository }: { repository: ReportRepository }) {
       <main>
         <ComparisonSummary results={metadata.results} />
         <ComparisonControls {...controller.controls} />
-        {controller.rows.length > 0 && (
-          <DiffTable
-            rows={controller.rows}
-            outputView={controller.outputView}
+        <div className="classification-layout">
+          <ClassificationTree
+            selection={controller.controls.query.category ?? 'all'}
+            counts={controller.classificationCounts}
+            onSelect={controller.onCategory}
           />
-        )}
-        {controller.empty && <p id="empty">該当する差分はありません。</p>}
+          <div
+            className="classification-content"
+            aria-busy={controller.controls.loading}
+          >
+            <ClassificationSummary
+              selection={controller.controls.query.category ?? 'all'}
+              counts={controller.classificationCounts}
+              onlyReview={controller.controls.query.onlyReview ?? false}
+              onReview={controller.onReview}
+            />
+            {controller.rows.length > 0 && (
+              <DifferenceList
+                rows={controller.rows}
+                classifications={controller.classifications}
+                outputView={controller.outputView}
+              />
+            )}
+            {controller.empty && <p id="empty">該当する差分はありません。</p>}
+          </div>
+        </div>
         <ReportFooter metadata={metadata} />
       </main>
     </>

@@ -2,6 +2,22 @@ import { expect, test } from 'bun:test'
 
 import { initialViewerState, viewerReducer } from './state.ts'
 
+test('category and review transitions reset the page while retaining the other query dimensions', () => {
+  const paged = viewerReducer(initialViewerState, {
+    type: 'page',
+    page: 3,
+    totalPages: 4
+  })
+  const selected = viewerReducer(paged, { type: 'category', category: 'image' })
+  expect(selected.query.page).toBe(1)
+  expect(selected.query.category).toBe('image')
+  const review = viewerReducer(
+    { ...selected, query: { ...selected.query, page: 2 } },
+    { type: 'review', only: true }
+  )
+  expect(review.query).toEqual({ ...selected.query, onlyReview: true, page: 1 })
+})
+
 test('out-of-range page input becomes the navigation state, not only the displayed result', () => {
   const first = viewerReducer(initialViewerState, {
     type: 'page',
@@ -54,24 +70,6 @@ test('search, profile, and filter changes reset pagination as one state transiti
   state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
   state = viewerReducer(state, { type: 'case', ignore: true })
   expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
-  state = viewerReducer(state, { type: 'linkedImages', ignore: true })
-  expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
-  state = viewerReducer(state, { type: 'htmlSerialization', ignore: true })
-  expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
-  state = viewerReducer(state, { type: 'katexErrors', ignore: true })
-  expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
-  state = viewerReducer(state, { type: 'linkPolicy', ignore: true })
-  expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
-  state = viewerReducer(state, { type: 'nestedLinks', ignore: true })
-  expect(state.query.page).toBe(1)
-  state = viewerReducer(state, { type: 'page', page: 2, totalPages: 4 })
-  state = viewerReducer(state, { type: 'bots', exclude: true })
-  expect(state.query.page).toBe(1)
   state = viewerReducer(state, { type: 'profile', profile: 'plainText' })
   expect(state.searchDraft).toBe('')
   expect(state.query).toEqual({
@@ -80,11 +78,11 @@ test('search, profile, and filter changes reset pagination as one state transiti
     page: 1,
     ignoreWhitespace: true,
     ignoreCase: true,
-    ignoreLinkedImages: true,
-    ignoreHtmlSerialization: true,
-    ignoreKatexErrors: true,
-    ignoreLinkPolicy: true,
-    ignoreNestedLinks: true,
-    excludeBots: true
+    ignoreLinkedImages: false,
+    ignoreHtmlSerialization: false,
+    ignoreKatexErrors: false,
+    ignoreLinkPolicy: false,
+    ignoreNestedLinks: false,
+    excludeBots: false
   })
 })

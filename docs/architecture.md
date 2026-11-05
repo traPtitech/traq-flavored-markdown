@@ -142,8 +142,12 @@ Corpus commands create a comparison run with immutable outputs, input/artifact
 digests, revision and environment metadata, and a completion manifest. A shared
 protocol defines TypeScript and Go outcomes; each side is either a typed success
 or a typed error. Baseline caches are separate from run outputs. The viewer query
-controller owns filter, search, mode, and normalized page transitions; components
+controller owns category, review, filter, search, mode, and normalized page transitions; components
 render those values without retaining a competing page state.
+Report generation classifies saved outcomes using versioned mechanical rules;
+the compact classification index records multiple labels and full/partial
+coverage separately from exclusion combinations. Viewer queries use that index
+for category counts and review queues without decoding all output chunks.
 
 Package README files describe public APIs and local responsibilities. This
 document is the source of truth for cross-package ownership.

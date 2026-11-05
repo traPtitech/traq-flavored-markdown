@@ -26,7 +26,7 @@ export default function DiffTable({ rows, outputView }: DiffTableProps) {
           <th>after</th>
         </tr>
       </thead>
-      <tbody id="rows">
+      <tbody>
         {rows.map(row => (
           <tr key={`${row.profile}:${row.index}`}>
             <SourceCell row={row} />

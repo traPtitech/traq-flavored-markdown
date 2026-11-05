@@ -397,3 +397,198 @@ footer {
 .bootstrap-error {
   padding: 24px;
 }
+
+.classification-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.classification-tree {
+  position: sticky;
+  top: 120px;
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+  background: white;
+  padding: 12px;
+  border: 1px solid #d4dee6;
+  border-radius: 8px;
+}
+.classification-tree button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  border-color: transparent;
+  text-align: left;
+  padding: 6px 8px;
+}
+.classification-tree button[aria-pressed='true'] {
+  background: #e6eff8;
+  color: #204f72;
+}
+.classification-tree .category-child {
+  padding-left: 22px;
+  font-size: 12px;
+}
+.category-group {
+  margin-top: 12px;
+}
+.category-count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.classification-caption {
+  color: #617386;
+  font-size: 12px;
+  margin: 6px 8px;
+}
+.classification-content {
+  min-width: 0;
+}
+.classification-summary {
+  margin-bottom: 12px;
+}
+.classification-summary h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.classification-summary p {
+  margin: 8px 0;
+}
+.classification-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-block: 1px solid #d4dee6;
+  font-variant-numeric: tabular-nums;
+}
+.classification-scope label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.difference-entry {
+  background: white;
+  border-bottom: 1px solid #d4dee6;
+  padding: 14px;
+}
+.difference-entry > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+}
+.difference-entry > summary::before {
+  content: '▸';
+  color: #617386;
+}
+.difference-entry[open] > summary::before {
+  content: '▾';
+}
+.difference-title {
+  flex: 1;
+  min-width: 140px;
+  overflow-wrap: anywhere;
+  color: #204f72;
+}
+.classification-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+.classification-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #edf2f6;
+  color: #354c61;
+}
+.review-badge {
+  background: #fff0e0;
+  color: #884314;
+}
+.difference-detail {
+  margin-top: 14px;
+}
+.classification-evidence {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 12px;
+}
+.classification-evidence > div {
+  border-left: 2px solid #d4dee6;
+  padding-left: 10px;
+}
+.classification-evidence strong {
+  font-weight: 600;
+}
+.classification-evidence p {
+  margin: 4px 0 0;
+}
+@media (max-width: 900px) {
+  .classification-layout {
+    grid-template-columns: 1fr;
+  }
+  .classification-tree {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .classification-tree > .classification-caption {
+    width: 100%;
+  }
+  .classification-tree button {
+    width: auto;
+  }
+  .classification-tree .category-group {
+    margin: 0;
+  }
+  .classification-tree .category-child {
+    display: none;
+  }
+  .classification-tree
+    .category-group:has(button[aria-pressed='true'])
+    .category-child {
+    display: flex;
+  }
+}
+@media (max-width: 600px) {
+  .difference-entry {
+    padding: 10px;
+  }
+  .difference-detail .comparison,
+  .difference-detail .comparison > thead,
+  .difference-detail .comparison > thead > tr,
+  .difference-detail .comparison > tbody,
+  .difference-detail .comparison > tbody > tr,
+  .difference-detail .comparison > tbody > tr > td {
+    display: block;
+    width: 100%;
+  }
+  .difference-detail .comparison > thead {
+    display: none;
+  }
+  .difference-detail .comparison > tbody > tr > td:nth-child(2)::before {
+    content: 'before';
+    display: block;
+    color: #617386;
+    margin-bottom: 6px;
+  }
+  .difference-detail .comparison > tbody > tr > td:nth-child(3)::before {
+    content: 'after';
+    display: block;
+    color: #617386;
+    margin-bottom: 6px;
+  }
+}

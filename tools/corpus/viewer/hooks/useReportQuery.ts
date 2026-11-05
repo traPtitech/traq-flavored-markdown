@@ -23,6 +23,8 @@ export function useReportQuery(
     ignoreLinkPolicy,
     ignoreNestedLinks,
     excludeBots,
+    category,
+    onlyReview,
     page
   } = query
   const request = useMemo(
@@ -37,6 +39,8 @@ export function useReportQuery(
       ignoreLinkPolicy,
       ignoreNestedLinks,
       excludeBots,
+      category,
+      onlyReview,
       page
     }),
     [
@@ -50,6 +54,8 @@ export function useReportQuery(
       ignoreLinkPolicy,
       ignoreNestedLinks,
       excludeBots,
+      category,
+      onlyReview,
       page
     ]
   )

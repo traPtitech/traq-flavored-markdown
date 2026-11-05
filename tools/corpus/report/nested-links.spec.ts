@@ -165,7 +165,7 @@ test('all 127 filter combinations hide exactly the selected independent changes'
   for (let required = 1; required < 128; required++) {
     let label = required & 2 ? "BADGE'S" : "badge's"
     if (required & 1) label = label.slice(0, 2) + ' ' + label.slice(2)
-    if (required & 8) label = label.replace("'", '&#039;')
+    if (required & 8) label = label.replaceAll("'", '&#039;')
     const opening =
       required & 8
         ? "<a title='page' href='https://example.test/docs'>"

@@ -82,18 +82,67 @@ TypeScript and Go measure their own adapters in-process with alternating order;
 corpus I/O and result persistence are excluded. Timings remain local reference
 measurements, particularly on systems with coarse clocks.
 
+## Classification browser
+
+The report starts with a two-level classification tree and an expandable list
+of matching differences. Each rule has a description, a review decision and its
+reason. A message can belong to multiple rules. Parent counts deduplicate these
+messages; counts across different groups need not sum to the report total.
+Counts follow the current profile, source search, whitespace/letter-case
+exclusions and review-only setting, independently of the selected category.
+
+Classification runs mechanically on saved source and before/after outcomes when
+generating the report. It does not execute the current renderer or use message
+IDs or run-specific lookup tables. Rules cover image fallbacks, automatic link
+recognition and boundaries, nested links, color spelling, KaTeX diagnostics,
+block wrappers, inline list numbering, text spacing and processing failures.
+Rules and decisions live in `protocol/classification.ts`; normalization and
+coverage checks live in `report/classify.ts`. Add synthetic before/after cases
+when adding a rule, then regenerate the report for the saved run.
+
+Classification and coverage are independent: a row can have recognized changes
+and still contain an unexplained residual. **未説明の差分あり** selects all such
+rows; **分類なし** selects the subset with no recognized changes. **要確認のみ**
+retains any row with a residual or an undecided rule, including rows that also
+contain accepted changes. Decisions belong to rules, not entire messages. New
+rules are undecided unless an existing accepted policy supports them. The UI
+displays decisions from the rule registry; it does not save ad hoc browser edits.
+
+Completeness requires equality after recognized transformations or an existing
+exact output-filter proof. Transformations apply only when they reduce the
+changed output; opaque code and attribute changes are protected by specialized
+rules. Broad whitespace/case rules remain undecided because they can change
+meaning. Large or ambiguous changes can remain partially classified. A fully
+classified row is not necessarily accepted or correct.
+
+The classification index stores one bit per rule and a coverage bit, independently
+of the seven normalization rules and their combinations. Category/review queries
+use this index without decompressing every output chunk. The report validates
+its classification version, known bits and row alignment; old generated reports
+must be regenerated. Append rules without moving existing bits, and increment
+the version if an existing rule's meaning or bit assignment changes.
+
+`corpus:report` also writes `classification-summary.json` with per-profile group,
+rule, residual and review counts. Both outputs are derived artifacts; regenerating
+them leaves the verified comparison outcomes and provenance unchanged.
+
+## Output exclusions and classification normalization
+
+The viewer always shows only the whitespace and letter-case exclusion checkboxes.
+Other recognized differences are available through the classification tree and
+review queue. The normalization helpers below support mechanical classification.
 Each output is an outcome containing its kind (`html`, `text`, or `error`) and
 value. Error status has a single representation. The whitespace and letter-case
 filters cannot hide failures or changes of output kind. The letter-case filter
 compares lowercased output strings, including HTML tags and attribute values.
-The linked-image checkbox hides only the accepted fallback change for
+The linked-image normalizer hides only the accepted fallback change for
 `[![alt](image-url)](page-url)`: the legacy bracketed pair of links becomes one
 link to `page-url` with the label `!alt`. Other changes in the same output remain
 visible, including different link destinations, labels, and attributes.
-The HTML spelling checkbox ignores equivalent character references, attribute
+The HTML spelling normalizer ignores equivalent character references, attribute
 quotes, attribute order, and the difference between `href="//host/path"` and
 `href="https://host/path"`. This href comparison also applies to explicit links
-and formatted labels, independently of the link-policy checkbox. Only the
+and formatted labels, independently of link-policy normalization. Only the
 `https:` prefix is completed; the host, port, path, query, fragment, other
 attributes, and `http:` URLs retain their differences.
 It parses HTML without executing scripts or fetching
@@ -105,7 +154,7 @@ option; other selected filters can still exclude their own recognized changes. T
 built with `parse5`; `entities` preserves decoded text whitespace in elements
 where HTML parsing would otherwise strip a leading newline.
 
-The KaTeX checkbox ignores differences only in the text and diagnostic title of
+The KaTeX normalizer ignores differences only in the text and diagnostic title of
 real `katex-error` elements. Both outputs must have the same nonzero number of
 explicitly closed `span` or `p` error elements with text-only contents. Their
 layout tags and other attributes are retained; attribute quoting/order inside
@@ -113,7 +162,7 @@ these wrappers is normalized. Error-like text in code, scripts, templates, or
 ordinary text is left intact. One-sided math failures, error count changes,
 inline/block changes, and different surrounding content remain visible.
 
-The link-policy checkbox ignores the accepted changes from disabling bare domain
+The link-policy normalizer ignores the accepted changes from disabling bare domain
 linkification, enabling bare HTTP(S)/FTP URLs and email addresses, completing
 bare `//` URLs with HTTPS, and enabling scheme-less angle autolinks. It
 checks the original Markdown and automatic link destinations before removing
@@ -145,35 +194,26 @@ decoded labels are checked together. Explicit links, incorrect truncation of
 balanced URLs, wrong destinations, literal code/math and unrelated formatting
 changes remain visible.
 
-The nested-link checkbox removes inner anchor tags while preserving the outer
+The nested-link normalizer removes inner anchor tags while preserving the outer
 link and its rich label. This accepts a potential change of click destination
 from the inner reference to the outer URL. Outer destinations and attributes,
 label content, and surrounding text are retained. Older captured image fallback
 labels containing reference JSON are matched to the original Markdown only when
 the removed reference anchor proves the same ID, raw label, and outer URL.
 Unbalanced or ambiguous HTML is left visible. Code, preformatted text and other
-literal contexts are protected. This is separate from the link-policy and HTML
-spelling checkboxes, and defaults off.
+literal contexts are protected. This is separate from link-policy and HTML
+spelling normalization.
 An explicit empty `href=""` is a valid destination and does not disable this
 filter; missing href attributes remain protected.
 
-The seven output checkboxes compose: whitespace, letter case, linked-image fallback,
-HTML spelling, KaTeX errors, link-policy differences, and nested-link removal can be ignored together. Execution errors and changes of output
-kind always remain visible. These
-filters use indexes computed when generating the report, so toggling them does
-not decompress every chunk. Each row uses thirty-two hexadecimal digits for the 127
-filter combinations. Old report formats are deliberately rejected; regenerate
-`differences.html` with `corpus:report` to add the checkbox to an existing run.
-
-The separate BOT checkbox excludes every difference belonging to a known BOT
-post, including errors, and composes with the seven output filters and source
-search. It defaults off. Unknown authors remain visible and their count is
-shown when author metadata is available. If no profile contains known author
-metadata, the BOT switch and author status are omitted. Otherwise the switch
-stays available across profiles, including profiles whose authors are unknown. Existing
-corpora without `isBot` cannot be classified from message text or pseudonymous
-message IDs. Regenerating a report adds the controls but cannot recover missing
-account metadata; collect and compare a new corpus to enable this filter.
+The shared normalization index retains equality proofs for combinations of
+whitespace, letter case, linked-image fallback, HTML spelling, KaTeX diagnostics,
+link-policy differences and nested links. Classification uses these proofs to
+check whether the complete output difference is explained. Viewer exclusions
+select only the whitespace and letter-case bits. Execution errors and changes
+of output kind always remain visible. The indexes are computed when generating
+the report, so toggling exclusions does not decompress every output chunk.
+Regenerate `differences.html` with `corpus:report` to update a saved run.
 
 New comparisons create `authors.json`, a category index (`b` BOT, `h` human,
 `u` unknown) aligned with measured input rows and bounded by `--max`. Its run ID,
@@ -196,6 +236,8 @@ The directory contains:
 - `run.json` and `complete.json`: provenance and completion.
 - `authors.json`: verified account categories in new runs, without identifiers.
 - `differences.html`: the searchable, paginated, self-contained offline report.
+- `classification-summary.json`: machine-readable classification and review counts
+  written when regenerating the report.
 
 The report embeds compressed data, JavaScript, and CSS. Use a recent browser with
 `DecompressionStream`. External images become placeholders and links are inert;

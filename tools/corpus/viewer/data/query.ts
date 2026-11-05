@@ -1,3 +1,7 @@
+import type {
+  Classification,
+  ClassificationSelection
+} from '../../protocol/classification.ts'
 import type { DifferenceRow, ProfileId } from '../../protocol/report.ts'
 
 export type Query = {
@@ -12,13 +16,21 @@ export type Query = {
   ignoreNestedLinks: boolean
   excludeBots: boolean
   page: number
+  category?: ClassificationSelection
+  onlyReview?: boolean
 }
+export type ClassificationCounts = Record<
+  string,
+  { total: number; review: number }
+>
 export type QueryResult = {
   rows: DifferenceRow[]
   totalHits: number
   totalPages: number
   page: number
   filtered: boolean
+  classifications: Classification[]
+  classificationCounts: ClassificationCounts
 }
 export type Progress = { done: number; total: number }
 

@@ -9,6 +9,7 @@ import {
 } from '../comparison/run-files.ts'
 import { parseDifferenceLine, readLines } from '../infrastructure/jsonl.ts'
 import { type AuthorKind, parseAuthorIndex } from '../protocol/authors.ts'
+import { classificationVersion } from '../protocol/classification.ts'
 import type { ReportMetadata } from '../protocol/report.ts'
 import { pageSize } from '../protocol/report.ts'
 import { aggregateDifferences, reportDocument } from './aggregate.ts'
@@ -46,6 +47,8 @@ export async function buildReport(directory: string, template: string) {
   )
   const metadata: ReportMetadata = {
     filters: aggregated.filters,
+    classificationVersion,
+    classifications: aggregated.classifications,
     authors: aggregated.authors,
     counts: aggregated.counts,
     messages: results.render.messages,

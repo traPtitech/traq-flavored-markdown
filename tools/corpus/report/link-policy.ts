@@ -2,6 +2,7 @@ import { decodeHTML, escapeText } from 'entities'
 import { type DefaultTreeAdapterTypes, parseFragment } from 'parse5'
 import punycode from 'punycode/punycode.js'
 
+import type { ClassificationId } from '../protocol/classification.ts'
 import type { DifferenceRow } from '../protocol/comparison.ts'
 import {
   bareUrl,
@@ -368,7 +369,8 @@ function normalizeHtml(
   expectedLinks?: ReadonlyMap<string, number>,
   unchangedLinks?: ReadonlyMap<string, number>,
   spellingOf: (label: string) => string = label => label,
-  boundaryOf: (label: string) => string | null | undefined = () => undefined
+  boundaryOf: (label: string) => string | null | undefined = () => undefined,
+  changes?: Set<ClassificationId>
 ) {
   const unchanged = new Map(unchangedLinks)
   const errors: number[] = []
@@ -550,6 +552,21 @@ function normalizeHtml(
             }
           }
           if (replacement !== undefined) {
+            changes?.add(
+              form === 'angle'
+                ? 'link.angle'
+                : label.startsWith('//') || resource
+                  ? 'link.relative'
+                  : bareEmailPattern.test(label) || legacyEmail
+                    ? 'link.email'
+                    : legacyBare || (!bareLink(label) && side === 'before')
+                      ? 'link.domain'
+                      : bracketed ||
+                          (boundary !== undefined &&
+                            boundary !== spellingOf(label))
+                        ? 'link.boundary'
+                        : 'link.url'
+            )
             let start = location.startTag.startOffset
             let end = location.endTag.endOffset
             if (side === 'before' && form === 'angle') {
@@ -686,7 +703,11 @@ function restoreResourceSuffix(
 }
 
 /** Normalize only output changes supported by the original link notation. */
-export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
+export function normalizeLinkPolicy(
+  row: LinkRow,
+  origin?: string,
+  changes?: Set<ClassificationId>
+) {
   const { source, before, after } = row
   if (
     !source ||
@@ -814,7 +835,8 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       undefined,
       unchanged,
       spellingOf,
-      boundaryOf
+      boundaryOf,
+      changes
     )
     if (right === undefined) return undefined
     const left = normalizeHtml(
@@ -826,7 +848,8 @@ export function normalizeLinkPolicy(row: LinkRow, origin?: string) {
       right.linked,
       unchanged,
       spellingOf,
-      boundaryOf
+      boundaryOf,
+      changes
     )
     if (
       left === undefined ||

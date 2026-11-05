@@ -5,6 +5,7 @@ import { corpusRoot } from '../../workspace/paths.ts'
 import { resolveRepositoryPath } from '../infrastructure/paths.ts'
 import { profilesFor } from '../protocol/comparison.ts'
 import { buildReport } from '../report/build.ts'
+import { summarizeClassifications } from '../report/classification-summary.ts'
 import { parseArgs } from './args.ts'
 import { printJson } from './output.ts'
 
@@ -20,6 +21,11 @@ if (!(await template.exists()))
 const report = await buildReport(data, await template.text())
 await mkdir(output, { recursive: true })
 await Bun.write(path.join(output, 'differences.html'), report.html)
+const classifications = summarizeClassifications(report.metadata)
+await Bun.write(
+  path.join(output, 'classification-summary.json'),
+  JSON.stringify(classifications, null, 2) + '\n'
+)
 const profiles = profilesFor(report.metadata.run)
 printJson({
   runId: report.metadata.run.runId,

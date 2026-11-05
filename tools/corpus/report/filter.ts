@@ -16,10 +16,11 @@ const withoutWhitespace = (value: string) => value.replace(/[ \t\r\n\f]/g, '')
 // Legacy image filtering turned [![alt](image)](page) into two links and
 // literal brackets. Preserve the outer opening tag and the complete alt HTML;
 // nested anchors are excluded so other reference/link changes remain visible.
-const normalizeLinkedImages = (value: string) =>
+export const normalizeLinkedImages = (value: string, inline = false) =>
   value.replace(
     /\[!<a\b[^>]*>((?:(?!<\/?a\b)[\s\S])*)<\/a>\]\((<a\b[^>]*>)(?:(?!<\/?a\b)[\s\S])*<\/a>\)/gi,
-    (_match, label: string, opening: string) => opening + '!' + label + '</a>'
+    (_match, label: string, opening: string) =>
+      opening + (inline ? '' : '!') + label + '</a>'
   )
 
 function textFilterMask(before: string, after: string) {

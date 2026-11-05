@@ -1,4 +1,8 @@
 import {
+  classificationVersion,
+  classificationWidth
+} from '../protocol/classification.ts'
+import {
   type ComparisonPlan,
   type DifferenceRow,
   type ProfileResult,
@@ -82,6 +86,10 @@ export function fixtureMetadata(
   return {
     messages,
     counts,
+    classificationVersion,
+    classifications: byProfile(profile =>
+      '0'.repeat(counts[profile] * classificationWidth)
+    ),
     filters: byProfile(profile =>
       '0'.repeat(counts[profile] * filterMaskWidth)
     ),
