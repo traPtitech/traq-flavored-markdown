@@ -14,6 +14,43 @@ import { expect, test } from 'bun:test'
 
 import type { MutableNode } from '../src/ast.js'
 
+test('link label context is inherited by child dispatch and stays local to a render', () => {
+  const plugin = new RenderPlugin(new PluginDeclaration('label-context'))
+    .withHandler(
+      'anchor',
+      (_n, ctx) => '<a>' + ctx.renderChildren('', { insideLink: true }) + '</a>'
+    )
+    .withHandler('wrapper', (n, ctx) => ctx.renderNode(n.children![0]))
+    .withHandler('reset', (_n, ctx) =>
+      ctx.renderChildren('', { insideLink: false })
+    )
+    .withHandler('value', (_n, ctx) => (ctx.insideLink ? 'label' : 'outside'))
+  const value = { kind: 'value', data: {}, span: { start: 0, end: 1 } }
+  const reset = {
+    kind: 'reset',
+    data: {},
+    span: { start: 0, end: 1 },
+    children: [value]
+  }
+  const wrapper = {
+    kind: 'wrapper',
+    data: {},
+    span: { start: 0, end: 1 },
+    children: [reset]
+  }
+  const anchor = {
+    kind: 'anchor',
+    data: {},
+    span: { start: 0, end: 1 },
+    children: [wrapper]
+  }
+  const view = createRenderer(new PresetBuilder().add(plugin).build())
+  const session = view.createSession({ source: 'a', children: [anchor] })
+  expect(session.render()).toBe('<a>label</a>')
+  expect(session.render({ roots: [value] })).toBe('outside')
+  expect(session.render()).toBe('<a>label</a>')
+})
+
 test('every render plan node must belong to the validated document before any handler runs', () => {
   let calls = 0
   const plugin = new RenderPlugin(new PluginDeclaration('plan')).withHandler(

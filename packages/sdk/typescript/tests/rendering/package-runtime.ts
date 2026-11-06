@@ -53,21 +53,16 @@ try {
   const messages = rendering.messageRenderers({
     origin: 'https://q.example.test'
   })
-  const fileUrl =
-    'https://q.example.test/files/00000000-0000-0000-0000-000000000001'
-  const message = parser.parse('hello\n' + fileUrl)
-  check(
-    messages.condensed.render(message).html === 'hello ' + fileUrl,
-    'Packed condensed renderer did not preserve the bare URL'
+  const message = parser.parse(
+    'hello\nhttps://q.example.test/files/00000000-0000-0000-0000-000000000001'
   )
   check(
-    messages.standard.render(message).cards.length === 0,
-    'Packed standard renderer extracted a card from a bare URL'
+    messages.condensed.render(message).html === 'hello',
+    'Packed condensed renderer changed the message text'
   )
   check(
-    messages.standard.render(parser.parse('<' + fileUrl + '>')).cards[0]
-      ?.type === 'file',
-    'Packed standard renderer did not extract the angle-link file card'
+    messages.standard.render(message).cards[0].type === 'file',
+    'Packed standard renderer did not extract the file card'
   )
   const custom = createRenderer(new PresetBuilder().add(plugin()).build())
   check(

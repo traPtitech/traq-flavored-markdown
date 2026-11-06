@@ -28,8 +28,12 @@ export function plugin({
 }: HtmlRendererOptions = {}) {
   let result = new RenderPlugin(declaration)
 
-  result = result.withHandler(definitions.Reference, node =>
-    renderReference(node, resolveReference, validateLink)
+  result = result.withHandler(definitions.Reference, (node, ctx) =>
+    renderReference(
+      node,
+      resolveReference,
+      ctx.insideLink ? () => false : validateLink
+    )
   )
 
   result = result.withHandler(

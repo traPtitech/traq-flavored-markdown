@@ -242,12 +242,12 @@
   {
     "name": "bare-file",
     "source": "https://q.example.test/files/00000000-0000-4000-8000-000000000001",
-    "plainText": "https://q.example.test/files/00000000-0000-4000-8000-000000000001"
+    "plainText": "[添付ファイル]"
   },
   {
     "name": "bare-message",
     "source": "https://q.example.test/messages/00000000-0000-4000-8000-000000000001",
-    "plainText": "https://q.example.test/messages/00000000-0000-4000-8000-000000000001"
+    "plainText": "[引用メッセージ]"
   },
   {
     "name": "explicit-file",
@@ -267,12 +267,12 @@
   {
     "name": "spoiler-file",
     "source": "!!https://q.example.test/files/00000000-0000-4000-8000-000000000001!!",
-    "plainText": "█████████████████████████████████████████████████████████████████"
+    "plainText": "████████"
   },
   {
     "name": "query-file",
     "source": "https://q.example.test/files/00000000-0000-4000-8000-000000000001?download=1",
-    "plainText": "https://q.example.test/files/00000000-0000-4000-8000-000000000001?download=1"
+    "plainText": "[添付ファイル]"
   },
   {
     "name": "file-json",
@@ -3677,7 +3677,7 @@
   {
     "name": "public-676",
     "source": "http://x?%00",
-    "plainText": "http://x?%00"
+    "plainText": "http://x?\u0000"
   },
   {
     "name": "public-677",
@@ -3737,7 +3737,7 @@
   {
     "name": "public-688",
     "source": "http://x/%00",
-    "plainText": "http://x/%00"
+    "plainText": "http://x/\u0000"
   },
   {
     "name": "public-689",
@@ -3792,7 +3792,7 @@
   {
     "name": "public-699",
     "source": "http://p/%00",
-    "plainText": "http://p/%00"
+    "plainText": "http://p/\u0000"
   },
   {
     "name": "public-700",

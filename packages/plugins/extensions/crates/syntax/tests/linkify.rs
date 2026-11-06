@@ -12,20 +12,13 @@ fn parser() -> Parser {
 }
 
 #[test]
-fn bare_urls_domains_emails_and_mentions_remain_text() {
+fn scheme_less_domains_and_mentions_remain_text() {
     let parser = parser();
     for source in [
         "trap.jp",
         "example.com",
         "example.org",
         "README.md",
-        "https://trap.jp/path?q=1#part",
-        "http://trap.jp",
-        "ftp://trap.jp",
-        "//trap.jp",
-        "info@trap.jp",
-        "contact@midorimu.si",
-        "mailto:info@trap.jp",
         "@gmai.com",
     ] {
         let document = parser.parse_inline(source).unwrap();
@@ -34,6 +27,424 @@ fn bare_urls_domains_emails_and_mentions_remain_text() {
             document.children[0].payload::<Text>().unwrap().value,
             source
         );
+    }
+}
+
+#[test]
+fn scheme_relative_urls_complete_https_and_keep_the_label_and_range() {
+    let parser = parser();
+    for (source, destination, label) in [
+        ("//trap.jp", "https://trap.jp", "//trap.jp"),
+        ("//README.md", "https://readme.md", "//README.md"),
+        (
+            "//trap.jp:8443/a_(b)?q=1#part",
+            "https://trap.jp:8443/a_(b)?q=1#part",
+            "//trap.jp:8443/a_(b)?q=1#part",
+        ),
+        (
+            "//日本語.jp/日本",
+            "https://xn--wgv71a119e.jp/%E6%97%A5%E6%9C%AC",
+            "//日本語.jp/日本",
+        ),
+        (
+            "//127.0.0.1/path",
+            "https://127.0.0.1/path",
+            "//127.0.0.1/path",
+        ),
+        (
+            "//[::1]:8443/path",
+            "https://[::1]:8443/path",
+            "//[::1]:8443/path",
+        ),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        assert_eq!(document.children.len(), 1, "{source}");
+        let node = &document.children[0];
+        let link = node.payload::<Link>().unwrap();
+        assert_eq!(link.destination, destination, "{source}");
+        assert_eq!(link.form, LinkForm::Linkify);
+        assert_eq!(node.span.start, 0);
+        assert_eq!(node.span.end, source.len());
+        assert_eq!(node.children[0].payload::<Text>().unwrap().value, label);
+    }
+}
+
+#[test]
+fn scheme_relative_urls_respect_markdown_and_token_boundaries() {
+    let parser = parser();
+    for (source, destination) in [
+        ("(//trap.jp/a_(b)).", "https://trap.jp/a_(b)"),
+        (
+            "**//trap.jp/@alice#channel**",
+            "https://trap.jp/@alice#channel",
+        ),
+        ("[//trap.jp/path]", "https://trap.jp/path"),
+        ("[//inner.test](https://outer.test)", "https://outer.test"),
+        ("[label](//trap.jp/path)", "//trap.jp/path"),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        fn collect<'a>(nodes: &'a [markdown_parser::Node], links: &mut Vec<&'a Link>) {
+            for node in nodes {
+                if let Some(link) = node.payload::<Link>() {
+                    links.push(link);
+                }
+                collect(&node.children, links);
+            }
+        }
+        let mut links = Vec::new();
+        collect(&document.children, &mut links);
+        assert_eq!(links.len(), 1, "{source}");
+        assert_eq!(links[0].destination, destination, "{source}");
+    }
+    for source in [
+        "`//trap.jp`",
+        r"\//trap.jp",
+        "&#47;/trap.jp",
+        "/trap.jp",
+        "./trap.jp",
+        "../trap.jp",
+        "///trap.jp",
+        "foo//trap.jp",
+        "custom://trap.jp",
+        "file://trap.jp/path",
+        "https&#58;//trap.jp",
+        "// コメント",
+        "//TODO",
+        "//localhost",
+        "//trap..jp",
+        "//trap.jp:65536",
+        "//trap.jp:123456",
+        "//trap.jp:3000abc",
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        assert!(
+            document
+                .children
+                .iter()
+                .all(|node| node.payload::<Link>().is_none()),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn repeated_slashes_and_comment_like_tokens_remain_text_with_linear_work() {
+    for source in ["/".repeat(4_000), "//TODO".repeat(1_000)] {
+        let document = parser()
+            .with_limits(markdown_parser::Limits {
+                work: source.len() * 32,
+                ..markdown_parser::Limits::default()
+            })
+            .parse_inline(&source)
+            .unwrap();
+        assert!(
+            document
+                .children
+                .iter()
+                .all(|node| node.payload::<Link>().is_none())
+        );
+    }
+}
+
+#[test]
+fn bare_emails_link_to_mailto_without_a_tld_allowlist() {
+    let parser = parser();
+    for value in [
+        "info@trap.jp",
+        "contact@midorimu.si",
+        "first.last+tag@example.test",
+        "Info@example.com",
+    ] {
+        let document = parser.parse_inline(value).unwrap();
+        assert_eq!(document.children.len(), 1, "{value}");
+        let node = &document.children[0];
+        let link = node.payload::<Link>().unwrap();
+        assert_eq!(link.destination, format!("mailto:{value}"));
+        assert_eq!(link.form, LinkForm::Linkify);
+        assert_eq!(node.children[0].payload::<Text>().unwrap().value, value);
+        assert_eq!(node.span.start, 0);
+        assert_eq!(node.span.end, value.len());
+        assert_eq!(node.children[0].span, node.span);
+    }
+    let document = parser.parse_inline("mailto:info@trap.jp").unwrap();
+    assert_eq!(
+        document.children[0].payload::<Link>().unwrap().destination,
+        "mailto:info@trap.jp"
+    );
+}
+
+#[test]
+fn email_boundaries_keep_mentions_code_and_explicit_links_intact() {
+    let parser = parser();
+    for source in [
+        "@gmai.com",
+        "@alice",
+        "@alice@example.com",
+        "alice@@example.com",
+        "alice@example..com",
+        "alice@example.com-",
+        "alice@-example.com",
+        "alice@host",
+        "ſ@example.com",
+        "foo@K.example",
+        "`info@trap.jp`",
+        "info\\@trap.jp",
+        "info&#64;trap.jp",
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        assert!(
+            document
+                .children
+                .iter()
+                .all(|node| node.payload::<Link>().is_none()),
+            "{source}"
+        );
+    }
+    for source in [
+        "(info@trap.jp).",
+        "**info@trap.jp**",
+        "[info@trap.jp]",
+        "[info@trap.jp](https://trap.jp)",
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        fn count(nodes: &[markdown_parser::Node]) -> usize {
+            nodes
+                .iter()
+                .map(|node| usize::from(node.payload::<Link>().is_some()) + count(&node.children))
+                .sum()
+        }
+        assert_eq!(count(&document.children), 1, "{source}");
+    }
+    let source = "https://example.com/@alice?contact=info@trap.jp";
+    let document = parser.parse_inline(source).unwrap();
+    assert_eq!(document.children.len(), 1);
+    assert_eq!(
+        document.children[0].payload::<Link>().unwrap().destination,
+        source
+    );
+    assert!(document.children[0].children[0].payload::<Text>().is_some());
+}
+
+#[test]
+fn scheme_urls_are_linkified_with_their_original_source_ranges() {
+    let parser = parser();
+    for (source, destination, label) in [
+        (
+            "https://trap.jp/path?q=1#part",
+            "https://trap.jp/path?q=1#part",
+            "https://trap.jp/path?q=1#part",
+        ),
+        (
+            "http://localhost:3000/path",
+            "http://localhost:3000/path",
+            "http://localhost:3000/path",
+        ),
+        (
+            "ftp://trap.jp/file",
+            "ftp://trap.jp/file",
+            "ftp://trap.jp/file",
+        ),
+        ("HTTPS://trap.jp", "HTTPS://trap.jp", "HTTPS://trap.jp"),
+        (
+            "https://[::1]:8443/path",
+            "https://[::1]:8443/path",
+            "https://[::1]:8443/path",
+        ),
+        (
+            "https://日本語.jp/日本",
+            "https://xn--wgv71a119e.jp/%E6%97%A5%E6%9C%AC",
+            "https://日本語.jp/日本",
+        ),
+        (
+            "https://trap.jp/%E6%97%A5%E6%9C%AC?q=%2F",
+            "https://trap.jp/%E6%97%A5%E6%9C%AC?q=%2F",
+            "https://trap.jp/日本?q=%2F",
+        ),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        assert_eq!(document.children.len(), 1, "{source}");
+        let node = &document.children[0];
+        let link = node.payload::<Link>().unwrap();
+        assert_eq!(link.destination, destination, "{source}");
+        assert_eq!(link.form, LinkForm::Linkify);
+        assert_eq!(node.span.start, 0);
+        assert_eq!(node.span.end, source.len());
+        assert_eq!(node.children[0].payload::<Text>().unwrap().value, label);
+        assert_eq!(node.children[0].span, node.span);
+    }
+}
+
+#[test]
+fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
+    let parser = parser();
+    for (source, destination) in [
+        ("(https://trap.jp/a_(b)).", "https://trap.jp/a_(b)"),
+        (
+            "接続先https://trap.jp/@alice#channel",
+            "https://trap.jp/@alice#channel",
+        ),
+        ("**https://trap.jp/path**", "https://trap.jp/path"),
+        ("[label](https://trap.jp/path)", "https://trap.jp/path"),
+        (
+            "[https://inner.test](https://outer.test)",
+            "https://outer.test",
+        ),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        fn links<'a>(nodes: &'a [markdown_parser::Node], result: &mut Vec<&'a Link>) {
+            for node in nodes {
+                if let Some(link) = node.payload::<Link>() {
+                    result.push(link);
+                    assert!(
+                        node.children
+                            .iter()
+                            .all(|child| child.payload::<Link>().is_none())
+                    );
+                }
+                links(&node.children, result);
+            }
+        }
+        let mut found = Vec::new();
+        links(&document.children, &mut found);
+        assert_eq!(found.len(), 1, "{source}");
+        assert_eq!(found[0].destination, destination, "{source}");
+    }
+    for source in [
+        "`https://trap.jp`",
+        "https\\://trap.jp",
+        "xhttps://trap.jp",
+        "[https://trap.jp/path]",
+        "https://",
+        "https://trap.jp:65536",
+        "https://trap.jp:3000abc",
+        "https://trap..jp",
+        "https://trap.jp.-invalid",
+        "https&#58;//trap.jp",
+    ] {
+        assert!(
+            parser
+                .parse_inline(source)
+                .unwrap()
+                .children
+                .iter()
+                .all(|node| node.payload::<Link>().is_none()),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn bare_url_paths_balance_parentheses_and_preserve_terminal_identifiers() {
+    let parser = parser();
+    for (source, expected) in [
+        ("https://trap.jp/a~", "https://trap.jp/a"),
+        ("https://trap.jp/a&copy;", "https://trap.jp/a"),
+        ("https://trap.jp/a;b", "https://trap.jp/a;b"),
+        ("https://trap.jp/a?!.,:*~;", "https://trap.jp/a"),
+        ("https://trap.jp/a?!.,:*_~;", "https://trap.jp/a?!.,:*_"),
+        ("https://trap.jp/__name__", "https://trap.jp/__name__"),
+        (
+            "https://trap.jp/__name__/end",
+            "https://trap.jp/__name__/end",
+        ),
+        ("https://trap.jp/a~b:c_d", "https://trap.jp/a~b:c_d"),
+        ("https://trap.jp/a_(b", "https://trap.jp/a_"),
+        ("https://trap.jp/a_(b))", "https://trap.jp/a_(b)"),
+        ("https://trap.jp/a_(b))+ok", "https://trap.jp/a_(b)"),
+        ("https://trap.jp/a_(b)).~", "https://trap.jp/a_(b)"),
+        ("hogehoge(https://trap.jp/a)fugafuga", "https://trap.jp/a"),
+        ("hogehoge(https://trap.jp)fugafuga", "https://trap.jp"),
+        ("https://trap.jp/?q=value)rest", "https://trap.jp/?q=value"),
+        ("https://trap.jp/#part(more)", "https://trap.jp/#part(more)"),
+        ("https://trap.jp/a\"b)c\"d", "https://trap.jp/a%22b"),
+        ("https://trap.jp/tail_", "https://trap.jp/tail_"),
+        ("https://trap.jp/tail-", "https://trap.jp/tail-"),
+        ("https://trap.jp/tail_-", "https://trap.jp/tail_-"),
+        ("https://trap.jp/?id=token_", "https://trap.jp/?id=token_"),
+        ("https://trap.jp/#token-", "https://trap.jp/#token-"),
+        ("https://trap.jp/~user/page", "https://trap.jp/~user/page"),
+        ("https://trap.jp/a_~~", "https://trap.jp/a_"),
+        ("https://trap.jp/a%28b%29", "https://trap.jp/a%28b%29"),
+        ("https://trap.jp/a_(b(c))", "https://trap.jp/a_(b(c))"),
+        ("https://trap.jp/a(b)/c(d)", "https://trap.jp/a(b)/c(d)"),
+        ("https://trap.jp/a(b)c(d", "https://trap.jp/a(b)c"),
+        ("https://trap.jp/a(b(c)", "https://trap.jp/a"),
+        ("https://trap.jp/a)b(c)", "https://trap.jp/a"),
+        ("https://trap.jp/a(b).~", "https://trap.jp/a(b)"),
+        (
+            "https://trap.jp/?q=(business)",
+            "https://trap.jp/?q=(business)",
+        ),
+        ("https://trap.jp/a([b])", "https://trap.jp/a(%5Bb%5D)"),
+        ("https://trap.jp/a([b)]", "https://trap.jp/a"),
+        ("https://trap.jp/a\"(b)\"c", "https://trap.jp/a%22(b)%22c"),
+        ("https://trap.jp/a\"(b\"c", "https://trap.jp/a%22"),
+        (
+            "https://en.wikipedia.org/wiki/Function_(mathematics)",
+            "https://en.wikipedia.org/wiki/Function_(mathematics)",
+        ),
+        ("-https://trap.jp/a", "https://trap.jp/a"),
+        ("word-https://trap.jp/a", "https://trap.jp/a"),
+        ("//trap.jp/a~", "https://trap.jp/a"),
+        ("hogehoge(//trap.jp/a_)fugafuga", "https://trap.jp/a_"),
+        ("ftp://trap.jp/a-)rest", "ftp://trap.jp/a-"),
+        ("<https://trap.jp/a(b)~_->", "https://trap.jp/a(b)~_-"),
+        ("<//trap.jp/a(b)~_->", "https://trap.jp/a(b)~_-"),
+        ("[label](https://trap.jp/a_(b))", "https://trap.jp/a_(b)"),
+        ("<https://trap.jp/a~~>", "https://trap.jp/a~~"),
+        ("<https://trap.jp/a(b>", "https://trap.jp/a(b"),
+        ("<https://trap.jp/a)b>", "https://trap.jp/a)b"),
+        ("[label](<https://trap.jp/a(b>)", "https://trap.jp/a(b"),
+        ("[label](https://trap.jp/a~~)", "https://trap.jp/a~~"),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        let links: Vec<_> = document
+            .children
+            .iter()
+            .filter_map(|node| node.payload::<Link>())
+            .collect();
+        assert_eq!(links.len(), 1, "{source}");
+        assert_eq!(links[0].destination, expected, "{source}");
+    }
+}
+
+#[test]
+fn parenthesized_url_ranges_leave_the_surrounding_text_outside_the_link() {
+    let parser = parser();
+    for (source, raw, destination) in [
+        (
+            "hogehoge(https://trap.jp/a_)fugafuga",
+            "https://trap.jp/a_",
+            "https://trap.jp/a_",
+        ),
+        (
+            "説明(//trap.jp/a-)続き",
+            "//trap.jp/a-",
+            "https://trap.jp/a-",
+        ),
+        (
+            "hogehoge(https://trap.jp/a_(b))fugafuga",
+            "https://trap.jp/a_(b)",
+            "https://trap.jp/a_(b)",
+        ),
+        (
+            "説明(//trap.jp/a_(b(c)))続き",
+            "//trap.jp/a_(b(c))",
+            "https://trap.jp/a_(b(c))",
+        ),
+    ] {
+        let document = parser.parse_inline(source).unwrap();
+        let [before, link, after] = document.children.as_slice() else {
+            panic!("expected text, link, text: {source}");
+        };
+        let start = source.find(raw).unwrap();
+        let end = start + raw.len();
+        assert_eq!(link.payload::<Link>().unwrap().destination, destination);
+        assert_eq!((link.span.start, link.span.end), (start, end));
+        assert_eq!(link.children[0].span, link.span);
+        assert_eq!(link.children[0].payload::<Text>().unwrap().value, raw);
+        assert_eq!(before.payload::<Text>().unwrap().value, source[..start]);
+        assert_eq!(after.payload::<Text>().unwrap().value, source[end..]);
     }
 }
 
@@ -91,6 +502,85 @@ fn commonmark_autolinks_keep_their_schemes_and_email_rules() {
         let node = &document.children[0];
         assert_eq!(node.payload::<Link>().unwrap().destination, expected);
         assert_eq!(node.children[0].payload::<Text>().unwrap().value, value);
+    }
+}
+
+#[test]
+fn a_long_url_containing_scheme_tokens_stays_one_link_with_linear_work() {
+    let source = format!(
+        "[https://trap.jp/?next={}END]",
+        "https://trap.jp/".repeat(1_000)
+    );
+    let document = parser()
+        .with_limits(markdown_parser::Limits {
+            work: source.len() * 32,
+            ..markdown_parser::Limits::default()
+        })
+        .parse_inline(&source)
+        .unwrap();
+    let links: Vec<_> = document
+        .children
+        .iter()
+        .filter_map(|node| node.payload::<Link>())
+        .collect();
+    assert_eq!(links.len(), 1);
+    assert!(links[0].destination.ends_with("END"));
+}
+
+#[test]
+fn adjacent_parenthesized_urls_require_only_linear_work() {
+    for raw in ["https://trap.jp/a_", "https://trap.jp/a_(b(c))"] {
+        let source = format!("({raw})").repeat(1_000);
+        let document = parser()
+            .with_limits(markdown_parser::Limits {
+                work: source.len() * 32,
+                ..markdown_parser::Limits::default()
+            })
+            .parse_inline(&source)
+            .unwrap();
+        let links: Vec<_> = document
+            .children
+            .iter()
+            .filter_map(|node| node.payload::<Link>())
+            .collect();
+        assert_eq!(links.len(), 1_000);
+        assert!(links.iter().all(|link| link.destination == raw));
+    }
+}
+
+#[test]
+fn deep_url_parentheses_are_iterative_and_unclosed_lookahead_spends_work() {
+    let balanced = format!(
+        "https://trap.jp/a{}b{}",
+        "(".repeat(2_000),
+        ")".repeat(2_000)
+    );
+    let document = parser()
+        .with_limits(markdown_parser::Limits {
+            work: balanced.len() * 32,
+            ..markdown_parser::Limits::default()
+        })
+        .parse_inline(&balanced)
+        .unwrap();
+    assert_eq!(document.children.len(), 1);
+    assert_eq!(
+        document.children[0].payload::<Link>().unwrap().destination,
+        balanced
+    );
+
+    let unclosed = "https://trap.jp/a(".repeat(1_000);
+    for source in [&unclosed, &format!("[({unclosed}]")] {
+        let error = parser()
+            .with_limits(markdown_parser::Limits {
+                work: source.len() * 32,
+                ..markdown_parser::Limits::default()
+            })
+            .parse_inline(source)
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            markdown_parser::ParseError::ResourceLimit { .. }
+        ));
     }
 }
 

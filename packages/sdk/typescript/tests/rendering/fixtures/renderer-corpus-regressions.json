@@ -23,5 +23,20 @@
     "name": "loose list retains paragraph tags before a blank-line node",
     "markdown": "- first\n\n- second\n\n\n# heading",
     "html": "<ul>\n<li>\n<p>first</p>\n</li>\n<li>\n<p>second</p>\n<br>\n</li>\n</ul>\n<h1>heading</h1>\n"
+  },
+  {
+    "name": "unquoted lazy lines remain text inside a quoted list",
+    "markdown": "> - parent\n    - child\n    - another",
+    "html": "<blockquote>\n<ul>\n<li>parent<br>\n- child<br>\n- another</li>\n</ul>\n</blockquote>\n"
+  },
+  {
+    "name": "unquoted ordered list ends a quote when starting above one",
+    "markdown": "> paragraph\n7. item\nnext",
+    "html": "<blockquote>\n<p>paragraph</p>\n</blockquote>\n<ol start=\"7\">\n<li>item<br>\nnext</li>\n</ol>\n"
+  },
+  {
+    "name": "code between paragraphs keeps a list tight without blank lines",
+    "markdown": "- example\n  ```\n  code\n  ```\n  explanation",
+    "html": "<ul>\n<li>example<pre><code>code\n</code></pre>\nexplanation</li>\n</ul>\n"
   }
 ]

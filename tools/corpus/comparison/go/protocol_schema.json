@@ -137,7 +137,8 @@
               },
               "allowUnknown": false
             },
-            "keys": ["render", "inline", "plainText"]
+            "keys": ["render", "inline"],
+            "optionalKeys": ["plainText"]
           },
           "after": {
             "kind": "object",

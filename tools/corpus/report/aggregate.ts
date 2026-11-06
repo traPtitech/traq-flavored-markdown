@@ -1,4 +1,5 @@
 import type { AuthorKind } from '../protocol/authors.ts'
+import { encodeClassification } from '../protocol/classification.ts'
 import {
   type DifferenceRow,
   type ProfileId,
@@ -11,6 +12,7 @@ import {
   profileIds
 } from '../protocol/report.ts'
 import { parseReport } from '../protocol/report.ts'
+import { classifyDifference } from './classify.ts'
 import { differenceFilterMask } from './filter.ts'
 
 export async function aggregateDifferences(
@@ -26,6 +28,7 @@ export async function aggregateDifferences(
     payload: ReportPayload = byProfile<string[]>(() => []),
     pending = byProfile<DifferenceRow[]>(() => []),
     counts = byProfile(() => 0)
+  const classifications = byProfile<string[]>(() => [])
   const flush = (mode: ProfileId) => {
     if (!pending[mode].length) return
     payload[mode].push(
@@ -39,7 +42,11 @@ export async function aggregateDifferences(
       row.before.kind === row.after.kind
     )
       throw new Error('Equal result in difference list')
-    filterMasks[row.profile].push(differenceFilterMask(row, origin))
+    const mask = differenceFilterMask(row, origin)
+    filterMasks[row.profile].push(mask)
+    classifications[row.profile].push(
+      encodeClassification(classifyDifference(row, origin, mask))
+    )
     authorKinds[row.profile].push(authorAt(row.index))
     pending[row.profile].push(row)
     counts[row.profile]++
@@ -66,6 +73,7 @@ export async function aggregateDifferences(
     payload,
     counts,
     filters,
+    classifications: byProfile(profile => classifications[profile].join('')),
     authors: byProfile(profile => authorKinds[profile].join('')),
     excluded,
     pageSize: size

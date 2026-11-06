@@ -10,13 +10,7 @@ use markdown_parser::rules::block::BlockMatch;
 use markdown_parser::rules::block::DraftNode;
 
 fn setext(input: &BlockInput<'_>, line: LineIndex) -> Result<Option<u8>, ParseError> {
-    if super::super::context::is_lazy(
-        input.source,
-        input
-            .source
-            .span_for(input.lines[line].start..input.lines[line].start)?
-            .start,
-    ) {
+    if super::super::context::is_lazy(input.source, input.lines[line].clone())? {
         return Ok(None);
     }
 
@@ -50,7 +44,8 @@ pub(super) fn parse(
 
     while end < lines.end()
         && setext(input, end)?.is_none()
-        && !input.interrupts(end, Interrupt::Paragraph)
+        && (super::super::context::is_lazy(source, lines[end].clone())?
+            || !input.interrupts(end, Interrupt::Paragraph))
     {
         end += 1;
     }

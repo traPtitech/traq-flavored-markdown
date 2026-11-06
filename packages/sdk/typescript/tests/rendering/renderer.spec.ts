@@ -236,7 +236,19 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
       '- outer\n  - inner\n\n  - loose',
       '- outer\n  > quote',
       '1. parent\n   - child\n     > quote',
-      '- **strong**\n\n  paragraph'
+      '- **strong**\n\n  paragraph',
+      '> - parent\n    - child',
+      '> - 親\r\n\t- 子',
+      '> - parent\n    1. child',
+      '> - parent\n>   - child',
+      '> paragraph\n7. item\nnext',
+      '> paragraph\n> 7. item',
+      'paragraph\n7. item',
+      '- example\n  ```\n  code\n  ```\n  explanation',
+      '- example\n  ```\n  code\n  ```\n\n  explanation',
+      '1. parent\n   - first\n   - example\n     ```\n     code\n     ```\n     explanation\n\n2. next',
+      '- parent\n  - child\n   ```\n   code\n  ```\n  explanation',
+      '- parent\n  - child\n\n  explanation'
     ]) {
       expect(view.render(local.parse(source))).toBe(md.render(source))
     }
@@ -248,19 +260,17 @@ test('tight lists preserve paragraphs owned by blockquotes and nested loose list
 test('CommonMark owns link policy and rejects malformed known payloads', () => {
   const view = common.createHtmlRenderer({ validateLink: () => false })
   expect(view.render(parser.parse('[link](https://example.com)'))).toBe(
-    '<p>[link](https://example.com)</p>\n'
+    '<p>link</p>\n'
   )
   expect(view.render(parser.parseInline('[link](https://example.com)'))).toBe(
-    '[link](https://example.com)'
+    'link'
   )
   const document = parser
     .parseInline('[label](https://example.com)')
     .toMutable()
   ;(document.children[0].data as { destination: string }).destination =
     'javascript:alert(1)'
-  expect(common.createHtmlRenderer().render(document)).toBe(
-    '[label](https://example.com)'
-  )
+  expect(common.createHtmlRenderer().render(document)).toBe('label')
   const heading = parser.parse('# title').toMutable()
   expect(heading.children[0].kind).toBe(commonNodes.names.Heading)
   Object.assign(heading.children[0].data, { level: '1 onclick="alert(1)"' })
@@ -269,7 +279,7 @@ test('CommonMark owns link policy and rejects malformed known payloads', () => {
   )
 })
 
-test('default link policy allows communication and location schemes while preserving rejected source', () => {
+test('default link policy allows communication and location schemes while retaining rejected labels', () => {
   const view = common.createHtmlRenderer()
   const commonmark = commonParser()
   try {
@@ -281,17 +291,15 @@ test('default link policy allows communication and location schemes while preser
       expect(view.render(commonmark.parseInline(source))).toMatch(/^<a href=/)
     }
 
-    expect(view.render(commonmark.parseInline('<hoge:hoge>'))).toBe(
-      '&lt;hoge:hoge&gt;'
-    )
+    expect(view.render(commonmark.parseInline('<hoge:hoge>'))).toBe('hoge:hoge')
     expect(view.render(commonmark.parseInline('日本語 <hoge:a&b>'))).toBe(
-      '日本語 &lt;hoge:a&amp;b&gt;'
+      '日本語 hoge:a&amp;b'
     )
     expect(view.render(commonmark.parseInline('[説明](hoge:target)'))).toBe(
-      '[説明](hoge:target)'
+      '説明'
     )
     expect(view.render(commonmark.parseInline('[x](javascript:alert)'))).toBe(
-      '[x](javascript:alert)'
+      'x'
     )
     expect(view.render(commonmark.parseInline('![x](tel:+819012345678)'))).toBe(
       '!<a href="tel:+819012345678">x</a>'

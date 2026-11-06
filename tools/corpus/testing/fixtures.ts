@@ -1,4 +1,8 @@
 import {
+  classificationVersion,
+  classificationWidth
+} from '../protocol/classification.ts'
+import {
   type ComparisonPlan,
   type DifferenceRow,
   type ProfileResult,
@@ -77,11 +81,15 @@ export function fixtureMetadata(
   counts = byProfile(() => 0),
   pageSize = 50,
   messages = 3
-): ReportMetadata {
+) {
   const plan = fixturePlan()
   return {
     messages,
     counts,
+    classificationVersion,
+    classifications: byProfile(profile =>
+      '0'.repeat(counts[profile] * classificationWidth)
+    ),
     filters: byProfile(profile =>
       '0'.repeat(counts[profile] * filterMaskWidth)
     ),
@@ -98,7 +106,7 @@ export function fixtureMetadata(
     },
     generated: '2026-01-01T00:00:00Z',
     pageSize
-  }
+  } satisfies ReportMetadata
 }
 
 export const fixtureRows: DifferenceRow[] = [
@@ -163,5 +171,21 @@ export const fixtureKatexError: DifferenceRow = {
   after: {
     kind: 'html',
     value: `<p class="katex-block katex-error is-scroll" title="new diagnostic">\\invalid-after</p>`
+  }
+}
+
+export const fixtureNestedLink: DifferenceRow = {
+  ...fixtureRows[0],
+  source:
+    '[!{"type":"channel","raw":"#event/test","id":"channel-id"}](https://q.example.test/channels/event/test)',
+  before: {
+    kind: 'html',
+    value:
+      '<a href="https://q.example.test/channels/event/test" target="_blank"><a href="#c-channel-id" class="message-channel-link">#event/test</a></a>'
+  },
+  after: {
+    kind: 'html',
+    value:
+      '<a href="https://q.example.test/channels/event/test" target="_blank">#event/test</a>'
   }
 }

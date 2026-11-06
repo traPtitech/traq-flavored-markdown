@@ -16,6 +16,7 @@ import {
 } from './schema.ts'
 
 export const profileIds = ['render', 'inline', 'plainText'] as const
+export const frontendProfileIds = ['render', 'inline'] as const
 export const profileSchema = enumeration('ProfileId', profileIds)
 export type ProfileId = Infer<typeof profileSchema>
 export const isProfileId = (value: unknown): value is ProfileId =>
@@ -117,12 +118,16 @@ export const dependencySchema = object('DependencyVersions', {
   after: nonempty
 })
 export const provenanceSchema = object('ComparisonProvenance', {
-  before: keyedRecord(revisionSchema, profileIds),
+  before: keyedRecord(revisionSchema, frontendProfileIds, ['plainText']),
   after: revisionSchema,
   artifacts: artifactSchema,
   dependencies: record(dependencySchema)
 })
 export type ComparisonProvenance = Infer<typeof provenanceSchema>
+export const profilesFor = (run: {
+  provenance: Pick<ComparisonProvenance, 'before'>
+}) =>
+  profileIds.filter(profile => Object.hasOwn(run.provenance.before, profile))
 export const environmentSchema = object('RunEnvironment', {
   bun: nonempty,
   go: nonempty,

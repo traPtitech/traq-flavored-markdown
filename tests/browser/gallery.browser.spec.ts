@@ -93,11 +93,53 @@ test('optional math and highlighting adapters work with the published browser mo
     /KaTeX_Main/
   )
   await expect(page.locator('#math pre code .hljs-keyword')).toHaveText('const')
-  await expect(page.locator('#condensed')).toHaveText(
-    'hello https://q.example.test/files/00000000-0000-0000-0000-000000000001'
-  )
+  await expect(page.locator('#condensed')).toHaveText('hello')
   await expect(page.locator('#condensed a')).toHaveCount(0)
-  await expect(page.locator('#cards')).toBeEmpty()
+  await expect(page.locator('#cards')).toHaveText('file')
+})
+
+test('fallback image labels keep formatting and reference names in one link', async ({
+  page
+}) => {
+  await expect(page.locator('#fallback strong')).toHaveText('important')
+  await expect(page.locator('#fallback code')).toHaveText('code')
+  await expect(page.locator('#fallback')).toContainText('#general')
+  await expect(page.locator('#fallback')).not.toContainText('"type"')
+  await expect(page.locator('#fallback a')).toHaveCount(1)
+  await expect(page.locator('#fallback a')).toHaveAttribute(
+    'href',
+    'https://example.test/no.png'
+  )
+})
+
+test('URL boundaries keep surrounding prose and explicit punctuation in browser link targets', async ({
+  page
+}) => {
+  const links = page.locator('#links')
+  await expect(links).toContainText('hogehoge(https://example.test/a)fugafuga')
+  await expect(links).toContainText(
+    'hogehoge(https://en.wikipedia.org/wiki/Function_(mathematics))fugafuga'
+  )
+  expect(
+    await links
+      .locator('a')
+      .evaluateAll(elements =>
+        elements.map(element => (element as HTMLAnchorElement).href)
+      )
+  ).toEqual([
+    'https://example.test/a',
+    'https://example.test/tail_',
+    'https://example.test/tail-',
+    'https://example.test/~user/page',
+    'https://example.test/a',
+    'https://example.test/a(b)~_-',
+    'https://example.test/a_',
+    'https://en.wikipedia.org/wiki/Function_(mathematics)',
+    'https://example.test/a(b(c))',
+    'https://example.test/a'
+  ])
+  await expect(links.locator('s a')).toHaveText('https://example.test/a')
+  await expect(links.locator('em a')).toHaveText('https://example.test/a_')
 })
 
 test('safe rendering and explicit drafts preserve the owned document', async ({

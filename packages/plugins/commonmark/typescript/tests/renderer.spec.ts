@@ -54,12 +54,15 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
       {
         kind: names.Link,
         data: { destination: 'javascript:x', title: null, form: 'explicit' },
-        span: { start: 0, end: 17 }
+        span: { start: 0, end: 17 },
+        children: [
+          { kind: names.Text, data: { value: 'x' }, span: { start: 1, end: 2 } }
+        ]
       }
     ]
   }
   expect(createHtmlRenderer({ validateLink: undefined }).render(unsafe)).toBe(
-    '[x](javascript:x)'
+    'x'
   )
 })
 
@@ -96,7 +99,7 @@ test('rejected images use the link policy and escape their labels and attributes
       validateImage: () => false,
       validateLink: () => false
     }).render(document)
-  ).toBe('![&lt;image&gt;&amp;](https://example.test/a.png?a=1&amp;b=2)')
+  ).toBe('!&lt;image&gt;&amp;')
 })
 
 test('a rejected image inside a link keeps the enclosing destination even when its own URL is rejected', () => {

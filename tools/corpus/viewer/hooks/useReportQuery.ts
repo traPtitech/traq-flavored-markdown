@@ -21,7 +21,10 @@ export function useReportQuery(
     ignoreHtmlSerialization,
     ignoreKatexErrors,
     ignoreLinkPolicy,
+    ignoreNestedLinks,
     excludeBots,
+    category,
+    onlyReview,
     page
   } = query
   const request = useMemo(
@@ -34,7 +37,10 @@ export function useReportQuery(
       ignoreHtmlSerialization,
       ignoreKatexErrors,
       ignoreLinkPolicy,
+      ignoreNestedLinks,
       excludeBots,
+      category,
+      onlyReview,
       page
     }),
     [
@@ -46,7 +52,10 @@ export function useReportQuery(
       ignoreHtmlSerialization,
       ignoreKatexErrors,
       ignoreLinkPolicy,
+      ignoreNestedLinks,
       excludeBots,
+      category,
+      onlyReview,
       page
     ]
   )

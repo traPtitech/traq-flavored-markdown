@@ -8,6 +8,7 @@ use markdown_parser::rules::block::LineIndex;
 pub enum Interrupt {
     Paragraph,
     LazyContinuation,
+    QuoteContinuation,
     Reference,
     BlockBody,
 }
@@ -34,6 +35,11 @@ impl BlockPolicy for CommonmarkBlocks {
                 .rfind(|&index| !super::markers::blank(input.line(index)))
                 .unwrap_or(LineIndex::new(0))
         });
+        // A nested list may consume the blank lines before the next sibling
+        // block. Those still separate direct children of this container.
+        if end <= last_nonblank && end > input.start && super::markers::blank(input.line(end - 1)) {
+            spacing.loose = true;
+        }
         if end < input.lines.end() && super::markers::blank(input.line(end)) {
             spacing.loose |= end < last_nonblank;
             Ok(end + 1)

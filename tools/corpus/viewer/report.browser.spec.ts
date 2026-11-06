@@ -3,16 +3,13 @@ import { gzipSync } from 'node:zlib'
 import { type Page, expect, test } from '@playwright/test'
 
 import type * as RepositoryModule from './data/repository.ts'
+import { encodeClassification } from '../protocol/classification.ts'
 import { type DifferenceRow, byProfile } from '../protocol/comparison.ts'
 import { type ReportData, encodeFilterMasks } from '../protocol/report.ts'
 import { reportDocument } from '../report/aggregate.ts'
+import { classifyDifference } from '../report/classify.ts'
 import { differenceFilterMask } from '../report/filter.ts'
-import {
-  fixtureHtmlSerialization,
-  fixtureKatexError,
-  fixtureLinkedImage,
-  fixtureMetadata
-} from '../testing/fixtures.ts'
+import { fixtureLinkedImage, fixtureMetadata } from '../testing/fixtures.ts'
 import type { ReportRepository } from './data/repository.ts'
 
 type QueryProbe = {
@@ -27,7 +24,10 @@ const route = '/tools/corpus/viewer/index.html'
 const malicious =
   '<script>globalThis.previewExecuted = true</script><img src="https://external.test/image" onerror="globalThis.previewExecuted = true" alt="placeholder"><a href="https://external.test/link" onclick="globalThis.previewExecuted = true">inert link</a><iframe src="https://external.test/frame"></iframe><svg onload="globalThis.previewExecuted = true"><image href="https://external.test/svg-image" /></svg><div class="toolbar" style="background-image:url(https://external.test/css)">isolated class</div>'
 
-function reportFixture(extraRows: DifferenceRow[] = []): ReportData {
+function reportFixture(
+  extraRows: DifferenceRow[] = [],
+  origin?: string
+): ReportData {
   const rows: DifferenceRow[] = [
     {
       runId: 'synthetic-run',
@@ -79,12 +79,18 @@ function reportFixture(extraRows: DifferenceRow[] = []): ReportData {
     encodeFilterMasks(
       rows
         .filter(row => row.profile === profile)
-        .map(row => differenceFilterMask(row))
+        .map(row => differenceFilterMask(row, origin))
     )
   )
   const metadata = {
     ...base,
     filters,
+    classifications: byProfile(profile =>
+      rows
+        .filter(row => row.profile === profile)
+        .map(row => encodeClassification(classifyDifference(row, origin)))
+        .join('')
+    ),
     results: {
       ...base.results,
       render: {
@@ -117,216 +123,139 @@ async function openReport(page: Page, data = reportFixture()) {
   await page.goto(route)
 }
 
-test('BOT switch uses account metadata, retains unknown authors and composes with other controls', async ({
-  page
-}) => {
-  const data = reportFixture()
-  data.metadata = {
-    ...data.metadata,
-    authors: { render: 'hbu', inline: 'b', plainText: 'h' }
-  }
-  await openReport(page, data)
-  await expect(page.locator('#rows .source')).toHaveText('Alpha')
-  await page.getByRole('button', { name: '次のページ' }).click()
-  await expect(page.locator('#rows .source')).toHaveText('Beta')
-  await expect(page.locator('#author-status')).toHaveText(
-    'BOT 1 件 / 投稿者不明 1 件（除外対象外）'
-  )
-  await page.getByLabel('BOTの投稿を除外').check()
-  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
-  await expect(page.locator('#rows .source')).toHaveText('Alpha')
-  await expect(page.locator('#status')).toHaveText('2 件 / 全 3 件')
-  for (const label of [
-    'ホワイトスペースのみを除外',
-    '大文字・小文字の違いのみを除外',
-    'リンク付き画像の表示差分を除外',
-    'HTMLの表記差分のみを除外'
-  ])
-    await page.getByLabel(label).check()
-  await expect(page.locator('#rows .source')).toHaveText('Gamma needle')
-  await expect(page.locator('#status')).toHaveText('1 件 / 全 3 件')
-  await page.getByLabel('原文を検索').fill('Beta')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('#empty')).toBeVisible()
-  await page.getByLabel('BOTの投稿を除外').uncheck()
-  await expect(page.locator('#rows .source')).toHaveText('Beta')
-  await page.getByLabel('BOTの投稿を除外').check()
-  await page.locator('#profiles button').nth(1).click()
-  await expect(page.getByLabel('BOTの投稿を除外')).toBeChecked()
-  await expect(page.locator('#status')).toHaveText('0 件 / 全 1 件')
-  await page.locator('#profiles button').nth(2).click()
-  await expect(page.locator('#rows .source')).toHaveText('Plain')
-})
-
-test('reports without account metadata omit the BOT switch and its status', async ({
-  page
-}) => {
-  await openReport(page)
-  await expect(page.getByLabel('BOTの投稿を除外')).toHaveCount(0)
-  await expect(page.locator('#author-status')).toHaveCount(0)
-  await expect(page.locator('#status')).toHaveText('3 件')
-})
-
-test('BOT controls remain reachable when another profile has known authors', async ({
-  page
-}) => {
-  const data = reportFixture()
-  data.metadata = {
-    ...data.metadata,
-    authors: { render: 'uuu', inline: 'b', plainText: 'u' }
-  }
-  await openReport(page, data)
-  await expect(page.getByLabel('BOTの投稿を除外')).toBeVisible()
-  await page.getByLabel('BOTの投稿を除外').check()
-  await expect(page.locator('#status')).toHaveText('3 件')
-  await page.locator('#profiles button').nth(1).click()
-  await expect(page.locator('#empty')).toBeVisible()
-  await page.locator('#profiles button').nth(2).click()
-  await expect(page.getByLabel('BOTの投稿を除外')).toBeChecked()
-  await page.getByLabel('BOTの投稿を除外').uncheck()
-  await expect(page.locator('#rows .source')).toHaveText('Plain')
-})
-
-test('KaTeX-only checkbox composes with search and other filters while retaining real changes', async ({
+test('only whitespace and case exclusions are always visible alongside classifications', async ({
   page
 }) => {
   const data = reportFixture([
-    { ...fixtureKatexError, index: 6 },
-    {
-      ...fixtureKatexError,
-      index: 7,
-      source: 'KaTeX and outside case',
-      before: {
-        kind: 'html',
-        value: '<p>OUTSIDE</p>' + fixtureKatexError.before.value
-      },
-      after: {
-        kind: 'html',
-        value: '<p>outside</p>' + fixtureKatexError.after.value
-      }
-    },
-    {
-      ...fixtureKatexError,
-      index: 8,
-      source: 'KaTeX newly fails',
-      before: {
-        kind: 'html',
-        value: '<p class="katex-block"><span class="katex">success</span></p>'
-      }
-    },
-    {
-      ...fixtureKatexError,
-      index: 9,
-      source: 'KaTeX and outside content',
-      before: {
-        kind: 'html',
-        value: '<p>before</p>' + fixtureKatexError.before.value
-      },
-      after: {
-        kind: 'html',
-        value: '<p>after</p>' + fixtureKatexError.after.value
-      }
-    }
+    { ...fixtureLinkedImage, index: 6, source: 'classified image' }
   ])
+  data.metadata.authors.render = 'b'.repeat(data.metadata.counts.render)
   await openReport(page, data)
-  await expect(page.locator('#status')).toHaveText('7 件')
-  await page.getByRole('button', { name: '次のページ' }).click()
-  await page.getByLabel('KaTeXエラー部分のみの差分を除外').check()
-  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
-  await expect(page.locator('#status')).toHaveText('6 件 / 全 7 件')
-  await page.getByLabel('原文を検索').fill('KaTeX')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('#status')).toHaveText('3 件 / 全 7 件')
-  await page.getByLabel('大文字・小文字の違いのみを除外').check()
-  await expect(page.locator('#status')).toHaveText('2 件 / 全 7 件')
-  await expect(page.locator('#rows .source')).toHaveText('KaTeX newly fails')
-  await page.getByRole('button', { name: '次のページ' }).click()
-  await expect(page.locator('#rows .source')).toHaveText(
-    'KaTeX and outside content'
-  )
-  await page.getByLabel('KaTeXエラー部分のみの差分を除外').uncheck()
-  await expect(page.locator('#status')).toHaveText('4 件 / 全 7 件')
-  await page.locator('#profiles button').nth(2).click()
-  await expect(page.locator('#rows .source')).toHaveText('Plain')
+  const filters = page.getByRole('group', { name: '表記差分の除外' })
+  await expect(filters.getByRole('checkbox')).toHaveCount(2)
+  await expect(filters.getByLabel('ホワイトスペースのみを除外')).toBeVisible()
+  await expect(
+    filters.getByLabel('大文字・小文字の違いのみを除外')
+  ).toBeVisible()
+  await expect(filters.locator('xpath=ancestor::details')).toHaveCount(0)
+  await expect(page.getByRole('checkbox')).toHaveCount(3)
+  await page.locator('[data-category="image"]').click()
+  await expect(page.locator('#rows .source')).toHaveText('classified image')
+  await filters.getByLabel('ホワイトスペースのみを除外').check()
+  await filters.getByLabel('大文字・小文字の違いのみを除外').check()
+  await expect(page.locator('#rows .source')).toHaveText('classified image')
+  await expect(page.locator('#status')).toHaveText('1 件 / 全 4 件')
 })
 
-test('link policy checkbox composes with search, profiles and all output filters', async ({
+test('classification tree drills into mixed cases, retains unresolved changes and composes with search and profiles', async ({
   page
 }) => {
-  const url = 'https://trap.jp'
-  const link = `<a href="${url}">${url}</a>`
   await openReport(
     page,
     reportFixture([
+      { ...fixtureLinkedImage, index: 6, source: 'classified image accepted' },
       {
-        runId: 'synthetic-run',
-        index: 5,
-        profile: 'render',
-        source: 'Link policy only ' + url,
-        before: { kind: 'html', value: `<p>${link}</p>` },
-        after: { kind: 'html', value: `<p>${url}</p>` }
-      },
-      {
-        runId: 'synthetic-run',
-        index: 6,
-        profile: 'render',
-        source: 'Link policy case ' + url,
-        before: { kind: 'html', value: `<p>HELLO ${link}</p>` },
-        after: { kind: 'html', value: `<p>hello ${url}</p>` }
-      },
-      {
-        runId: 'synthetic-run',
+        ...fixtureLinkedImage,
         index: 7,
-        profile: 'render',
-        source: 'Link policy other ' + url,
-        before: { kind: 'html', value: `<p>before ${link}</p>` },
-        after: { kind: 'html', value: `<p>after ${url}</p>` }
-      },
-      {
-        runId: 'synthetic-run',
-        index: 8,
-        profile: 'render',
-        source: 'Link policy failure ' + url,
-        before: { kind: 'error', value: 'before' },
-        after: { kind: 'error', value: 'after' }
+        source: 'classified image mixed',
+        before: {
+          kind: 'html',
+          value: fixtureLinkedImage.before.value + ' old'
+        },
+        after: { kind: 'html', value: fixtureLinkedImage.after.value + ' new' }
       }
     ])
   )
-  await expect(page.locator('#status')).toHaveText('7 件')
-  const policy = page.getByLabel('リンク仕様変更による差分を除外')
-  await expect(policy).not.toBeChecked()
-  await page.getByRole('button', { name: '次のページ' }).click()
-  await policy.check()
-  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
-  await expect(page.locator('#status')).toHaveText('6 件 / 全 7 件')
-  await page.getByLabel('原文を検索').fill('Link policy')
-  await page.getByLabel('原文を検索').press('Enter')
-  await expect(page.locator('#status')).toHaveText('3 件 / 全 7 件')
-  for (const label of [
-    '大文字・小文字の違いのみを除外',
-    'ホワイトスペースのみを除外',
-    'リンク付き画像の表示差分を除外',
-    'HTMLの表記差分のみを除外',
-    'KaTeXエラー部分のみの差分を除外'
-  ])
-    await page.getByLabel(label).check()
-  await expect(page.locator('#status')).toHaveText('2 件 / 全 7 件')
+  const tree = page.getByRole('navigation', { name: '差分の分類' })
+  await tree.locator('[data-category="image"]').click()
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 5 件')
   await expect(page.locator('#rows .source')).toHaveText(
-    'Link policy other ' + url
+    'classified image accepted'
   )
-  await page.getByRole('button', { name: '次のページ' }).click()
+  await expect(page.locator('.classification-summary')).toContainText(
+    '要確認 1件'
+  )
+  await page.locator('#only-review').check()
   await expect(page.locator('#rows .source')).toHaveText(
-    'Link policy failure ' + url
+    'classified image mixed'
   )
-  await page.locator('#profiles button').nth(2).click()
-  await expect(policy).toBeChecked()
-  await expect(page.locator('#status')).toHaveText('1 件')
-  await page.locator('#profiles button').first().click()
-  await page.getByLabel('原文を検索').fill('Link policy')
-  await page.getByLabel('原文を検索').press('Enter')
-  await expect(page.locator('#status')).toHaveText('2 件 / 全 7 件')
-  await policy.uncheck()
-  await expect(page.locator('#status')).toHaveText('4 件 / 全 7 件')
+  await expect(page.locator('#rows')).toContainText('未説明の差分あり')
+  await page.locator('#rows > details > summary').click()
+  await expect(page.locator('#rows .comparison')).toHaveCount(0)
+  await page.locator('#rows > details > summary').click()
+  await expect(page.locator('#rows .comparison')).toHaveCount(1)
+  await tree.locator('[data-category="image.linked"]').click()
+  await expect(page.locator('.classification-summary')).toContainText(
+    '外側のリンク先を優先'
+  )
+  await page.locator('#search').fill('accepted')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#empty')).toBeVisible()
+  await page.locator('#only-review').uncheck()
+  await expect(page.locator('#rows .source')).toHaveText(
+    'classified image accepted'
+  )
+  await page.locator('#profiles button').nth(1).click()
+  await expect(page.locator('#empty')).toBeVisible()
+  await tree.locator('[data-category="all"]').click()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
+})
+
+test('classification layout reflows without clipping and retains child navigation on narrow screens', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 })
+  await openReport(
+    page,
+    reportFixture([
+      { ...fixtureLinkedImage, index: 6, source: 'image on mobile' }
+    ])
+  )
+  await page.locator('[data-category="image"]').click()
+  await expect(page.locator('[data-category="image.linked"]')).toBeVisible()
+  await page.locator('[data-category="image.linked"]').click()
+  await expect(page.locator('#rows .source')).toHaveText('image on mobile')
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth
+    )
+  ).toBe(true)
+})
+
+test('frontend-only reports show only measured profiles in controls and summaries', async ({
+  page
+}) => {
+  const data = reportFixture()
+  const { plainText: _unusedResult, ...results } = data.metadata.results
+  const { plainText: _unusedBefore, ...before } =
+    data.metadata.run.provenance.before
+  await openReport(page, {
+    metadata: {
+      ...data.metadata,
+      counts: { ...data.metadata.counts, plainText: 0 },
+      filters: { ...data.metadata.filters, plainText: '' },
+      authors: { ...data.metadata.authors, plainText: '' },
+      classifications: { ...data.metadata.classifications, plainText: '' },
+      results,
+      run: {
+        ...data.metadata.run,
+        provenance: { ...data.metadata.run.provenance, before }
+      }
+    },
+    payload: { ...data.payload, plainText: [] }
+  })
+  await expect(page.locator('#profiles button')).toHaveCount(2)
+  await expect(page.locator('.result-summary tr[data-profile]')).toHaveCount(2)
+  await expect(page.locator('#speed tbody tr')).toHaveCount(2)
+  await expect(page.locator('#footer')).not.toContainText('プレーンテキスト')
+  await page.getByLabel('ホワイトスペースのみを除外').check()
+  await page.getByRole('button', { name: /S-UI · インライン/ }).click()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
+  await page.getByLabel('原文を検索').fill('Inline')
+  await page.getByRole('button', { name: '検索', exact: true }).click()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
 })
 
 test('real gzip data drives pagination, filters, search, profiles and error summaries', async ({
@@ -417,128 +346,6 @@ test('case filtering composes with whitespace, search and pagination', async ({
   await expect(page.locator('#rows .source')).toHaveText('Plain')
 })
 
-test('linked-image checkbox composes with whitespace, case and search while retaining mixed changes and errors', async ({
-  page
-}) => {
-  await openReport(
-    page,
-    reportFixture([
-      { ...fixtureLinkedImage, index: 5, source: 'Linked image' },
-      {
-        ...fixtureLinkedImage,
-        index: 6,
-        source: 'Mixed image',
-        after: {
-          kind: 'html',
-          value: fixtureLinkedImage.after.value + '<p>different</p>'
-        }
-      },
-      {
-        ...fixtureLinkedImage,
-        index: 7,
-        source: 'Case space image',
-        before: {
-          kind: 'html',
-          value: fixtureLinkedImage.before.value.replace('>badge<', '>BAD GE<')
-        }
-      }
-    ])
-  )
-  const images = page.getByLabel('リンク付き画像の表示差分を除外')
-  await expect(images).not.toBeChecked()
-  await expect(page.locator('#pages')).toHaveText('6')
-  await page.getByRole('button', { name: '次のページ' }).click()
-  await images.check()
-  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
-  await expect(page.locator('#pages')).toHaveText('5')
-  await page.getByLabel('原文を検索').fill('Linked image')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('#empty')).toBeVisible()
-  await images.uncheck()
-  await expect(page.locator('#rows .source')).toHaveText('Linked image')
-  await images.check()
-  await page.getByLabel('原文を検索').fill('Mixed image')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('#rows .source')).toHaveText('Mixed image')
-  await page.getByLabel('原文を検索').fill('Case space image')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('#rows .source')).toHaveText('Case space image')
-  await page.getByLabel('大文字・小文字の違いのみを除外').check()
-  await expect(page.locator('#rows .source')).toHaveText('Case space image')
-  await page.getByLabel('ホワイトスペースのみを除外').check()
-  await expect(page.locator('#empty')).toBeVisible()
-  await page.getByLabel('原文を検索').fill('Beta')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('.output-error')).toContainText('実行エラー')
-  await page.getByRole('button', { name: /traQ · プレーンテキスト/ }).click()
-  await expect(images).toBeChecked()
-  await expect(page.locator('#rows .source')).toHaveText('Plain')
-})
-
-test('HTML spelling checkbox composes with all filters and keeps text changes and errors', async ({
-  page
-}) => {
-  await openReport(
-    page,
-    reportFixture([
-      { ...fixtureHtmlSerialization, index: 5, source: 'Only HTML spelling' },
-      {
-        ...fixtureHtmlSerialization,
-        index: 6,
-        source: 'Mixed HTML spelling',
-        after: {
-          kind: 'html',
-          value: fixtureHtmlSerialization.after.value + '<br>'
-        }
-      },
-      {
-        ...fixtureLinkedImage,
-        index: 7,
-        source: 'All image filters',
-        before: {
-          kind: 'html',
-          value: `[!<a href="https://images.example.test/badge.svg">BA DGE&#039;S</a>](<a title='page' href='https://example.test/docs'>https://example.test/docs</a>)`
-        },
-        after: {
-          kind: 'html',
-          value: `<a href="https://example.test/docs" title="page">!badge's</a>`
-        }
-      }
-    ])
-  )
-  const spelling = page.getByLabel('HTMLの表記差分のみを除外')
-  await expect(spelling).not.toBeChecked()
-  await expect(page.locator('#pages')).toHaveText('6')
-  await page.getByRole('button', { name: '次のページ' }).click()
-  await spelling.check()
-  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
-  await expect(page.locator('#pages')).toHaveText('5')
-  for (const [search, hidden] of [
-    ['Only HTML spelling', true],
-    ['Mixed HTML spelling', false],
-    ['All image filters', false]
-  ] as const) {
-    await page.getByLabel('原文を検索').fill(search)
-    await page.getByRole('button', { name: '検索', exact: true }).click()
-    if (hidden) await expect(page.locator('#empty')).toBeVisible()
-    else await expect(page.locator('#rows .source')).toHaveText(search)
-  }
-  await page.getByLabel('リンク付き画像の表示差分を除外').check()
-  await page.getByLabel('大文字・小文字の違いのみを除外').check()
-  await expect(page.locator('#rows .source')).toHaveText('All image filters')
-  await page.getByLabel('ホワイトスペースのみを除外').check()
-  await expect(page.locator('#empty')).toBeVisible()
-  await spelling.uncheck()
-  await expect(page.locator('#rows .source')).toHaveText('All image filters')
-  await spelling.check()
-  await page.getByLabel('原文を検索').fill('Beta')
-  await page.getByRole('button', { name: '検索', exact: true }).click()
-  await expect(page.locator('.output-error')).toContainText('実行エラー')
-  await page.getByRole('button', { name: /traQ · プレーンテキスト/ }).click()
-  await expect(spelling).toBeChecked()
-  await expect(page.locator('#rows .source')).toHaveText('Plain')
-})
-
 test('HTML preview remains inert and isolates corpus classes from viewer styles', async ({
   page
 }) => {
@@ -611,10 +418,11 @@ test('chunk failures are visible and equal failures remain visible with zero out
     metadata: {
       ...base.metadata,
       counts: byProfile(() => 0),
+      classifications: byProfile(() => ''),
       filters: byProfile(() => ''),
       authors: byProfile(() => ''),
       results: byProfile(profile => ({
-        ...base.metadata.results[profile],
+        ...base.metadata.results[profile]!,
         differences: 0
       }))
     },

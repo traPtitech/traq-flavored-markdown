@@ -55,6 +55,34 @@ fn atx_heading_preserves_unicode_whitespace() {
 }
 
 #[test]
+fn closing_fences_only_ignore_ascii_spaces_and_tabs() {
+    let parser = parser();
+    for marker in ["```", "~~~"] {
+        for whitespace in ["\u{3000}", "\u{a0}"] {
+            let source = format!("{marker}text\nbefore\n{marker}{whitespace}\nafter\n");
+            let document = parser.parse(&source).unwrap();
+            let block = document.children[0]
+                .payload::<markdown_commonmark_contracts::CodeBlock>()
+                .unwrap();
+            assert_eq!(
+                block.literal,
+                format!("before\n{marker}{whitespace}\nafter\n")
+            );
+            assert_eq!(document.children.len(), 1);
+        }
+        for whitespace in [" ", "\t", " \t"] {
+            let source = format!("{marker}text\nbefore\n{marker}{whitespace}\nafter\n");
+            let document = parser.parse(&source).unwrap();
+            let block = document.children[0]
+                .payload::<markdown_commonmark_contracts::CodeBlock>()
+                .unwrap();
+            assert_eq!(block.literal, "before\n");
+            assert_eq!(document.children.len(), 2);
+        }
+    }
+}
+
+#[test]
 fn code_info_is_decoded_once_before_rendering() {
     let source = "```a\\+b&amp;amp; extra\nbody\n```";
     let document = parser().parse(source).unwrap();

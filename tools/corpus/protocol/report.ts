@@ -1,9 +1,15 @@
 import { validAuthorKinds } from './authors.ts'
 import {
+  classificationVersion,
+  validClassifications
+} from './classification.ts'
+import {
   byProfile,
+  frontendProfileIds,
   parseDifferenceRow,
   profileIds,
   profileResultSchema,
+  profilesFor,
   runSummarySchema
 } from './comparison.ts'
 import {
@@ -17,7 +23,7 @@ import {
   string
 } from './schema.ts'
 
-export { byProfile, profileIds, parseDifferenceRow }
+export { byProfile, profileIds, profilesFor, parseDifferenceRow }
 export type {
   DifferenceRow,
   ProfileId,
@@ -57,7 +63,7 @@ const existingDifferenceFilters = {
     ])
   ) as Record<`${keyof typeof outputDifferenceFilters}AndKatexErrors`, bigint>)
 }
-export const differenceFilters = {
+const linkDifferenceFilters = {
   ...existingDifferenceFilters,
   linkPolicy: 1n << 31n,
   ...(Object.fromEntries(
@@ -67,8 +73,18 @@ export const differenceFilters = {
     ])
   ) as Record<`${keyof typeof existingDifferenceFilters}AndLinkPolicy`, bigint>)
 }
-/** Sixteen hex digits per row record equality for all 63 filter combinations. */
-export const filterMaskWidth = 16
+export const differenceFilters = {
+  ...linkDifferenceFilters,
+  nestedLinks: 1n << 63n,
+  ...(Object.fromEntries(
+    Object.entries(linkDifferenceFilters).map(([name, mask]) => [
+      `${name}AndNestedLinks`,
+      mask << 64n
+    ])
+  ) as Record<`${keyof typeof linkDifferenceFilters}AndNestedLinks`, bigint>)
+}
+/** Thirty-two hex digits record equality for all 127 filter combinations. */
+export const filterMaskWidth = 32
 export const encodeFilterMasks = (masks: readonly bigint[]) =>
   masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')
 export const filterMaskAt = (encoded: string, index: number) =>
@@ -80,9 +96,11 @@ export const metadataSchema = object('ReportMetadata', {
   counts: keyedRecord(count, profileIds),
   filters: keyedRecord(string, profileIds),
   authors: keyedRecord(string, profileIds),
-  results: keyedRecord(profileResultSchema, profileIds),
+  results: keyedRecord(profileResultSchema, frontendProfileIds, ['plainText']),
   run: runSummarySchema,
   generated: string,
+  classificationVersion: string,
+  classifications: keyedRecord(string, profileIds),
   pageSize: positiveCount
 })
 export type ReportMetadata = Infer<typeof metadataSchema>
@@ -93,18 +111,37 @@ export type ReportData = { metadata: ReportMetadata; payload: ReportPayload }
 export function parseReport(metadata: unknown, payload: unknown): ReportData {
   const meta = parse(metadataSchema, metadata)
   const chunks = parse(payloadSchema, payload)
+  if (meta.classificationVersion !== classificationVersion)
+    throw new Error('Unsupported classification version; regenerate the report')
   if (!Number.isFinite(Date.parse(meta.generated)))
     throw new Error('Invalid report date')
+  const selected = profilesFor(meta.run)
+  if (
+    Object.keys(meta.results).length !== selected.length ||
+    selected.some(profile => !meta.results[profile])
+  )
+    throw new Error('Report profiles mismatch')
   for (const profile of profileIds) {
     const result = meta.results[profile]
     if (
       meta.filters[profile].length !== meta.counts[profile] * filterMaskWidth ||
-      !/^(?:[0-7][0-9a-f]{15})*$/.test(meta.filters[profile]) ||
+      !/^(?:[0-7][0-9a-f]{31})*$/.test(meta.filters[profile]) ||
       meta.authors[profile].length !== meta.counts[profile] ||
       !validAuthorKinds(meta.authors[profile]) ||
+      !validClassifications(
+        meta.classifications[profile],
+        meta.counts[profile]
+      ) ||
       chunks[profile].length !== Math.ceil(meta.counts[profile] / meta.pageSize)
     )
       throw new Error('Invalid report profile: ' + profile)
+    if (!result) {
+      if (meta.counts[profile] !== 0)
+        throw new Error(
+          'Uncompared report profile contains differences: ' + profile
+        )
+      continue
+    }
     if (result.differences !== meta.counts[profile])
       throw new Error('Report counts mismatch')
     if (result.messages !== meta.messages)

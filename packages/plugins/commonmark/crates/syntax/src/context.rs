@@ -1,15 +1,24 @@
 use markdown_parser::ParseError;
 use markdown_parser::rules::Budget;
-use markdown_parser::source::SourceView;
+use markdown_parser::source::{SourceView, ViewRange};
 use std::collections::HashSet;
 
-/// Original byte positions of paragraph continuation lines without `>`.
+/// Original byte positions of the first nonspace character on lines without `>`.
+/// This identity survives indentation removal in nested container views.
 #[derive(Clone)]
 struct LazyLines(HashSet<usize>);
 
-pub(super) fn is_lazy(view: &SourceView, original: usize) -> bool {
-    view.context::<LazyLines>()
-        .is_some_and(|lines| lines.0.contains(&original))
+pub(super) fn content_start(view: &SourceView, line: ViewRange) -> Result<usize, ParseError> {
+    let text = &view[line.clone()];
+    let start = line.start + text.len() - text.trim_start_matches([' ', '\t']).len();
+    Ok(view.span_for(start..start)?.start)
+}
+
+pub(super) fn is_lazy(view: &SourceView, line: ViewRange) -> Result<bool, ParseError> {
+    let Some(lines) = view.context::<LazyLines>() else {
+        return Ok(false);
+    };
+    Ok(lines.0.contains(&content_start(view, line)?))
 }
 
 pub(super) fn mark_lazy(

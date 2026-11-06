@@ -2,6 +2,7 @@ import { type DifferenceRow, isFailure } from '../protocol/comparison.ts'
 import { normalizeHtmlSerialization } from './html.ts'
 import { normalizeKatexErrors } from './katex.ts'
 import { normalizeLinkPolicy } from './link-policy.ts'
+import { normalizeNestedLinks } from './nested-links.ts'
 
 const textFilters = {
   whitespace: 1,
@@ -15,10 +16,11 @@ const withoutWhitespace = (value: string) => value.replace(/[ \t\r\n\f]/g, '')
 // Legacy image filtering turned [![alt](image)](page) into two links and
 // literal brackets. Preserve the outer opening tag and the complete alt HTML;
 // nested anchors are excluded so other reference/link changes remain visible.
-const normalizeLinkedImages = (value: string) =>
+export const normalizeLinkedImages = (value: string, inline = false) =>
   value.replace(
     /\[!<a\b[^>]*>((?:(?!<\/?a\b)[\s\S])*)<\/a>\]\((<a\b[^>]*>)(?:(?!<\/?a\b)[\s\S])*<\/a>\)/gi,
-    (_match, label: string, opening: string) => opening + '!' + label + '</a>'
+    (_match, label: string, opening: string) =>
+      opening + (inline ? '' : '!') + label + '</a>'
   )
 
 function textFilterMask(before: string, after: string) {
@@ -121,11 +123,10 @@ function existingFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
   return includeFilterSupersets(mask | (katexMask << 15), 32)
 }
 
-export function differenceFilterMask(
-  row: Pick<DifferenceRow, 'before' | 'after'> &
-    Partial<Pick<DifferenceRow, 'source' | 'profile'>>,
-  origin?: string
-) {
+type FilterRow = Pick<DifferenceRow, 'before' | 'after'> &
+  Partial<Pick<DifferenceRow, 'source' | 'profile'>>
+
+function linkFilterMask(row: FilterRow, origin?: string) {
   const existing = BigInt(existingFilterMask(row))
   // Existing exclusions also apply when the new checkbox is selected.
   let mask = existing | (existing << 32n)
@@ -145,6 +146,27 @@ export function differenceFilterMask(
             })
           ) << 1n
     mask |= linkMask << 31n
+  }
+  return mask
+}
+
+export function differenceFilterMask(row: FilterRow, origin?: string) {
+  const existing = linkFilterMask(row, origin)
+  let mask = existing | (existing << 64n)
+  const normalized = normalizeNestedLinks(row)
+  if (normalized) {
+    const nestedMask =
+      normalized.before === normalized.after
+        ? (1n << 64n) - 1n
+        : linkFilterMask(
+            {
+              ...row,
+              before: { kind: 'html', value: normalized.before },
+              after: { kind: 'html', value: normalized.after }
+            },
+            origin
+          ) << 1n
+    mask |= nestedMask << 63n
   }
   return mask
 }

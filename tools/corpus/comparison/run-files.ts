@@ -7,9 +7,11 @@ import {
   type CompletedRun,
   type ProfileId,
   type ProfileResult,
+  frontendProfileIds,
   parseComparisonPlan,
   parseCompletedRun,
-  parseWorkerResults
+  parseWorkerResults,
+  profilesFor
 } from '../protocol/comparison.ts'
 import { authorIndexFile } from './authors.ts'
 
@@ -27,12 +29,27 @@ export const runFiles = [
   ...differenceFiles,
   'embedding-differences.jsonl'
 ] as const
+export const resultFilesFor = (plan: ComparisonPlan) =>
+  plan.provenance.before.plainText ? resultFiles : resultFiles.slice(0, 1)
+export const differenceFilesFor = (plan: ComparisonPlan) =>
+  plan.provenance.before.plainText
+    ? differenceFiles
+    : differenceFiles.slice(0, 1)
+const runFilesFor = (plan: ComparisonPlan) => [
+  'run.json',
+  ...resultFilesFor(plan),
+  ...differenceFilesFor(plan),
+  'embedding-differences.jsonl'
+]
 
 export async function readResults(
   plan: ComparisonPlan
-): Promise<Record<ProfileId, ProfileResult>> {
+): Promise<
+  Record<'render' | 'inline', ProfileResult> &
+    Partial<Record<'plainText', ProfileResult>>
+> {
   const results: Partial<Record<ProfileId, ProfileResult>> = {}
-  for (const file of resultFiles) {
+  for (const file of resultFilesFor(plan)) {
     const worker = parseWorkerResults(
       await Bun.file(path.join(plan.output, file)).json()
     )
@@ -41,6 +58,13 @@ export async function readResults(
       worker.corpusSha256 !== plan.corpusSha256
     )
       throw new Error('Worker results belong to a different comparison run')
+    const expected =
+      file === 'frontend-results.json' ? frontendProfileIds : ['plainText']
+    if (
+      Object.keys(worker.results).length !== expected.length ||
+      expected.some(profile => !worker.results[profile])
+    )
+      throw new Error('Worker results have unexpected profiles: ' + file)
     for (const [key, result] of Object.entries(worker.results)) {
       const profile = key as ProfileId
       if (results[profile])
@@ -48,9 +72,14 @@ export async function readResults(
       results[profile] = result
     }
   }
-  if (!results.render || !results.inline || !results.plainText)
+  const selected = profilesFor(plan)
+  if (
+    Object.keys(results).length !== selected.length ||
+    selected.some(profile => !results[profile])
+  )
     throw new Error('Comparison run has incomplete profile results')
-  return results as Record<ProfileId, ProfileResult>
+  return results as Record<'render' | 'inline', ProfileResult> &
+    Partial<Record<'plainText', ProfileResult>>
 }
 
 export async function completeRun(plan: ComparisonPlan): Promise<CompletedRun> {
@@ -66,7 +95,7 @@ export async function completeRun(plan: ComparisonPlan): Promise<CompletedRun> {
   )
     throw new Error('Author index message counts mismatch')
   const files = await Promise.all(
-    [...runFiles, authorIndexFile].map(async file => ({
+    [...runFilesFor(plan), authorIndexFile].map(async file => ({
       path: file,
       sha256: await sha256(path.join(plan.output, file))
     }))
@@ -87,14 +116,12 @@ export async function readCompletedRun(directory: string) {
     await Bun.file(path.join(directory, 'complete.json')).json()
   )
   const names = manifest.files.map(file => file.path)
-  // Six-file runs predate account metadata and remain portable and verifiable.
-  const expected = names.includes(authorIndexFile)
-    ? [...runFiles, authorIndexFile]
-    : runFiles
+  const allowedFiles = new Set<string>([...runFiles, authorIndexFile])
+  // Check the static path allowlist before opening any manifest-named file.
   if (
-    names.length !== expected.length ||
-    new Set(names).size !== expected.length ||
-    !expected.every(file => names.includes(file))
+    !names.includes('run.json') ||
+    new Set(names).size !== names.length ||
+    names.some(file => !allowedFiles.has(file))
   )
     throw new Error('Invalid comparison run file manifest')
   for (const file of manifest.files)
@@ -103,6 +130,15 @@ export async function readCompletedRun(directory: string) {
   const plan = parseComparisonPlan(
     await Bun.file(path.join(directory, 'run.json')).json()
   )
+  // Legacy runs without author metadata remain portable and verifiable.
+  const expected = names.includes(authorIndexFile)
+    ? [...runFilesFor(plan), authorIndexFile]
+    : runFilesFor(plan)
+  if (
+    names.length !== expected.length ||
+    !expected.every(file => names.includes(file))
+  )
+    throw new Error('Invalid comparison run file manifest')
   if (
     plan.runId !== manifest.runId ||
     plan.corpusSha256 !== manifest.corpusSha256

@@ -32,8 +32,11 @@ pub fn parse(
         if let Some(prefix) = quote(&next[indent..]).map(|width| width + indent) {
             lazy = paragraph_start(&next[prefix..], input);
             ranges.push(lines[end].start + prefix..lines[end].end);
-        } else if lazy && !input.interrupts(end, Interrupt::LazyContinuation) && !blank(next) {
-            lazy_lines.push(source.span_for(lines[end].start..lines[end].start)?.start);
+        } else if lazy && !input.interrupts(end, Interrupt::QuoteContinuation) && !blank(next) {
+            lazy_lines.push(super::super::context::content_start(
+                source,
+                lines[end].clone(),
+            )?);
             ranges.push(lines[end].clone());
         } else {
             break;

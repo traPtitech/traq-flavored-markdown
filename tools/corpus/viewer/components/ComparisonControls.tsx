@@ -1,4 +1,4 @@
-import { type ProfileId, profileIds } from '../../protocol/report.ts'
+import type { ProfileId } from '../../protocol/report.ts'
 import type { Query } from '../data/query.ts'
 import { profileLabels } from '../profiles.ts'
 import type { OutputView } from '../state.ts'
@@ -7,8 +7,7 @@ const number = (value: number) => value.toLocaleString('ja-JP')
 
 export function ComparisonControls({
   counts,
-  authors,
-  hasAuthorData,
+  profiles,
   query,
   searchDraft,
   outputView,
@@ -21,17 +20,11 @@ export function ComparisonControls({
   onSearch,
   onWhitespace,
   onCase,
-  onLinkedImages,
-  onHtmlSerialization,
-  onKatexErrors,
-  onLinkPolicy,
-  onBots,
   onPage,
   onOutput
 }: {
   counts: Record<ProfileId, number>
-  authors: string
-  hasAuthorData: boolean
+  profiles: readonly ProfileId[]
   query: Query
   searchDraft: string
   outputView: OutputView
@@ -44,16 +37,9 @@ export function ComparisonControls({
   onSearch: () => void
   onWhitespace: (ignore: boolean) => void
   onCase: (ignore: boolean) => void
-  onLinkedImages: (ignore: boolean) => void
-  onHtmlSerialization: (ignore: boolean) => void
-  onKatexErrors: (ignore: boolean) => void
-  onLinkPolicy: (ignore: boolean) => void
-  onBots: (exclude: boolean) => void
   onPage: (page: number) => void
   onOutput: (view: OutputView) => void
 }) {
-  const unknownAuthors = authors.split('u').length - 1
-  const botAuthors = authors.split('b').length - 1
   const movePage = (page: number) => {
     onPage(page)
     window.scrollTo({ top: 0 })
@@ -62,7 +48,7 @@ export function ComparisonControls({
     <>
       <nav className="toolbar">
         <div id="profiles" className="profiles" aria-label="比較対象">
-          {profileIds.map(profile => (
+          {profiles.map(profile => (
             <button
               key={profile}
               aria-pressed={query.profile === profile}
@@ -141,23 +127,7 @@ export function ComparisonControls({
           </button>
         </div>
       </nav>
-      <div className="filters">
-        {hasAuthorData && (
-          <>
-            <label title="収集時のtraQアカウント情報でBOTと確認できた投稿を非表示にします。投稿者不明のデータは残します。">
-              <input
-                type="checkbox"
-                id="exclude-bots"
-                checked={query.excludeBots}
-                onChange={event => onBots(event.target.checked)}
-              />
-              BOTの投稿を除外
-            </label>
-            <span id="author-status">
-              {`BOT ${number(botAuthors)} 件${unknownAuthors ? ` / 投稿者不明 ${number(unknownAuthors)} 件（除外対象外）` : ''}`}
-            </span>
-          </>
-        )}
+      <div className="filters" role="group" aria-label="表記差分の除外">
         <label title="HTML・プレーンテキストの文字列から半角スペース、タブ、改行、フォームフィードを除いて一致する結果を非表示にします。コードや属性値内の空白も対象です。">
           <input
             type="checkbox"
@@ -175,42 +145,6 @@ export function ComparisonControls({
             onChange={event => onCase(event.target.checked)}
           />
           大文字・小文字の違いのみを除外
-        </label>
-        <label title="画像を表示しない場合のリンク付き画像について、外側のリンク先を保つ新実装との表示差分だけを非表示にします。他の差分が混在する結果は残します。ホワイトスペース・大文字小文字の除外とも併用できます。">
-          <input
-            type="checkbox"
-            id="ignore-linked-images"
-            checked={query.ignoreLinkedImages}
-            onChange={event => onLinkedImages(event.target.checked)}
-          />
-          リンク付き画像の表示差分を除外
-        </label>
-        <label title="HTMLの属性順序、引用符、同じ文字を表す文字参照などの表記差だけを非表示にします。本文の空白・属性値・要素構造の変更や解析エラーがあるHTMLは、この条件では除外しません。他の除外条件とも併用できます。">
-          <input
-            type="checkbox"
-            id="ignore-html-serialization"
-            checked={query.ignoreHtmlSerialization}
-            onChange={event => onHtmlSerialization(event.target.checked)}
-          />
-          HTMLの表記差分のみを除外
-        </label>
-        <label title="両側に同じ数のKaTeXエラー表示があり、その本文・診断メッセージだけが異なる結果を非表示にします。片側だけの数式エラーや、本文・表示構造の差分は残します。他の除外条件とも併用できます。">
-          <input
-            type="checkbox"
-            id="ignore-katex-errors"
-            checked={query.ignoreKatexErrors}
-            onChange={event => onKatexErrors(event.target.checked)}
-          />
-          KaTeXエラー部分のみの差分を除外
-        </label>
-        <label title="裸のURL・メールの自動リンク化廃止、山括弧で囲んだ省略URLのリンク化と、それに伴うリソース表示の差分だけを非表示にします。原文とリンク先を確認し、本文・明示的なリンク・エラーなどの別の差分は残します。他の除外条件とも併用できます。">
-          <input
-            type="checkbox"
-            id="ignore-link-policy"
-            checked={query.ignoreLinkPolicy}
-            onChange={event => onLinkPolicy(event.currentTarget.checked)}
-          />
-          リンク仕様変更による差分を除外
         </label>
       </div>
     </>

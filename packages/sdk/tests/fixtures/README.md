@@ -79,3 +79,31 @@ escapes (`bare-file`, `bare-message`, `query-file`, `public-676`, `public-688`,
 delimiters from the new autolink in `public-610`. These expectations were
 derived from the reviewed input and link policy, not regenerated from parser
 output. All fixture sources and unrelated expectations were retained.
+
+On 2026-10-29, bare HTTP(S), FTP, and email links were enabled again. The historical
+expectations for CommonMark examples 602, 608, 611, and 612 and the synthetic
+`link punctuation` case were restored. The `text links` case restores only the
+explicit HTTPS URL and email address, retaining the bare domain as text.
+The seven plain-text expectations for `bare-file`, `bare-message`, `query-file`,
+`spoiler-file`, `public-676`, `public-688`, and `public-699` were restored from
+the earlier frozen fixtures. Sources and unrelated expectations, including
+scheme-less angle links, were preserved. No parser
+output was used to regenerate expectations.
+
+On 2026-11-01, bare URLs began stopping at either ASCII parenthesis while
+retaining terminal underscores and hyphens; terminal tildes remain excluded.
+In the synthetic `text links` case, the URL now ends at `a_` and `(b) ` belongs
+to the following text node. Both block and inline ASTs were edited from the
+authored source: link and label spans end at byte 34, and the following text
+starts there. All source strings, unrelated AST expectations, and plain-text
+expectations are preserved. These edits were derived from the accepted boundary
+rules, without regenerating expected trees from parser output.
+
+On 2026-11-02, balanced ASCII parentheses were restored inside bare URLs.
+Unmatched closing parentheses still end a URL immediately, including before
+following prose; unclosed openers remain outside the link. The `text links`
+block and inline AST expectations were restored to the prior frozen values:
+the URL includes `a_(b)` through byte 37 and the following text is one space.
+Sources and all other expectations are preserved. The change was derived from
+the authored source and the accepted boundary rules, without capturing new
+expected trees from parser output.

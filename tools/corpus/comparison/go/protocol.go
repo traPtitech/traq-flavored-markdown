@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"slices"
 )
 
 //go:embed protocol_schema.json
@@ -23,6 +24,7 @@ type schema struct {
 	AllowUnknown bool
 	Items        *schema
 	Keys         []string
+	OptionalKeys []string
 	Enum         []string
 	Value        *schema
 }
@@ -127,11 +129,13 @@ func (s *schema) validate(value any, location string) error {
 			}
 		} else {
 			if s.Keys != nil {
-				if len(fields) != len(s.Keys) {
-					return fail()
-				}
 				for _, key := range s.Keys {
 					if _, found := fields[key]; !found {
+						return fail()
+					}
+				}
+				for key := range fields {
+					if !slices.Contains(s.Keys, key) && !slices.Contains(s.OptionalKeys, key) {
 						return fail()
 					}
 				}

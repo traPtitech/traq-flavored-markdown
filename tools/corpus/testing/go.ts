@@ -89,7 +89,7 @@ try {
     report.metadata.messages !== sources.length ||
     report.metadata.results.render.afterErrors !== 0 ||
     report.metadata.results.inline.afterErrors !== 0 ||
-    report.metadata.results.plainText.afterErrors !== 0
+    report.metadata.results.plainText?.afterErrors !== 0
   )
     throw new Error('Synthetic SDK integration failed')
   const differences = []

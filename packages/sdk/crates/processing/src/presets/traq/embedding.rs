@@ -103,8 +103,8 @@ pub(crate) fn finish(
     Ok(result)
 }
 
-// Bare URLs are ordinary Markdown text, but replacing their fragments or path
-// components with references would corrupt them. Inspect the original tokens
+// Scheme-less URL-like text can remain outside link nodes. Replacing fragments
+// or path components with references would corrupt it. Inspect original tokens
 // so this protection also covers URLs split across formatting nodes.
 fn exclude_url_candidates(source: &str, candidates: &mut Vec<ReferenceEmbeddingCandidate>) {
     if candidates.is_empty() {

@@ -16,7 +16,7 @@ fn targets_are_independent_of_display_policy() {
     ] {
         let url = format!("{origin}/{path}/{ID}");
         let raw = parser.parse(&url).unwrap();
-        assert_eq!(flatten(&renderer.render(&raw).unwrap()), url);
+        assert_eq!(flatten(&renderer.render(&raw).unwrap()), label);
         let angle = parser.parse(&format!("<{url}>")).unwrap();
         assert_eq!(flatten(&renderer.render(&angle).unwrap()), label);
         let explicit = parser.parse(&format!("[資料]({url})")).unwrap();
@@ -93,4 +93,20 @@ fn bare_urls_are_not_reference_embedding_candidates_even_across_formatting() {
             .iter()
             .all(|candidate| candidate.start >= 22)
     );
+}
+
+#[test]
+fn email_links_do_not_become_reference_embedding_candidates() {
+    let source = "info@trap.jp contact@midorimu.si @alice";
+    let document = traq_markdown_grammar::presets::traq::v1::parser()
+        .parse_inline(source)
+        .unwrap();
+    let plan = embedding::plan(&document).unwrap();
+    assert_eq!(plan.candidates.len(), 2);
+    assert!(
+        plan.candidates
+            .iter()
+            .all(|candidate| candidate.raw == "@alice")
+    );
+    assert_eq!(plan.unembedded_text, source);
 }

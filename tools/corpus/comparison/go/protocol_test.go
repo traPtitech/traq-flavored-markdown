@@ -24,6 +24,9 @@ func TestSharedProtocolCases(t *testing.T) {
 		if item.Schema == "difference" {
 			var row DifferenceRow
 			err = decode(item.Schema, []byte(item.JSON), &row)
+		} else if item.Schema == "plan" {
+			var plan ComparisonPlan
+			err = decode(item.Schema, []byte(item.JSON), &plan)
 		} else {
 			var source SourceRecord
 			err = decode(item.Schema, []byte(item.JSON), &source)

@@ -2,9 +2,12 @@
 
 ## Math and linkify syntax
 
-`src/math` follows @traptitech/markdown-it-katex 3.6.0. The domain character
-recognition in `src/linkify/recognize.rs` follows the previous linkify-it 5
-adaptation; bare linkification and its frozen TLD list have been removed.
+`src/math` follows @traptitech/markdown-it-katex 3.6.0. Domain recognition and
+URL path boundaries in `src/linkify` follow the previous linkify-it 5
+adaptation. Scheme-less bare linkification and its frozen TLD list have been
+removed; bare HTTP(S), FTP, and email links remain supported. The bare email
+character grammar follows CommonMark email autolinks, with a dotted domain
+required for bare notation.
 
 Copyright (c) 2014-2015 Vitaly Puzrin, Alex Kocharin.
 Copyright (c) 2016 Waylon Flinn.

@@ -196,3 +196,37 @@ test('adding HTML or image filtering cannot reveal an already excluded differenc
         if ((subset & selected) === subset && mask & (1n << BigInt(subset - 1)))
           expect(mask & (1n << BigInt(selected - 1))).toBeTruthy()
 })
+
+test('href HTTPS completion belongs to HTML spelling and composes with whitespace and case', () => {
+  const after = {
+    kind: 'html' as const,
+    value: '<a href="https://trap.jp/a"><strong>資料</strong></a>'
+  }
+  const before = {
+    kind: 'html' as const,
+    value: '<a href="//trap.jp/a"><strong>資料</strong></a>'
+  }
+  const mask = differenceFilterMask({
+    source: '[資料](//trap.jp/a)',
+    before,
+    after
+  })
+  expect(mask & differenceFilters.htmlSerialization).toBeTruthy()
+  expect(mask & differenceFilters.linkPolicy).toBe(0n)
+  expect(mask & differenceFilters.whitespace).toBe(0n)
+  const mixed = differenceFilterMask({
+    before: { ...before, value: before.value.replace('資料', 'A B') },
+    after: { ...after, value: after.value.replace('資料', 'ab') }
+  })
+  expect(mixed & differenceFilters.htmlSerialization).toBe(0n)
+  expect(
+    mixed & differenceFilters.whitespaceAndCaseAndHtmlSerialization
+  ).toBeTruthy()
+  for (const kind of ['text', 'error'] as const)
+    expect(
+      differenceFilterMask({
+        before: { ...before, kind },
+        after: { ...after, kind }
+      }) & differenceFilters.htmlSerialization
+    ).toBe(0n)
+})

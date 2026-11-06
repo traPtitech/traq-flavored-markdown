@@ -9,6 +9,16 @@ const voidElements = new Set(
   )
 )
 
+function normalizeHref(name: string, value: string) {
+  if (name !== 'href' || !/^\/\/[^/\\\s?#]/.test(value)) return value
+  const completed = 'https:' + value
+  try {
+    return new URL(completed).hostname ? completed : value
+  } catch {
+    return value
+  }
+}
+
 /** Normalize spelling, not structure: only rewrite parsed start tags and text. */
 export function normalizeHtmlSerialization(source: string): string | undefined {
   if (!/[<&]/.test(source)) return source
@@ -48,7 +58,9 @@ export function normalizeHtmlSerialization(source: string): string | undefined {
               attribute.prefix
                 ? `${attribute.prefix}:${attribute.name}`
                 : attribute.name,
-              attribute.value
+              attribute.prefix
+                ? attribute.value
+                : normalizeHref(attribute.name, attribute.value)
             ] as const
         )
         .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))

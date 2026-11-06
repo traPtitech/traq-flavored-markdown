@@ -16,6 +16,8 @@ export interface RenderedChild {
 }
 
 export interface RenderContext {
+  /** Rendering a link's label; handlers must not create another anchor. */
+  insideLink: boolean
   /** Ancestors in outermost-to-innermost order, excluding the current node. */
   ancestors: readonly ReadonlyNode[]
   /** Position among the node's original siblings. */
@@ -35,7 +37,8 @@ export interface RenderContext {
   escape(text: string): string
   /** Dispatch visible children, then join them. childText bypasses the join callback. */
   renderChildren(
-    join?: string | ((children: readonly RenderedChild[]) => string)
+    join?: string | ((children: readonly RenderedChild[]) => string),
+    options?: { insideLink?: boolean }
   ): string
   /** Dispatch an existing document node with its original ancestry and plan. */
   renderNode(node: ReadonlyNode): string
