@@ -40,6 +40,10 @@
       "types": "./dist/renderer/index.d.ts",
       "import": "./dist/renderer/index.js"
     },
+    "./editor": {
+      "types": "./dist/editor/index.d.ts",
+      "import": "./dist/editor/index.js"
+    },
     "./index.css": "./dist/index.css",
     "./styles/*": "./styles/*.scss",
     "./adapters": {
@@ -58,6 +62,7 @@
     "dist/contract.json",
     "THIRD_PARTY_NOTICES.md",
     "dist/renderer",
+    "dist/editor",
     "dist/index.css",
     "LICENSE",
     "styles",

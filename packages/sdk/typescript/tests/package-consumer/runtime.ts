@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { argv } from 'node:process'
 
 import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
+import { analyzeForEditing } from '@traq-flavored-markdown/sdk/editor'
 import { createHtmlRenderer } from '@traq-flavored-markdown/sdk/renderer'
 import { names } from '@traq-flavored-markdown/traq-plugin/nodes'
 
@@ -36,6 +37,20 @@ const hash = [...digest]
 const expectedHash = argv[2]
 check(hash === expectedHash, 'Packed Wasm hash does not match the contract')
 try {
+  const captured = parser.parseWithSyntax('😀 **hello**')
+  const editing = analyzeForEditing(captured)
+  const strong = editing.nodes.find(
+    entry => entry.node.kind === 'commonmark.strong'
+  )!
+  deepStrictEqual(
+    strong.content,
+    [{ from: 5, to: 10 }],
+    'Packed editor ranges must use original UTF-16 coordinates'
+  )
+  check(
+    captured.syntaxFor(strong.node).source !== null,
+    'Packed source facts did not bind to the document'
+  )
   check(
     parser.parseInline(':stamp:').document.children[0].kind === names.Stamp,
     'Packed parser did not load the traQ preset'

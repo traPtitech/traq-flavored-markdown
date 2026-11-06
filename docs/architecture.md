@@ -109,6 +109,12 @@ coverage. `SourceView::source_spans` uses shared linear/replacement segments to
 exclude source removed by joins and retain the origins of normalized characters
 and partially consumed tabs. It supplies rule-facing provenance without adding
 editing metadata to AST nodes or changing the host wire contract.
+Optional `parse_with_syntax` calls produce a parallel source-fact tree while the
+grammar recognizes content and markers. Wasm transfers those facts as a flat
+preorder table alongside the AST. The TypeScript boundary validates every record
+and source span, then binds immutable facts to the owned document's nodes.
+The `sdk/editor` adapter converts coordinates and derives line context from those
+facts; it owns no Markdown recognition, editor framework, or selection state.
 
 Go `Document` exposes read-only source, node, span, and child accessors. Payload
 decoding and `ToMutable` return detached caller-owned values; the wire snapshot is

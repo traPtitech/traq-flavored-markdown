@@ -305,6 +305,46 @@ markup behavior; SDK `index.css` composes those bases with the traQ theme.
 Sass consumers can load `styles/index` with the Node package importer
 (`sass --pkg-importer=node`) so plugin styles resolve through their package exports.
 
+## Editing source
+
+`parseWithSyntax` and `parseInlineWithSyntax` return a `ParsedSyntax` containing
+the usual immutable `document` and optional parser-owned source facts:
+
+```ts
+import { analyzeForEditing } from '@traq-flavored-markdown/sdk/editor'
+
+const parsed = parser.parseWithSyntax('> **hello**')
+const editing = analyzeForEditing(parsed)
+const session = createHtmlRenderer().createSession(parsed.document)
+const entry = editing.nodes.find(
+  entry => entry.node.kind === 'commonmark.strong'
+)!
+const html = session.render({ roots: [entry.node] })
+```
+
+The document can be passed to renderers and extractors directly. Original-byte
+facts are available through `parsed.syntaxFor(node)` and `parsed.syntax`;
+foreign nodes are rejected. Facts and the accompanying AST are immutable owned
+snapshots. The native Rust parser exposes the same path as `parse_with_syntax`
+and `parse_inline_with_syntax`. Ordinary parsing skips syntax capture.
+
+`analyzeForEditing` reuses the captured facts and returns `nodes`, `lines`, and
+`detached` definition markers. All editing ranges use half-open UTF-16
+`{ from, to }` coordinates into the original input string. Nodes retain their
+original AST identity and envelope range for subtree rendering, plus separate
+content and marker ranges. A content or marker may have multiple ranges across removed container
+prefixes. Line contexts expose quote/list ancestry, actual prefixes, continuation
+strings, list marker spelling, missing indentation, and block-literal status.
+Prefix text preserves whole authored tabs and expresses partial tabs as spaces.
+The SDK supplies no CSS classes, DOM decorations, selection state, or IME policy.
+Repeated analysis of the same parsed snapshot reuses the result.
+
+`SourceText.utf16Offset(byteOffset)` and `byteOffset(utf16Offset)` provide cached
+coordinate conversion; invalid UTF-8 boundaries and positions inside surrogate
+pairs are rejected. CRLF, NUL, and BOM remain in the original string. If an editor
+projects reference chips to `U+FFFC`, parse that projected string for editing;
+mapping chips to serialized message JSON remains an editor concern.
+
 ## Grammar versions
 
 Grammar versions identify the rules used to write a message. Store that value
