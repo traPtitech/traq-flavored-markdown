@@ -104,6 +104,11 @@ TypeScript distinguishes editable `MutableDocument`/`MutableNode` input from
 retain readonly payload and ancestor types. Native parser APIs distinguish
 `SourceOffset` from `ViewOffset` through matching, slicing, and source joins;
 conversion to original byte spans occurs through the source map.
+The boundary map used for AST envelopes remains distinct from exact source
+coverage. `SourceView::source_spans` uses shared linear/replacement segments to
+exclude source removed by joins and retain the origins of normalized characters
+and partially consumed tabs. It supplies rule-facing provenance without adding
+editing metadata to AST nodes or changing the host wire contract.
 
 Go `Document` exposes read-only source, node, span, and child accessors. Payload
 decoding and `ToMutable` return detached caller-owned values; the wire snapshot is

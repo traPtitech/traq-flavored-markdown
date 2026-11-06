@@ -56,6 +56,18 @@ at scanner boundaries. Original `SourceOffset` values cannot be used as match
 endpoints. Cursor advancement and accepted matches still validate UTF-8 boundaries
 and charge the shared work budget.
 
+`SourceView::source_spans(range)` returns the original UTF-8 byte spans that
+actually contribute to a view range. It excludes removed quote/list prefixes and
+table escapes, even after nested selections. Successive forward spans that touch
+or overlap are coalesced; otherwise they remain in view order. An empty range
+has no contributing source. CRLF and NUL normalization retain their complete
+original spelling, and any selected part of an expanded tab refers to the whole
+original tab. These spans describe source coverage, not decoded display text.
+`span_for` and `source_offset` keep their existing boundary mapping for AST
+envelopes and diagnostics. A joined boundary can therefore include a removed
+prefix in an AST envelope while `source_spans` excludes it. Internally, exact
+origins use compact linear/replacement segments shared by contiguous subviews.
+
 `bindings::Catalog` is a distribution-layer API. It registers implementations
 with `plugin(&plugin)` and validated preset compositions with `preset(&builder)`.
 Its numeric handles are internal binding references, not persistent IDs. Normal
