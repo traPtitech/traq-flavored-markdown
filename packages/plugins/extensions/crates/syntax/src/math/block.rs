@@ -27,30 +27,51 @@ pub(super) fn parse(
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
+    let mut body = vec![];
+    let mut markers = vec![(
+        markdown_parser::syntax::MarkerKind::Open,
+        lines[first].start..lines[first].start + offset,
+    )];
 
     let (end, tex) = if let Some(inner) = closing(rest) {
         let start = lines[first].start + offset;
+        body.push(start..start + inner.len());
+        markers.push((
+            markdown_parser::syntax::MarkerKind::Close,
+            start + inner.len()..lines[first].end,
+        ));
         (
             first + 1,
             source.literal(start..start + inner.len()).into_owned(),
         )
     } else {
-        multiline_tex(input, rest, offset)
+        multiline_tex(input, rest, offset, &mut body, &mut markers)
     };
 
-    Ok(Some(input.leaf(
-        end,
-        markdown_parser::AnyPayload::new(BlockMath { tex }),
-    )?))
+    let mut matched = input.leaf(end, markdown_parser::AnyPayload::new(BlockMath { tex }))?;
+    matched.nodes[0].syntax = source.syntax(&body, &markers)?;
+    Ok(Some(matched))
 }
 
-fn multiline_tex(input: &BlockInput<'_>, first_line: &str, offset: usize) -> (LineIndex, String) {
+fn multiline_tex(
+    input: &BlockInput<'_>,
+    first_line: &str,
+    offset: usize,
+    body: &mut Vec<markdown_parser::source::ViewRange>,
+    markers: &mut Vec<(
+        markdown_parser::syntax::MarkerKind,
+        markdown_parser::source::ViewRange,
+    )>,
+) -> (LineIndex, String) {
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
     let start = lines[first].start + offset;
     let mut end = first + 1;
     let mut tex = source.literal(start..start + first_line.len()).into_owned();
+    if source.captures_syntax() {
+        body.push(start..lines[first].end);
+    }
     tex.push('\n');
 
     while end < lines.end() {
@@ -58,10 +79,20 @@ fn multiline_tex(input: &BlockInput<'_>, first_line: &str, offset: usize) -> (Li
         let start = lines[end].start;
         end += 1;
         if let Some(inner) = closing(next) {
+            if source.captures_syntax() {
+                body.push(start..start + inner.len());
+                markers.push((
+                    markdown_parser::syntax::MarkerKind::Close,
+                    start + inner.len()..lines[end - 1].end,
+                ));
+            }
             tex.push_str(&source.literal(start..start + inner.len()));
             break;
         }
         tex.push_str(&source.literal(start..start + next.len()));
+        if source.captures_syntax() {
+            body.push(start..lines[end - 1].end);
+        }
         tex.push('\n');
     }
 

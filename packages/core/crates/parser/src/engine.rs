@@ -10,6 +10,7 @@ mod registry;
 mod rule;
 pub mod source;
 mod state;
+pub mod syntax;
 
 #[cfg(test)]
 mod tests;

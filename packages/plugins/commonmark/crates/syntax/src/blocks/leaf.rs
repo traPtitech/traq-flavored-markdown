@@ -7,6 +7,7 @@ use markdown_parser::rules::Budget;
 use markdown_parser::rules::block::BlockInput;
 use markdown_parser::rules::block::BlockMatch;
 use markdown_parser::rules::block::DraftNode;
+use markdown_parser::syntax::MarkerKind;
 
 pub(super) fn fenced(
     input: &BlockInput<'_>,
@@ -26,7 +27,25 @@ pub(super) fn fenced(
     let indent = input.current().len() - input.current().trim_start_matches(' ').len();
 
     let mut end = closing_fence(input, marker, count);
+    let closing = end;
     let literal = fenced_literal(input, end, indent);
+    let body: Vec<_> = if source.captures_syntax() {
+        lines[first + 1..closing]
+            .iter()
+            .map(|line| {
+                let raw = &source[line.clone()];
+                let remove = indent.min(raw.len() - raw.trim_start_matches(' ').len());
+                line.start + remove..line.end
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+    let mut markers = vec![(MarkerKind::Open, lines[first].clone())];
+    if closing < lines.end() {
+        markers.push((MarkerKind::Close, lines[closing].clone()));
+    }
+    let syntax = source.syntax(&body, &markers)?;
 
     // Include the closing fence in the node span when one was found.
     if end < lines.end() {
@@ -42,7 +61,8 @@ pub(super) fn fenced(
                 info,
                 literal,
             }),
-        ),
+        )
+        .with_syntax(syntax),
     )))
 }
 
@@ -86,6 +106,17 @@ pub(super) fn indented(
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
+    let mut body = vec![];
+    let mut prefixes = vec![];
+    if source.captures_syntax() {
+        for line in &lines[first..end] {
+            let raw = &source[line.clone()];
+            let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());
+            body.push(line.start + remove..line.end);
+            prefixes.push(line.start..line.start + remove);
+        }
+    }
+    let syntax = source.prefix_syntax(&body, prefixes)?;
 
     Ok(Some(BlockMatch::node(
         end,
@@ -96,7 +127,8 @@ pub(super) fn indented(
                 info: String::new(),
                 literal,
             }),
-        ),
+        )
+        .with_syntax(syntax),
     )))
 }
 
@@ -174,6 +206,13 @@ pub(super) fn atx(
     }
 
     let view = source.join(&[line.start + prefix..end])?;
+    let syntax = source.syntax(
+        &[line.start + prefix..end],
+        &[
+            (MarkerKind::Open, line.start..line.start + prefix),
+            (MarkerKind::Close, end..line.start + input.current().len()),
+        ],
+    )?;
 
     Ok(Some(BlockMatch::node(
         input.start + 1,
@@ -181,7 +220,8 @@ pub(super) fn atx(
             source.span_for(line.start..line.end)?,
             AnyPayload::new(markdown_commonmark_contracts::Heading { level }),
             view,
-        ),
+        )
+        .with_syntax(syntax),
     )))
 }
 
@@ -205,6 +245,11 @@ pub(super) fn thematic_break(
         DraftNode::leaf(
             input.source.span_for(line.start..line.end)?,
             AnyPayload::new(markdown_commonmark_contracts::ThematicBreak { marker }),
+        )
+        .with_syntax(
+            input
+                .source
+                .syntax(&[], &[(MarkerKind::Separator, line.clone())])?,
         ),
     )))
 }

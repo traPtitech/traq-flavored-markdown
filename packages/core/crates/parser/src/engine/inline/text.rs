@@ -119,7 +119,15 @@ fn process_rule(
             result.push(Token {
                 start,
                 end,
-                kind: TokenKind::Atom(found.payload, found.children),
+                kind: TokenKind::Atom(
+                    found.payload,
+                    crate::engine::syntax::ParsedNodes::from_nodes(
+                        found.children,
+                        source.captures_syntax(),
+                        budget,
+                    )?,
+                    None,
+                ),
             });
 
             begin = end;

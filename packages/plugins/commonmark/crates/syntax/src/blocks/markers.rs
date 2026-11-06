@@ -99,6 +99,7 @@ pub(super) fn thematic(line: &str) -> bool {
 
 // Prefix width, ordered, starting number. Indentation is handled by the caller.
 pub(super) struct Marker {
+    pub marker: std::ops::Range<usize>,
     pub content: usize,
     pub width: usize,
     pub ordered: bool,
@@ -141,6 +142,7 @@ pub(super) fn item(line: &str) -> Option<Marker> {
     };
 
     Some(Marker {
+        marker: indent..indent + end,
         content: indent + end + spaces.min(after),
         width: indent + end + after,
         ordered,

@@ -74,12 +74,34 @@ pub(super) fn parse(
         // including when they become literal content of a fenced block.
         unindent_blank_continuations(source, marker.width, &mut ranges, budget)?;
 
+        let mut syntax = source.prefix_syntax(
+            &ranges,
+            ranges
+                .iter()
+                .enumerate()
+                .map(|(index, range)| lines[item_start + index].start..range.start),
+        )?;
+        if let Some(syntax) = &mut syntax {
+            let markers = source.syntax(
+                &[],
+                &[(
+                    markdown_parser::syntax::MarkerKind::Open,
+                    lines[item_start].start + marker.marker.start
+                        ..lines[item_start].start + marker.marker.end,
+                )],
+            )?;
+            syntax.markers.extend(markers.unwrap().markers);
+        }
+
         budget.token()?;
-        children.push(DraftNode::blocks(
-            source.span_for(lines[item_start].start..lines[i - 1].end)?,
-            AnyPayload::new(markdown_commonmark_contracts::ListItem {}),
-            source.join(&ranges)?,
-        ));
+        children.push(
+            DraftNode::blocks(
+                source.span_for(lines[item_start].start..lines[i - 1].end)?,
+                AnyPayload::new(markdown_commonmark_contracts::ListItem {}),
+                source.join(&ranges)?,
+            )
+            .with_syntax(syntax),
+        );
     }
 
     let mut node = DraftNode::nodes(

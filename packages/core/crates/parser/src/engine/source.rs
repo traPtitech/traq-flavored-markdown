@@ -30,6 +30,60 @@ struct MappedSource {
 }
 
 impl SourceView {
+    /// Whether this parse requested optional source facts.
+    pub fn captures_syntax(&self) -> bool {
+        self.context::<super::syntax::CaptureSyntax>().is_some()
+    }
+
+    /// Map rule-owned content and markers only when parsing with syntax capture.
+    pub fn syntax(
+        &self,
+        content: &[ViewRange],
+        markers: &[(super::syntax::MarkerKind, ViewRange)],
+    ) -> Result<Option<super::syntax::SourceSyntax>, ParseError> {
+        use super::syntax::{SourceSyntax, SyntaxMarker};
+        if !self.captures_syntax() {
+            return Ok(None);
+        }
+        let mut facts = SourceSyntax::default();
+        for range in content {
+            facts.content.extend(self.source_spans(range.clone())?);
+        }
+        for (kind, range) in markers {
+            let spans = self.source_spans(range.clone())?;
+            if !spans.is_empty() {
+                facts.markers.push(SyntaxMarker {
+                    kind: *kind,
+                    spans,
+                    columns: None,
+                });
+            }
+        }
+        Ok(Some(facts))
+    }
+
+    /// Prefixes retain their consumed column count even when a tab was only
+    /// partly consumed and the original byte cannot be split.
+    pub fn prefix_syntax(
+        &self,
+        content: &[ViewRange],
+        prefixes: impl IntoIterator<Item = ViewRange>,
+    ) -> Result<Option<super::syntax::SourceSyntax>, ParseError> {
+        let mut syntax = self.syntax(content, &[])?;
+        if let Some(syntax) = &mut syntax {
+            for prefix in prefixes {
+                let spans = self.source_spans(prefix.clone())?;
+                if !spans.is_empty() {
+                    syntax.markers.push(super::syntax::SyntaxMarker {
+                        kind: super::syntax::MarkerKind::Prefix,
+                        spans,
+                        columns: Some(prefix.end - prefix.start),
+                    });
+                }
+            }
+        }
+        Ok(syntax)
+    }
     pub fn offset(&self, position: usize) -> Result<ViewOffset, ParseError> {
         if self.text().is_char_boundary(position) {
             Ok(ViewOffset(position))

@@ -56,11 +56,16 @@ pub(super) fn parse(
     let view = source.join(&[start..finish.max(start)])?;
 
     // A setext underline is consumed as part of the paragraph's heading.
+    let mut markers = vec![];
     let payload = if let Some(level) = if end < lines.end() {
         setext(input, end)?
     } else {
         None
     } {
+        markers.push((
+            markdown_parser::syntax::MarkerKind::Close,
+            lines[end].clone(),
+        ));
         end += 1;
         AnyPayload::new(markdown_commonmark_contracts::Heading { level })
     } else {
@@ -73,6 +78,7 @@ pub(super) fn parse(
             source.span_for(lines[first].start..lines[end - 1].end)?,
             payload,
             view,
-        ),
+        )
+        .with_syntax(source.syntax(&[start..finish.max(start)], &markers)?),
     )))
 }

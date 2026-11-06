@@ -41,6 +41,7 @@ pub struct Pairing {
 pub struct InlineMatch {
     pub end: ViewOffset,
     pub action: InlineAction,
+    pub syntax: Option<crate::syntax::SourceSyntax>,
 }
 
 pub enum InlineAction {
@@ -78,16 +79,23 @@ pub enum InlineAction {
 }
 
 impl InlineMatch {
+    #[must_use]
+    pub fn with_syntax(mut self, syntax: Option<crate::syntax::SourceSyntax>) -> Self {
+        self.syntax = syntax;
+        self
+    }
     pub fn text(end: ViewOffset, value: String) -> Self {
         Self {
             end,
             action: InlineAction::Text(value),
+            syntax: None,
         }
     }
 
     pub fn leaf(end: ViewOffset, payload: AnyPayload) -> Self {
         Self {
             end,
+            syntax: None,
             action: InlineAction::Node {
                 payload,
                 children: vec![],
@@ -100,6 +108,7 @@ impl InlineMatch {
         Self {
             end,
             action: InlineAction::Literal,
+            syntax: None,
         }
     }
 }
@@ -115,7 +124,11 @@ pub(super) enum TokenKind {
     Text(String),
     Decoded(String),
     Marker(String),
-    Atom(AnyPayload, Vec<Node>),
+    Atom(
+        AnyPayload,
+        crate::engine::syntax::ParsedNodes,
+        Option<crate::syntax::SourceSyntax>,
+    ),
     Open(fn() -> AnyPayload),
     Close,
     Empty,

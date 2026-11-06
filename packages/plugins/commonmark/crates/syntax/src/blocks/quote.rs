@@ -46,6 +46,13 @@ pub fn parse(
     }
 
     let mut view = source.join(&ranges)?;
+    let syntax = source.prefix_syntax(
+        &ranges,
+        ranges
+            .iter()
+            .enumerate()
+            .map(|(index, range)| lines[first + index].start..range.start),
+    )?;
     super::super::context::mark_lazy(&mut view, lazy_lines, budget)?;
 
     Ok(Some(BlockMatch::node(
@@ -54,6 +61,7 @@ pub fn parse(
             source.span_for(lines[first].start..lines[end - 1].end)?,
             AnyPayload::new(markdown_commonmark_contracts::Blockquote {}),
             view,
-        ),
+        )
+        .with_syntax(syntax),
     )))
 }

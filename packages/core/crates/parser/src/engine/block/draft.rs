@@ -8,6 +8,7 @@ pub struct DraftNode {
     pub payload: AnyPayload,
     pub content: DraftContent,
     pub finish: Option<fn(&mut ResolvedBlock)>,
+    pub syntax: Option<crate::syntax::SourceSyntax>,
 }
 
 pub enum DraftContent {
@@ -24,7 +25,14 @@ impl DraftNode {
             payload,
             content,
             finish: None,
+            syntax: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_syntax(mut self, syntax: Option<crate::syntax::SourceSyntax>) -> Self {
+        self.syntax = syntax;
+        self
     }
 
     pub fn leaf(span: Span, payload: AnyPayload) -> Self {
@@ -50,6 +58,7 @@ pub struct ResolvedBlock {
     pub payload: AnyPayload,
     pub content: ResolvedContent,
     pub metadata: ParseState,
+    pub syntax: Option<crate::syntax::SourceSyntax>,
 }
 
 pub enum ResolvedContent {

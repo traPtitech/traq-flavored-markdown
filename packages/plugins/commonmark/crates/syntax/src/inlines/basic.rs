@@ -52,6 +52,7 @@ pub(super) fn newline(
     }
 
     Ok(Some(InlineMatch {
+        syntax: None,
         end,
         action: InlineAction::TrimmedNode {
             trim,
@@ -101,10 +102,22 @@ pub(super) fn code(
         literal = literal[1..literal.len() - 1].into();
     }
 
-    Ok(Some(InlineMatch::leaf(
-        input.source.offset(end)?,
-        AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
-    )))
+    Ok(Some(
+        InlineMatch::leaf(
+            input.source.offset(end)?,
+            AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
+        )
+        .with_syntax(input.source.syntax(
+            &[open_end..input.source.offset(start)?],
+            &[
+                (markdown_parser::syntax::MarkerKind::Open, pos..open_end),
+                (
+                    markdown_parser::syntax::MarkerKind::Close,
+                    input.source.range(start..end)?,
+                ),
+            ],
+        )?),
+    ))
 }
 
 fn closing_code(

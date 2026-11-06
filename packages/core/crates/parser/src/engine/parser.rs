@@ -24,20 +24,42 @@ impl Parser {
     }
 
     pub fn parse(&self, source: &str) -> Result<Document, ParseError> {
-        self.run(source, false)
+        self.run(source, false, false).map(|parsed| parsed.document)
     }
 
     pub fn parse_inline(&self, source: &str) -> Result<Document, ParseError> {
-        self.run(source, true)
+        self.run(source, true, false).map(|parsed| parsed.document)
     }
 
-    fn run(&self, source: &str, inline_only: bool) -> Result<Document, ParseError> {
+    pub fn parse_with_syntax(
+        &self,
+        source: &str,
+    ) -> Result<crate::syntax::ParsedSyntax, ParseError> {
+        self.run(source, false, true)
+    }
+
+    pub fn parse_inline_with_syntax(
+        &self,
+        source: &str,
+    ) -> Result<crate::syntax::ParsedSyntax, ParseError> {
+        self.run(source, true, true)
+    }
+
+    fn run(
+        &self,
+        source: &str,
+        inline_only: bool,
+        capture: bool,
+    ) -> Result<crate::syntax::ParsedSyntax, ParseError> {
         let grammar = &self.grammar;
         if source.len() > self.limits.document.source_bytes {
             return Err(ParseError::limit(ParseResource::SourceBytes));
         }
 
-        let view = SourceView::new(source);
+        let mut view = SourceView::new(source);
+        if capture {
+            view.set_context(crate::engine::syntax::CaptureSyntax);
+        }
         let mut budget = Budget::new(self.limits);
         let mut state = ParseState::default();
 
@@ -49,7 +71,7 @@ impl Parser {
 
         let document = MutableDocument {
             source: source.into(),
-            children,
+            children: children.nodes,
         };
 
         let remaining_work = budget.remaining_work();
@@ -76,6 +98,13 @@ impl Parser {
 
         budget.spend(document.as_view().node_count())?;
 
-        Ok(document)
+        let syntax = crate::syntax::SyntaxTree {
+            children: children.syntax.unwrap_or_default(),
+            detached: std::mem::take(&mut budget.detached_syntax),
+        };
+        if capture {
+            syntax.validate(&document, &mut budget)?;
+        }
+        Ok(crate::syntax::ParsedSyntax { document, syntax })
     }
 }

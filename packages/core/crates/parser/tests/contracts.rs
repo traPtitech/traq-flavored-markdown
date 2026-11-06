@@ -81,6 +81,7 @@ fn invalid_plugin_results_never_return_partial_documents() {
                 2 => InlineMatch::literal(start + 99),
                 3 => InlineMatch::leaf(start + 3, Invalid.into()),
                 _ => InlineMatch {
+                    syntax: None,
                     end: start + 3,
                     action: InlineAction::Node {
                         payload: Text("parent".into()).into(),
@@ -369,6 +370,7 @@ fn final_validation_stops_at_the_remaining_work_budget() {
 
     plugin.add(InlineRule::new(b"x", |input, _| {
         Ok(Some(InlineMatch {
+            syntax: None,
             end: input.position + 1,
             action: InlineAction::Node {
                 payload: Text("parent".into()).into(),
