@@ -169,9 +169,23 @@ export function analyzeForEditing(parsed: ParsedSyntax): EditorAnalysis {
       (first?.columns ?? 0) + (list && text.endsWith(symbol) ? 1 : 0)
     const continuation = isQuote ? text || '> ' : ' '.repeat(width)
     const end = endOf(entry)
+    // An unclosed root fence includes the EOF line, even when the block line
+    // index omitted its empty or whitespace-only tail. Container prefixes are
+    // still required to continue a fence inside a quote or list item.
+    const openAtEof =
+      literal &&
+      opening !== undefined &&
+      !entry.markers.some(m => m.kind === 'close') &&
+      !document
+        .location(entry.node)
+        .ancestors.some(
+          node =>
+            node.kind === common.Blockquote || node.kind === common.ListItem
+        ) &&
+      /^[ \t\r\n]*$/.test(source.text.slice(end))
     for (
       let index = lineAt(entry.range.from);
-      index < lines.length && lines[index].from < end;
+      index < lines.length && (lines[index].from < end || openAtEof);
       index++
     ) {
       const line = lines[index]

@@ -120,3 +120,37 @@ test('syntax capture observes source and work limits without poisoning its parse
     )
   }
 })
+
+test('the final empty line remains literal only for an open root block', () => {
+  for (const newline of ['\n', '\r\n', '\r']) {
+    for (const marker of ['```', '$$']) {
+      for (const tail of ['', ' ', '\t']) {
+        const open = analyzeForEditing(
+          parser.parseWithSyntax(`${marker}${newline}body${newline}${tail}`)
+        )
+        expect(open.lines.at(-1)!.literal).toBe(true)
+      }
+      const closed = analyzeForEditing(
+        parser.parseWithSyntax(
+          `${marker}${newline}body${newline}${marker}${newline}`
+        )
+      )
+      expect(closed.lines.at(-1)!.literal).toBe(false)
+      for (const [prefix, continuation] of [
+        ['> ', '> '],
+        ['- ', '  ']
+      ]) {
+        const nested = analyzeForEditing(
+          parser.parseWithSyntax(
+            `${prefix}${marker}${newline}${continuation}body${newline}`
+          )
+        )
+        expect(nested.lines.at(-1)!.literal).toBe(false)
+      }
+    }
+    const indented = analyzeForEditing(
+      parser.parseWithSyntax(`    body${newline}`)
+    )
+    expect(indented.lines.at(-1)!.literal).toBe(false)
+  }
+})
