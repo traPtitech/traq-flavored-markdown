@@ -28,11 +28,11 @@
     },
     "packages/core": {
       "name": "@traq-flavored-markdown/core",
-      "version": "0.1.7",
+      "version": "0.2.0",
     },
     "packages/plugins/commonmark": {
       "name": "@traq-flavored-markdown/commonmark-plugin",
-      "version": "0.1.7",
+      "version": "0.2.0",
       "devDependencies": {
         "@traq-flavored-markdown/core": "workspace:*",
         "highlight.js": "11.12.0",
@@ -47,7 +47,7 @@
     },
     "packages/plugins/extensions": {
       "name": "@traq-flavored-markdown/extensions-plugin",
-      "version": "0.1.7",
+      "version": "0.2.0",
       "devDependencies": {
         "@traq-flavored-markdown/core": "workspace:*",
         "@types/katex": "0.16.8",
@@ -64,7 +64,7 @@
     },
     "packages/plugins/traq": {
       "name": "@traq-flavored-markdown/traq-plugin",
-      "version": "0.1.7",
+      "version": "0.2.0",
       "devDependencies": {
         "@traq-flavored-markdown/core": "workspace:*",
         "sass": "1.106.1",
@@ -75,7 +75,7 @@
     },
     "packages/sdk": {
       "name": "@traq-flavored-markdown/sdk",
-      "version": "0.1.7",
+      "version": "0.2.0",
       "devDependencies": {
         "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
         "@traq-flavored-markdown/core": "workspace:*",
