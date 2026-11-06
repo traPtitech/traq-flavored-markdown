@@ -14,6 +14,7 @@ export class SourceText {
   readonly text: string
   readonly byteLength: number
   #bytes: Uint8Array
+  #offsets?: { bytes: Int32Array; utf16: Int32Array }
 
   constructor(text: string) {
     if (typeof text !== 'string') throw new TypeError('Expected source string')
@@ -51,6 +52,44 @@ export class SourceText {
   /** A copy for transport; callers cannot mutate this source's backing bytes. */
   bytes(): Uint8Array {
     return this.#bytes.slice()
+  }
+
+  /** Convert an original UTF-8 byte boundary to a JavaScript string offset. */
+  utf16Offset(byteOffset: number): number {
+    if (!this.isBoundary(byteOffset))
+      throw new TypeError('Invalid source UTF-8 offset')
+    return this.offsets().bytes[byteOffset]
+  }
+
+  /** Convert a JavaScript offset, rejecting positions inside surrogate pairs. */
+  byteOffset(utf16Offset: number): number {
+    if (
+      !Number.isSafeInteger(utf16Offset) ||
+      utf16Offset < 0 ||
+      utf16Offset > this.text.length
+    )
+      throw new TypeError('Invalid source UTF-16 offset')
+    const result = this.offsets().utf16[utf16Offset]
+    if (result < 0) throw new TypeError('Invalid source UTF-16 boundary')
+    return result
+  }
+
+  private offsets() {
+    if (this.#offsets) return this.#offsets
+    const bytes = new Int32Array(this.byteLength + 1).fill(-1)
+    const utf16 = new Int32Array(this.text.length + 1).fill(-1)
+    let byte = 0
+    let unit = 0
+    bytes[0] = 0
+    utf16[0] = 0
+    for (const character of this.text) {
+      const code = character.codePointAt(0)!
+      byte += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4
+      unit += character.length
+      bytes[byte] = unit
+      utf16[unit] = byte
+    }
+    return (this.#offsets = { bytes, utf16 })
   }
 
   /** Apply ordered, disjoint byte edits while preserving all other source bytes. */
