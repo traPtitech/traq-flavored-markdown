@@ -75,6 +75,7 @@ jobs:
       - name: Validate shared version and internal dependencies
         run: bun run release -- "$RELEASE_TAG" --check
 
+      - run: bunx playwright install --with-deps chromium
       - run: bun run check
 
       - name: Commit release metadata
