@@ -162,6 +162,7 @@ pub struct Budget {
     tokens: usize,
     nodes: usize,
     work: usize,
+    pub(crate) detached_syntax: Vec<crate::syntax::SyntaxMarker>,
 }
 
 impl Budget {
@@ -171,6 +172,7 @@ impl Budget {
             tokens: 0,
             nodes: 0,
             work: 0,
+            detached_syntax: vec![],
         }
     }
 

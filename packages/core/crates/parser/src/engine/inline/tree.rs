@@ -1,7 +1,8 @@
 use super::token::{Token, TokenKind};
 
+use crate::engine::syntax::{MarkerKind, ParsedNodes};
 use crate::{
-    Node, ParseError,
+    ParseError,
     engine::{Budget, plugin::TextFactory, source::SourceView},
 };
 
@@ -11,9 +12,10 @@ pub(super) fn build(
     source: &SourceView,
     make_text: &TextFactory,
     budget: &mut Budget,
-) -> Result<Vec<Node>, ParseError> {
+) -> Result<ParsedNodes, ParseError> {
+    let capture = source.captures_syntax();
     let mut stack = vec![];
-    let mut children = vec![];
+    let mut children = ParsedNodes::new(capture);
     let mut text: Option<(usize, usize, String)> = None;
 
     for token in tokens {
@@ -39,20 +41,38 @@ pub(super) fn build(
         flush(&mut text, &mut children, source, make_text, budget)?;
 
         match kind {
-            TokenKind::Atom(kind, nested) => {
+            TokenKind::Atom(kind, nested, syntax) => {
                 budget.node()?;
-                children.push(Node::new(source.span(token.start, token.end), kind, nested));
+                let syntax = match syntax {
+                    Some(syntax) => Some(syntax),
+                    None => source.syntax(&[source.range(token.start..token.end)?], &[], budget)?,
+                };
+                children.push(source.span(token.start, token.end), kind, nested, syntax);
             }
 
             TokenKind::Open(make) => {
                 budget.nesting(stack.len() + 1)?;
-                stack.push((make, token.start, std::mem::take(&mut children)));
+                stack.push((
+                    make,
+                    token.start,
+                    token.end,
+                    std::mem::replace(&mut children, ParsedNodes::new(capture)),
+                ));
             }
 
             TokenKind::Close => {
-                let (make, start, previous) = stack.pop().ok_or(ParseError::InternalError)?;
+                let (make, start, open_end, previous) =
+                    stack.pop().ok_or(ParseError::InternalError)?;
                 let nested = std::mem::replace(&mut children, previous);
-                children.push(Node::new(source.span(start, token.end), make(), nested));
+                let syntax = source.syntax(
+                    &[source.range(open_end..token.start)?],
+                    &[
+                        (MarkerKind::Open, source.range(start..open_end)?),
+                        (MarkerKind::Close, source.range(token.start..token.end)?),
+                    ],
+                    budget,
+                )?;
+                children.push(source.span(start, token.end), make(), nested, syntax);
             }
 
             _ => unreachable!("text and empty tokens handled above"),
@@ -70,14 +90,19 @@ pub(super) fn build(
 
 fn flush(
     text: &mut Option<(usize, usize, String)>,
-    children: &mut Vec<Node>,
+    children: &mut ParsedNodes,
     source: &SourceView,
     make_text: &TextFactory,
     budget: &mut Budget,
 ) -> Result<(), ParseError> {
     if let Some((start, end, value)) = text.take() {
         budget.node()?;
-        children.push(Node::leaf(source.span(start, end), make_text(value)));
+        children.push(
+            source.span(start, end),
+            make_text(value),
+            ParsedNodes::new(source.captures_syntax()),
+            source.syntax(&[source.range(start..end)?], &[], budget)?,
+        );
     }
     Ok(())
 }

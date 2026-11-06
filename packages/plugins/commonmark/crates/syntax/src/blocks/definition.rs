@@ -35,18 +35,28 @@ pub(super) fn parse(
         return Ok(None);
     };
 
+    let syntax = input.source.syntax(
+        &[],
+        &[(
+            markdown_parser::syntax::MarkerKind::Definition,
+            lines[input.start].start..lines[end - 1].end,
+        )],
+        budget,
+    )?;
     if end < lines.end() && blank(input.line(end)) {
         end += 1;
     }
 
-    Ok(Some(BlockMatch::ignore(end).on_accept(move |state, _| {
-        state
-            .get_or_default::<references::ReferenceMap>()
-            .0
-            .entry(key)
-            .or_insert((target, title));
-        Ok(())
-    })))
+    Ok(Some(BlockMatch::ignore(end).with_syntax(syntax).on_accept(
+        move |state, _| {
+            state
+                .get_or_default::<references::ReferenceMap>()
+                .0
+                .entry(key)
+                .or_insert((target, title));
+            Ok(())
+        },
+    )))
 }
 
 fn find_definition(

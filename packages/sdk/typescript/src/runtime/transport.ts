@@ -21,9 +21,11 @@ import { schema } from '../generated/nodes.js'
 import { type Extraction, isExtraction } from '../generated/processing.js'
 import { MarkdownError } from './errors.js'
 import { encodeRequest } from './json.js'
+import { bindSyntax } from './syntax.js'
 import type {
   DocumentInput,
   ParsedDocument,
+  ParsedSyntax,
   ProcessedDocument
 } from './types.js'
 
@@ -34,6 +36,7 @@ type Results = {
   extraction: Extraction
   text: string
   processing: ProcessedDocument
+  syntax: ParsedSyntax
 }
 type Result<N extends OperationName> = Results[(typeof operations)[N]['result']]
 type Input<N extends OperationName> =
@@ -255,19 +258,27 @@ export function createTransport(
             ? fields(value, { contractId: string })
             : descriptor.result === 'document'
               ? isDocument(value)
-              : descriptor.result === 'extraction'
-                ? isExtraction(value)
-                : descriptor.result === 'processing'
-                  ? fields(value, {
-                      document: isDocument,
-                      extraction: isExtraction,
-                      plainText: string
-                    })
-                  : typeof value === 'string'
+              : descriptor.result === 'syntax'
+                ? fields(value, { document: isDocument, syntax: object })
+                : descriptor.result === 'extraction'
+                  ? isExtraction(value)
+                  : descriptor.result === 'processing'
+                    ? fields(value, {
+                        document: isDocument,
+                        extraction: isExtraction,
+                        plainText: string
+                      })
+                    : typeof value === 'string'
         if (!valid) throw new Error('Malformed Wasm success value')
         if (descriptor.result === 'document')
           reply.ok = schema.document(value as ReadonlyDocument)
-        else if (descriptor.result === 'processing') {
+        else if (descriptor.result === 'syntax') {
+          const result = value as {
+            document: ReadonlyDocument
+            syntax: unknown
+          }
+          reply.ok = bindSyntax(schema.document(result.document), result.syntax)
+        } else if (descriptor.result === 'processing') {
           const result = value as {
             document: ReadonlyDocument
             extraction: Extraction

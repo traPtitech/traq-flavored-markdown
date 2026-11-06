@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::{
-    Node, ParseError,
+    ParseError,
     engine::{
         Budget, Grammar, ParsePhase, ParseState, inline,
         source::{SourceView, ViewOffset, ViewRange},
@@ -34,7 +34,7 @@ pub(crate) fn parse(
     grammar: &Grammar,
     budget: &mut Budget,
     state: &mut ParseState,
-) -> Result<Vec<Node>, ParseError> {
+) -> Result<crate::engine::syntax::ParsedNodes, ParseError> {
     let expanded;
 
     let source = if source.text().contains('\t') {
@@ -47,7 +47,14 @@ pub(crate) fn parse(
 
     let batch = tokenize(source, grammar, budget, state, 0)?;
 
-    resolve_inlines(batch.nodes, grammar, budget, state, 0)
+    resolve_inlines(
+        batch.nodes,
+        grammar,
+        budget,
+        state,
+        0,
+        source.captures_syntax(),
+    )
 }
 
 fn tokenize(
@@ -74,6 +81,11 @@ fn tokenize(
         };
 
         let found = match_block(&input, budget)?;
+
+        if source.captures_syntax() {
+            budget.spend(found.syntax.len())?;
+            budget.detached_syntax.extend(found.syntax);
+        }
 
         for commit in found.commits {
             commit(state, budget)?;
@@ -146,10 +158,19 @@ fn resolve_blocks(
 ) -> Result<ResolvedBlock, ParseError> {
     budget.nesting(depth)?;
     let mut metadata = ParseState::default();
+    let mut syntax = draft.syntax;
     let content = match draft.content {
         DraftContent::Leaf => ResolvedContent::Leaf,
-        DraftContent::Inline(source) => ResolvedContent::Inline(source),
+        DraftContent::Inline(source) => {
+            if syntax.is_none() {
+                syntax = source.syntax(&[source.range(0..source.text().len())?], &[], budget)?;
+            }
+            ResolvedContent::Inline(source)
+        }
         DraftContent::Blocks(source) => {
+            if syntax.is_none() {
+                syntax = source.syntax(&[source.range(0..source.text().len())?], &[], budget)?;
+            }
             let batch = tokenize(&source, grammar, budget, state, depth + 1)?;
             metadata = batch.metadata;
             ResolvedContent::Nodes(batch.nodes)
@@ -167,6 +188,7 @@ fn resolve_blocks(
         payload: draft.payload,
         content,
         metadata,
+        syntax,
     };
     if let Some(finish) = draft.finish {
         finish(&mut node);
@@ -180,26 +202,27 @@ fn resolve_inlines(
     budget: &mut Budget,
     state: &ParseState,
     depth: usize,
-) -> Result<Vec<Node>, ParseError> {
+    capture: bool,
+) -> Result<crate::engine::syntax::ParsedNodes, ParseError> {
     budget.nesting(depth)?;
 
-    let mut nodes = Vec::with_capacity(drafts.len());
+    let mut nodes = crate::engine::syntax::ParsedNodes::new(capture);
 
     for draft in drafts {
         let children = match draft.content {
-            ResolvedContent::Leaf => vec![],
+            ResolvedContent::Leaf => crate::engine::syntax::ParsedNodes::new(capture),
 
             ResolvedContent::Inline(source) => {
                 inline::parse(&source.restore_tabs(), grammar, budget, state)?
             }
 
             ResolvedContent::Nodes(children) => {
-                resolve_inlines(children, grammar, budget, state, depth + 1)?
+                resolve_inlines(children, grammar, budget, state, depth + 1, capture)?
             }
         };
 
         budget.node()?;
-        nodes.push(Node::new(draft.span, draft.payload, children));
+        nodes.push(draft.span, draft.payload, children, draft.syntax);
     }
 
     Ok(nodes)

@@ -24,7 +24,7 @@ export type ArtifactLimits = {
 export type Provenance = { sourceFingerprint: string }
 export type WasmType = 'i32'
 export type OperationResult =
-  'configuration' | 'document' | 'extraction' | 'text' | 'processing'
+  'configuration' | 'document' | 'extraction' | 'text' | 'processing' | 'syntax'
 export type Signature = { params: WasmType[]; results: WasmType[] }
 export type Operation = {
   export: string
@@ -87,7 +87,8 @@ function operationResult(value: unknown, path: string): OperationResult {
     value !== 'document' &&
     value !== 'extraction' &&
     value !== 'text' &&
-    value !== 'processing'
+    value !== 'processing' &&
+    value !== 'syntax'
   )
     invalid(path)
   return value

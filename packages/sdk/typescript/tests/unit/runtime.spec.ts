@@ -119,6 +119,35 @@ test('transport faults close one instance and preserve structured operation cont
   }
 })
 
+test('malformed syntax records reject the complete reply and close the instance', async () => {
+  const document = {
+    source: 'x',
+    children: [
+      {
+        kind: 'commonmark.text',
+        data: { value: 'x' },
+        span: { start: 0, end: 1 }
+      }
+    ]
+  }
+  for (const syntax of [
+    { nodes: [], detached: [] },
+    { nodes: [{ content: [{ start: 0, end: 2 }], markers: [] }], detached: [] },
+    { nodes: [null, null], detached: [] }
+  ]) {
+    const runtime = await createRuntime(
+      moduleBytes(JSON.stringify({ ok: { document, syntax } }))
+    )
+    const parser = runtime.createParser('commonmark')
+    expect(thrown(() => parser.parseWithSyntax('x'))).toMatchObject({
+      code: 'transport_error',
+      operation: 'parseWithSyntax'
+    })
+    expect(thrown(() => parser.parseWithSyntax('again')).code).toBe('disposed')
+    runtime.dispose()
+  }
+})
+
 test('valid domain errors and host request errors leave the processor reusable', async () => {
   const detail = {
     code: 'invalid_document',

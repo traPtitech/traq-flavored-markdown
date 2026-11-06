@@ -13,6 +13,7 @@ import {
   isGrammarPresetId as isBrowserPreset,
   loadRuntime
 } from '@traq-flavored-markdown/sdk/browser'
+import { analyzeForEditing } from '@traq-flavored-markdown/sdk/editor'
 import { createHtmlRenderer as composeHtml } from '@traq-flavored-markdown/sdk/renderer'
 import {
   type Reference,
@@ -22,6 +23,14 @@ import {
 const runtime = await createRuntime(new Uint8Array())
 const parser = runtime.createParser(presets.traq.v1)
 const document: ParsedDocument = parser.parse('text')
+const captured = parser.parseWithSyntax('**text**')
+const editing = analyzeForEditing(captured)
+const selected = editing.nodes[0]
+const sourceFacts = captured.syntaxFor(selected.node)
+// @ts-expect-error source facts belong to the immutable parsed snapshot.
+sourceFacts.children.push(sourceFacts)
+const offset: number = captured.document.source.utf16Offset(0)
+void offset
 for (const node of document.document.children)
   if (node.kind === names.Reference) {
     const reference: Reference = node.data

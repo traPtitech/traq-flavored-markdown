@@ -274,6 +274,16 @@ pub fn descriptor() -> markdown_contract_export::Result<markdown_contract_export
                 Operation::new("parse", Input::Text, vec![WasmType::I32], Output::Document),
             ),
             (
+                "parseWithSyntax",
+                Operation::new(
+                    "parse_with_syntax",
+                    Input::Text,
+                    vec![WasmType::I32],
+                    Output::Syntax,
+                )
+                .response_schema("SyntaxRecords"),
+            ),
+            (
                 "extract",
                 Operation::new("extract", Input::Json, vec![], Output::Extraction)
                     .response_schema("Extraction"),

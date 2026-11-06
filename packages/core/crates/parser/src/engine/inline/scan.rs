@@ -89,7 +89,7 @@ pub(crate) fn parse(
     grammar: &Grammar,
     budget: &mut Budget,
     parse_state: &ParseState,
-) -> Result<Vec<Node>, ParseError> {
+) -> Result<crate::engine::syntax::ParsedNodes, ParseError> {
     let mut state = State {
         source,
         make_text: &grammar.data.make_text,

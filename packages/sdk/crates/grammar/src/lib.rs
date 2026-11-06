@@ -10,6 +10,9 @@ pub mod syntax {
     pub use markdown_traq_syntax as traq;
 }
 
+pub use markdown_parser::syntax::{
+    MarkerKind, NodeSyntax, ParsedSyntax, SourceSyntax, SyntaxMarker, SyntaxTree,
+};
 pub use markdown_parser::{
     AnyPayload, BuildError, Document, DocumentView, Grammar, GrammarBuilder, Limits,
     MutableDocument, Node, NodeRole, ParseError, ParsePhase, ParseResource, Parser, Span,

@@ -21,6 +21,7 @@ export type {
   Extractor,
   Parser,
   ParsedDocument,
+  ParsedSyntax,
   PlainTextRenderer,
   ProcessedDocument,
   Processor,
@@ -46,6 +47,10 @@ export async function createRuntime(bytes: Uint8Array): Promise<Runtime> {
       return Object.freeze({
         parse: (source: string) => instance.call('parse', source, 0),
         parseInline: (source: string) => instance.call('parse', source, 1),
+        parseWithSyntax: (source: string) =>
+          instance.call('parseWithSyntax', source, 0),
+        parseInlineWithSyntax: (source: string) =>
+          instance.call('parseWithSyntax', source, 1),
         dispose: instance.dispose
       })
     },

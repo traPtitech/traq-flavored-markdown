@@ -47,6 +47,8 @@ test('failed requests do not poison later calls; resources remain bounded', asyn
     ':'.repeat(50000),
     ('[a]: "' + 'x'.repeat(200) + '\n').repeat(200),
     '\t'.repeat(65536),
+    '\0'.repeat(65536),
+    ('> '.repeat(30) + '\0'.repeat(400) + '\r\n').repeat(128),
     '> '.repeat(60) + '\t'.repeat(60000),
     '- > '.repeat(30) + '\t'.repeat(60000)
   ]

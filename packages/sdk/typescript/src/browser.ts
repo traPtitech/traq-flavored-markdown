@@ -12,6 +12,7 @@ export type {
   GrammarPresetId,
   MarkdownErrorCode,
   Parser,
+  ParsedSyntax,
   Extractor,
   PlainTextRenderer,
   Processor,

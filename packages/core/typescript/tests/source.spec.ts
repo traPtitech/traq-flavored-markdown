@@ -5,6 +5,31 @@ import type { MutableNode } from '../src/ast.js'
 import { DocumentContext } from '../src/document.js'
 import { SourceText } from '../src/source.js'
 
+test('UTF-8 and UTF-16 offsets roundtrip scalar boundaries and preserve original spelling', () => {
+  const source = new SourceText('\uFEFF猫😀\r\n\0é')
+  const boundaries = [
+    [0, 0],
+    [3, 1],
+    [6, 2],
+    [10, 4],
+    [11, 5],
+    [12, 6],
+    [13, 7],
+    [14, 8],
+    [16, 9]
+  ]
+  for (const [byte, unit] of boundaries) {
+    expect(source.utf16Offset(byte)).toBe(unit)
+    expect(source.byteOffset(unit)).toBe(byte)
+  }
+  for (const byte of [-1, 1, 7, 15, 17, NaN, 0.5])
+    expect(() => source.utf16Offset(byte)).toThrow()
+  for (const unit of [-1, 3, 10, NaN, 0.5])
+    expect(() => source.byteOffset(unit)).toThrow()
+  expect(new SourceText('').byteOffset(0)).toBe(0)
+  expect(new SourceText('').utf16Offset(0)).toBe(0)
+})
+
 test('source operations follow the shared cross-language byte contract', () => {
   for (const fixture of sourceFixtures) {
     const source = new SourceText(fixture.source)

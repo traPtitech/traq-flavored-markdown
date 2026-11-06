@@ -44,6 +44,12 @@ the schema's node union for traversal and accepts reuse by independent consumers
 editing. `SourceText` slices and edits UTF-8 byte spans while preserving BOM, CRLF,
 and NUL. `DocumentValidationError` exposes `code`, `path`, and optional `resource`.
 
+`SourceText.utf16Offset(byteOffset)` and `byteOffset(utf16Offset)` translate
+between original byte boundaries and JavaScript string offsets. The conversion
+index is cached on first use. Invalid UTF-8 boundaries and positions inside a
+UTF-16 surrogate pair are rejected; line endings and source characters are not
+normalized during conversion.
+
 Schemas reject unknown nodes by default. `schema.withUnknownNodes()` preserves
 opaque application nodes while validating known contracts; unknown children do
 not bypass a known parent's child constraints. Extend a schema with typed

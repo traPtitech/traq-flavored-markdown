@@ -2,6 +2,7 @@ export { createRuntime } from './runtime/index.js'
 export type {
   Parser,
   ParsedDocument,
+  ParsedSyntax,
   DocumentInput,
   Extractor,
   PlainTextRenderer,

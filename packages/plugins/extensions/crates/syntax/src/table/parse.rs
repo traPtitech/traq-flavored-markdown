@@ -33,11 +33,20 @@ pub(super) fn parse(
         end += 1;
     }
 
-    Ok(Some(input.matched(
+    let mut matched = input.matched(
         end,
         markdown_parser::AnyPayload::new(Table { alignments: align }),
         DraftContent::Nodes(children),
-    )?))
+    )?;
+    matched.nodes[0].syntax = input.source.syntax(
+        &[],
+        &[(
+            markdown_parser::syntax::MarkerKind::Separator,
+            input.lines[first + 1].clone(),
+        )],
+        budget,
+    )?;
+    Ok(Some(matched))
 }
 
 fn row(

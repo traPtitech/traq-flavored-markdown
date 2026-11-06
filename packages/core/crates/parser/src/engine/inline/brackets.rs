@@ -14,6 +14,7 @@ pub(super) fn close(
     end: usize,
     kind: AnyPayload,
     inhibit: bool,
+    syntax: Option<crate::syntax::SourceSyntax>,
 ) -> Result<(), ParseError> {
     let bracket = state.brackets.pop().ok_or(ParseError::InternalError)?;
 
@@ -32,7 +33,24 @@ pub(super) fn close(
     )?;
 
     let opening = state.tokens.pop().ok_or(ParseError::InternalError)?;
-    state.push(opening.start, end, TokenKind::Atom(kind, children))?;
+    let syntax = match syntax {
+        Some(syntax) => Some(syntax),
+        None => state.source.syntax(
+            &[state.source.range(opening.end..state.position)?],
+            &[
+                (
+                    crate::syntax::MarkerKind::Open,
+                    state.source.range(opening.start..opening.end)?,
+                ),
+                (
+                    crate::syntax::MarkerKind::Close,
+                    state.source.range(state.position..end)?,
+                ),
+            ],
+            state.budget,
+        )?,
+    };
+    state.push(opening.start, end, TokenKind::Atom(kind, children, syntax))?;
 
     if inhibit {
         self::inhibit(state);

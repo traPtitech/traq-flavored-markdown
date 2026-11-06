@@ -12,6 +12,12 @@ mod node_catalog;
 mod node_metadata;
 #[path = "../nodes.rs"]
 mod nodes;
+#[path = "../source_syntax.rs"]
+#[allow(
+    dead_code,
+    reason = "The exporter reads the source-syntax schema without executing Wasm"
+)]
+mod source_syntax;
 
 #[cfg(test)]
 #[path = "../node_contract_tests.rs"]
@@ -45,8 +51,13 @@ fn main() -> markdown_contract_export::Result<()> {
             ("ProcessorOptions".into(), Direction::Request),
             ("ProcessorConfiguration".into(), Direction::Request),
             ("ProcessingResult".into(), Direction::Response),
+            ("SyntaxRecords".into(), Direction::Response),
         ]),
         processing: BTreeMap::from([
+            (
+                "SyntaxRecords".into(),
+                schema::<source_syntax::SyntaxRecords>(Contract::Serialize),
+            ),
             (
                 "ExtractorOptions".into(),
                 schema::<ExtractorOptions>(Contract::Deserialize),

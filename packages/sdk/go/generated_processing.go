@@ -542,3 +542,235 @@ func (value *ProcessorOptions) UnmarshalJSON(raw []byte) error {
 	*value = ProcessorOptions(decoded)
 	return nil
 }
+
+type SyntaxRecords struct {
+	Detached []SyntaxMarker  `json:"detached"`
+	Nodes    []*SourceSyntax `json:"nodes"`
+}
+
+func (value *SyntaxRecords) UnmarshalJSON(raw []byte) error {
+	object, err := contract.Object(raw)
+	if err != nil {
+		return err
+	}
+	type wire SyntaxRecords
+	var decoded wire
+	if err := contract.Fields(object, "detached", "nodes"); err != nil {
+		return err
+	}
+	if raw, present := object["detached"]; present {
+		if err := (func(raw json.RawMessage, value *[]SyntaxMarker) error {
+			if err := contract.Array(raw, value, contract.Decode[SyntaxMarker]); err != nil {
+				return err
+			}
+			return nil
+		})(raw, &decoded.Detached); err != nil {
+			return fmt.Errorf("field %q: %w", "detached", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "detached")
+	}
+	if raw, present := object["nodes"]; present {
+		if err := (func(raw json.RawMessage, value *[]*SourceSyntax) error {
+			if err := contract.Array(raw, value, func(raw json.RawMessage, value **SourceSyntax) error {
+				return contract.Nullable(raw, value, contract.Decode[SourceSyntax])
+			}); err != nil {
+				return err
+			}
+			return nil
+		})(raw, &decoded.Nodes); err != nil {
+			return fmt.Errorf("field %q: %w", "nodes", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "nodes")
+	}
+	*value = SyntaxRecords(decoded)
+	return nil
+}
+
+type SourceSyntax struct {
+	Content []SyntaxSpan   `json:"content"`
+	Markers []SyntaxMarker `json:"markers"`
+}
+
+func (value *SourceSyntax) UnmarshalJSON(raw []byte) error {
+	object, err := contract.Object(raw)
+	if err != nil {
+		return err
+	}
+	type wire SourceSyntax
+	var decoded wire
+	if err := contract.Fields(object, "content", "markers"); err != nil {
+		return err
+	}
+	if raw, present := object["content"]; present {
+		if err := (func(raw json.RawMessage, value *[]SyntaxSpan) error {
+			if err := contract.Array(raw, value, contract.Decode[SyntaxSpan]); err != nil {
+				return err
+			}
+			return nil
+		})(raw, &decoded.Content); err != nil {
+			return fmt.Errorf("field %q: %w", "content", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "content")
+	}
+	if raw, present := object["markers"]; present {
+		if err := (func(raw json.RawMessage, value *[]SyntaxMarker) error {
+			if err := contract.Array(raw, value, contract.Decode[SyntaxMarker]); err != nil {
+				return err
+			}
+			return nil
+		})(raw, &decoded.Markers); err != nil {
+			return fmt.Errorf("field %q: %w", "markers", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "markers")
+	}
+	*value = SourceSyntax(decoded)
+	return nil
+}
+
+type SyntaxMarker struct {
+	Columns **uint32         `json:"columns,omitempty"`
+	Kind    SyntaxMarkerKind `json:"kind"`
+	Spans   []SyntaxSpan     `json:"spans"`
+	Text    **string         `json:"text,omitempty"`
+}
+
+func (value *SyntaxMarker) UnmarshalJSON(raw []byte) error {
+	object, err := contract.Object(raw)
+	if err != nil {
+		return err
+	}
+	type wire SyntaxMarker
+	var decoded wire
+	if err := contract.Fields(object, "columns", "kind", "spans", "text"); err != nil {
+		return err
+	}
+	if raw, present := object["columns"]; present {
+		var present *uint32
+		if err := (func(raw json.RawMessage, value **uint32) error {
+			return contract.Nullable(raw, value, func(raw json.RawMessage, value *uint32) error {
+				if err := contract.Decode(raw, value); err != nil {
+					return err
+				}
+				if *value < 0 || *value > 4294967295 {
+					return fmt.Errorf("number outside schema range")
+				}
+				return nil
+			})
+		})(raw, &present); err != nil {
+			return fmt.Errorf("field %q: %w", "columns", err)
+		}
+		decoded.Columns = &present
+	}
+	if raw, present := object["kind"]; present {
+		if err := (contract.Decode[SyntaxMarkerKind])(raw, &decoded.Kind); err != nil {
+			return fmt.Errorf("field %q: %w", "kind", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "kind")
+	}
+	if raw, present := object["spans"]; present {
+		if err := (func(raw json.RawMessage, value *[]SyntaxSpan) error {
+			if err := contract.Array(raw, value, contract.Decode[SyntaxSpan]); err != nil {
+				return err
+			}
+			return nil
+		})(raw, &decoded.Spans); err != nil {
+			return fmt.Errorf("field %q: %w", "spans", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "spans")
+	}
+	if raw, present := object["text"]; present {
+		var present *string
+		if err := (func(raw json.RawMessage, value **string) error {
+			return contract.Nullable(raw, value, contract.Decode[string])
+		})(raw, &present); err != nil {
+			return fmt.Errorf("field %q: %w", "text", err)
+		}
+		decoded.Text = &present
+	}
+	*value = SyntaxMarker(decoded)
+	return nil
+}
+
+type SyntaxMarkerKind string
+
+const (
+	SyntaxMarkerKindOpen       SyntaxMarkerKind = "open"
+	SyntaxMarkerKindClose      SyntaxMarkerKind = "close"
+	SyntaxMarkerKindPrefix     SyntaxMarkerKind = "prefix"
+	SyntaxMarkerKindInfo       SyntaxMarkerKind = "info"
+	SyntaxMarkerKindSeparator  SyntaxMarkerKind = "separator"
+	SyntaxMarkerKindDefinition SyntaxMarkerKind = "definition"
+)
+
+func (value *SyntaxMarkerKind) UnmarshalJSON(raw []byte) error {
+	var decoded string
+	if err := contract.Decode(raw, &decoded); err != nil {
+		return err
+	}
+	if err := contract.Enum(decoded, "open", "close", "prefix", "info", "separator", "definition"); err != nil {
+		return err
+	}
+	*value = SyntaxMarkerKind(decoded)
+	return nil
+}
+func (value SyntaxMarkerKind) MarshalJSON() ([]byte, error) {
+	if err := contract.Enum(string(value), "open", "close", "prefix", "info", "separator", "definition"); err != nil {
+		return nil, err
+	}
+	return json.Marshal(string(value))
+}
+
+type SyntaxSpan struct {
+	End   uint32 `json:"end"`
+	Start uint32 `json:"start"`
+}
+
+func (value *SyntaxSpan) UnmarshalJSON(raw []byte) error {
+	object, err := contract.Object(raw)
+	if err != nil {
+		return err
+	}
+	type wire SyntaxSpan
+	var decoded wire
+	if err := contract.Fields(object, "end", "start"); err != nil {
+		return err
+	}
+	if raw, present := object["end"]; present {
+		if err := (func(raw json.RawMessage, value *uint32) error {
+			if err := contract.Decode(raw, value); err != nil {
+				return err
+			}
+			if *value < 0 || *value > 4294967295 {
+				return fmt.Errorf("number outside schema range")
+			}
+			return nil
+		})(raw, &decoded.End); err != nil {
+			return fmt.Errorf("field %q: %w", "end", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "end")
+	}
+	if raw, present := object["start"]; present {
+		if err := (func(raw json.RawMessage, value *uint32) error {
+			if err := contract.Decode(raw, value); err != nil {
+				return err
+			}
+			if *value < 0 || *value > 4294967295 {
+				return fmt.Errorf("number outside schema range")
+			}
+			return nil
+		})(raw, &decoded.Start); err != nil {
+			return fmt.Errorf("field %q: %w", "start", err)
+		}
+	} else {
+		return fmt.Errorf("missing required field %q", "start")
+	}
+	*value = SyntaxSpan(decoded)
+	return nil
+}

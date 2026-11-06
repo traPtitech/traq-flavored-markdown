@@ -22,6 +22,7 @@ pub struct BlockMatch {
     pub nodes: Vec<DraftNode>,
     pub(crate) commits: Vec<Commit>,
     pub following: Following,
+    pub syntax: Vec<crate::syntax::SyntaxMarker>,
 }
 
 impl BlockMatch {
@@ -31,6 +32,7 @@ impl BlockMatch {
             nodes: vec![node],
             commits: vec![],
             following: Following::Policy,
+            syntax: vec![],
         }
     }
 
@@ -40,7 +42,16 @@ impl BlockMatch {
             nodes: vec![],
             commits: vec![],
             following: Following::Preserve,
+            syntax: vec![],
         }
+    }
+
+    #[must_use]
+    pub fn with_syntax(mut self, syntax: Option<crate::syntax::SourceSyntax>) -> Self {
+        if let Some(syntax) = syntax {
+            self.syntax = syntax.markers;
+        }
+        self
     }
 
     /// Runs after the parser accepts this match, before resolving its block children.
