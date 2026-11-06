@@ -17,7 +17,7 @@ fn closing(line: &str) -> Option<&str> {
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
-    _: &mut Budget,
+    budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     let Some(offset) = opening(input.current()) else {
         return Ok(None);
@@ -49,7 +49,7 @@ pub(super) fn parse(
     };
 
     let mut matched = input.leaf(end, markdown_parser::AnyPayload::new(BlockMath { tex }))?;
-    matched.nodes[0].syntax = source.syntax(&body, &markers)?;
+    matched.nodes[0].syntax = source.syntax(&body, &markers, budget)?;
     Ok(Some(matched))
 }
 

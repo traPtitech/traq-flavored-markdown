@@ -116,6 +116,7 @@ pub(super) fn code(
                     input.source.range(start..end)?,
                 ),
             ],
+            budget,
         )?),
     ))
 }

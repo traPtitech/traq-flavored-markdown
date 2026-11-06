@@ -71,6 +71,7 @@ fn inline_rule() -> InlineRule {
                     ),
                     (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
                 ],
+                budget,
             )?,
             end: end + 1,
             action: InlineAction::Node {

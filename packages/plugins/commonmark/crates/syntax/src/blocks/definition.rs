@@ -41,6 +41,7 @@ pub(super) fn parse(
             markdown_parser::syntax::MarkerKind::Definition,
             lines[input.start].start..lines[end - 1].end,
         )],
+        budget,
     )?;
     if end < lines.end() && blank(input.line(end)) {
         end += 1;

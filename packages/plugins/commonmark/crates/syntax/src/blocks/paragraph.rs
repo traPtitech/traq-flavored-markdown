@@ -35,7 +35,7 @@ pub(super) fn paragraph_start(mut line: &str, input: &BlockInput<'_>) -> bool {
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
-    _: &mut Budget,
+    budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     let source = input.source;
     let lines = input.lines;
@@ -79,6 +79,6 @@ pub(super) fn parse(
             payload,
             view,
         )
-        .with_syntax(source.syntax(&[start..finish.max(start)], &markers)?),
+        .with_syntax(source.syntax(&[start..finish.max(start)], &markers, budget)?),
     )))
 }

@@ -52,6 +52,7 @@ pub fn parse(
             .iter()
             .enumerate()
             .map(|(index, range)| lines[first + index].start..range.start),
+        budget,
     )?;
     super::super::context::mark_lazy(&mut view, lazy_lines, budget)?;
 

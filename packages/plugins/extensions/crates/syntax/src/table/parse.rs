@@ -44,6 +44,7 @@ pub(super) fn parse(
             markdown_parser::syntax::MarkerKind::Separator,
             input.lines[first + 1].clone(),
         )],
+        budget,
     )?;
     Ok(Some(matched))
 }

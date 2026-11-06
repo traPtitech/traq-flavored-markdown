@@ -11,7 +11,7 @@ use markdown_parser::syntax::MarkerKind;
 
 pub(super) fn fenced(
     input: &BlockInput<'_>,
-    _: &mut Budget,
+    budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     let Some((marker, count, info)) = fence(input.current()) else {
         return Ok(None);
@@ -45,7 +45,7 @@ pub(super) fn fenced(
     if closing < lines.end() {
         markers.push((MarkerKind::Close, lines[closing].clone()));
     }
-    let syntax = source.syntax(&body, &markers)?;
+    let syntax = source.syntax(&body, &markers, budget)?;
 
     // Include the closing fence in the node span when one was found.
     if end < lines.end() {
@@ -116,7 +116,7 @@ pub(super) fn indented(
             prefixes.push(line.start..line.start + remove);
         }
     }
-    let syntax = source.prefix_syntax(&body, prefixes)?;
+    let syntax = source.prefix_syntax(&body, prefixes, budget)?;
 
     Ok(Some(BlockMatch::node(
         end,
@@ -182,7 +182,7 @@ fn indented_content(
 
 pub(super) fn atx(
     input: &BlockInput<'_>,
-    _: &mut Budget,
+    budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     let Some((level, prefix)) = heading(input.current()) else {
         return Ok(None);
@@ -212,6 +212,7 @@ pub(super) fn atx(
             (MarkerKind::Open, line.start..line.start + prefix),
             (MarkerKind::Close, end..line.start + input.current().len()),
         ],
+        budget,
     )?;
 
     Ok(Some(BlockMatch::node(
@@ -227,7 +228,7 @@ pub(super) fn atx(
 
 pub(super) fn thematic_break(
     input: &BlockInput<'_>,
-    _: &mut Budget,
+    budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     if !thematic(input.current()) {
         return Ok(None);
@@ -246,10 +247,10 @@ pub(super) fn thematic_break(
             input.source.span_for(line.start..line.end)?,
             AnyPayload::new(markdown_commonmark_contracts::ThematicBreak { marker }),
         )
-        .with_syntax(
-            input
-                .source
-                .syntax(&[], &[(MarkerKind::Separator, line.clone())])?,
-        ),
+        .with_syntax(input.source.syntax(
+            &[],
+            &[(MarkerKind::Separator, line.clone())],
+            budget,
+        )?),
     )))
 }

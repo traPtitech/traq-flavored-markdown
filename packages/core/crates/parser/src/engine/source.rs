@@ -1,3 +1,4 @@
+use super::Budget;
 use crate::{ParseError, Span};
 use std::{any::Any, borrow::Cow, ops::Range, sync::Arc};
 
@@ -36,10 +37,12 @@ impl SourceView {
     }
 
     /// Map rule-owned content and markers only when parsing with syntax capture.
+    /// Each visited origin segment is charged before output spans are coalesced.
     pub fn syntax(
         &self,
         content: &[ViewRange],
         markers: &[(super::syntax::MarkerKind, ViewRange)],
+        budget: &mut Budget,
     ) -> Result<Option<super::syntax::SourceSyntax>, ParseError> {
         use super::syntax::{SourceSyntax, SyntaxMarker};
         if !self.captures_syntax() {
@@ -47,10 +50,12 @@ impl SourceView {
         }
         let mut facts = SourceSyntax::default();
         for range in content {
-            facts.content.extend(self.source_spans(range.clone())?);
+            facts
+                .content
+                .extend(self.mapped_source_spans(range.clone(), Some(budget))?);
         }
         for (kind, range) in markers {
-            let spans = self.source_spans(range.clone())?;
+            let spans = self.mapped_source_spans(range.clone(), Some(budget))?;
             if !spans.is_empty() {
                 facts.markers.push(SyntaxMarker {
                     kind: *kind,
@@ -69,11 +74,12 @@ impl SourceView {
         &self,
         content: &[ViewRange],
         prefixes: impl IntoIterator<Item = ViewRange>,
+        budget: &mut Budget,
     ) -> Result<Option<super::syntax::SourceSyntax>, ParseError> {
-        let mut syntax = self.syntax(content, &[])?;
+        let mut syntax = self.syntax(content, &[], budget)?;
         if let Some(syntax) = &mut syntax {
             for prefix in prefixes {
-                let spans = self.source_spans(prefix.clone())?;
+                let spans = self.mapped_source_spans(prefix.clone(), Some(budget))?;
                 if !spans.is_empty() {
                     syntax.markers.push(super::syntax::SyntaxMarker {
                         kind: super::syntax::MarkerKind::Prefix,
@@ -158,11 +164,19 @@ impl SourceView {
     /// character maps to its entire original spelling (for example CRLF or
     /// NUL); any part of an expanded tab maps to the whole original tab.
     pub fn source_spans(&self, range: ViewRange) -> Result<Vec<Span>, ParseError> {
+        self.mapped_source_spans(range, None)
+    }
+
+    fn mapped_source_spans(
+        &self,
+        range: ViewRange,
+        budget: Option<&mut Budget>,
+    ) -> Result<Vec<Span>, ParseError> {
         self.span_for(range.clone())?;
-        Ok(self
-            .backing
-            .origins
-            .spans(self.range.start + range.start.get()..self.range.start + range.end.get()))
+        self.backing.origins.spans(
+            self.range.start + range.start.get()..self.range.start + range.end.get(),
+            budget,
+        )
     }
 
     fn copy_origins(&self, range: Range<usize>, at: usize, origins: &mut SourceMap) {

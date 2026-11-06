@@ -45,7 +45,7 @@ pub(super) fn build(
                 budget.node()?;
                 let syntax = match syntax {
                     Some(syntax) => Some(syntax),
-                    None => source.syntax(&[source.range(token.start..token.end)?], &[])?,
+                    None => source.syntax(&[source.range(token.start..token.end)?], &[], budget)?,
                 };
                 children.push(source.span(token.start, token.end), kind, nested, syntax);
             }
@@ -70,6 +70,7 @@ pub(super) fn build(
                         (MarkerKind::Open, source.range(start..open_end)?),
                         (MarkerKind::Close, source.range(token.start..token.end)?),
                     ],
+                    budget,
                 )?;
                 children.push(source.span(start, token.end), make(), nested, syntax);
             }
@@ -100,7 +101,7 @@ fn flush(
             source.span(start, end),
             make_text(value),
             ParsedNodes::new(source.captures_syntax()),
-            source.syntax(&[source.range(start..end)?], &[])?,
+            source.syntax(&[source.range(start..end)?], &[], budget)?,
         );
     }
     Ok(())

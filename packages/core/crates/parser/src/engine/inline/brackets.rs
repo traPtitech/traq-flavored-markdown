@@ -47,6 +47,7 @@ pub(super) fn close(
                     state.source.range(state.position..end)?,
                 ),
             ],
+            state.budget,
         )?,
     };
     state.push(opening.start, end, TokenKind::Atom(kind, children, syntax))?;

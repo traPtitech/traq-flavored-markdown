@@ -165,6 +165,7 @@ pub fn autolink(
                 (markdown_parser::syntax::MarkerKind::Open, pos..pos + 1),
                 (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
             ],
+            budget,
         )?,
         end: end + 1,
         action: InlineAction::Node {

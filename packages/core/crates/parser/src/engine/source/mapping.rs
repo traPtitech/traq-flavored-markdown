@@ -1,4 +1,4 @@
-use crate::Span;
+use crate::{ParseError, Span, engine::Budget};
 use std::ops::Range;
 
 /// Exact origins, independently of the boundary offsets used for AST envelopes.
@@ -59,9 +59,16 @@ impl SourceMap {
         segment.source
     }
 
-    pub fn spans(&self, range: Range<usize>) -> Vec<Span> {
+    pub fn spans(
+        &self,
+        range: Range<usize>,
+        mut budget: Option<&mut Budget>,
+    ) -> Result<Vec<Span>, ParseError> {
         let mut spans: Vec<Span> = vec![];
         for segment in self.selected(range) {
+            if let Some(budget) = &mut budget {
+                budget.spend(1)?;
+            }
             let span = segment.source;
             if let Some(previous) = spans.last_mut()
                 && previous.start <= span.start
@@ -72,7 +79,7 @@ impl SourceMap {
                 spans.push(span);
             }
         }
-        spans
+        Ok(spans)
     }
 
     pub fn segment_count(&self, range: Range<usize>) -> usize {

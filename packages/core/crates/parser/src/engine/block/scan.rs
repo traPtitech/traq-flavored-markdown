@@ -163,13 +163,13 @@ fn resolve_blocks(
         DraftContent::Leaf => ResolvedContent::Leaf,
         DraftContent::Inline(source) => {
             if syntax.is_none() {
-                syntax = source.syntax(&[source.range(0..source.text().len())?], &[])?;
+                syntax = source.syntax(&[source.range(0..source.text().len())?], &[], budget)?;
             }
             ResolvedContent::Inline(source)
         }
         DraftContent::Blocks(source) => {
             if syntax.is_none() {
-                syntax = source.syntax(&[source.range(0..source.text().len())?], &[])?;
+                syntax = source.syntax(&[source.range(0..source.text().len())?], &[], budget)?;
             }
             let batch = tokenize(&source, grammar, budget, state, depth + 1)?;
             metadata = batch.metadata;

@@ -173,3 +173,30 @@ fn invalid_external_source_facts_fail_without_changing_normal_parsing() {
     ));
     assert!(parser.parse_with_syntax("after").is_ok());
 }
+
+#[test]
+fn repeated_origin_scans_in_nested_emphasis_obey_the_work_limit() {
+    use markdown_parser::{Limits, ParseError, ParseResource};
+    let source = format!(
+        "{}{}{}",
+        "*a ".repeat(40),
+        "\0".repeat(3000),
+        " z*".repeat(40)
+    );
+    assert!(
+        presets::traq::v1::parser()
+            .parse_inline_with_syntax(&source)
+            .is_ok()
+    );
+    let parser = presets::traq::v1::parser().with_limits(Limits {
+        work: 75_000,
+        ..Limits::default()
+    });
+    assert!(parser.parse_inline(&source).is_ok());
+    assert!(matches!(
+        parser.parse_inline_with_syntax(&source),
+        Err(ParseError::ResourceLimit {
+            resource: ParseResource::Work
+        })
+    ));
+}

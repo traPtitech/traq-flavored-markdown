@@ -445,3 +445,70 @@ fn source_spans_preserve_view_order_and_empty_selections_have_no_origin() {
     }
     assert_eq!(source.backing.origins.segment_count(0..5), 1);
 }
+
+#[test]
+fn syntax_mapping_charges_every_visited_origin_before_coalescing() {
+    use crate::{Limits, ParseError, ParseResource, engine::Budget, syntax::MarkerKind};
+
+    let mut source = SourceView::new("\0\0x");
+    source.set_context(crate::engine::syntax::CaptureSyntax);
+    let range = source.range(0..source.text().len()).unwrap();
+    assert_eq!(
+        source.backing.origins.segment_count(0..source.text().len()),
+        3
+    );
+
+    for mode in ["content", "marker", "prefix"] {
+        let mut budget = Budget::new(Limits {
+            work: 6,
+            ..Limits::default()
+        });
+        let mut capture = || match mode {
+            "content" => source.syntax(std::slice::from_ref(&range), &[], &mut budget),
+            "marker" => source.syntax(&[], &[(MarkerKind::Open, range.clone())], &mut budget),
+            "prefix" => source.prefix_syntax(&[], [range.clone()], &mut budget),
+            _ => unreachable!(),
+        };
+        for _ in 0..2 {
+            let facts = capture().unwrap().unwrap();
+            let spans = if mode == "content" {
+                &facts.content
+            } else {
+                &facts.markers[0].spans
+            };
+            assert_eq!(spans, &[crate::Span { start: 0, end: 3 }]);
+        }
+        assert_eq!(
+            capture(),
+            Err(ParseError::ResourceLimit {
+                resource: ParseResource::Work
+            })
+        );
+    }
+}
+
+#[test]
+fn syntax_mapping_spends_no_work_when_capture_is_disabled() {
+    use crate::{Limits, engine::Budget, syntax::MarkerKind};
+
+    let source = SourceView::new("\0\0x");
+    let range = source.range(0..source.text().len()).unwrap();
+    let mut budget = Budget::new(Limits {
+        work: 0,
+        ..Limits::default()
+    });
+    assert_eq!(
+        source
+            .syntax(
+                std::slice::from_ref(&range),
+                &[(MarkerKind::Open, range.clone())],
+                &mut budget
+            )
+            .unwrap(),
+        None
+    );
+    assert_eq!(
+        source.prefix_syntax(&[], [range], &mut budget).unwrap(),
+        None
+    );
+}

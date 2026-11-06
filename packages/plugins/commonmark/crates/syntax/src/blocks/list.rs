@@ -80,6 +80,7 @@ pub(super) fn parse(
                 .iter()
                 .enumerate()
                 .map(|(index, range)| lines[item_start + index].start..range.start),
+            budget,
         )?;
         if let Some(syntax) = &mut syntax {
             let markers = source.syntax(
@@ -89,6 +90,7 @@ pub(super) fn parse(
                     lines[item_start].start + marker.marker.start
                         ..lines[item_start].start + marker.marker.end,
                 )],
+                budget,
             )?;
             syntax.markers.extend(markers.unwrap().markers);
         }
