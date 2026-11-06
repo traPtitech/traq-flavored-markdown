@@ -74,6 +74,8 @@ nodes without detailed source facts. Each `NodeSyntax::source` optionally
 contains original-byte `content` ranges and grouped markers (`open`, `close`,
 `prefix`, `info`, `separator`, or `definition`). Prefix markers also retain the
 number of consumed parser-view columns, including partially consumed tabs.
+Their `text` retains prefix spelling with whole tabs restored and partial tabs
+represented as spaces, so consumers can construct continuation prefixes.
 Accepted definitions without AST nodes appear in `SyntaxTree::detached`.
 Rules construct facts with `SourceView::syntax` or `prefix_syntax`, then attach
 them with `InlineMatch::with_syntax`, `DraftNode::with_syntax`, or

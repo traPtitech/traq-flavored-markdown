@@ -139,6 +139,14 @@ export const operations = Object.freeze({
     result: 'document',
     configuration: false
   },
+  parseWithSyntax: {
+    export: 'parse_with_syntax',
+    input: 'text',
+    params: ['i32'],
+    result: 'syntax',
+    configuration: false,
+    responseSchema: 'SyntaxRecords'
+  },
   process: {
     export: 'process',
     input: 'text',
@@ -166,6 +174,7 @@ export const abiExports = Object.freeze({
   input_ptr: { params: ['i32'], results: ['i32'] },
   output_ptr: { params: [], results: ['i32'] },
   parse: { params: ['i32'], results: ['i32'] },
+  parse_with_syntax: { params: ['i32'], results: ['i32'] },
   process: { params: ['i32'], results: ['i32'] },
   render: { params: [], results: ['i32'] }
 } as const)

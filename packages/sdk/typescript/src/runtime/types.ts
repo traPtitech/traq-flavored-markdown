@@ -12,6 +12,9 @@ import type {
   ProcessingResult,
   ProcessorOptions
 } from '../generated/processing.js'
+import type { ParsedSyntax } from './syntax.js'
+
+export type { ParsedSyntax } from './syntax.js'
 
 /** An immutable, validated result that all document consumers can reuse. */
 export type ParsedDocument = DocumentContext<NodeVariant>
@@ -20,6 +23,8 @@ export type DocumentInput = ReadonlyDocument | DocumentContext
 export interface Parser {
   parse(source: string): ParsedDocument
   parseInline(source: string): ParsedDocument
+  parseWithSyntax(source: string): ParsedSyntax
+  parseInlineWithSyntax(source: string): ParsedSyntax
   dispose(): void
 }
 export interface Extractor {

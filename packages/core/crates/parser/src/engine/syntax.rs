@@ -18,6 +18,8 @@ pub struct SyntaxMarker {
     pub spans: Vec<Span>,
     /// Columns removed by a container prefix, measured in the parser view.
     pub columns: Option<usize>,
+    /// Prefix spelling, restoring whole tabs while retaining partial tabs as spaces.
+    pub text: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -136,6 +138,7 @@ impl SyntaxTree {
                 }
                 for marker in &facts.markers {
                     budget.spend(marker.spans.len())?;
+                    budget.spend(marker.text.as_ref().map_or(0, String::len))?;
                     for &span in &marker.spans {
                         check(span, phase)?;
                     }
@@ -146,6 +149,7 @@ impl SyntaxTree {
         budget.spend(self.detached.len())?;
         for marker in &self.detached {
             budget.spend(marker.spans.len())?;
+            budget.spend(marker.text.as_ref().map_or(0, String::len))?;
             for &span in &marker.spans {
                 check(span, ParsePhase::Block)?;
             }

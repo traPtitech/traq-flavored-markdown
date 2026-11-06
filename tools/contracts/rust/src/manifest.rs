@@ -84,6 +84,7 @@ pub enum Output {
     Extraction,
     Text,
     Processing,
+    Syntax,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

@@ -70,6 +70,29 @@ export type ProcessorOptions = {
   origin?: string
   whitespace?: WhitespacePolicy
 }
+export type SyntaxRecords = {
+  detached: Array<SyntaxMarker>
+  /**
+   * Exactly one record per AST node, in preorder, including null facts.
+   */
+  nodes: Array<SourceSyntax | null>
+}
+export type SourceSyntax = {
+  content: Array<SyntaxSpan>
+  markers: Array<SyntaxMarker>
+}
+export type SyntaxMarker = {
+  columns?: number | null
+  kind: SyntaxMarkerKind
+  spans: Array<SyntaxSpan>
+  text?: string | null
+}
+export type SyntaxMarkerKind =
+  'open' | 'close' | 'prefix' | 'info' | 'separator' | 'definition'
+export type SyntaxSpan = {
+  end: number
+  start: number
+}
 
 function validateExtraction(value: unknown): boolean {
   return ((value: unknown) =>
@@ -185,6 +208,82 @@ function validateProcessorOptions(value: unknown): boolean {
       { origin: string, whitespace: validateWhitespacePolicy }
     ))(value)
 }
+function validateSyntaxRecords(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      {
+        detached: (value: unknown) =>
+          Array.isArray(value) && value.every(validateSyntaxMarker),
+        nodes: (value: unknown) =>
+          Array.isArray(value) && value.every(nullable(validateSourceSyntax))
+      },
+      {}
+    ))(value)
+}
+function validateSourceSyntax(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      {
+        content: (value: unknown) =>
+          Array.isArray(value) && value.every(validateSyntaxSpan),
+        markers: (value: unknown) =>
+          Array.isArray(value) && value.every(validateSyntaxMarker)
+      },
+      {}
+    ))(value)
+}
+function validateSyntaxMarker(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      {
+        kind: validateSyntaxMarkerKind,
+        spans: (value: unknown) =>
+          Array.isArray(value) && value.every(validateSyntaxSpan)
+      },
+      {
+        columns: nullable(
+          (value: unknown) =>
+            typeof value === 'number' &&
+            Number.isInteger(value) &&
+            value >= 0 &&
+            value <= 4294967295
+        ),
+        text: nullable(string)
+      }
+    ))(value)
+}
+function validateSyntaxMarkerKind(value: unknown): boolean {
+  return oneOf(
+    'open',
+    'close',
+    'prefix',
+    'info',
+    'separator',
+    'definition'
+  )(value)
+}
+function validateSyntaxSpan(value: unknown): boolean {
+  return ((value: unknown) =>
+    fields(
+      value,
+      {
+        end: (value: unknown) =>
+          typeof value === 'number' &&
+          Number.isInteger(value) &&
+          value >= 0 &&
+          value <= 4294967295,
+        start: (value: unknown) =>
+          typeof value === 'number' &&
+          Number.isInteger(value) &&
+          value >= 0 &&
+          value <= 4294967295
+      },
+      {}
+    ))(value)
+}
 export const isExtraction = (value: unknown): value is Extraction =>
   validateExtraction(value)
 export const isExtractorOptions = (value: unknown): value is ExtractorOptions =>
@@ -198,3 +297,5 @@ export const isProcessorConfiguration = (
 ): value is ProcessorConfiguration => validateProcessorConfiguration(value)
 export const isProcessorOptions = (value: unknown): value is ProcessorOptions =>
   validateProcessorOptions(value)
+export const isSyntaxRecords = (value: unknown): value is SyntaxRecords =>
+  validateSyntaxRecords(value)

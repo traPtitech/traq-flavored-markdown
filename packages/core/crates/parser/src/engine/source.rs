@@ -56,6 +56,7 @@ impl SourceView {
                     kind: *kind,
                     spans,
                     columns: None,
+                    text: None,
                 });
             }
         }
@@ -78,6 +79,7 @@ impl SourceView {
                         kind: super::syntax::MarkerKind::Prefix,
                         spans,
                         columns: Some(prefix.end - prefix.start),
+                        text: Some(self.literal(prefix.clone()).into_owned()),
                     });
                 }
             }

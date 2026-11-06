@@ -4,8 +4,8 @@ package markdown
 import "github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding"
 import "github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 
-const contractID = "7b5d51e2bd2f0dd5ed21b2237489c6d456e8c4fe0f746c0f50d00d3e3ff991e8"
-const sourceFingerprint = "5948e1decdabe323"
+const contractID = "8dbe20ada50638146ebe9844660f78c78a7ed7fa6e744385c85d99bcda511fa1"
+const sourceFingerprint = "059425253a903c77"
 const inputBytes = 1048576
 const outputBytes = 1048576
 const memoryPages = 512
@@ -17,6 +17,7 @@ var operationConfigureProcessor = binding.Operation{Export: "configure_processor
 var operationConfigureRenderer = binding.Operation{Export: "configure_renderer", Input: "json", Params: []string{}, Result: "configuration", Configuration: true}
 var operationExtract = binding.Operation{Export: "extract", Input: "json", Params: []string{}, Result: "extraction", Configuration: false}
 var operationParse = binding.Operation{Export: "parse", Input: "text", Params: []string{"i32"}, Result: "document", Configuration: false}
+var operationParseWithSyntax = binding.Operation{Export: "parse_with_syntax", Input: "text", Params: []string{"i32"}, Result: "syntax", Configuration: false}
 var operationProcess = binding.Operation{Export: "process", Input: "text", Params: []string{"i32"}, Result: "processing", Configuration: false}
 var operationRender = binding.Operation{Export: "render", Input: "json", Params: []string{}, Result: "text", Configuration: false}
 var abiExports = map[string]binding.Signature{
@@ -30,6 +31,7 @@ var abiExports = map[string]binding.Signature{
 	"input_ptr":           {Params: []string{"i32"}, Results: []string{"i32"}},
 	"output_ptr":          {Params: []string{}, Results: []string{"i32"}},
 	"parse":               {Params: []string{"i32"}, Results: []string{"i32"}},
+	"parse_with_syntax":   {Params: []string{"i32"}, Results: []string{"i32"}},
 	"process":             {Params: []string{"i32"}, Results: []string{"i32"}},
 	"render":              {Params: []string{}, Results: []string{"i32"}},
 }
