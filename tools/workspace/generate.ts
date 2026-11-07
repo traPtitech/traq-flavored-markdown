@@ -21,6 +21,7 @@ export async function generateBindings(
   outputRoot = repositoryRoot
 ) {
   if (packageName === 'core') return generateCoreContracts(outputRoot)
+  if (packageName === 'vue-editor') return new OutputManifest()
   if (packageName === 'sdk')
     return generateSdk(input ? path.resolve(input) : undefined, outputRoot)
   if (packageName && contractPackages.has(packageName))

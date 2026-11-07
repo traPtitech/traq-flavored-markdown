@@ -1,0 +1,178 @@
+.reference-input {
+  min-width: 0;
+  overflow-y: auto;
+  cursor: text;
+}
+
+.reference-input-content .tiptap {
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 1.5em;
+}
+
+.reference-input-content p {
+  margin: 0;
+  white-space: pre-wrap;
+
+  unicode-bidi: plaintext;
+}
+
+.reference-input-content .tiptap[data-is-empty='true']::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  color: var(--input-placeholder-color, inherit);
+  opacity: var(--input-placeholder-opacity, 0.5);
+  pointer-events: none;
+}
+
+.reference-input-content .reference-token {
+  word-break: break-all;
+  color: var(--reference-input-accent, #0066cc);
+  background: var(--reference-input-reference-background, #eef2f6);
+  font-weight: bold;
+  border-radius: 3px;
+  padding: 0 2px;
+  box-decoration-break: clone;
+}
+
+.reference-input-content .ProseMirror-selectednode {
+  outline: 2px solid var(--reference-input-focus, #0066cc);
+}
+
+.reference-input-content .ProseMirror-hideselection *::selection {
+  color: currentColor;
+}
+
+.reference-input-content .markdown-input-source {
+  color: var(--reference-input-muted, #666);
+}
+
+.reference-input-content .markdown-input-syntax {
+  opacity: 0.5;
+}
+
+.reference-input-content .markdown-input-strong {
+  font-weight: bold;
+}
+
+.reference-input-content .markdown-input-emphasis {
+  font-style: italic;
+}
+
+.reference-input-content .markdown-input-strike {
+  text-decoration: line-through;
+}
+
+.reference-input-content .markdown-input-highlight {
+  color: var(--markdown-mark-text, currentColor);
+  background: var(--markdown-mark-background, #fff0a8);
+  border-radius: 2px;
+}
+
+.reference-input-content .markdown-input-spoiler {
+  border-radius: 3px;
+  background: var(--reference-input-spoiler-background, #8882);
+}
+
+.reference-input-content .markdown-input-rendered img {
+  max-width: 100%;
+  max-height: 240px;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+
+.reference-input-content .markdown-input-link {
+  color: var(--reference-input-accent, #0066cc);
+  text-decoration: underline;
+}
+
+.reference-input-content .markdown-input-code,
+.reference-input-content .markdown-input-code-block {
+  font-family: monospace;
+  background: var(--markdown-code-background, #eff2f6);
+  border-radius: 3px;
+  box-decoration-break: clone;
+}
+
+.reference-input-content .markdown-input-code {
+  padding: 0 0.2em;
+}
+
+.reference-input-content .markdown-input-code.markdown-input-spoiler {
+  background:
+    linear-gradient(
+      var(--reference-input-spoiler-background, #8882),
+      var(--reference-input-spoiler-background, #8882)
+    ),
+    var(--markdown-code-background, #eff2f6);
+}
+
+.reference-input-content .markdown-input-code-block {
+  padding: 0.15em 0.4em;
+}
+
+.reference-input-content .markdown-input-quote {
+  color: var(--reference-input-muted, #666);
+}
+
+.reference-input-content .markdown-input-container-guide {
+  display: inline-flex;
+  height: 1em;
+  vertical-align: -0.15em;
+  user-select: none;
+}
+
+.reference-input-content .markdown-input-quote-bar {
+  border-left: 3px solid var(--reference-input-border, #ccd2d8);
+  margin-right: 0.4em;
+}
+
+.reference-input-content .markdown-input-h1,
+.reference-input-content .markdown-input-h2,
+.reference-input-content .markdown-input-h3,
+.reference-input-content .markdown-input-h4,
+.reference-input-content .markdown-input-h5,
+.reference-input-content .markdown-input-h6 {
+  font-weight: bold;
+  line-height: 1.5;
+}
+
+.reference-input-content .markdown-input-h1 {
+  font-size: 1.8em;
+}
+
+.reference-input-content .markdown-input-h2 {
+  font-size: 1.5em;
+}
+
+.reference-input-content .markdown-input-h3 {
+  font-size: 1.25em;
+}
+
+.reference-input-content .markdown-input-bullet {
+  color: var(--reference-input-muted, #666);
+}
+
+.reference-input-content .markdown-input-rule {
+  display: inline-block;
+  width: 100%;
+  border-bottom: 1px solid var(--reference-input-border, #ccd2d8);
+  vertical-align: middle;
+}
+
+.reference-input-content .markdown-input-hidden {
+  font-size: 0;
+  line-height: 0;
+  white-space: normal;
+  padding: 0;
+  border: 0;
+}
+
+.reference-input-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

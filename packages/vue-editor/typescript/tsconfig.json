@@ -1,0 +1,19 @@
+{
+  "extends": "../../../tsconfig.browser.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "types": ["vite/client"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "../examples/**/*.ts",
+    "../examples/**/*.vue",
+    "../browser-tests/**/*.ts",
+    "../browser-tests/**/*.vue",
+    "../playwright.config.ts"
+  ]
+}

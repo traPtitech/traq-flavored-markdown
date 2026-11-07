@@ -13,7 +13,7 @@ const byName = new Map(
 for (const repo of graph.order) {
   const directory = path.join(packageRoot(repo), 'typescript', 'src')
   let count = 0
-  for await (const relative of new Bun.Glob('**/*.ts').scan({
+  for await (const relative of new Bun.Glob('**/*.{ts,vue}').scan({
     cwd: directory,
     onlyFiles: true
   })) {
@@ -22,13 +22,25 @@ for (const repo of graph.order) {
     const source = await Bun.file(file).text()
     if (source.includes('@traptitech/traq-markdown-it'))
       throw new Error(file + ': retired package dependency')
+    const script = relative.endsWith('.vue')
+      ? [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+          .map(match => match[1])
+          .join('\n')
+      : source
     const syntax = ts.createSourceFile(
       file,
-      source,
+      script,
       ts.ScriptTarget.Latest,
       true
     )
     const checkSpecifier = (specifier: string) => {
+      if (specifier.startsWith('/@/') || specifier.startsWith('@/'))
+        throw new Error(file + ': application alias ' + specifier)
+      if (
+        repo !== 'vue-editor' &&
+        /^(?:vue$|@vueuse\/|@tiptap\/)/.test(specifier)
+      )
+        throw new Error(file + ': UI dependency in a portable package')
       if (specifier.startsWith('.')) {
         const target = path.resolve(path.dirname(file), specifier)
         const relative = path.relative(packageRoot(repo), target)

@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import { allowsOwner } from './descriptor.ts'
+import { allowsOwner, nativePackageNames } from './descriptor.ts'
 import { captureProcess } from './infrastructure/process.ts'
 import {
   type PackageName,
@@ -190,7 +190,7 @@ export async function readGoPackageGraph(
   root = repositoryRoot
 ): Promise<GoPackageGraph> {
   const directories = [
-    ...packageNames.map(owner => ({
+    ...nativePackageNames.map(owner => ({
       owner,
       directory: goDirectory(owner),
       published: true

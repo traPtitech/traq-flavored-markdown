@@ -11,6 +11,7 @@
     "packages/core",
     "packages/plugins/*",
     "packages/sdk",
+    "packages/vue-editor",
     "tools/*"
   ],
   "scripts": {
@@ -39,11 +40,11 @@
     "lint:check": "eslint --cache --max-warnings=0 .",
     "lint:rust": "node tools/workspace/checks/rust-lint.ts",
     "release": "bun run scripts/release.ts",
-    "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go && bun run test:corpus:go && bun run test:browser",
+    "test": "bun run test:typescript && bun run test:corpus && bun run test:rust && bun run test:go && bun run test:corpus:go && bun run test:browser && bun run test:vue:browser",
     "test:corpus": "bun run --cwd tools/corpus test",
     "test:go": "bun run scripts/testing/go.ts",
     "test:rust": "node tools/workspace/checks/rust-features.ts && cargo test --locked --workspace --all-features",
-    "test:typescript": "bun run scripts/testing/run.ts",
+    "test:typescript": "bun run scripts/testing/run.ts && bun run test:vue",
     "test:unit": "bun run scripts/testing/run.ts unit",
     "test:assembly": "bun run scripts/testing/run.ts assembly",
     "test:codegen": "bun run scripts/testing/run.ts codegen",
@@ -52,7 +53,9 @@
     "typecheck": "bun run scripts/typecheck.ts",
     "test:browser": "playwright test --config tests/browser/playwright.config.ts",
     "test:browser:serve": "bun run --cwd tools/corpus vite ../.. --config ../../tests/browser/vite.config.ts --port 4178 --host 127.0.0.1",
-    "test:corpus:go": "bun run --cwd tools/corpus test:go"
+    "test:corpus:go": "bun run --cwd tools/corpus test:go",
+    "test:vue": "bun run --cwd packages/vue-editor test",
+    "test:vue:browser": "bun run --cwd packages/vue-editor test:browser"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -73,7 +76,9 @@
     "jiti": "2.7.0",
     "lint-staged": "17.6.0",
     "prettier": "3.9.10",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "eslint-plugin-vue": "10.11.1",
+    "vue-eslint-parser": "10.4.1"
   },
   "packageManager": "bun@1.4.3",
   "overrides": {

@@ -4,13 +4,14 @@ Markdown parsing, rendering and extraction for traQ, implemented in Rust with
 TypeScript and Go bindings. The repository groups code by responsibility, then
 by language within each package.
 
-| Directory                                                            | Responsibility                                                   | npm package                                 |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------- |
-| [packages/core](packages/core/README.md)                             | Grammar-independent AST, parser, renderer, extractor and codec   | `@traq-flavored-markdown/core`              |
-| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark grammar, contracts, and rendering                     | `@traq-flavored-markdown/commonmark-plugin` |
-| [packages/plugins/extensions](packages/plugins/extensions/README.md) | Optional tables, math, mark, strikethrough, and linkify          | `@traq-flavored-markdown/extensions-plugin` |
-| [packages/plugins/traq](packages/plugins/traq/README.md)             | traP references, stamps, spoilers and their rendering/extraction | `@traq-flavored-markdown/traq-plugin`       |
-| [packages/sdk](packages/sdk/README.md)                               | traQ presets, presentation, Wasm and SDK distribution            | `@traq-flavored-markdown/sdk`               |
+| Directory                                                            | Responsibility                                                    | npm package                                 |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------- |
+| [packages/core](packages/core/README.md)                             | Grammar-independent AST, parser, renderer, extractor and codec    | `@traq-flavored-markdown/core`              |
+| [packages/plugins/commonmark](packages/plugins/commonmark/README.md) | CommonMark grammar, contracts, and rendering                      | `@traq-flavored-markdown/commonmark-plugin` |
+| [packages/plugins/extensions](packages/plugins/extensions/README.md) | Optional tables, math, mark, strikethrough, and linkify           | `@traq-flavored-markdown/extensions-plugin` |
+| [packages/plugins/traq](packages/plugins/traq/README.md)             | traP references, stamps, spoilers and their rendering/extraction  | `@traq-flavored-markdown/traq-plugin`       |
+| [packages/sdk](packages/sdk/README.md)                               | traQ presets, presentation, Wasm and SDK distribution             | `@traq-flavored-markdown/sdk`               |
+| [packages/vue-editor](packages/vue-editor/README.md)                 | Vue reference input with host-owned reference data and completion | `@traq-flavored-markdown/vue-editor`        |
 
 ## Install from npm
 
@@ -36,6 +37,11 @@ on a concrete plugin; the SDK selects and combines plugins for traQ. Each packag
 Rust crates, TypeScript implementation and Go module together. The npm names are
 independent of directory names; Go module paths follow their directories.
 They can be installed and composed independently, but release with one shared version.
+
+The Vue editor is a browser integration package. Its reference payloads and
+completion UI are supplied by the host; the standalone task example uses no
+traQ application stores or entity types. It depends on the SDK, while the SDK
+and lower layers remain independent of Vue and Tiptap.
 
 ## Development
 
