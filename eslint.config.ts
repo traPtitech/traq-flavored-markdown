@@ -1,10 +1,12 @@
 import js from '@eslint/js'
 import stylistic from '@stylistic/eslint-plugin'
 import tseslint from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
 import prettier from 'eslint-config-prettier'
 import reactPlugin from 'eslint-plugin-react'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import unusedImports from 'eslint-plugin-unused-imports'
+import vuePlugin from 'eslint-plugin-vue'
 import globals from 'globals'
 
 const recommendedTypescriptRules = tseslint.configs[
@@ -29,6 +31,15 @@ export default [
   js.configs.recommended,
   ...recommendedTypescriptRules,
   prettier,
+  ...vuePlugin.configs['flat/essential'],
+  {
+    files: ['packages/vue-editor/**/*.vue'],
+    languageOptions: {
+      parserOptions: { parser: tsParser },
+      globals: globals.browser
+    },
+    rules: { 'vue/multi-word-component-names': 'off' }
+  },
   {
     plugins: {
       'unused-imports': unusedImports,

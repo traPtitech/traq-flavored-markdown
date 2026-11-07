@@ -28,6 +28,13 @@ export type Table = {
 }
 export type Alignment = 'left' | 'center' | 'right'
 export type HeaderRow = Record<string, never>
+export const contractValues = Object.freeze({
+  Alignment: Object.freeze(['left', 'center', 'right'] as const)
+})
+export const arrayLimits = Object.freeze({
+  Table: Object.freeze({ alignments: Object.freeze({ minItems: 1 }) })
+})
+
 export type NodeVariant =
   | { kind: 'extensions.block_math'; data: BlockMath }
   | { kind: 'extensions.cell'; data: Cell }

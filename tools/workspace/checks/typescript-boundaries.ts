@@ -1,10 +1,9 @@
 import path from 'path'
 
-import * as ts from 'typescript'
-
 import { allowsOwner } from '../descriptor.ts'
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot } from '../paths.ts'
+import { importSpecifiers } from './import-specifiers.ts'
 
 const { manifests, graph } = await readNpmPackageGraph()
 const byName = new Map(
@@ -13,7 +12,7 @@ const byName = new Map(
 for (const repo of graph.order) {
   const directory = path.join(packageRoot(repo), 'typescript', 'src')
   let count = 0
-  for await (const relative of new Bun.Glob('**/*.ts').scan({
+  for await (const relative of new Bun.Glob('**/*.{ts,vue}').scan({
     cwd: directory,
     onlyFiles: true
   })) {
@@ -22,13 +21,14 @@ for (const repo of graph.order) {
     const source = await Bun.file(file).text()
     if (source.includes('@traptitech/traq-markdown-it'))
       throw new Error(file + ': retired package dependency')
-    const syntax = ts.createSourceFile(
-      file,
-      source,
-      ts.ScriptTarget.Latest,
-      true
-    )
     const checkSpecifier = (specifier: string) => {
+      if (specifier.startsWith('/@/') || specifier.startsWith('@/'))
+        throw new Error(file + ': application alias ' + specifier)
+      if (
+        repo !== 'vue-editor' &&
+        /^(?:vue$|@vueuse\/|@tiptap\/)/.test(specifier)
+      )
+        throw new Error(file + ': UI dependency in a portable package')
       if (specifier.startsWith('.')) {
         const target = path.resolve(path.dirname(file), specifier)
         const relative = path.relative(packageRoot(repo), target)
@@ -41,25 +41,8 @@ for (const repo of graph.order) {
       if (!dependency || !allowsOwner(repo, dependency))
         throw new Error(file + ': upward dependency ' + name)
     }
-    const visit = (node: ts.Node): void => {
-      if (
-        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-        node.moduleSpecifier &&
-        ts.isStringLiteral(node.moduleSpecifier)
-      )
-        checkSpecifier(node.moduleSpecifier.text)
-      if (
-        ts.isCallExpression(node) &&
-        (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-          (ts.isIdentifier(node.expression) &&
-            node.expression.text === 'require')) &&
-        node.arguments.length === 1 &&
-        ts.isStringLiteral(node.arguments[0])
-      )
-        checkSpecifier(node.arguments[0].text)
-      ts.forEachChild(node, visit)
-    }
-    visit(syntax)
+    for (const specifier of importSpecifiers(file, source))
+      checkSpecifier(specifier)
     if (repo !== 'core' && /interface (?:Node|Document)\s*[<{]/.test(source))
       throw new Error(file + ': redeclared AST')
   }

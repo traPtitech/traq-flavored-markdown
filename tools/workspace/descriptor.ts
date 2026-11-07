@@ -16,11 +16,24 @@ export const owners = {
   sdk: {
     directory: 'packages/sdk',
     allows: ['core', 'commonmark-plugin', 'extensions-plugin', 'traq-plugin']
+  },
+  'vue-editor': {
+    directory: 'packages/vue-editor',
+    allows: [
+      'core',
+      'commonmark-plugin',
+      'extensions-plugin',
+      'traq-plugin',
+      'sdk'
+    ]
   }
 } as const
 
 export type PackageName = keyof typeof owners
 export const packageNames = Object.keys(owners) as PackageName[]
+export const nativePackageNames = packageNames.filter(
+  name => name !== 'vue-editor'
+)
 
 export function allowsOwner(source: PackageName, destination: PackageName) {
   return (

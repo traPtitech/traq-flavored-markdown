@@ -33,6 +33,10 @@ const workspace = () => ({
       [names.core]: '0.1.0',
       [names.commonmark]: '0.1.0'
     }),
+    'vue-editor': manifest(
+      '@traq-flavored-markdown/vue-editor',
+      Object.fromEntries(Object.values(names).map(name => [name, '0.1.0']))
+    ),
     sdk: manifest(names.sdk, {
       [names.core]: '0.1.0',
       [names.commonmark]: '0.1.0',

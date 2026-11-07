@@ -22,12 +22,15 @@ test('dependency order and ownership follow the manifest graph', async () => {
     'commonmark-plugin',
     'extensions-plugin',
     'traq-plugin',
-    'sdk'
+    'sdk',
+    'vue-editor'
   ])
   expect(graph.allows('sdk', 'core')).toBe(true)
   expect(graph.allows('core', 'sdk')).toBe(false)
   const go = await readGoPackageGraph()
-  expect(go.published.map(module => module.owner)).toEqual(graph.order)
+  expect(go.published.map(module => module.owner)).toEqual(
+    graph.order.filter(name => name !== 'vue-editor')
+  )
   expect(() => validateGoOwnership(go)).not.toThrow()
 })
 
