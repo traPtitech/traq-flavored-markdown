@@ -13,9 +13,11 @@ test('text and error results render their full content without mounting DOM effe
     before: { kind: 'text', value: '<b>literal</b>' },
     after: { kind: 'error', value: 'failure & details' }
   }
+
   const html = renderToStaticMarkup(
     <DiffTable rows={[row]} outputView="rendered" />
   )
+
   expect(html).toContain('&lt;b&gt;literal&lt;/b&gt;')
   expect(html).toContain('failure &amp; details')
   expect(html).not.toContain('<b>literal</b>')

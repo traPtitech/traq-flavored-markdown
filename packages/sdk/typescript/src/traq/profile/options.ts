@@ -30,27 +30,34 @@ export interface HtmlRendererOptions {
     validate?(destination: string): boolean
     attributes?: Readonly<Record<string, string>>
   }
+
   images?: {
     validate?(destination: string): boolean
     domains?: readonly string[]
   }
+
   code?: {
     highlight?(code: string, language: string): HighlightResult | undefined
   }
+
   math?: {
     render?(tex: string, displayMode: boolean): string
     renderCondensed?(tex: string): string
   }
+
   references?: { resolve?: ReferenceResolver }
+
   stamps?: {
     resolve?: StampResolver
     validateUrl?(destination: string): boolean
   }
+
   presentation?: {
     breaks?: boolean
     rawHtml?: 'passthrough' | 'escape'
     xhtmlOut?: boolean
   }
+
   /** Additional handlers for nodes outside the built-in plugins. */
   plugins?: readonly RenderPlugin[]
   /** Return customized built-in handlers for the preset. */
@@ -70,6 +77,7 @@ function validateImage(value: string, domains: ReadonlySet<string>) {
 export function resolveOptions(options: HtmlRendererOptions = {}) {
   const customMath = options.math?.render
   const domains = new Set(options.images?.domains ?? imageDomains)
+
   return {
     schema: options.schema ?? schema.withUnknownNodes(),
     labels: {

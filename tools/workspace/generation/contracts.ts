@@ -33,6 +33,7 @@ const runCargo = (command: string[], cwd = repositoryRoot) =>
 
 export async function generateCoreContracts(outputRoot = repositoryRoot) {
   const input = path.join(cargoTargetDirectory(), 'core-contracts')
+
   await runCargo([
     'cargo',
     'run',
@@ -44,8 +45,10 @@ export async function generateCoreContracts(outputRoot = repositoryRoot) {
     '--',
     input
   ])
+
   const { limits } = await readManifest(input, parseCoreManifest)
   const plan = new OutputManifest()
+
   plan.add(
     'core',
     'packages/core/typescript/src/generated/limits.ts',
@@ -54,6 +57,7 @@ export async function generateCoreContracts(outputRoot = repositoryRoot) {
       JSON.stringify(limits) +
       ' as const)\n'
   )
+
   plan.add(
     'core',
     'packages/core/go/ast/generated_limits.go',
@@ -68,6 +72,7 @@ export async function generateCoreContracts(outputRoot = repositoryRoot) {
       limits.depth +
       '\n)\n'
   )
+
   await applyOutputManifest(outputRoot, plan)
   return plan
 }
@@ -79,11 +84,14 @@ async function generateContractGroup(
   const root = packageRoot(packageName)
   const destination = packageOutputRoot(packageName)
   const metadata = nodeGroup(group)
-  if (metadata.owner !== packageName)
+  if (metadata.owner !== packageName) {
     throw new Error(
       `Node contract group ${group} does not belong to ${packageName}`
     )
+  }
+
   const input = path.join(cargoTargetDirectory(), 'typescript-contracts', group)
+
   await runCargo(
     [
       'cargo',
@@ -104,10 +112,13 @@ async function generateContractGroup(
   const manifest = await readManifest(input, parseNodeManifest)
   assertNodeGroup(group, manifest.nodes)
   const goPath = path.join(destination, metadata.goGeneratedPath)
+
   const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
     ([key, node]) => [key, node.schema]
   )
+
   const plan = new OutputManifest()
+
   plan.add(
     packageName,
     path.relative(repositoryRoot, goPath),
@@ -122,9 +133,12 @@ async function generateContractGroup(
       )
     )
   )
+
   const typescript = nodeFiles(manifest).get(`${group}.ts`)
-  if (typescript === undefined)
+  if (typescript === undefined) {
     throw new Error('Missing TypeScript node group: ' + group)
+  }
+
   plan.add(
     packageName,
     path.relative(
@@ -133,6 +147,7 @@ async function generateContractGroup(
     ),
     typescript
   )
+
   return plan
 }
 
@@ -141,9 +156,13 @@ export async function generateContracts(
   outputRoot = repositoryRoot
 ) {
   const plan = new OutputManifest()
-  for (const [group, metadata] of Object.entries(nodeGroups))
-    if (metadata.owner === packageName)
+
+  for (const [group, metadata] of Object.entries(nodeGroups)) {
+    if (metadata.owner === packageName) {
       plan.merge(await generateContractGroup(packageName, group))
+    }
+  }
+
   await applyOutputManifest(outputRoot, plan)
   return plan
 }

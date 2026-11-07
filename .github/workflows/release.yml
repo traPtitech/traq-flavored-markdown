@@ -65,6 +65,7 @@ jobs:
       - run: npm install --global "npm@$NPM_VERSION"
         env:
           NPM_VERSION: ${{ steps.toolchains.outputs.npm }}
+
       - run: npm --version
 
       - run: bun ci
@@ -85,21 +86,26 @@ jobs:
         run: |
           repository_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           release_sha="$(git rev-parse HEAD)"
+
           git fetch --no-tags "$repository_url" "refs/heads/$DEFAULT_BRANCH"
           if [ "$(git rev-parse FETCH_HEAD)" != "$release_sha" ]; then
             echo "$DEFAULT_BRANCH changed while the release was being built."
             exit 1
           fi
+
           mapfile -t go_tags < <(bun run scripts/release-go.ts "$RELEASE_TAG" --tags)
+
           for tag in "$RELEASE_TAG" "${go_tags[@]}"; do
             if git ls-remote --exit-code --tags "$repository_url" "refs/tags/$tag" >/dev/null; then
               echo "Release tag $tag already exists."
               exit 1
             fi
           done
+
           mapfile -t release_files < <(bun run scripts/release.ts "$RELEASE_TAG" --files)
           git add -- "${release_files[@]}"
           if git diff --cached --quiet; then exit 0; fi
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m "chore(release): $RELEASE_VERSION"
@@ -129,8 +135,10 @@ jobs:
             if bun run scripts/checks/go-consumer.ts "$RELEASE_TAG" --remote; then
               exit 0
             fi
+
             if [ "$attempt" -lt 3 ]; then sleep 10; fi
           done
+
           exit 1
 
       - name: Create GitHub Release

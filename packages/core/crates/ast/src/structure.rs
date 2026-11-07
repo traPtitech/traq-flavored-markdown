@@ -14,6 +14,7 @@ pub struct ChildArity {
     pub field: &'static str,
     length: Arc<ArityAccessor>,
 }
+
 impl ChildArity {
     pub fn new<T: NodeData>(field: &'static str, length: fn(&T) -> usize) -> Self {
         Self {
@@ -23,11 +24,13 @@ impl ChildArity {
                     PayloadError::new("payload matching the child arity accessor")
                         .actual(format!("payload is not {}", std::any::type_name::<T>()))
                 })?;
+
                 Ok(length(payload))
             }),
         }
     }
 }
+
 impl std::fmt::Debug for ChildArity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ChildArity")
@@ -43,6 +46,7 @@ pub struct PayloadType {
     id: fn() -> TypeId,
     name: fn() -> &'static str,
 }
+
 impl PayloadType {
     pub const fn of<T: NodeData>() -> Self {
         Self {
@@ -50,16 +54,20 @@ impl PayloadType {
             name: std::any::type_name::<T>,
         }
     }
+
     pub fn id(self) -> TypeId {
         (self.id)()
     }
+
     pub fn name(self) -> &'static str {
         (self.name)()
     }
+
     fn matches(self, node: &Node) -> bool {
         self.id() == node.payload_type_id()
     }
 }
+
 impl std::fmt::Debug for PayloadType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PayloadType")
@@ -110,6 +118,7 @@ impl NodeStructure {
             children: ChildStructure::Leaf,
         }
     }
+
     pub fn roles(role: NodeRole, child: NodeRole) -> Self {
         Self {
             role,
@@ -119,6 +128,7 @@ impl NodeStructure {
             },
         }
     }
+
     pub fn children<T: NodeData>(role: NodeRole, nonempty: bool) -> Self {
         Self {
             role,
@@ -128,6 +138,7 @@ impl NodeStructure {
             },
         }
     }
+
     /// Validate immediate children. An arity accessor for a different payload
     /// type returns a payload error.
     pub fn validate(&self, payload: &dyn Any, children: &[Node]) -> Result<(), PayloadError> {
@@ -135,17 +146,22 @@ impl NodeStructure {
             ChildStructure::Roles { nonempty, .. } | ChildStructure::Types { nonempty, .. } => {
                 *nonempty
             }
+
             _ => false,
         };
         if required && children.is_empty() {
             return Err(PayloadError::new("at least one child").actual("0 children"));
         }
+
         match &self.children {
             ChildStructure::Any => Ok(()),
+
             ChildStructure::Leaf if !children.is_empty() => {
                 Err(PayloadError::new("no children").actual(format!("{} children", children.len())))
             }
+
             ChildStructure::Leaf => Ok(()),
+
             ChildStructure::Roles { roles, .. } => {
                 for (index, child) in children.iter().enumerate() {
                     if !roles.contains(&child.role()) {
@@ -154,8 +170,10 @@ impl NodeStructure {
                         ));
                     }
                 }
+
                 Ok(())
             }
+
             ChildStructure::Types { types, .. } => {
                 for (index, child) in children.iter().enumerate() {
                     if !types.iter().any(|kind| kind.matches(child)) {
@@ -163,8 +181,10 @@ impl NodeStructure {
                             .actual(format!("child {index}: {}", child.payload_type_name())));
                     }
                 }
+
                 Ok(())
             }
+
             ChildStructure::Sequence {
                 prefix,
                 rest,
@@ -179,6 +199,7 @@ impl NodeStructure {
                         ),
                     ));
                 }
+
                 let arity = child_arity
                     .as_ref()
                     .map(|arity| (arity.length)(payload))
@@ -186,12 +207,14 @@ impl NodeStructure {
                 if arity == Some(0) {
                     return Err(PayloadError::new("positive child arity"));
                 }
+
                 for (index, child) in children.iter().enumerate() {
                     let expected = prefix.get(index).unwrap_or(rest);
                     if !expected.matches(child) {
                         return Err(PayloadError::new("children matching the declared sequence")
                             .actual(format!("child {index}: {}", child.payload_type_name())));
                     }
+
                     if let Some(arity) = arity
                         && child.children.len() != arity
                     {
@@ -205,6 +228,7 @@ impl NodeStructure {
                         );
                     }
                 }
+
                 Ok(())
             }
         }

@@ -10,6 +10,7 @@ pub struct DelimiterPolicy {
     pub single: fn() -> AnyPayload,
     pub combined: Option<fn() -> AnyPayload>,
 }
+
 impl DelimiterPolicy {
     pub const fn simple(single: fn() -> AnyPayload) -> Self {
         Self {
@@ -20,6 +21,7 @@ impl DelimiterPolicy {
         }
     }
 }
+
 #[derive(Clone, Copy)]
 pub struct DelimiterRun {
     pub length: usize,
@@ -84,6 +86,7 @@ impl InlineMatch {
         self.syntax = syntax;
         self
     }
+
     pub fn text(end: ViewOffset, value: String) -> Self {
         Self {
             end,

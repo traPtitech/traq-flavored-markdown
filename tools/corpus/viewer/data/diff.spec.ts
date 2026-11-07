@@ -8,12 +8,14 @@ test('detailed and coarse diffs preserve both full outputs', () => {
     const after = prefix + 'after 😃\r\nend'
     const diff = outputDiff(before, after)
     expect(diff.coarse).toBe(prefix.length > 0)
+
     expect(
       diff.parts
         .filter(([operation]) => operation !== 1)
         .map(([, value]) => value)
         .join('')
     ).toBe(before)
+
     expect(
       diff.parts
         .filter(([operation]) => operation !== -1)

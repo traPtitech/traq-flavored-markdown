@@ -16,15 +16,19 @@ test('manifest loading validates contracts before generators observe them', () =
       }
     }
   }
+
   expect<unknown>(parseNodeManifest(source)).toEqual(source)
   const wrongRole = structuredClone(source)
   wrongRole.nodes.text.structure.role = 'unknown'
+
   expect(() => parseNodeManifest(wrongRole)).toThrow(
     '$.nodes.text.structure.role'
   )
+
   const wrongSchema = structuredClone(source)
   wrongSchema.nodes.text.schema.type = 'missing'
   expect(() => parseNodeManifest(wrongSchema)).toThrow('$.nodes.text.schema')
+
   expect(() => parseNodeManifest({ nodes: { text: null } })).toThrow(
     '$.nodes.text'
   )
@@ -42,6 +46,7 @@ test('artifact metadata has one checked limits and provenance boundary', () => {
       document: { sourceBytes: 10, payloadBytes: 50, nodes: 10, depth: 3 }
     }
   }
+
   expect(parseArtifactMetadata(value)).toEqual(value)
   value.limits.document.depth = 0.5
   expect(() => parseArtifactMetadata(value)).toThrow('$.limits.document.depth')
@@ -76,38 +81,50 @@ test('ABI manifests reject unsupported values and inconsistent operation referen
       exports: { render: { params: ['i32'], results: ['i32'] } }
     }
   }
+
   expect<unknown>(parseArtifactManifest(source)).toEqual(source)
   const unsupported = structuredClone(source)
   unsupported.abi.operations.render.result = 'unknown'
+
   expect(() => parseArtifactManifest(unsupported)).toThrow(
     '$.abi.operations.render.result'
   )
+
   const missing = structuredClone(source)
   missing.abi.operations.render.export = 'missing'
+
   expect(() => parseArtifactManifest(missing)).toThrow(
     '$.abi.operations.render.export'
   )
+
   const mismatched = structuredClone(source)
   mismatched.abi.exports.render.params = []
+
   expect(() => parseArtifactManifest(mismatched)).toThrow(
     '$.abi.operations.render.export'
   )
+
   const signature = structuredClone(source)
   signature.abi.exports.render.results = ['f64']
+
   expect(() => parseArtifactManifest(signature)).toThrow(
     '$.abi.exports.render.results[0]'
   )
+
   const configuration = structuredClone(source)
   configuration.abi.operations.render.configuration = true
+
   expect(() => parseArtifactManifest(configuration)).toThrow(
     '$.abi.operations.render.configuration'
   )
+
   const direction = { ...source, processing: { Options: { type: 'string' } } }
   expect(() => parseArtifactManifest(direction)).toThrow('$.directions.Options')
 })
 
 test('processing schemas resolve per operation and reject disconnected roots', () => {
   const helper = { type: 'string' }
+
   const source = {
     contractId: 'contract',
     provenance: { sourceFingerprint: 'source' },
@@ -147,32 +164,42 @@ test('processing schemas resolve per operation and reject disconnected roots', (
     },
     directions: { Request: 'request', Helper: 'request', Response: 'response' }
   }
+
   expect<unknown>(parseArtifactManifest(source)).toEqual(source)
+
   for (const field of ['requestSchema', 'responseSchema'] as const) {
     const missing = structuredClone(source)
     missing.abi.operations.process[field] = 'Missing'
+
     expect(() => parseArtifactManifest(missing)).toThrow(
       `$.abi.operations.process.${field}`
     )
   }
+
   const direction = structuredClone(source)
   direction.directions.Response = 'request'
+
   expect(() => parseArtifactManifest(direction)).toThrow(
     '$.abi.operations.process.responseSchema'
   )
+
   const helperDirection = structuredClone(source)
   helperDirection.directions.Helper = 'response'
+
   expect(() => parseArtifactManifest(helperDirection)).toThrow(
     '$.directions.Helper'
   )
+
   const unreferenced = {
     ...source,
     processing: { ...source.processing, Unused: { type: 'string' } },
     directions: { ...source.directions, Unused: 'request' }
   }
+
   expect(() => parseArtifactManifest(unreferenced)).toThrow(
     '$.processing.Unused'
   )
+
   const unusedDefinition = {
     ...source,
     processing: {
@@ -183,6 +210,7 @@ test('processing schemas resolve per operation and reject disconnected roots', (
       }
     }
   }
+
   expect(() => parseArtifactManifest(unusedDefinition)).toThrow(
     '$.processing.Helper'
   )

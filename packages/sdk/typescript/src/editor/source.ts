@@ -8,6 +8,7 @@ type SourceNodeBase = EditorRange & {
   readonly syntax: readonly EditorRange[]
   readonly native: ReadonlyNode
 }
+
 export type SourceNode = SourceNodeBase &
   (
     | {
@@ -25,6 +26,7 @@ export type SourceNode = SourceNodeBase &
       }
     | {
         readonly kind: 'style'
+
         readonly style:
           'strong' | 'emphasis' | 'strike' | 'highlight' | 'spoiler'
       }
@@ -34,12 +36,14 @@ export type SourceNode = SourceNodeBase &
         readonly container: Readonly<{ quoteDepth: number; indent: number }>
       }
   )
+
 export type SourceAnalysis = Readonly<{
   source: string
   document: ParsedDocument
   lines: readonly EditorLine[]
   nodes: readonly SourceNode[]
 }>
+
 export const isLiteralSource = (node: SourceNode) =>
   node.kind === 'code' ||
   node.kind === 'code-block' ||
@@ -56,15 +60,20 @@ const styles = new Map<
   [names.Mark, 'highlight'],
   [names.Spoiler, 'spoiler']
 ])
+
 const descriptions = new WeakMap<EditorAnalysis, SourceAnalysis>()
+
 /** Describe source geometry without selecting DOM classes or an editor framework. */
 export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
   const cached = descriptions.get(editing)
   if (cached) return cached
+
   const source = editing.document.source.text
   const nodes: SourceNode[] = []
+
   for (const entry of editing.nodes) {
     const native = entry.node
+
     const block = [
       names.Heading,
       names.CodeBlock,
@@ -72,30 +81,39 @@ export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
       names.Table,
       names.ThematicBreak
     ].some(kind => kind === native.kind)
+
     const range = { ...entry.range }
-    if (block)
+
+    if (block) {
       range.to -=
         /(?:\r\n|\r|\n)$/.exec(source.slice(range.from, range.to))?.[0]
           .length ?? 0
+    }
+
     const syntax = entry.markers
       .filter(marker => marker.kind !== 'info')
       .flatMap(marker => marker.ranges)
       .map(part => ({ from: part.from, to: Math.min(part.to, range.to) }))
+
     const empty = Math.min(
       range.to,
       entry.markers.find(marker => marker.kind === 'open')?.ranges.at(-1)?.to ??
         range.from
     )
+
     const content = entry.content.length
       ? entry.content.map(part => ({
           from: part.from,
           to: Math.min(part.to, range.to)
         }))
       : [{ from: empty, to: empty }]
+
     const base = { ...range, content, syntax, native }
     const style = styles.get(native.kind)
-    if (style) nodes.push({ ...base, kind: 'style', style })
-    else
+
+    if (style) {
+      nodes.push({ ...base, kind: 'style', style })
+    } else {
       switch (native.kind) {
         case names.Heading:
           nodes.push({ ...base, kind: 'heading' })
@@ -117,6 +135,7 @@ export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
             ...base,
             kind: 'math-block'
           })
+
           break
         case names.Table:
           nodes.push({ ...base, kind: 'table' })
@@ -129,21 +148,27 @@ export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
             ...base,
             kind: 'image'
           })
+
           break
         case names.Stamp:
           nodes.push({
             ...base,
             kind: 'stamp'
           })
+
           break
       }
+    }
   }
+
   // Inner styles precede their enclosing styles, in source order.
   nodes.sort((a, b) => a.to - b.to || b.from - a.from)
   const lines = editing.lines
+
   for (const line of lines) {
     const first = line.containers[0]
     if (!first) continue
+
     nodes.push({
       kind: 'container',
       from: line.from,
@@ -155,12 +180,14 @@ export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
         .flatMap(part => part.prefix?.ranges ?? []),
       container: { quoteDepth: line.quoteDepth, indent: line.indent }
     })
+
     for (const part of line.containers) {
       const markers =
         part.marker?.ranges.filter(
           range => line.from <= range.from && range.to <= line.to
         ) ?? []
-      if (part.kind === 'list' && markers.length)
+
+      if (part.kind === 'list' && markers.length) {
         nodes.push({
           kind: 'list-marker',
           from: line.from,
@@ -169,8 +196,10 @@ export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
           syntax: markers,
           native: part.node
         })
+      }
     }
   }
+
   const result = Object.freeze({
     source,
     document: editing.document,
@@ -190,6 +219,7 @@ export const describeSource = (editing: EditorAnalysis): SourceAnalysis => {
       )
     )
   })
+
   descriptions.set(editing, result)
   return result
 }

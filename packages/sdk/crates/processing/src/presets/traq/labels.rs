@@ -14,5 +14,6 @@ pub(super) fn for_target(target: &Target) -> &'static str {
         Target::File { .. } => EmbeddingKind::File,
         Target::Message { .. } => EmbeddingKind::Message,
     };
+
     for_embedding(kind)
 }

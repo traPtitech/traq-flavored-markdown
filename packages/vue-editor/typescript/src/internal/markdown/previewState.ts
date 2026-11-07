@@ -7,10 +7,12 @@ import type { MarkdownFormat } from './formats.js'
 export type PreviewState = MarkdownEditingState & {
   compositionDecorations: DecorationSet | undefined
   decorations: DecorationSet
+
   decorationCache: Map<
     MarkdownFormat,
     { visible: boolean; active: boolean; decorations: Decoration[] }
   >
+
   anchor?: { position: number; side: number; decoration: Decoration }
   syntax: MarkdownFormat['content'][]
 }

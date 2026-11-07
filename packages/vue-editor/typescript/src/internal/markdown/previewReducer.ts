@@ -27,6 +27,7 @@ export const markdownPreviewState: StateField<PreviewState> = {
       Partial<Pick<PreviewState, 'revealed'>> | undefined
 
     const lifecycle = inputLifecycleKey.getState(newState)
+
     const next = {
       ...previous,
       ...options,
@@ -63,8 +64,9 @@ export const markdownPreviewState: StateField<PreviewState> = {
     if (
       !next.enabled ||
       transaction.getMeta(inputLifecycleKey)?.focused === false
-    )
+    ) {
       next.revealed = []
+    }
 
     const startingComposition = next.composing && !previous.composing
 
@@ -86,8 +88,9 @@ export const markdownPreviewState: StateField<PreviewState> = {
           ).map(transaction.mapping, transaction.doc)
         : undefined
 
-    if (!next.composing)
+    if (!next.composing) {
       Object.assign(next, buildMarkdownDecorations(newState, next, previous))
+    }
 
     return next
   }

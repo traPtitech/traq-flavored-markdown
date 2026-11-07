@@ -10,6 +10,7 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string { return e.Path + ": " + e.Message }
 func invalid(path, message string) error { return &ValidationError{Path: path, Message: message} }
+
 func limit(path, resource string) error {
 	return &ValidationError{Path: path, Resource: resource, Message: resource + " limit exceeded"}
 }

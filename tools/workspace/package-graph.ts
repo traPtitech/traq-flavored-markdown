@@ -19,41 +19,56 @@ export function dependencyGraph<Name extends string>(
   entries: Iterable<readonly [Name, Iterable<Name>]>
 ): DependencyGraph<Name> {
   const dependencies = new Map<Name, ReadonlySet<Name>>()
+
   for (const [name, required] of entries) {
     if (dependencies.has(name)) throw new Error(`Duplicate package: ${name}`)
+
     dependencies.set(name, new Set(required))
   }
 
   const order: Name[] = []
   const active = new Set<Name>()
   const visited = new Set<Name>()
+
   function visit(name: Name) {
-    if (active.has(name))
+    if (active.has(name)) {
       throw new Error(`Circular package dependency: ${name}`)
+    }
+
     if (visited.has(name)) return
+
     const required = dependencies.get(name)
     if (!required) throw new Error(`Unknown package dependency: ${name}`)
+
     active.add(name)
     for (const dependency of required) visit(dependency)
     active.delete(name)
     visited.add(name)
     order.push(name)
   }
+
   for (const name of dependencies.keys()) visit(name)
 
   const closure = new Map<Name, Set<Name>>()
+
   for (const name of order) {
     const allowed = new Set<Name>([name])
+
     for (const dependency of dependencies.get(name) ?? []) {
       allowed.add(dependency)
-      for (const transitive of closure.get(dependency) ?? [])
+
+      for (const transitive of closure.get(dependency) ?? []) {
         allowed.add(transitive)
+      }
     }
+
     closure.set(name, allowed)
   }
+
   return {
     order,
     dependencies,
+
     allows: (source, destination) =>
       closure.get(source)?.has(destination) ?? false
   }
@@ -70,12 +85,16 @@ export function npmPackageGraph(
   manifests: Record<PackageName, NpmManifest>
 ): DependencyGraph<PackageName> {
   const names = new Map<string, PackageName>()
+
   for (const owner of packageNames) {
     const name = manifests[owner]?.name
     if (!name) throw new Error(`Missing package manifest: ${owner}`)
+
     if (names.has(name)) throw new Error(`Duplicate npm package name: ${name}`)
+
     names.set(name, owner)
   }
+
   const graph = dependencyGraph(
     packageNames.map(
       owner =>
@@ -84,18 +103,26 @@ export function npmPackageGraph(
           Object.keys(manifests[owner].peerDependencies ?? {}).flatMap(name => {
             const dependency = names.get(name)
             if (dependency) return [dependency]
-            if (name.startsWith('@traq-flavored-markdown/'))
+
+            if (name.startsWith('@traq-flavored-markdown/')) {
               throw new Error(`Unknown workspace peer: ${name}`)
+            }
+
             return []
           })
         ] as const
     )
   )
+
   for (const owner of packageNames) {
     const declared = graph.dependencies.get(owner)!
-    for (const dependency of declared)
-      if (dependency === owner || !allowsOwner(owner, dependency))
+
+    for (const dependency of declared) {
+      if (dependency === owner || !allowsOwner(owner, dependency)) {
         throw new Error(`${owner}: upward npm dependency ${dependency}`)
+      }
+    }
+
     if (
       packageNames.some(
         dependency =>
@@ -103,14 +130,19 @@ export function npmPackageGraph(
           graph.allows(owner, dependency) &&
           !declared.has(dependency)
       )
-    )
+    ) {
       throw new Error(
         `${owner} peer dependencies do not match the package graph`
       )
-    for (const name of Object.keys(manifests[owner].dependencies ?? {}))
-      if (names.has(name) || name.startsWith('@traq-flavored-markdown/'))
+    }
+
+    for (const name of Object.keys(manifests[owner].dependencies ?? {})) {
+      if (names.has(name) || name.startsWith('@traq-flavored-markdown/')) {
         throw new Error(`${owner}: internal packages must be peer dependencies`)
+      }
+    }
   }
+
   return graph
 }
 
@@ -132,6 +164,7 @@ export async function readNpmPackageGraph(root = repositoryRoot) {
       )
     )
   ) as Record<PackageName, NpmManifest>
+
   return { manifests, graph: npmPackageGraph(manifests) }
 }
 
@@ -143,8 +176,9 @@ export function packageOwner(directory: string): PackageName | undefined {
       (relative !== '..' &&
         !relative.startsWith('..' + path.sep) &&
         !path.isAbsolute(relative))
-    )
+    ) {
       return name
+    }
   }
 }
 
@@ -183,6 +217,7 @@ async function readGoMod(root: string, directory: string): Promise<GoMod> {
       env: { ...Bun.env, GOWORK: 'off' }
     }
   )
+
   return JSON.parse(stdout) as GoMod
 }
 
@@ -201,9 +236,12 @@ export async function readGoPackageGraph(
       published: false
     }
   ]
+
   const modules = new Map<string, GoModule>()
+
   for (const { owner, directory, published } of directories) {
     const manifest = await readGoMod(root, directory)
+
     modules.set(directory, {
       owner,
       directory,
@@ -212,23 +250,30 @@ export async function readGoPackageGraph(
       published
     })
   }
+
   const core = modules.get(goDirectory('core'))!
   const suffix = '/' + core.directory
-  if (!core.path.endsWith(suffix))
+  if (!core.path.endsWith(suffix)) {
     throw new Error(`${core.directory}: unexpected Go module path`)
+  }
+
   const repository = core.path.slice(0, -suffix.length)
+
   const byPath = new Map(
     [...modules.values()].map(module => [module.path, module])
   )
   if (byPath.size !== modules.size) throw new Error('Duplicate Go module path')
-  for (const module of modules.values())
+
+  for (const module of modules.values()) {
     if (
       module.path !==
       (module.published
         ? `${repository}/${module.directory}`
         : 'traq-markdown-example')
-    )
+    ) {
       throw new Error(`${module.directory}: unexpected Go module path`)
+    }
+  }
 
   const graph = dependencyGraph(
     [...modules.values()].map(
@@ -237,29 +282,39 @@ export async function readGoPackageGraph(
           module.directory,
           (module.manifest.Require ?? []).flatMap(requirement => {
             const dependency = byPath.get(requirement.Path)
+
             if (dependency) {
-              if (module.published && !dependency.published)
+              if (module.published && !dependency.published) {
                 throw new Error(
                   `${module.directory}: published module depends on example`
                 )
-              if (!allowsOwner(module.owner, dependency.owner))
+              }
+
+              if (!allowsOwner(module.owner, dependency.owner)) {
                 throw new Error(
                   `${module.directory}: upward Go dependency ${dependency.directory}`
                 )
+              }
+
               return [dependency.directory]
             }
-            if (requirement.Path.startsWith(`${repository}/packages/`))
+
+            if (requirement.Path.startsWith(`${repository}/packages/`)) {
               throw new Error(
                 `Unknown Go package dependency: ${requirement.Path}`
               )
+            }
+
             return []
           })
         ] as const
     )
   )
+
   const published = graph.order
     .map(directory => modules.get(directory)!)
     .filter(module => module.published)
+
   return {
     modules,
     graph,
@@ -269,12 +324,14 @@ export async function readGoPackageGraph(
 }
 
 export function validateGoOwnership(go: GoPackageGraph) {
-  for (const module of go.modules.values())
+  for (const module of go.modules.values()) {
     for (const directory of go.graph.dependencies.get(module.directory) ?? []) {
       const dependency = go.modules.get(directory)!
-      if (!allowsOwner(module.owner, dependency.owner))
+      if (!allowsOwner(module.owner, dependency.owner)) {
         throw new Error(
           `${module.directory}: upward Go dependency ${dependency.directory}`
         )
+      }
     }
+  }
 }

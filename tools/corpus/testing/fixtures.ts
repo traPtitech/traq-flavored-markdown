@@ -11,6 +11,7 @@ import {
 import { type ReportMetadata, filterMaskWidth } from '../protocol/report.ts'
 
 export const fixtureDigest = 'a'.repeat(64)
+
 export function fixturePlan(
   overrides: Partial<ComparisonPlan> = {}
 ): ComparisonPlan {
@@ -63,6 +64,7 @@ export function fixtureResult(
     p95Us: 1,
     p99Us: 1
   }
+
   return {
     messages,
     differences: 0,
@@ -83,6 +85,7 @@ export function fixtureMetadata(
   messages = 3
 ) {
   const plan = fixturePlan()
+
   return {
     messages,
     counts,

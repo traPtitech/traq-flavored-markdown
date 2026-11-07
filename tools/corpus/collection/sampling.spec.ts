@@ -11,11 +11,14 @@ test('sampling deduplicates across actual pages and caps the inspected window', 
   const pages: MessagePage[] = []
   const progress: SampleProgress[] = []
   const records = []
+
   for await (const record of sampleMessages(
     {
       publicChannels: async () => [{ id: 'c' }],
+
       messages: async (_channel, page) => {
         pages.push(page)
+
         return page.offset === 0
           ? Array.from({ length: 200 }, (_, id) => ({
               id: String(id),
@@ -35,21 +38,27 @@ test('sampling deduplicates across actual pages and caps the inspected window', 
       until: '2026-01-01'
     },
     state => progress.push(state)
-  ))
+  )) {
     records.push(record)
+  }
+
   expect(pages.map(page => [page.limit, page.offset])).toEqual([
     [200, 0],
     [2, 200]
   ])
+
   expect(records).toHaveLength(201)
+
   expect(records[200]).toEqual({
     id: '200',
     channel: 'c',
     source: 'last',
     isBot: false
   })
+
   expect(progress[0].sampledChannels).toBe(0)
   expect(progress[1].sampledChannels).toBe(1)
+
   expect(
     selectChannels([{ id: 'b' }, { id: 'a' }, { id: 'a' }], 0, 2, id => id).map(
       channel => channel.id
@@ -62,11 +71,14 @@ test('inaccessible channels are counted and message bounds stop further requests
   const requested: string[] = []
   const progress: SampleProgress[] = []
   const records = []
+
   for await (const record of sampleMessages(
     {
       publicChannels: async () => channels,
+
       messages: async channel => {
         requested.push(channel)
+
         return channel === channels[0].id
           ? null
           : [{ id: 'one', content: 'one' }]
@@ -80,10 +92,13 @@ test('inaccessible channels are counted and message bounds stop further requests
       until: '2026-01-01'
     },
     state => progress.push(state)
-  ))
+  )) {
     records.push(record)
+  }
+
   expect(requested).toHaveLength(2)
   expect(records).toHaveLength(1)
+
   expect(progress.at(-1)).toEqual({
     availableChannels: 3,
     sampledChannels: 2,

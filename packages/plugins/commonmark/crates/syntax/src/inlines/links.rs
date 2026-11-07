@@ -58,6 +58,7 @@ pub fn link(
         else {
             return Ok(discard());
         };
+
         reference
     };
 
@@ -108,6 +109,7 @@ fn reference_target(
         .state::<references::ReferenceMap>()?
         .0
         .get(&references::key(label))?;
+
     Some(ParsedDestination {
         end,
         target: target.clone(),
@@ -196,5 +198,6 @@ fn email(value: &str) -> bool {
     static EMAIL: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
         regex::Regex::new(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$").unwrap()
     });
+
     EMAIL.is_match(value)
 }

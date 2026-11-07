@@ -10,12 +10,15 @@ export const applyMarkdownEdit = (
   preserveSelection = false
 ) => {
   const transaction = closeHistory(state.tr)
-  for (const change of [...plan.changes].reverse())
+
+  for (const change of [...plan.changes].reverse()) {
     transaction.insertText(
       change.text,
       toDocumentPosition(change.from),
       toDocumentPosition(change.to)
     )
+  }
+
   transaction.setSelection(
     preserveSelection
       ? state.selection.map(transaction.doc, transaction.mapping)
@@ -25,5 +28,6 @@ export const applyMarkdownEdit = (
           toDocumentPosition(plan.selection.to)
         )
   )
+
   return transaction.scrollIntoView()
 }

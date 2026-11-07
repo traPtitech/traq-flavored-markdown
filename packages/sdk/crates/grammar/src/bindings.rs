@@ -29,6 +29,7 @@ pub fn grammars() -> &'static std::collections::BTreeMap<String, crate::Grammar>
                 .map(|preset| (preset.name(), (preset.grammar)().clone()))
                 .collect()
         });
+
     &GRAMMARS
 }
 

@@ -52,6 +52,7 @@ impl ParseError {
                 position,
                 "rule used an invalid source range or parser action",
             ),
+
             error => error,
         }
     }
@@ -61,6 +62,7 @@ impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::ResourceLimit { resource } => write!(f, "{} limit exceeded", resource.as_str()),
+
             Self::InvalidRuleOutput {
                 phase,
                 rule,
@@ -72,12 +74,16 @@ impl std::fmt::Display for ParseError {
                     ParsePhase::Inline => "inline",
                     ParsePhase::Text => "text",
                 };
+
                 write!(f, "invalid {phase} rule output")?;
+
                 if let Some(rule) = rule {
                     write!(f, " from {rule:?}")?;
                 }
+
                 write!(f, " at byte {position}: {reason}")
             }
+
             Self::InvalidDocument(_) => f.write_str("parsed document failed validation"),
             Self::InternalError => f.write_str("internal parser error"),
         }
@@ -103,10 +109,12 @@ mod error_tests {
     fn rule_error_messages_keep_the_rule_phase_and_original_position() {
         let error =
             ParseError::invalid_rule(ParsePhase::Inline, Some("custom"), 5, "match must advance");
+
         assert_eq!(
             error.to_string(),
             "invalid inline rule output from \"custom\" at byte 5: match must advance"
         );
+
         assert!(error.source().is_none());
     }
 
@@ -119,15 +127,20 @@ mod error_tests {
             payload_type: Some("text"),
             payload: None,
         });
+
         let ParseError::InvalidDocument(validation) = &error else {
             panic!("expected an invalid document error");
         };
+
         let source = error.source().unwrap();
+
         assert!(std::ptr::eq(
             source.downcast_ref::<ValidationError>().unwrap(),
             validation
         ));
+
         let report = format!("{error}: {source}");
+
         assert_eq!(report.matches("invalid span").count(), 1);
         assert!(report.contains("children[0]"));
     }
@@ -212,9 +225,11 @@ impl Budget {
             .nodes
             .checked_add(1)
             .ok_or_else(|| ParseError::limit(ParseResource::Nodes))?;
+
         if self.nodes > self.limits.document.nodes {
             return Err(ParseError::limit(ParseResource::Nodes));
         }
+
         Ok(())
     }
 
@@ -238,6 +253,7 @@ pub enum ParseResource {
     Tokens,
     Nesting,
 }
+
 impl ParseResource {
     pub fn as_str(self) -> &'static str {
         match self {

@@ -27,6 +27,7 @@ const embedded = encodeReference({
 
 const createEditor = (source: string) =>
   createInputEditor(source, { label: reference => '@renamed-' + reference.key })
+
 const press = pressKey
 
 describe('plain Markdown editor with atomic references', () => {
@@ -67,8 +68,9 @@ describe('plain Markdown editor with atomic references', () => {
         for (const count of [4, 3, 0]) {
           const text = dom.querySelector('p')?.lastChild
 
-          if (!(text instanceof Text))
+          if (!(text instanceof Text)) {
             throw new Error('Missing composition text')
+          }
 
           text.data = `${prefix ? ' ' : ''}${'あ'.repeat(count)}`
           document.getSelection()?.collapse(text, text.length)
@@ -79,6 +81,7 @@ describe('plain Markdown editor with atomic references', () => {
 
           expect(editor.view.composing).toBe(true)
           expect(editor.state.selection.empty).toBe(true)
+
           expect(editor.state.selection.head).toBe(
             editor.state.doc.content.size - 1
           )
@@ -104,8 +107,11 @@ describe('plain Markdown editor with atomic references', () => {
     selection => {
       const editor = createEditor(`before ${embedded} after`)
 
-      if (selection === 'cursor') editor.commands.setTextSelection(9)
-      else editor.commands.setNodeSelection(8)
+      if (selection === 'cursor') {
+        editor.commands.setTextSelection(9)
+      } else {
+        editor.commands.setNodeSelection(8)
+      }
 
       press(editor, 'Backspace')
       const text = '@renamed-id-before-rename'

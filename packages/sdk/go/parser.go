@@ -26,6 +26,7 @@ func NewRuntime(ctx context.Context, wasm []byte) (*Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &Runtime{runtime: runtime}, nil
 }
 
@@ -37,12 +38,14 @@ func (r *Runtime) NewParser(ctx context.Context, preset GrammarPresetID) (*Parse
 	if err != nil {
 		return nil, err
 	}
+
 	return &Parser{instance: instance}, nil
 }
 
 func (p *Parser) Parse(ctx context.Context, source string) (*Document, error) {
 	return p.parse(ctx, source, 0)
 }
+
 func (p *Parser) ParseInline(ctx context.Context, source string) (*Document, error) {
 	return p.parse(ctx, source, 1)
 }

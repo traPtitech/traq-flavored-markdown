@@ -48,13 +48,15 @@ export const contentToParts = <R = unknown>(
   const parts: InputPart<R>[] = []
 
   doc.descendants(node => {
-    if (node.isText) parts.push({ type: 'text', text: node.text ?? '' })
-    else if (node.type.name === 'reference')
+    if (node.isText) {
+      parts.push({ type: 'text', text: node.text ?? '' })
+    } else if (node.type.name === 'reference') {
       parts.push({
         type: 'reference',
         reference: node.attrs['reference'],
         originalSource: node.attrs['source'] ?? undefined
       })
+    }
   })
 
   return parts
@@ -78,6 +80,7 @@ export const loadInputDocument = <R>(
   })
 
   if (inputHistory.spec.key) editor.unregisterPlugin(inputHistory.spec.key)
+
   editor.registerPlugin(inputHistory)
   return true
 }

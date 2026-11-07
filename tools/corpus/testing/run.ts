@@ -13,6 +13,7 @@ const files = [
       !file.split(/[\\/]/).some(part => ['node_modules', 'dist'].includes(part))
   )
   .sort()
+
 await runProcess(
   Bun.argv[0],
   ['test', ...files.map(file => './' + file)],

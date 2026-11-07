@@ -19,18 +19,25 @@ export function embedReferences(
   const edits: SourceEdit[] = []
 
   // Validate the complete plan before calling application resolvers.
-  if (!plan || !Array.isArray(plan.candidates))
+  if (!plan || !Array.isArray(plan.candidates)) {
     throw new TypeError('Invalid reference embedding plan')
+  }
+
   const candidates = plan.candidates.map(({ start, end, raw, name, kind }) => {
     try {
-      if (end <= start || text.slice({ start, end }) !== raw)
+      if (end <= start || text.slice({ start, end }) !== raw) {
         throw new TypeError('Invalid candidate')
-      if (kind !== 'user' && kind !== 'group' && kind !== 'channel')
+      }
+
+      if (kind !== 'user' && kind !== 'group' && kind !== 'channel') {
         throw new TypeError('Invalid lookup kind')
+      }
+
       utf8ByteLength(name)
     } catch {
       throw new TypeError('Embedding plan does not match source')
     }
+
     return { start, end, raw, name, kind }
   })
 
@@ -47,10 +54,12 @@ export function embedReferences(
     }
 
     utf8ByteLength(id)
+
     edits.push({
       span: { start, end },
       text: '!' + JSON.stringify({ type: kind, raw, id })
     })
+
     position = end
   }
 

@@ -34,10 +34,12 @@ func (d *Document) Source() string   { return d.source }
 func (d *Document) Children() []Node { return slices.Clone(d.children) }
 func (d *Document) JSON() []byte     { return bytes.Clone(d.json) }
 func (d *Document) IsValid() bool    { return d != nil && d.json != nil }
+
 func (d *Document) MarshalJSON() ([]byte, error) {
 	if !d.IsValid() {
 		return nil, invalid("$", "document is required")
 	}
+
 	return d.JSON(), nil
 }
 
@@ -46,6 +48,7 @@ func (d *Document) ToMutable() (*MutableDocument, error) {
 	if !d.IsValid() {
 		return nil, invalid("$", "document is required")
 	}
+
 	return decodeMutableDocument(d.json, d.factory)
 }
 
@@ -56,6 +59,7 @@ func DecodeDocument(raw []byte, factory func(string) Payload) (*Document, error)
 	if err != nil {
 		return nil, err
 	}
+
 	// Retain the original payload bytes: caller-provided marshalers cannot alter
 	// the snapshot after its payloads and structure have passed validation.
 	var wire struct {
@@ -64,6 +68,7 @@ func DecodeDocument(raw []byte, factory func(string) Payload) (*Document, error)
 	if err := json.Unmarshal(owned, &wire); err != nil {
 		return nil, err
 	}
+
 	return &Document{source: draft.Source, children: ownNodes(wire.Children), json: owned, factory: factory}, nil
 }
 
@@ -76,8 +81,10 @@ type wireNode struct {
 
 func ownNodes(input []wireNode) []Node {
 	nodes := make([]Node, len(input))
+
 	for i, node := range input {
 		nodes[i] = Node{kind: node.Kind, span: node.Span, data: node.Data, children: ownNodes(node.Children)}
 	}
+
 	return nodes
 }

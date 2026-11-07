@@ -12,6 +12,7 @@ export const messageExtension = Extension.create<{
 }>({
   name: 'messageReferences',
   addOptions: () => ({ normalize: parts => [...parts] }),
+
   addProseMirrorPlugins() {
     return [
       new Plugin({
@@ -22,10 +23,12 @@ export const messageExtension = Extension.create<{
             tr => tr.getMeta(inputLifecycleKey)?.composing === false
           )
 
-          if (!compositionEnded && !transactions.some(tr => tr.docChanged))
+          if (!compositionEnded && !transactions.some(tr => tr.docChanged)) {
             return null
+          }
 
           const parts = contentToParts(state.doc)
+
           const normalized = this.options.normalize(
             parts,
             parts.some(part => part.type === 'reference') &&
@@ -36,6 +39,7 @@ export const messageExtension = Extension.create<{
                 )
               : undefined
           )
+
           const tr = state.tr
           let index = 0
 
@@ -44,12 +48,13 @@ export const messageExtension = Extension.create<{
 
             const next = normalized[index++]
 
-            if (node.type.name === 'reference' && next?.type === 'text')
+            if (node.type.name === 'reference' && next?.type === 'text') {
               tr.replaceWith(
                 tr.mapping.map(pos),
                 tr.mapping.map(pos + node.nodeSize),
                 state.schema.text(next.text)
               )
+            }
           })
 
           return tr.docChanged ? tr : null

@@ -53,10 +53,12 @@ fn collect_groups<'a>(plugins: &[&'a PluginDeclaration]) -> Vec<&'a PluginGroup>
 
     for plugin in plugins {
         let mut parent = plugin.namespace();
+
         while let Some(group) = parent {
             if groups.contains(&group) {
                 break;
             }
+
             groups.push(group);
             parent = group.parent();
         }

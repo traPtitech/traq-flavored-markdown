@@ -17,8 +17,10 @@ export async function captureProcess(
     log
   }: ProcessOptions = {}
 ) {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     throw new Error('Process timeout must be a positive number')
+  }
+
   const label = JSON.stringify([command, ...args])
   log?.(`Starting ${label} in ${cwd}`)
 
@@ -39,13 +41,18 @@ export async function captureProcess(
 
   const drain = async (index: number) => {
     const decoder = new TextDecoder()
+
     for (;;) {
       const { done, value } = await readers[index].read()
       if (done) break
+
       output[index] += decoder.decode(value, { stream: true })
-      if (outputMode === 'inherit')
+
+      if (outputMode === 'inherit') {
         await (index === 0 ? Bun.stdout : Bun.stderr).write(value)
+      }
     }
+
     output[index] += decoder.decode()
   }
 
@@ -61,7 +68,7 @@ export async function captureProcess(
     timer = setTimeout(() => {
       stop = (async () => {
         try {
-          if (process.platform === 'win32')
+          if (process.platform === 'win32') {
             await Bun.spawn(
               ['taskkill', '/pid', String(child.pid), '/T', '/F'],
               {
@@ -72,7 +79,7 @@ export async function captureProcess(
                 killSignal: 'SIGKILL'
               }
             ).exited
-          else {
+          } else {
             try {
               process.kill(-child.pid, 'SIGKILL')
             } catch (error) {
@@ -81,12 +88,14 @@ export async function captureProcess(
           }
         } finally {
           if (child.exitCode === null) child.kill('SIGKILL')
+
           await Promise.allSettled([
             child.exited,
             ...readers.map(reader => reader.cancel())
           ])
         }
       })()
+
       reject(failure(`timed out after ${timeoutMs}ms`))
     }, timeoutMs)
   })

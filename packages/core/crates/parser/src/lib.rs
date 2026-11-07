@@ -5,10 +5,12 @@
 mod engine;
 pub use engine::{Limits, ParseError, ParsePhase, ParseResource, Parser};
 pub use grammar::{BuildError, Grammar, GrammarBuilder, SyntaxPlugin};
+
 pub use markdown_ast::{
     AnyPayload, Document, DocumentView, MutableDocument, Node, NodeData, NodeRole, Span,
     ValidationLimits,
 };
+
 pub use markdown_definitions::RegistrationHandle;
 
 /// Grammar composition and shared implementation snapshots.
@@ -25,5 +27,6 @@ pub mod rules {
 
 /// Checked coordinates and source views supplied to syntax rules.
 pub use engine::source;
+
 /// Optional parser-owned source facts accompanying a parsed document.
 pub use engine::syntax;

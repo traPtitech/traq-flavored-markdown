@@ -34,9 +34,11 @@ it.each(markdownCorpus)(
     const { doc } = editor.state
     expect(doc.childCount).toBe(1)
     expect(doc.firstChild?.type.name).toBe('paragraph')
+
     expect(editorTextBetween(doc)).toBe(
       partsToProjectedText(contentToParts(doc))
     )
+
     expect(editorTextBetween(doc).length).toBe(doc.content.size - 2)
   }
 )

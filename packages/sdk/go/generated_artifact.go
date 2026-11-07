@@ -5,7 +5,7 @@ import "github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding"
 import "github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 
 const contractID = "8dbe20ada50638146ebe9844660f78c78a7ed7fa6e744385c85d99bcda511fa1"
-const sourceFingerprint = "6349ba503a528966"
+const sourceFingerprint = "4ee77715d336da66"
 const inputBytes = 1048576
 const outputBytes = 1048576
 const memoryPages = 512
@@ -20,6 +20,7 @@ var operationParse = binding.Operation{Export: "parse", Input: "text", Params: [
 var operationParseWithSyntax = binding.Operation{Export: "parse_with_syntax", Input: "text", Params: []string{"i32"}, Result: "syntax", Configuration: false}
 var operationProcess = binding.Operation{Export: "process", Input: "text", Params: []string{"i32"}, Result: "processing", Configuration: false}
 var operationRender = binding.Operation{Export: "render", Input: "json", Params: []string{}, Result: "text", Configuration: false}
+
 var abiExports = map[string]binding.Signature{
 	"configure":           {Params: []string{}, Results: []string{"i32"}},
 	"configure_extractor": {Params: []string{}, Results: []string{"i32"}},

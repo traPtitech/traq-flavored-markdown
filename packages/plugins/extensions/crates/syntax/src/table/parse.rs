@@ -38,6 +38,7 @@ pub(super) fn parse(
         markdown_parser::AnyPayload::new(Table { alignments: align }),
         DraftContent::Nodes(children),
     )?;
+
     matched.nodes[0].syntax = input.source.syntax(
         &[],
         &[(
@@ -46,6 +47,7 @@ pub(super) fn parse(
         )],
         budget,
     )?;
+
     Ok(Some(matched))
 }
 
@@ -63,12 +65,15 @@ fn row(
     let mut children = vec![];
 
     budget.token()?;
+
     for column in 0..align.len() {
         budget.token()?;
+
         let range = columns
             .get(column)
             .cloned()
             .unwrap_or(line.end.get()..line.end.get());
+
         children.push(cell(input, range)?);
     }
 
@@ -88,6 +93,7 @@ fn cell(input: &BlockInput<'_>, range: std::ops::Range<usize>) -> Result<DraftNo
     let raw = &source.text()[range.clone()];
     let start = range.start + raw.len() - raw.trim_start().len();
     let end = (range.start + raw.trim_end().len()).max(start);
+
     let pieces = split_escaped_pipes(source.text(), start, end)
         .into_iter()
         .map(|range| source.range(range))

@@ -85,8 +85,13 @@ export const retainMarkdownSource = (
     const from = transaction.mapping.mapResult(documentRange.from, 1)
     const to = transaction.mapping.mapResult(documentRange.to, -1)
 
-    if (from.deletedAcross || to.deletedAcross || (from.deleted && to.deleted))
+    if (
+      from.deletedAcross ||
+      to.deletedAcross ||
+      (from.deleted && to.deleted)
+    ) {
       continue
+    }
 
     const mapped = {
       ...range,
@@ -98,8 +103,9 @@ export const retainMarkdownSource = (
       transaction.selection.from < from.pos ||
       transaction.selection.to > to.pos ||
       retained.some(range => containsRange(range, mapped))
-    )
+    ) {
       continue
+    }
 
     retained.push(mapped)
   }
@@ -119,10 +125,11 @@ const adjacentPosition = (
 
   if (!node) return position
 
-  if (!node.isText)
+  if (!node.isText) {
     return direction === 'backward'
       ? position - node.nodeSize
       : position + node.nodeSize
+  }
 
   const segments = graphemes.segment(node.text ?? '')
 
@@ -144,8 +151,9 @@ export const enterMarkdownSource = (
   if (
     !(state.selection instanceof TextSelection) ||
     (!state.selection.empty && !extend)
-  )
+  ) {
     return
+  }
 
   const head = state.selection.head
   const adjacent = adjacentPosition(state, head, direction)
@@ -197,8 +205,9 @@ export const deleteMarkdownSource = (
 
   const transaction = state.tr
 
-  if (!selection.empty)
+  if (!selection.empty) {
     return { transaction: transaction.deleteSelection().scrollIntoView() }
+  }
 
   const position = selection.head
 
@@ -219,11 +228,12 @@ export const deleteMarkdownSource = (
     boundary?.kind === 'rendered-inline' &&
     boundary.replacement.type === 'stamp'
 
-  if (boundary && !deletesStampColon)
+  if (boundary && !deletesStampColon) {
     return {
       transaction: transaction.scrollIntoView(),
       revealed: markdownSourceRangesAt(preview.formats, position)
     }
+  }
 
   const resolved = state.doc.resolve(position)
 

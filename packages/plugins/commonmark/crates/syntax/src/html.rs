@@ -15,6 +15,7 @@ pub fn block_rule() -> &'static BlockRule {
                 block::start(probe.line).is_some_and(block::HtmlBlockKind::interrupts)
             })
     });
+
     &RULE
 }
 
@@ -36,6 +37,7 @@ pub fn inline_rule() -> &'static InlineRule {
         })
         .named("html")
     });
+
     &RULE
 }
 
@@ -46,5 +48,6 @@ pub fn plugin() -> &'static SyntaxPlugin {
         plugin.add(inline_rule());
         plugin
     });
+
     &PLUGIN
 }

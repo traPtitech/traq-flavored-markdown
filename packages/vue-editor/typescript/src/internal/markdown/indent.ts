@@ -10,6 +10,7 @@ export const markdownIndent = (
   direction: 'indent' | 'outdent' = 'indent'
 ) => {
   const source = editorTextBetween(state.doc)
+
   const plan = planIndent(
     source,
     {
@@ -18,6 +19,7 @@ export const markdownIndent = (
     },
     direction
   )
+
   return applyMarkdownEdit(
     state,
     plan,

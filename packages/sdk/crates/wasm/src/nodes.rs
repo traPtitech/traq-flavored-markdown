@@ -20,5 +20,6 @@ pub(crate) fn codec() -> &'static Codec {
 
         codec
     });
+
     &CODEC
 }

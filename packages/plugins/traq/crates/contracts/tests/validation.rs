@@ -10,6 +10,7 @@ fn span() -> Span {
 #[test]
 fn references_embeddings_and_blank_lines_are_leaves() {
     let child = Node::leaf(span(), BlankLine {});
+
     assert!(
         Node::new(
             span(),
@@ -23,6 +24,7 @@ fn references_embeddings_and_blank_lines_are_leaves() {
         .validate()
         .is_err()
     );
+
     assert!(
         Node::new(
             span(),
@@ -37,11 +39,13 @@ fn references_embeddings_and_blank_lines_are_leaves() {
         .validate()
         .is_err()
     );
+
     assert!(
         Node::new(span(), BlankLine {}, vec![child.clone()])
             .validate()
             .is_err()
     );
+
     assert!(
         Node::new(span(), Spoiler {}, vec![child])
             .validate()

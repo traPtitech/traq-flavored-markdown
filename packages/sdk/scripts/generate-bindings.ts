@@ -23,21 +23,30 @@ import { exportNodeContracts } from './node-contracts.ts'
 export function sdkOutputManifest(manifest: ArtifactManifest) {
   const files = typescriptFiles(manifest)
   files.set('go/generated_nodes.go', goNodes(manifest))
-  for (const [name, source] of presetFiles(manifest.presets))
+
+  for (const [name, source] of presetFiles(manifest.presets)) {
     files.set(name, source)
+  }
+
   for (const [name, source] of processingFiles(
     manifest.processing,
     manifest.directions
-  ))
+  )) {
     files.set(name, source)
+  }
+
   for (const [name, source] of abiFiles(manifest)) files.set(name, source)
+
   const plan = new OutputManifest()
-  for (const [name, source] of files)
+
+  for (const [name, source] of files) {
     plan.add(
       'sdk',
       path.relative(repositoryRoot, path.join(packageOutputRoot('sdk'), name)),
       source
     )
+  }
+
   return plan
 }
 
@@ -46,17 +55,22 @@ export async function generateSdk(input?: string, outputRoot = repositoryRoot) {
   const manifest = await readManifest(contracts, parseArtifactManifest)
   const plan = sdkOutputManifest(manifest)
   await applyOutputManifest(outputRoot, plan)
+
   console.log(
     `Generated ${plan.outputs.size} binding files from ${Object.keys(manifest.nodes).length} Rust payloads`
   )
+
   return plan
 }
 
 if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
   const [input, ...rest] = Bun.argv.slice(2)
-  if (rest.length)
+
+  if (rest.length) {
     throw new Error(
       'usage: bun packages/sdk/scripts/generate-bindings.ts [contracts-dir]'
     )
+  }
+
   await generateSdk(input ? path.resolve(input) : undefined)
 }

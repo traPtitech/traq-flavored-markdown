@@ -8,6 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{:#?}", parser.parse(source)?);
 
     let mut builder = presets::traq::v1::grammar().to_builder();
+
     builder.remove(
         &builder
             .registration(math::plugin())

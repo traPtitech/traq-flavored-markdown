@@ -51,6 +51,7 @@ impl BlockMatch {
         if let Some(syntax) = syntax {
             self.syntax = syntax.markers;
         }
+
         self
     }
 
@@ -87,6 +88,7 @@ pub struct BlockProbe<'a> {
     pub next: Option<&'a str>,
     context: &'a dyn std::any::Any,
 }
+
 impl BlockProbe<'_> {
     pub fn context<T: 'static>(&self) -> Option<&T> {
         self.context.downcast_ref()

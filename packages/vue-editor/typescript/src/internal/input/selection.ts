@@ -14,8 +14,9 @@ export const currentInputSelection = (view: EditorView) => {
     !focusNode ||
     !view.dom.contains(anchorNode) ||
     !view.dom.contains(focusNode)
-  )
+  ) {
     return selection
+  }
 
   const anchor = view.posAtDOM(anchorNode, native.anchorOffset)
   const head = view.posAtDOM(focusNode, native.focusOffset)
@@ -30,8 +31,9 @@ export const syncInputSelection = (
   selection: Selection = currentInputSelection(view)
 ) => {
   // 編集前に同期し、Undo にも DOM の選択位置を保存する。
-  if (!selection.eq(view.state.selection))
+  if (!selection.eq(view.state.selection)) {
     view.dispatch(view.state.tr.setSelection(selection))
+  }
 
   return view.state
 }

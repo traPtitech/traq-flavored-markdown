@@ -21,9 +21,11 @@ describe('Markdown decorations', () => {
         guide => guide.querySelectorAll('.markdown-input-quote-bar').length
       )
     ).toEqual([2, 2])
+
     expect(
       guides.map(guide => (guide as HTMLElement).style.paddingInlineEnd)
     ).toEqual(['0ch', '2ch'])
+
     expect(source(editor)).toBe(original)
   })
 
@@ -112,12 +114,15 @@ describe('Markdown decorations', () => {
           expect(editor.view.dom.querySelector('.markdown-input-source')).toBe(
             block
           )
+
           expect(block?.textContent).toBe(text)
+
           expect(
             editor.view.dom.querySelector(
               '.markdown-input-hidden, .ProseMirror-widget, details'
             )
           ).toBeNull()
+
           expect(source(editor)).toBe(text)
         }
       }
@@ -179,6 +184,7 @@ describe('Markdown decorations', () => {
     expect(
       editor.view.dom.querySelector('.markdown-input-syntax')?.textContent
     ).toBe('# ')
+
     expect(
       editor.view.dom.querySelector('.markdown-input-h1')?.textContent
     ).toBe('title')
@@ -230,6 +236,7 @@ describe('Markdown decorations', () => {
     expect(
       editor.view.dom.querySelector('.markdown-input-syntax')?.textContent
     ).toBe('## ')
+
     expect(editor.view.dom.querySelector('.reference-token')?.textContent).toBe(
       '@alice'
     )
@@ -276,6 +283,7 @@ describe('Markdown decorations', () => {
           expect(
             editor.view.dom.querySelector('.markdown-input-hidden')
           ).toBeNull()
+
           expect(source(editor)).toBe(text)
         }
       }

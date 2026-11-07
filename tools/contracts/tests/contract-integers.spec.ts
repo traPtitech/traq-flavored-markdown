@@ -26,6 +26,7 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       properties: { value: { type: 'integer', format, minimum: 0, maximum } },
       required: ['value']
     }
+
     const generated = emitTypeScriptValidators(
       [['example::Numeric', schema]],
       validationModule,
@@ -33,19 +34,24 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
         path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts')
       ).href
     )
+
     const compiled = ts.transpileModule(generated, {
       compilerOptions: {
         target: ts.ScriptTarget.ES2022,
         module: ts.ModuleKind.ESNext
       }
     }).outputText
+
     await withTempDirectory('traq-numeric-', async directory => {
       const generatedModule = `${directory}/numeric.mjs`
       await write(generatedModule, compiled)
       const { definitions } = await import(pathToFileURL(generatedModule).href)
       const validate = definitions.Numeric.validateData
-      for (const value of [0, 1, maximum])
+
+      for (const value of [0, 1, maximum]) {
         expect(validate({ value })).toBe(true)
+      }
+
       for (const value of [
         -1,
         Number(maximum) + 1,
@@ -54,22 +60,29 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
         '1',
         NaN,
         Infinity
-      ])
+      ]) {
         expect(validate({ value })).toBe(false)
+      }
+
       expect(validate({})).toBe(false)
       expect(validate({ value: 1, extra: 1 })).toBe(false)
+
       expect(goPayload('example::Numeric', schema)).toMatch(
         new RegExp('Value ' + format)
       )
+
       expect(
         (shape({ ...schema.properties.value, maximum: 6 }) as IntegerShape).max
       ).toBe(6)
+
       expect(() =>
         shape({ ...schema.properties.value, multipleOf: 2 })
       ).toThrow(/Unsupported schema keyword/)
+
       const withoutMaximum: { maximum?: string | number } = {
         ...schema.properties.value
       }
+
       delete withoutMaximum.maximum
       expect((shape(withoutMaximum) as IntegerShape).max).toBe(maximum)
     })
@@ -89,18 +102,21 @@ test('generated payload validators check array items', async () => {
     },
     required: ['animations']
   }
+
   const source = emitTypeScriptValidators(
     [['example::EffectsData', schema]],
     validationModule,
     pathToFileURL(path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts'))
       .href
   )
+
   const compiled = ts.transpileModule(source, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ESNext
     }
   }).outputText
+
   await withTempDirectory('traq-array-', async directory => {
     const module = `${directory}/array.mjs`
     await write(module, compiled)

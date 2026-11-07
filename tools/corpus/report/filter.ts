@@ -25,18 +25,25 @@ export const normalizeLinkedImages = (value: string, inline = false) =>
 
 function textFilterMask(before: string, after: string) {
   let mask = 0
-  if (withoutWhitespace(before) === withoutWhitespace(after))
+
+  if (withoutWhitespace(before) === withoutWhitespace(after)) {
     mask |= textFilters.whitespace
+  }
+
   const beforeLower = before.toLowerCase()
   const afterLower = after.toLowerCase()
   if (beforeLower === afterLower) mask |= textFilters.case
-  if (withoutWhitespace(beforeLower) === withoutWhitespace(afterLower))
+
+  if (withoutWhitespace(beforeLower) === withoutWhitespace(afterLower)) {
     mask |= textFilters.whitespaceAndCase
+  }
+
   return mask
 }
 
 function htmlFilterMask(before: string | undefined, after: string | undefined) {
   if (before === undefined || after === undefined) return 0
+
   return (before === after ? 1 : 0) | (textFilterMask(before, after) << 1)
 }
 
@@ -46,12 +53,14 @@ function includeFilterSupersets(mask: number, combinations = 16) {
   for (let selected = 1; selected < combinations; selected++) {
     for (let option = 1; option < combinations; option <<= 1) {
       const subset = selected ^ option
+
       if (selected & option && subset && mask & (1 << (subset - 1))) {
         mask |= 1 << (selected - 1)
         break
       }
     }
   }
+
   return mask
 }
 
@@ -59,41 +68,53 @@ function outputFilterMask({
   before,
   after
 }: Pick<DifferenceRow, 'before' | 'after'>) {
-  if (isFailure(before) || isFailure(after) || before.kind !== after.kind)
+  if (isFailure(before) || isFailure(after) || before.kind !== after.kind) {
     return 0
+  }
+
   const mask = textFilterMask(before.value, after.value)
+
   const imageBefore =
     before.kind === 'html' ? normalizeLinkedImages(before.value) : before.value
+
   const imageAfter =
     after.kind === 'html' ? normalizeLinkedImages(after.value) : after.value
+
   const imageTextMask =
     imageBefore === before.value && imageAfter === after.value
       ? mask
       : textFilterMask(imageBefore, imageAfter)
+
   const htmlBefore =
     before.kind === 'html'
       ? normalizeHtmlSerialization(before.value)
       : before.value
+
   const htmlAfter =
     after.kind === 'html'
       ? normalizeHtmlSerialization(after.value)
       : after.value
+
   const imageHtmlBefore =
     imageBefore === before.value
       ? htmlBefore
       : normalizeHtmlSerialization(imageBefore)
+
   const imageHtmlAfter =
     imageAfter === after.value
       ? htmlAfter
       : normalizeHtmlSerialization(imageAfter)
+
   const spellingMask =
     htmlBefore === before.value && htmlAfter === after.value
       ? Number(before.value === after.value) | (mask << 1)
       : htmlFilterMask(htmlBefore, htmlAfter)
+
   const imageSpellingMask =
     imageHtmlBefore === htmlBefore && imageHtmlAfter === htmlAfter
       ? spellingMask
       : htmlFilterMask(imageHtmlBefore, imageHtmlAfter)
+
   return includeFilterSupersets(
     mask |
       (imageBefore === imageAfter ? textFilters.linkedImages : 0) |
@@ -106,11 +127,14 @@ function outputFilterMask({
 function existingFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
   const mask = outputFilterMask(row)
   const { before, after } = row
-  if (before.kind !== 'html' || after.kind !== 'html')
+  if (before.kind !== 'html' || after.kind !== 'html') {
     return includeFilterSupersets(mask, 32)
+  }
+
   const left = normalizeKatexErrors(before.value)
   const right = normalizeKatexErrors(after.value)
   let katexMask = 0
+
   if (left && right && left.errors > 0 && left.errors === right.errors) {
     katexMask =
       (left.value === right.value ? 1 : 0) |
@@ -120,6 +144,7 @@ function existingFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
       }) <<
         1)
   }
+
   return includeFilterSupersets(mask | (katexMask << 15), 32)
 }
 
@@ -131,6 +156,7 @@ function linkFilterMask(row: FilterRow, origin?: string) {
   // Existing exclusions also apply when the new checkbox is selected.
   let mask = existing | (existing << 32n)
   const normalized = normalizeLinkPolicy(row, origin)
+
   if (
     normalized &&
     (normalized.before !== row.before.value ||
@@ -145,8 +171,10 @@ function linkFilterMask(row: FilterRow, origin?: string) {
               after: { kind: row.after.kind, value: normalized.after }
             })
           ) << 1n
+
     mask |= linkMask << 31n
   }
+
   return mask
 }
 
@@ -154,6 +182,7 @@ export function differenceFilterMask(row: FilterRow, origin?: string) {
   const existing = linkFilterMask(row, origin)
   let mask = existing | (existing << 64n)
   const normalized = normalizeNestedLinks(row)
+
   if (normalized) {
     const nestedMask =
       normalized.before === normalized.after
@@ -166,7 +195,9 @@ export function differenceFilterMask(row: FilterRow, origin?: string) {
             },
             origin
           ) << 1n
+
     mask |= nestedMask << 63n
   }
+
   return mask
 }

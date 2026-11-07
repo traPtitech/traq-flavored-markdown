@@ -21,12 +21,15 @@ impl NodeData for Reference {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
 }
+
 #[derive(Clone, Debug, PartialEq)]
 struct Container;
 
@@ -36,12 +39,15 @@ impl NodeData for Container {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
 }
+
 #[derive(Clone, Debug, PartialEq)]
 struct Invalid;
 
@@ -51,13 +57,17 @@ impl NodeData for Invalid {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
+
     fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = false;
+
         if valid {
             Ok(())
         } else {
@@ -86,19 +96,23 @@ fn document(children: Vec<Node>) -> MutableDocument {
 
 fn plugin(calls: Arc<AtomicUsize>) -> ExtractionPlugin<Collected> {
     let mut plugin = ExtractionPlugin::new(&Declaration::new("references"));
+
     plugin
         .on::<Reference>(move |value, _, result: &mut Collected| {
             calls.fetch_add(1, Ordering::Relaxed);
+
             if value.0 == 99 {
                 return Err(markdown_extractor::Error::Handler {
                     message: "handler failure".into(),
                 });
             }
+
             result.ids.push(value.0);
             result.count.set(result.count.get() + 1);
             Ok(())
         })
         .unwrap();
+
     plugin
 }
 
@@ -122,12 +136,14 @@ fn fresh_results_keep_preorder_duplicates_and_unregistered_descendants() {
     )]);
 
     let first = extractor.extract(&doc).unwrap();
+
     assert_eq!(first.ids, [1, 2, 1]);
     assert_eq!(first.count.get(), 3);
 
     // The extractor can cross threads even when its result cannot.
     std::thread::spawn(move || {
         let second = extractor.extract(&doc).unwrap();
+
         assert_eq!(second.ids, [1, 2, 1]);
         assert_eq!(second.count.get(), 3);
     })
@@ -151,6 +167,7 @@ fn validation_precedes_all_handlers_and_failed_runs_do_not_leak_results() {
         extractor.extract(&doc).map_err(|error| error.code()),
         Err("invalid_node")
     ));
+
     assert_eq!(calls.load(Ordering::Relaxed), 0);
 
     let mut doc = document(vec![node(Reference(1), vec![])]);
@@ -161,6 +178,7 @@ fn validation_precedes_all_handlers_and_failed_runs_do_not_leak_results() {
         extractor.extract(&doc).map_err(|error| error.code()),
         Err("invalid_node")
     ));
+
     assert_eq!(calls.load(Ordering::Relaxed), 0);
 
     let doc = document(vec![
@@ -172,6 +190,7 @@ fn validation_precedes_all_handlers_and_failed_runs_do_not_leak_results() {
         extractor.extract(&doc).map_err(|error| error.code()),
         Err("handler_error")
     ));
+
     assert!(extractor.extract(&document(vec![])).unwrap().ids.is_empty());
 }
 
@@ -187,6 +206,7 @@ fn snapshots_duplicate_rejection_and_removal_are_atomic() {
     assert!(plugin.on::<Reference>(|_, _, _| Ok(())).is_err());
 
     builder.clone().remove(&registration).unwrap();
+
     plugin
         .on::<Container>(|_, _, result| {
             result.ids.push(3);
@@ -200,6 +220,7 @@ fn snapshots_duplicate_rejection_and_removal_are_atomic() {
     let doc = document(vec![node(Container, vec![])]);
 
     assert!(old.extract(&doc).unwrap().ids.is_empty());
+
     assert!(
         Extractor::new(&builder.clone().build().unwrap())
             .extract(&doc)
@@ -209,6 +230,7 @@ fn snapshots_duplicate_rejection_and_removal_are_atomic() {
     );
 
     builder.remove(&registration).unwrap().add(&plugin).unwrap();
+
     assert!(builder.remove(&registration).is_err());
 
     assert_eq!(
@@ -241,9 +263,11 @@ fn limits_also_apply_to_unregistered_nodes() {
     }
 
     doc.children = vec![root];
+
     assert!(extractor.extract(&doc).is_ok());
 
     doc.children = vec![node(Container, doc.children)];
+
     assert!(matches!(
         extractor.extract(&doc).map_err(|error| error.code()),
         Err("resource_limit")
@@ -251,9 +275,11 @@ fn limits_also_apply_to_unregistered_nodes() {
 
     doc.children.clear();
     doc.source = "x".repeat(65_536);
+
     assert!(extractor.extract(&doc).is_ok());
 
     doc.source.push('x');
+
     assert!(matches!(
         extractor.extract(&doc).map_err(|error| error.code()),
         Err("resource_limit")
@@ -268,9 +294,11 @@ fn selected_names_are_checked_using_namespace_identity() {
     builder
         .add(&ExtractionPlugin::new(&group.plugin("same")))
         .unwrap();
+
     builder
         .add(&ExtractionPlugin::new(&group.plugin("same")))
         .unwrap();
+
     assert!(matches!(
         builder.build().map_err(|error| error.code()),
         Err("duplicate_name")

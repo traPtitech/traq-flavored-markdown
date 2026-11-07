@@ -33,6 +33,7 @@ export function registerInlineHandlers(
   }: InlineOptions
 ) {
   const linkAttrs = attributes(Object.entries(linkAttributes))
+
   const link = (destination: string, title: string | null, content: string) =>
     '<a' +
     attributes([['href', destination]]) +
@@ -68,8 +69,9 @@ export function registerInlineHandlers(
   )
 
   result = result.withHandler(definitions.Link, (n, ctx) => {
-    if (ctx.insideLink || !validateLink(n.data.destination))
+    if (ctx.insideLink || !validateLink(n.data.destination)) {
       return ctx.renderChildren()
+    }
 
     return link(
       n.data.destination,
@@ -80,14 +82,17 @@ export function registerInlineHandlers(
 
   result = result.withHandler(definitions.Image, (n, ctx) => {
     const label = imageLabelText(n.children, ctx.sourceSlice, ctx.matches)
+
     if (!validateImage(n.data.destination)) {
       // The enclosing link owns the destination; no image URL is emitted.
       if (
         ctx.insideLink ||
         !n.data.destination ||
         !validateLink(n.data.destination)
-      )
+      ) {
         return '!' + ctx.renderChildren()
+      }
+
       return (
         '!' +
         link(

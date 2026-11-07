@@ -18,11 +18,13 @@ export function encodeRequest(value: unknown, byteLimit: number): string {
     }).read(value) as string
   } catch (cause) {
     if (!(cause instanceof JsonBoundaryError)) throw cause
+
     const resource = {
       bytes: 'input_bytes',
       depth: 'request_depth',
       values: 'request_values'
     }[cause.reason as 'bytes' | 'depth' | 'values']
+
     throw new MarkdownError(
       {
         code: resource

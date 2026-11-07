@@ -13,12 +13,13 @@ export const buildMarkdownDecorations = (
   preview: PreviewState,
   previous?: PreviewState
 ): Pick<PreviewState, 'decorations' | 'decorationCache' | 'anchor'> => {
-  if (!preview.enabled)
+  if (!preview.enabled) {
     return {
       decorations: DecorationSet.empty,
       decorationCache: new Map(),
       anchor: undefined
     }
+  }
 
   const reusable = previous?.enabled && previous.formats === preview.formats
 
@@ -73,8 +74,9 @@ export const buildMarkdownDecorations = (
     }
   }
 
-  if (previousAnchor && anchor !== previousAnchor)
+  if (previousAnchor && anchor !== previousAnchor) {
     removed.push(previousAnchor.decoration)
+  }
 
   for (const format of preview.formats) {
     const active =
@@ -99,6 +101,7 @@ export const buildMarkdownDecorations = (
     }
 
     if (cached) removed.push(...cached.decorations)
+
     const decorations: Decoration[] = []
     decorationCache.set(format, { visible: sourceVisible, active, decorations })
     const className = `markdown-input-${format.classSuffix}`
@@ -179,7 +182,7 @@ export const buildMarkdownDecorations = (
     for (const syntax of format.syntax) {
       if (sourceVisible && format.kind === 'rendered-inline') continue
 
-      if (syntax.from < syntax.to)
+      if (syntax.from < syntax.to) {
         decorations.push(
           Decoration.inline(
             toDocumentPosition(syntax.from),
@@ -192,6 +195,7 @@ export const buildMarkdownDecorations = (
             }
           )
         )
+      }
     }
 
     if (!sourceVisible && format.kind === 'rendered-inline') {
@@ -230,8 +234,11 @@ const markdownContentRanges = (
   while (first < last) {
     const middle = (first + last) >>> 1
 
-    if ((syntax[middle]?.to ?? Infinity) <= from) first = middle + 1
-    else last = middle
+    if ((syntax[middle]?.to ?? Infinity) <= from) {
+      first = middle + 1
+    } else {
+      last = middle
+    }
   }
 
   for (let index = first; index < syntax.length; index++) {
@@ -258,9 +265,11 @@ export const mergeSyntaxRanges = (ranges: MarkdownFormat['content'][]) => {
   for (const range of ranges.sort((a, b) => a.from - b.from)) {
     const previous = merged.at(-1)
 
-    if (previous && range.from <= previous.to)
+    if (previous && range.from <= previous.to) {
       previous.to = Math.max(previous.to, range.to)
-    else merged.push({ ...range })
+    } else {
+      merged.push({ ...range })
+    }
   }
 
   return merged

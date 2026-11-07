@@ -4,6 +4,7 @@ import { math } from '@traq-flavored-markdown/extensions-plugin/math'
 import type { HtmlRendererOptions } from '../traq/profile/options.js'
 
 const highlight = createHighlighter({ preClass: 'traq-code traq-lang' })
+
 const condensedMath = (tex: string) =>
   math(tex, false, {
     maxSize: 1,
@@ -21,6 +22,7 @@ export function withDefaultAdapters(
   options: HtmlRendererOptions = {}
 ): HtmlRendererOptions {
   const customMath = options.math?.render
+
   return {
     ...options,
     code: { highlight: options.code?.highlight ?? highlight },

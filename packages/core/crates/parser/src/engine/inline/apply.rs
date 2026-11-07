@@ -7,10 +7,12 @@ use crate::{
 
 pub(super) fn children_budget(nodes: &[Node], budget: &mut Budget) -> Result<(), ParseError> {
     let mut pending: Vec<_> = nodes.iter().collect();
+
     while let Some(node) = pending.pop() {
         budget.node()?;
         pending.extend(&node.children);
     }
+
     Ok(())
 }
 
@@ -21,6 +23,7 @@ pub(super) fn matched(
 ) -> Result<(), ParseError> {
     let start = state.position;
     let end = found.end.get();
+
     if found.syntax.is_some()
         && !matches!(
             found.action,
@@ -42,6 +45,7 @@ pub(super) fn matched(
             inhibit_brackets,
         } => {
             apply_node(state, start, end, payload, children, inhibit_brackets)?;
+
             if let Some(Token {
                 kind: TokenKind::Atom(_, _, syntax),
                 ..
@@ -53,6 +57,7 @@ pub(super) fn matched(
 
         InlineAction::TrimmedNode { trim, payload } => {
             apply_trimmed_node(state, start, end, trim, payload)?;
+
             if let Some(Token {
                 kind: TokenKind::Atom(_, _, syntax),
                 ..
@@ -83,6 +88,7 @@ pub(super) fn matched(
     let mut cursor = state
         .source
         .cursor(state.source.offset(start)?, state.budget)?;
+
     cursor.advance(end - start)?;
     state.position = cursor.position().get();
 
@@ -104,6 +110,7 @@ fn apply_node(
         state.source.captures_syntax(),
         state.budget,
     )?;
+
     state.push(start, end, TokenKind::Atom(payload, children, None))?;
 
     if inhibit_brackets {
@@ -210,6 +217,7 @@ fn open_bracket(
     inhibit_on_inner: bool,
 ) -> Result<(), ParseError> {
     state.budget.nesting(state.brackets.len() + 1)?;
+
     state.brackets.push(Bracket {
         token: state.tokens.len(),
         bottom: state.delimiters.len(),

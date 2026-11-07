@@ -10,14 +10,17 @@ use std::sync::{
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text;
+
 impl NodeData for Text {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -25,14 +28,17 @@ impl NodeData for Text {
 
 #[derive(Debug, Clone, PartialEq)]
 struct Other;
+
 impl NodeData for Other {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -57,6 +63,7 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
     let parser = markdown_parser::Parser::new(&grammar.build().unwrap());
 
     let mut rendering = RenderPlugin::new(&declaration);
+
     rendering
         .on::<Text>(|_, _, _, output| output.push("rendered"))
         .unwrap();
@@ -74,6 +81,7 @@ fn parser_and_renderer_use_one_declaration_and_borrow_the_same_ast() {
             .unwrap(),
         "rendered"
     );
+
     assert_eq!(document.children[0].payload::<Text>(), Some(&Text));
     assert_eq!(document.source, "hello");
 }
@@ -83,6 +91,7 @@ fn captured_configuration_is_shared_and_outlives_the_preset() {
     let calls = Arc::new(AtomicUsize::new(0));
     let weak = Arc::downgrade(&calls);
     let mut plugin = RenderPlugin::new(&Declaration::new("configured"));
+
     plugin
         .on::<Text>(move |_, _, _, output| {
             output.push(&calls.fetch_add(1, Ordering::Relaxed).to_string())
@@ -129,6 +138,7 @@ fn captured_configuration_is_shared_and_outlives_the_preset() {
 #[test]
 fn snapshots_are_isolated_and_failed_registration_is_atomic() {
     let mut plugin = RenderPlugin::new(&Declaration::new("first"));
+
     plugin
         .on::<Text>(|_, _, _, output| output.push("first"))
         .unwrap();
@@ -138,7 +148,9 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
     let registration = builder.register(&plugin).unwrap();
 
     let renderer = Renderer::new(&builder.clone().build().unwrap());
+
     assert!(builder.add(&plugin).is_err());
+
     assert!(
         plugin
             .on::<Text>(|_, _, _, output| output.push("duplicate"))
@@ -154,6 +166,7 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
         .unwrap();
 
     assert_eq!(builder.registration(&plugin), Some(registration.clone()));
+
     assert_eq!(
         renderer
             .render(&document(Other))
@@ -162,6 +175,7 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
     );
 
     builder.remove(&registration).unwrap();
+
     assert!(builder.remove(&registration).is_err());
     builder.add(&plugin).unwrap();
 
@@ -182,24 +196,29 @@ fn snapshots_are_isolated_and_failed_registration_is_atomic() {
     );
 
     let mut conflict = RenderPlugin::new(&Declaration::new("conflict"));
+
     conflict
         .on::<Other>(|_, _, _, output| output.push("leaked"))
         .unwrap();
+
     conflict
         .on::<Text>(|_, _, _, output| output.push("wrong"))
         .unwrap();
 
     let mut builder = RenderPresetBuilder::new();
     builder.add(&registered).unwrap();
+
     assert!(builder.add(&conflict).is_err());
 
     let renderer = Renderer::new(&builder.build().unwrap());
+
     assert_eq!(
         renderer
             .render(&document(Other))
             .map_err(|error| error.code()),
         Err("unsupported_node")
     );
+
     assert_eq!(
         renderer
             .render(&document(Text))
@@ -216,12 +235,14 @@ fn display_name_validation_uses_shared_group_identity() {
     let right = RenderPlugin::new(&group.group("right").plugin("same"));
     let mut builder = RenderPresetBuilder::new();
     builder.add(&left).unwrap().add(&right).unwrap();
+
     assert!(builder.build().is_ok());
 
     let first = RenderPlugin::new(&group.plugin("same"));
     let second = RenderPlugin::new(&group.plugin("same"));
     let mut builder = RenderPresetBuilder::new();
     builder.add(&first).unwrap().add(&second).unwrap();
+
     assert!(matches!(
         builder.build().map_err(|error| error.code()),
         Err("duplicate_name")
@@ -231,6 +252,7 @@ fn display_name_validation_uses_shared_group_identity() {
     let other = RenderPlugin::new(&unrelated.plugin("other"));
     let mut builder = RenderPresetBuilder::new();
     builder.add(&first).unwrap().add(&other).unwrap();
+
     assert!(matches!(
         builder.build().map_err(|error| error.code()),
         Err("duplicate_name")

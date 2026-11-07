@@ -14,11 +14,14 @@ test('keeps literal math boundaries editable alongside rendered text', async ({
   await selectEditorOffsets(boundary)
   await input.press('ArrowLeft')
   await page.keyboard.insertText('+y')
+
   await expect(page.getByTestId('source')).toHaveText(
     '**before** $x^2+y$ **after**'
   )
+
   await input.press(`${modifier}+z`)
   await expect(page.getByTestId('source')).toHaveText(text)
+
   await expect
     .poll(() => caret(input))
     .toMatchObject({ head: boundary - 1, focused: true })
@@ -48,8 +51,10 @@ for (const direction of ['caret', 'forward', 'backward'] as const) {
         const to = view.domAtPos(head + 1)
         const native = getSelection()
         if (!native) throw new Error('Missing editor selection')
+
         native.setBaseAndExtent(from.node, from.offset, to.node, to.offset)
         const range = native.getRangeAt(0)
+
         const selection = {
           anchor: view.state.selection.anchor - 1,
           head: view.state.selection.head - 1
@@ -70,6 +75,7 @@ for (const direction of ['caret', 'forward', 'backward'] as const) {
             })
           ]
         })
+
         element.dispatchEvent(event)
         return { selection, prevented: event.defaultPrevented }
       },
@@ -80,14 +86,17 @@ for (const direction of ['caret', 'forward', 'backward'] as const) {
       selection: { anchor: boundary, head: boundary },
       prevented: true
     })
+
     const edited =
       text.slice(0, Math.min(anchor, head)) +
       '+y' +
       text.slice(Math.max(anchor, head))
+
     await expect(page.getByTestId('source')).toHaveText(edited)
 
     await input.press(`${modifier}+z`)
     await expect(page.getByTestId('source')).toHaveText(text)
+
     await expect
       .poll(() => caret(input))
       .toMatchObject({ anchor, head, focused: true })
@@ -95,6 +104,7 @@ for (const direction of ['caret', 'forward', 'backward'] as const) {
     await input.press(`${modifier}+Shift+z`)
     await expect(page.getByTestId('source')).toHaveText(edited)
     const restored = Math.min(anchor, head) + '+y'.length
+
     await expect
       .poll(() => caret(input))
       .toMatchObject({ anchor: restored, head: restored, focused: true })
@@ -120,7 +130,9 @@ for (const markdown of [false, true]) {
           'textContent',
           text
         )
+
         await expect(input).toHaveAttribute('data-is-empty', 'false')
+
         await expect
           .poll(() =>
             input.evaluate(
@@ -138,6 +150,7 @@ for (const markdown of [false, true]) {
         'textContent',
         'typed\n'
       )
+
       await expect(input).toHaveAttribute('data-is-empty', 'false')
 
       await load({ text: '**bold**\n', markdown })
@@ -151,6 +164,7 @@ for (const markdown of [false, true]) {
         'textContent',
         '**bold**\n'
       )
+
       await expect(input).toHaveAttribute('data-is-empty', 'false')
       await input.press(`${modifier}+Shift+z`)
 
@@ -158,6 +172,7 @@ for (const markdown of [false, true]) {
         'textContent',
         ''
       )
+
       await expect(input).toHaveAttribute('data-is-empty', 'true')
     })
 
@@ -171,16 +186,21 @@ for (const markdown of [false, true]) {
       await load({ text, markdown })
       await selectEditorOffsets(7)
       await input.press('ArrowLeft')
+
       await expect
         .poll(() => caret(input))
         .toMatchObject({ head: 6, focused: true })
+
       await input.press('Backspace')
+
       await expect(page.getByTestId('source')).toHaveJSProperty(
         'textContent',
         '**aaa* [bbb](https://example.test) $x^2$'
       )
+
       await expect(input).toBeFocused()
       await input.press('x')
+
       await expect(page.getByTestId('source')).toHaveJSProperty(
         'textContent',
         '**aaax* [bbb](https://example.test) $x^2$'
@@ -218,6 +238,7 @@ test('indents a selection, outdents it, and undoes without losing focus', async 
     'textContent',
     '  aaa\n  bbb'
   )
+
   await expect(input).toBeFocused()
 })
 
@@ -246,6 +267,7 @@ test('formats table cell contents while leaving syntax and math guides unstyled'
     )
 
   expect(styles.length).toBeGreaterThan(0)
+
   expect(
     styles.every(
       style =>
@@ -254,5 +276,6 @@ test('formats table cell contents while leaving syntax and math guides unstyled'
         style.decoration === 'none'
     )
   ).toBe(true)
+
   await expect(page.getByTestId('source')).toHaveJSProperty('textContent', text)
 })

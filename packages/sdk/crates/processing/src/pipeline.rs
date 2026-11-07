@@ -4,6 +4,7 @@ use crate::{
     extraction::{Extraction, Extractor, ExtractorOptions},
     rendering::{PlainTextOptions, PlainTextRenderer, WhitespacePolicy},
 };
+
 use markdown_ast::DocumentView;
 use serde::{Deserialize, Serialize};
 

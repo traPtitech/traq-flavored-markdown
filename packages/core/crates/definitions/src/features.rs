@@ -7,6 +7,7 @@ pub struct PayloadContract {
     pub native: TypeId,
     pub kind: String,
 }
+
 impl PayloadContract {
     pub fn of<T: WireTypeKey + 'static>() -> Self {
         Self {

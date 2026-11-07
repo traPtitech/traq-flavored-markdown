@@ -25,25 +25,30 @@ test('link label context is inherited by child dispatch and stays local to a ren
       ctx.renderChildren('', { insideLink: false })
     )
     .withHandler('value', (_n, ctx) => (ctx.insideLink ? 'label' : 'outside'))
+
   const value = { kind: 'value', data: {}, span: { start: 0, end: 1 } }
+
   const reset = {
     kind: 'reset',
     data: {},
     span: { start: 0, end: 1 },
     children: [value]
   }
+
   const wrapper = {
     kind: 'wrapper',
     data: {},
     span: { start: 0, end: 1 },
     children: [reset]
   }
+
   const anchor = {
     kind: 'anchor',
     data: {},
     span: { start: 0, end: 1 },
     children: [wrapper]
   }
+
   const view = createRenderer(new PresetBuilder().add(plugin).build())
   const session = view.createSession({ source: 'a', children: [anchor] })
   expect(session.render()).toBe('<a>label</a>')
@@ -53,6 +58,7 @@ test('link label context is inherited by child dispatch and stays local to a ren
 
 test('every render plan node must belong to the validated document before any handler runs', () => {
   let calls = 0
+
   const plugin = new RenderPlugin(new PluginDeclaration('plan')).withHandler(
     'text',
     () => {
@@ -60,25 +66,31 @@ test('every render plan node must belong to the validated document before any ha
       return 'text'
     }
   )
+
   const view = createRenderer(new PresetBuilder().add(plugin).build())
   const node = { kind: 'text', data: {}, span: { start: 0, end: 3 } }
   const document = { source: 'abc', children: [node] }
   const foreign = { ...node, span: { start: -1, end: 100 } }
+
   for (const plan of [
     { roots: [foreign] },
     { omittedNodes: new Set([foreign]) },
     { childText: new Map([[foreign, 'replacement']]) }
-  ])
+  ]) {
     expect(() => view.render(document, plan)).toThrow(/does not belong/)
+  }
+
   expect(calls).toBe(0)
 })
 
 test('node definitions infer payload types and validate known nodes before dispatch or omission', () => {
   let validations = 0
+
   const text = defineNode<{ kind: 'text'; data: { value: string } }>(
     'text',
     value => {
       validations++
+
       return (
         !!value &&
         typeof value === 'object' &&
@@ -87,7 +99,9 @@ test('node definitions infer payload types and validate known nodes before dispa
       )
     }
   )
+
   let calls = 0
+
   const plugin = new RenderPlugin(new PluginDeclaration('typed')).withHandler(
     text,
     (node, ctx) => {
@@ -95,14 +109,17 @@ test('node definitions infer payload types and validate known nodes before dispa
       return ctx.escape(node.data.value)
     }
   )
+
   const view = createRenderer(new PresetBuilder().add(plugin).build(), {
     schema: new DocumentSchema([text])
   })
+
   const node = {
     kind: 'text',
     data: { value: '<猫>' },
     span: { start: 0, end: 0 }
   }
+
   const document = { source: '', children: [node] }
   const session = view.createSession(document)
   expect(session.render()).toBe('&lt;猫&gt;')
@@ -113,35 +130,44 @@ test('node definitions infer payload types and validate known nodes before dispa
   expect(view.render(document)).toBe('edited')
   const malformed = { ...node, data: { value: 42 } }
   const before = calls
+
   expect(() =>
     view.render(
       { source: '', children: [malformed] },
       { omittedNodes: new Set([malformed]) }
     )
   ).toThrow(/Invalid node payload/)
+
   expect(calls).toBe(before)
 })
 
 test('sessions retain document ancestry and node-bound child replacement', () => {
   const seen: string[][] = []
+
   const plugin = new RenderPlugin(new PluginDeclaration('tree'))
     .withHandler('container', (_node, ctx) => '[' + ctx.renderChildren() + ']')
     .withHandler('text', (_node, ctx) => {
       seen.push(ctx.ancestors.map(parent => parent.kind))
       return String(ctx.index)
     })
+
   const child = { kind: 'text', data: {}, span: { start: 0, end: 0 } }
+
   const parent = {
     kind: 'container',
     data: {},
     span: { start: 0, end: 0 },
     children: [child]
   }
+
   const view = createRenderer(new PresetBuilder().add(plugin).build())
+
   expect(
     view.render({ source: '', children: [parent] }, { roots: [child] })
   ).toBe('0')
+
   expect(seen).toEqual([['container']])
+
   expect(
     view.render(
       { source: '', children: [parent] },
@@ -155,54 +181,67 @@ test('registration handles survive revisions and reject changes through other bu
     'text',
     () => 'before'
   )
+
   const builder = new PresetBuilder()
   const registration = builder.register(plugin)
   const before = createRenderer(builder.build())
+
   const document = {
     source: '',
     children: [{ kind: 'text', data: {}, span: { start: 0, end: 0 } }]
   }
+
   builder.replace(
     registration,
     plugin.withReplacedHandler('text', () => 'after')
   )
+
   expect(createRenderer(builder.build()).render(document)).toBe('after')
   expect(before.render(document)).toBe('before')
+
   expect(() => new PresetBuilder().remove(registration)).toThrow(
     /Missing registration/
   )
+
   builder.remove(registration)
   expect(createRenderer(builder.build()).render(document)).toBe('')
 })
 
 test('fallback preserves leading BOM and cyclic documents fail before rendering', () => {
   const view = createRenderer(new PresetBuilder().build())
+
   expect(
     view.render({
       source: '\uFEFFx',
       children: [{ kind: 'unknown', data: {}, span: { start: 0, end: 4 } }]
     })
   ).toBe('\uFEFFx')
+
   const node: MutableNode = {
     kind: 'cycle',
     data: {},
     span: { start: 0, end: 0 },
     children: []
   }
+
   node.children!.push(node)
   expect(() => view.render({ source: '', children: [node] })).toThrow(/tree/)
 })
 
 test('invalid Unicode is rejected in source, node kinds, payload keys and payload values', () => {
   const node = { kind: 'text', data: {}, span: { start: 0, end: 0 } }
+
   const documents = [
     { source: '\uD800', children: [] },
     { source: '', children: [{ ...node, kind: '\uDC00' }] },
     { source: '', children: [{ ...node, data: { value: '\uD800' } }] },
     { source: '', children: [{ ...node, data: { '\uDC00': 'value' } }] }
   ]
-  for (const document of documents)
+
+  for (const document of documents) {
     expect(() => new DocumentContext(document)).toThrow(/surrogate/)
+  }
+
   expect(
     new DocumentContext({
       source: '',
@@ -213,7 +252,7 @@ test('invalid Unicode is rejected in source, node kinds, payload keys and payloa
 
 test('limits are finite integers and payload allocations are bounded before validation callbacks', () => {
   for (const value of [NaN, Infinity, -1, 0.5, Number.MAX_SAFE_INTEGER + 1]) {
-    for (const key of ['sourceBytes', 'payloadBytes', 'nodes', 'depth'])
+    for (const key of ['sourceBytes', 'payloadBytes', 'nodes', 'depth']) {
       expect(
         () =>
           new DocumentContext(
@@ -226,19 +265,24 @@ test('limits are finite integers and payload allocations are bounded before vali
             }
           )
       ).toThrow(/finite nonnegative integers/)
+    }
   }
+
   let validations = 0
+
   const definitions = [
     defineNode('text', () => {
       validations++
       return true
     })
   ]
+
   const node = {
     kind: 'text',
     data: { value: 'é'.repeat(20) },
     span: { start: 0, end: 0 }
   }
+
   expect(
     () =>
       new DocumentContext(
@@ -252,6 +296,7 @@ test('limits are finite integers and payload allocations are bounded before vali
         }
       )
   ).toThrow(/payload byte limit/)
+
   expect(
     () =>
       new DocumentContext(
@@ -262,8 +307,10 @@ test('limits are finite integers and payload allocations are bounded before vali
         }
       )
   ).toThrow(/payload byte limit/)
+
   expect(validations).toBe(0)
   const small = { ...node, data: { value: 'abcdefgh' } }
+
   expect(
     () =>
       new DocumentContext(
@@ -271,6 +318,7 @@ test('limits are finite integers and payload allocations are bounded before vali
         { limits: { ...documentLimits, payloadBytes: 30 } }
       )
   ).toThrow(/payload byte limit/)
+
   expect(
     new DocumentContext(
       { source: '', children: [] },
@@ -288,11 +336,14 @@ test('limits are finite integers and payload allocations are bounded before vali
 
 test('external AST and payload accessors are rejected without invoking them', () => {
   let getters = 0
+
   const getter = () => {
     getters++
     return 'value'
   }
+
   const node = { kind: 'text', data: {}, span: { start: 0, end: 0 } }
+
   const documents = [
     Object.defineProperty({ children: [] }, 'source', {
       get: getter,
@@ -336,10 +387,14 @@ test('external AST and payload accessors are rejected without invoking them', ()
       children: Object.defineProperty([node], '0', { get: getter })
     }
   ]
-  for (const document of documents)
+
+  for (const document of documents) {
     expect(() => new DocumentContext(document as never)).toThrow(/accessors/)
+  }
+
   expect(getters).toBe(0)
   const coercible = { valueOf: getter }
+
   expect(
     () =>
       new DocumentContext({
@@ -347,12 +402,14 @@ test('external AST and payload accessors are rejected without invoking them', ()
         children: [{ ...node, span: { start: coercible, end: 0 } }]
       } as never)
   ).toThrow(/span/)
+
   expect(getters).toBe(0)
 })
 
 test('validation callbacks cannot change captured kinds, spans or expand scheduled siblings', () => {
   const node = { kind: 'text', data: {}, span: { start: 0, end: 1 } }
   const children = [node]
+
   const context = new DocumentContext(
     { source: 'x', children },
     {
@@ -360,16 +417,19 @@ test('validation callbacks cannot change captured kinds, spans or expand schedul
         defineNode('text', () => {
           node.kind = 'changed'
           node.span.end = 1000
+
           children.push({
             kind: 'foreign',
             data: {},
             span: { start: 0, end: 1 }
           })
+
           return true
         })
       ])
     }
   )
+
   expect(context.document.children).toHaveLength(1)
   expect(context.document.children[0].kind).toBe('text')
   expect(context.document.children[0].span).toEqual({ start: 0, end: 1 })
@@ -378,28 +438,35 @@ test('validation callbacks cannot change captured kinds, spans or expand schedul
 test('a schema captures a changing external declaration before consumers run', () => {
   let reads = 0
   let handlers = 0
+
   const declaration = {
     ...defineNode('text', () => false),
+
     get kind() {
       return ++reads === 1 ? 'text' : 'different'
     }
   }
+
   const schema = new DocumentSchema([declaration])
+
   const plugin = new RenderPlugin(
     new PluginDeclaration('changing-kind')
   ).withHandler('text', () => {
     handlers++
     return 'invalid handler ran'
   })
+
   const view = createRenderer(new PresetBuilder().add(plugin).build(), {
     schema
   })
+
   expect(() =>
     view.render({
       source: '',
       children: [{ kind: 'text', data: {}, span: { start: 0, end: 0 } }]
     })
   ).toThrow(/Invalid node payload/)
+
   expect(reads).toBe(1)
   expect(handlers).toBe(0)
 })

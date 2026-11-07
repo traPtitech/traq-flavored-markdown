@@ -20,6 +20,7 @@ export async function checkGoConsumer(version: string, remote = false) {
   goVersion(version)
   const { published } = await readGoPackageGraph()
   const sdk = published.find(module => module.owner === 'sdk')!.path
+
   await withTempDirectory('markdown-go-consumer-', async directory => {
     const replacements = remote
       ? ''
@@ -29,10 +30,12 @@ export async function checkGoConsumer(version: string, remote = false) {
               `  ${module.path} => ${path.join(repositoryRoot, module.directory).replaceAll('\\', '/')}`
           )
           .join('\n')}\n)\n`
+
     await Bun.write(
       path.join(directory, 'go.mod'),
       `module example.com/markdown-go-consumer\n\ngo 1.26.0\n\nrequire ${sdk} ${version}\n${replacements}`
     )
+
     await Bun.write(
       path.join(directory, 'consumer_test.go'),
       `package consumer
@@ -58,21 +61,28 @@ func TestBundledRuntime(t *testing.T) {
 }
 `
     )
+
     await go(directory, ['mod', 'tidy'], remote)
+
     if (remote) {
       const resolved = await go(
         directory,
         ['list', '-m', '-f', '{{.Path}}@{{.Version}}', 'all'],
         true
       )
-      for (const module of published)
-        if (!resolved.includes(`${module.path}@${version}`))
+
+      for (const module of published) {
+        if (!resolved.includes(`${module.path}@${version}`)) {
           throw new Error(
             `${module.directory}: Go consumer resolved wrong version`
           )
+        }
+      }
     }
+
     await go(directory, ['test', '-count=1', './...'], remote)
   })
+
   console.log(
     `External Go consumer passed with GOWORK=off (${remote ? 'published tags' : 'local release candidate'})`
   )
@@ -80,13 +90,16 @@ func TestBundledRuntime(t *testing.T) {
 
 export async function main() {
   const [version, flag, ...rest] = Bun.argv.slice(2)
-  if (rest.length || (flag && flag !== '--remote'))
+  if (rest.length || (flag && flag !== '--remote')) {
     throw new Error(
       'usage: bun tools/workspace/checks/go-consumer.ts [v<version> [--remote]]'
     )
+  }
+
   const releaseVersion =
     version ??
     `v${(await Bun.file(path.join(repositoryRoot, 'package.json')).json()).version}`
+
   await checkGoConsumer(releaseVersion, flag === '--remote')
 }
 

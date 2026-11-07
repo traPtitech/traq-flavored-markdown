@@ -16,11 +16,13 @@ pub struct GrammarProfileDefinition {
 impl GrammarProfile {
     pub fn definition(self) -> &'static GrammarProfileDefinition {
         use FeatureId::*;
+
         static COMMONMARK: GrammarProfileDefinition = GrammarProfileDefinition {
             features: &[Core, Html],
             #[cfg(feature = "syntax")]
             precedence: commonmark_precedence,
         };
+
         static TRAQ_V1: GrammarProfileDefinition = GrammarProfileDefinition {
             features: &[
                 Core,
@@ -37,6 +39,7 @@ impl GrammarProfile {
             #[cfg(feature = "syntax")]
             precedence: traq_precedence,
         };
+
         match self {
             Self::Commonmark => &COMMONMARK,
             Self::TraqV1 => &TRAQ_V1,
@@ -50,19 +53,23 @@ impl GrammarProfile {
         let definition = self.definition();
         let precedence = definition.precedence;
         let mut builder = markdown_parser::GrammarBuilder::new();
+
         for feature in crate::grammar_features(self) {
             builder.add((feature.syntax)())?;
         }
+
         for ordering in precedence() {
             match ordering {
                 Precedence::Inline(rule, anchor) => {
                     builder.before(rule, anchor)?;
                 }
+
                 Precedence::Block(rule, anchor) => {
                     builder.before(rule, anchor)?;
                 }
             }
         }
+
         Ok(builder)
     }
 }
@@ -82,6 +89,7 @@ enum Precedence {
 #[cfg(feature = "syntax")]
 fn commonmark_precedence() -> Vec<Precedence> {
     let base = crate::commonmark_syntax();
+
     vec![
         Precedence::Inline(
             markdown_commonmark::html::inline_rule(),
@@ -97,6 +105,7 @@ fn traq_precedence() -> Vec<Precedence> {
     use markdown_extensions_syntax as extensions;
     use markdown_traq_syntax as traq;
     let base = crate::commonmark_syntax();
+
     vec![
         Inline(extensions::math::inline_rule(), &base.inline.code),
         Inline(traq::spoiler::inline_rule(), &base.inline.emphasis),
@@ -124,6 +133,7 @@ pub enum TextProfile {
 impl TextProfile {
     pub fn features(self) -> &'static [crate::TextFeature] {
         use crate::TextFeature::*;
+
         match self {
             Self::Traq => &[
                 Core,

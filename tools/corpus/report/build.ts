@@ -19,32 +19,43 @@ export async function buildReport(directory: string, template: string) {
   const { plan, manifest } = await readCompletedRun(directory)
   const results = await readResults(plan)
   let kinds: string | undefined
+
   if (manifest.files.some(file => file.path === authorIndexFile)) {
     const authors = parseAuthorIndex(
       await Bun.file(path.join(directory, authorIndexFile)).json()
     )
+
     validateAuthors(plan, authors, results.render.messages)
     kinds = authors.kinds
   }
+
   const aggregated = await aggregateDifferences(
     (async function* () {
-      for (const file of differenceFilesFor(plan))
+      for (const file of differenceFilesFor(plan)) {
         for await (const line of readLines(path.join(directory, file))) {
           const row = parseDifferenceLine(line)
-          if (row.runId !== plan.runId)
+          if (row.runId !== plan.runId) {
             throw new Error('Difference belongs to a different comparison run')
+          }
+
           const result = results[row.profile]
-          if (!result)
+          if (!result) {
             throw new Error('Difference belongs to an uncompared profile')
-          if (row.index >= result.messages)
+          }
+
+          if (row.index >= result.messages) {
             throw new Error('Difference index exceeds message count')
+          }
+
           yield row
         }
+      }
     })(),
     pageSize,
     index => (kinds?.[index] ?? 'u') as AuthorKind,
     plan.origin
   )
+
   const metadata: ReportMetadata = {
     filters: aggregated.filters,
     classificationVersion,
@@ -63,6 +74,7 @@ export async function buildReport(directory: string, template: string) {
     generated: new Date().toISOString(),
     pageSize: aggregated.pageSize
   }
+
   return {
     html: reportDocument(template, metadata, aggregated.payload),
     metadata,

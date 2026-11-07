@@ -18,6 +18,7 @@ struct Segment {
 impl SourceMap {
     pub fn append(&mut self, view: Range<usize>, source: Span) {
         let linear = view.len() == source.end - source.start;
+
         self.push(Segment {
             view,
             source,
@@ -29,6 +30,7 @@ impl SourceMap {
         if segment.view.is_empty() {
             return;
         }
+
         if let Some(previous) = self.segments.last_mut()
             && previous.view.end == segment.view.start
             && ((previous.linear && segment.linear && previous.source.end == segment.source.start)
@@ -46,6 +48,7 @@ impl SourceMap {
         for mut segment in source.selected(range.clone()) {
             segment.view =
                 at + segment.view.start - range.start..at + segment.view.end - range.start;
+
             self.push(segment);
         }
     }
@@ -65,11 +68,14 @@ impl SourceMap {
         mut budget: Option<&mut Budget>,
     ) -> Result<Vec<Span>, ParseError> {
         let mut spans: Vec<Span> = vec![];
+
         for segment in self.selected(range) {
             if let Some(budget) = &mut budget {
                 budget.spend(1)?;
             }
+
             let span = segment.source;
+
             if let Some(previous) = spans.last_mut()
                 && previous.start <= span.start
                 && span.start <= previous.end
@@ -79,6 +85,7 @@ impl SourceMap {
                 spans.push(span);
             }
         }
+
         Ok(spans)
     }
 
@@ -90,12 +97,14 @@ impl SourceMap {
         let first = self
             .segments
             .partition_point(|segment| segment.view.end <= range.start);
+
         self.segments[first..]
             .iter()
             .take_while(move |segment| segment.view.start < range.end)
             .filter_map(move |segment| {
                 let start = segment.view.start.max(range.start);
                 let end = segment.view.end.min(range.end);
+
                 (start < end).then(|| Segment {
                     view: start..end,
                     source: if segment.linear {

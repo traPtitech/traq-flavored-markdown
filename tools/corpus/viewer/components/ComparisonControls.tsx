@@ -44,6 +44,7 @@ export function ComparisonControls({
     onPage(page)
     window.scrollTo({ top: 0 })
   }
+
   return (
     <>
       <nav className="toolbar">

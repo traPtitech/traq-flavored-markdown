@@ -15,13 +15,17 @@ impl NodeData for Heading {
             role: NodeRole::Block,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
+
     fn validate_payload(&self, _children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = (1..=6).contains(&self.level);
+
         if valid {
             Ok(())
         } else {
@@ -29,6 +33,7 @@ impl NodeData for Heading {
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
 #[wire_type(key = "example.text")]
 struct Text {
@@ -41,13 +46,17 @@ impl NodeData for Text {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         self.value.len()
     }
+
     fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = children.is_empty();
+
         if valid {
             Ok(())
         } else {

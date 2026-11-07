@@ -42,9 +42,11 @@ test('generated optional TypeScript guards enforce every exported payload shape'
         definition => definition.kind === name
       )?.validateData
     if (!check) throw new Error(`Missing generated validator: ${name}`)
+
     expect(check(valid)).toBeTruthy()
     expect(check({ ...valid, unexpected: true })).toBeFalsy()
     expect(check(null)).toBeFalsy()
+
     for (const field of schema.required ?? []) {
       const missing: Record<string, unknown> = { ...valid }
       delete missing[field]
@@ -52,8 +54,10 @@ test('generated optional TypeScript guards enforce every exported payload shape'
       expect(check({ ...valid, [field]: [] })).toBeFalsy()
     }
   }
+
   const reference = definitions.Reference.validateData
   const cell = definitions.Cell.validateData
+
   expect(
     !reference({
       type: 'other',
@@ -61,6 +65,7 @@ test('generated optional TypeScript guards enforce every exported payload shape'
       label: '@u'
     })
   ).toBeTruthy()
+
   expect(!cell({ alignment: 'other' })).toBeTruthy()
 })
 
@@ -91,30 +96,39 @@ test('unsupported schema constraints fail generation instead of weakening valida
     properties: { value: { type: 'string', pattern: 'secret' } },
     required: ['value']
   }
+
   expect(() => emitTypeScriptValidators([['test/example@1', schema]])).toThrow(
     /Unsupported schema keyword/
   )
+
   expect(() => goPayload('test/example@1', schema)).toThrow(
     /Unsupported schema keyword/
   )
+
   for (const unsupported of [
     { type: ['string', 'null'], enum: ['restricted', null] },
     { type: 'string', anyOf: [{ type: 'string' }, { type: 'null' }] },
     { $ref: '#/$defs/Value', type: 'boolean' },
     { anyOf: [{ type: 'string' }, { type: 'null', enum: [null] }] }
-  ])
+  ]) {
     expect(() => shape(unsupported)).toThrow()
+  }
+
   const recursive = { $ref: '#/$defs/Value' }
+
   expect(() => shape(recursive, { $defs: { Value: recursive } })).toThrow(
     /Recursive payload schemas/
   )
+
   const plain = { ...schema, properties: { value: { type: 'string' } } }
+
   expect(() =>
     emitTypeScriptValidators([
       ['test/example@1', plain],
       ['other/example@1', { ...plain, title: 'ExampleData' }]
     ])
   ).not.toThrow()
+
   expect(() =>
     emitTypeScriptValidators([
       ['test/example@1', plain],

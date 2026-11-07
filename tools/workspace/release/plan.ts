@@ -25,6 +25,7 @@ export function releasePlan(
   const moduleTags = modules
     .filter(module => module.published)
     .map(module => `${module.directory}/${version.tag}`)
+
   return {
     version,
     packages,
@@ -50,11 +51,13 @@ export function releasePlan(
 
 export async function loadReleasePlan(label: string, root = repositoryRoot) {
   const version = goVersion(label)
+
   const [{ manifests, graph }, go, generated] = await Promise.all([
     readNpmPackageGraph(root),
     readGoPackageGraph(root),
     readOutputIndex(root)
   ])
+
   return releasePlan(
     version,
     graph.order.map(owner => ({
@@ -74,11 +77,13 @@ export async function loadReleasePlan(label: string, root = repositoryRoot) {
 
 export type ReleaseAction =
   { kind: 'npm'; name: string } | { kind: 'tag'; name: string }
+
 export type ReleaseState = {
   revision: string
   completed: ReleaseAction[]
   pending: ReleaseAction[]
 }
+
 export type ReleasePorts = {
   npmVersion(name: string, version: string): Promise<boolean>
   tagRevision(tag: string): Promise<string | undefined>
@@ -92,6 +97,7 @@ export async function inspectRelease(
   ports: Pick<ReleasePorts, 'npmVersion' | 'tagRevision'>
 ): Promise<ReleaseState> {
   const state: ReleaseState = { revision, completed: [], pending: [] }
+
   for (const item of plan.packages) {
     const action: ReleaseAction = { kind: 'npm', name: item.name }
     ;((await ports.npmVersion(item.name, plan.version.npm))
@@ -99,17 +105,21 @@ export async function inspectRelease(
       : state.pending
     ).push(action)
   }
+
   for (const tag of [plan.version.tag, ...plan.moduleTags]) {
     const current = await ports.tagRevision(tag)
-    if (current !== undefined && current !== revision)
+    if (current !== undefined && current !== revision) {
       throw new Error(
         `Published tag ${tag} points to ${current}, expected ${revision}`
       )
+    }
+
     ;(current ? state.completed : state.pending).push({
       kind: 'tag',
       name: tag
     })
   }
+
   return state
 }
 
@@ -121,10 +131,12 @@ export async function resumeRelease(
   npmOnly = false
 ) {
   const state = await inspectRelease(plan, revision, ports)
+
   for (const action of state.pending) {
-    if (action.kind === 'npm')
+    if (action.kind === 'npm') {
       await ports.publishPackage(action.name, plan.version)
-    else if (!npmOnly) await ports.publishTag(action.name, revision)
+    } else if (!npmOnly) await ports.publishTag(action.name, revision)
   }
+
   return state
 }

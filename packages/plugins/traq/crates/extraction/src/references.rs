@@ -38,6 +38,7 @@ pub struct References {
 pub fn plugin() -> ExtractionPlugin<References> {
     static PLUGIN: std::sync::LazyLock<ExtractionPlugin<References>> =
         std::sync::LazyLock::new(|| build().expect("valid reference extraction plugin"));
+
     PLUGIN.clone()
 }
 

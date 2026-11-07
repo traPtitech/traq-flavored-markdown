@@ -15,22 +15,24 @@ export function processingFiles(
   directions: Readonly<Record<string, Direction>> = {}
 ) {
   const contracts = normalizeContracts(Object.values(schemas), directions)
+
   return new Map([
     [
       'typescript/src/generated/processing.ts',
       '// Generated from Rust processing contracts. Do not edit.\n' +
-        [...emitTypeScriptDeclarations(contracts).values()].join('\n') +
-        '\n' +
+        [...emitTypeScriptDeclarations(contracts).values()].join('\n\n') +
+        '\n\n' +
         emitContractValidators(
           contracts,
           '@traq-flavored-markdown/core/validation'
         ) +
+        '\n' +
         contracts.roots
           .map(
             name =>
               `export const is${name} = (value: unknown): value is ${name} => validate${name}(value)`
           )
-          .join('\n') +
+          .join('\n\n') +
         '\n'
     ],
     [

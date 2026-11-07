@@ -22,6 +22,7 @@ pub extern "C" fn parse(mode: u32) -> u32 {
             let grammar = grammar::get().ok_or_else(Error::not_configured)?;
             grammar::parse(&grammar, source, mode)
         });
+
         io.reply_document(&result);
         io.output.len() as u32
     })
@@ -34,9 +35,11 @@ pub extern "C" fn parse_with_syntax(mode: u32) -> u32 {
         let result = (|| {
             let grammar = grammar::get().ok_or_else(Error::not_configured)?;
             let parser = traq_markdown_grammar::Parser::new(&grammar);
+
             let parsed = match mode {
                 0 => parser.parse_with_syntax(io.source()?),
                 1 => parser.parse_inline_with_syntax(io.source()?),
+
                 _ => {
                     return Err(Error::new(
                         abi::ErrorCode::InvalidMode,
@@ -45,6 +48,7 @@ pub extern "C" fn parse_with_syntax(mode: u32) -> u32 {
                 }
             }
             .map_err(Error::from)?;
+
             Ok((
                 parsed.document,
                 source_syntax::SyntaxRecords::try_from(parsed.syntax)?,
@@ -57,12 +61,15 @@ pub extern "C" fn parse_with_syntax(mode: u32) -> u32 {
                     .serialization_view(&document, Default::default())
                     .map_err(Error::encoding)
                     .map(|document| source_syntax::ParsedSyntaxReply { document, syntax });
+
                 io.reply(&reply);
             }
+
             Err(error) => {
                 io.reply::<()>(&Err(error));
             }
         }
+
         io.output.len() as u32
     })
 }

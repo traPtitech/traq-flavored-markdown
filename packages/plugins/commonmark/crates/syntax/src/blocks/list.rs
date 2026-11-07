@@ -31,6 +31,7 @@ pub(super) fn parse(
 
     while i < lines.end() {
         budget.spend(lines[i].end - lines[i].start)?;
+
         if thematic(content(source, &lines[i])) {
             break;
         }
@@ -82,6 +83,7 @@ pub(super) fn parse(
                 .map(|(index, range)| lines[item_start + index].start..range.start),
             budget,
         )?;
+
         if let Some(syntax) = &mut syntax {
             let markers = source.syntax(
                 &[],
@@ -92,10 +94,12 @@ pub(super) fn parse(
                 )],
                 budget,
             )?;
+
             syntax.markers.extend(markers.unwrap().markers);
         }
 
         budget.token()?;
+
         children.push(
             DraftNode::blocks(
                 source.span_for(lines[item_start].start..lines[i - 1].end)?,
@@ -163,6 +167,7 @@ fn collect_continuation(
                 if !blank(first_content) {
                     ranges.extend_from_slice(&lines[i..]);
                 }
+
                 return Ok((lines.end(), item_tight));
             };
 
@@ -172,6 +177,7 @@ fn collect_continuation(
                 item_tight = !item(next_line).is_some_and(|m| {
                     m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
                 });
+
                 return Ok((next, item_tight));
             }
 
@@ -229,6 +235,7 @@ fn unindent_blank_continuations(
             range.start += marker_width.min(raw.len() - raw.trim_start_matches(' ').len());
         }
     }
+
     Ok(())
 }
 

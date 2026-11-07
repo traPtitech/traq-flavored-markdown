@@ -14,12 +14,15 @@ export type Extraction = {
   referenceEmbedding: ReferenceEmbeddingPlan
   references: References
 }
+
 export type EmbeddedInfo = {
   id: string
   raw: string
   type: EmbeddedKind
 }
+
 export type EmbeddedKind = 'user' | 'group' | 'channel' | 'file' | 'message'
+
 export type ReferenceEmbeddingCandidate = {
   end: number
   kind: ReferenceKind
@@ -30,6 +33,7 @@ export type ReferenceEmbeddingCandidate = {
    */
   start: number
 }
+
 export type ReferenceEmbeddingPlan = {
   /**
    * Ordered lookup attempts. A successful attempt consumes its source range.
@@ -40,36 +44,45 @@ export type ReferenceEmbeddingPlan = {
    */
   unembeddedText: string
 }
+
 export type ReferenceKind = 'user' | 'group' | 'channel'
+
 export type References = {
   channelLinks: Array<string>
   embeddings: Array<EmbeddedInfo>
   groupMentions: Array<string>
   mentions: Array<string>
 }
+
 export type ExtractorOptions = {
   /**
    * Origin used to recognize traQ file/message URLs; empty leaves URLs as text.
    */
   origin?: string
 }
+
 export type PlainTextOptions = {
   origin?: string
   whitespace?: WhitespacePolicy
 }
+
 export type WhitespacePolicy = 'preserve' | 'collapse'
+
 export type ProcessingResult = {
   extraction: Extraction
   plainText: string
 }
+
 export type ProcessorConfiguration = {
   options?: ProcessorOptions
   preset: string
 }
+
 export type ProcessorOptions = {
   origin?: string
   whitespace?: WhitespacePolicy
 }
+
 export type SyntaxRecords = {
   detached: Array<SyntaxMarker>
   /**
@@ -77,18 +90,22 @@ export type SyntaxRecords = {
    */
   nodes: Array<SourceSyntax | null>
 }
+
 export type SourceSyntax = {
   content: Array<SyntaxSpan>
   markers: Array<SyntaxMarker>
 }
+
 export type SyntaxMarker = {
   columns?: number | null
   kind: SyntaxMarkerKind
   spans: Array<SyntaxSpan>
   text?: string | null
 }
+
 export type SyntaxMarkerKind =
   'open' | 'close' | 'prefix' | 'info' | 'separator' | 'definition'
+
 export type SyntaxSpan = {
   end: number
   start: number
@@ -110,15 +127,18 @@ function validateExtraction(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateEmbeddedInfo(value: unknown): boolean {
   return ((value: unknown) =>
     fields(value, { id: string, raw: string, type: validateEmbeddedKind }, {}))(
     value
   )
 }
+
 function validateEmbeddedKind(value: unknown): boolean {
   return oneOf('user', 'group', 'channel', 'file', 'message')(value)
 }
+
 function validateReferenceEmbeddingCandidate(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -141,6 +161,7 @@ function validateReferenceEmbeddingCandidate(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateReferenceEmbeddingPlan(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -154,9 +175,11 @@ function validateReferenceEmbeddingPlan(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateReferenceKind(value: unknown): boolean {
   return oneOf('user', 'group', 'channel')(value)
 }
+
 function validateReferences(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -174,9 +197,11 @@ function validateReferences(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateExtractorOptions(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, { origin: string }))(value)
 }
+
 function validatePlainTextOptions(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -185,21 +210,25 @@ function validatePlainTextOptions(value: unknown): boolean {
       { origin: string, whitespace: validateWhitespacePolicy }
     ))(value)
 }
+
 function validateWhitespacePolicy(value: unknown): boolean {
   return oneOf('preserve', 'collapse')(value)
 }
+
 function validateProcessingResult(value: unknown): boolean {
   return ((value: unknown) =>
     fields(value, { extraction: validateExtraction, plainText: string }, {}))(
     value
   )
 }
+
 function validateProcessorConfiguration(value: unknown): boolean {
   return ((value: unknown) =>
     fields(value, { preset: string }, { options: validateProcessorOptions }))(
     value
   )
 }
+
 function validateProcessorOptions(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -208,6 +237,7 @@ function validateProcessorOptions(value: unknown): boolean {
       { origin: string, whitespace: validateWhitespacePolicy }
     ))(value)
 }
+
 function validateSyntaxRecords(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -221,6 +251,7 @@ function validateSyntaxRecords(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateSourceSyntax(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -234,6 +265,7 @@ function validateSourceSyntax(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateSyntaxMarker(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -255,6 +287,7 @@ function validateSyntaxMarker(value: unknown): boolean {
       }
     ))(value)
 }
+
 function validateSyntaxMarkerKind(value: unknown): boolean {
   return oneOf(
     'open',
@@ -265,6 +298,7 @@ function validateSyntaxMarkerKind(value: unknown): boolean {
     'definition'
   )(value)
 }
+
 function validateSyntaxSpan(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -284,18 +318,25 @@ function validateSyntaxSpan(value: unknown): boolean {
       {}
     ))(value)
 }
+
 export const isExtraction = (value: unknown): value is Extraction =>
   validateExtraction(value)
+
 export const isExtractorOptions = (value: unknown): value is ExtractorOptions =>
   validateExtractorOptions(value)
+
 export const isPlainTextOptions = (value: unknown): value is PlainTextOptions =>
   validatePlainTextOptions(value)
+
 export const isProcessingResult = (value: unknown): value is ProcessingResult =>
   validateProcessingResult(value)
+
 export const isProcessorConfiguration = (
   value: unknown
 ): value is ProcessorConfiguration => validateProcessorConfiguration(value)
+
 export const isProcessorOptions = (value: unknown): value is ProcessorOptions =>
   validateProcessorOptions(value)
+
 export const isSyntaxRecords = (value: unknown): value is SyntaxRecords =>
   validateSyntaxRecords(value)

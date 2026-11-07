@@ -35,6 +35,7 @@ export const createHighlighter =
     }
 
     let codeHtml: string
+
     if (hljs.getLanguage(langName)) {
       const result = hljs.highlight(code, { language: langName })
       codeHtml = `<code class="lang-${result.language}">${result.value}</code>`
@@ -45,6 +46,7 @@ export const createHighlighter =
         code,
         autoLanguages ? [...autoLanguages] : undefined
       )
+
       codeHtml = `<code class="lang-${result.language}">${result.value}</code>`
     }
 

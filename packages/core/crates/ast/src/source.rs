@@ -29,12 +29,15 @@ impl<'a> SourceText<'a> {
     pub fn new(source: &'a str) -> Self {
         Self(source)
     }
+
     pub fn as_str(self) -> &'a str {
         self.0
     }
+
     pub fn byte_len(self) -> usize {
         self.0.len()
     }
+
     pub fn is_boundary(self, offset: usize) -> bool {
         self.0.is_char_boundary(offset)
     }
@@ -60,35 +63,44 @@ impl<'a> SourceText<'a> {
             resource: "output_bytes",
             limit,
         };
+
         let mut position = 0;
         let mut length = 0usize;
+
         for edit in edits {
             self.slice(edit.span)?;
+
             if edit.span.start < position {
                 return Err(SourceError::OverlappingEdits {
                     span: edit.span,
                     previous_end: position,
                 });
             }
+
             length = length
                 .checked_add(edit.span.start - position)
                 .and_then(|length| length.checked_add(edit.text.len()))
                 .filter(|length| *length <= limit)
                 .ok_or_else(resource)?;
+
             position = edit.span.end;
         }
+
         length = length
             .checked_add(self.byte_len() - position)
             .filter(|length| *length <= limit)
             .ok_or_else(resource)?;
+
         let mut output = String::new();
         output.try_reserve_exact(length).map_err(|_| resource())?;
         position = 0;
+
         for edit in edits {
             output.push_str(&self.0[position..edit.span.start]);
             output.push_str(edit.text);
             position = edit.span.end;
         }
+
         output.push_str(&self.0[position..]);
         Ok(output)
     }
@@ -100,15 +112,18 @@ impl std::fmt::Display for SourceError {
             Self::InvalidSpan { span } => {
                 write!(f, "invalid source span {}..{}", span.start, span.end)
             }
+
             Self::OverlappingEdits { span, previous_end } => write!(
                 f,
                 "source edit {}..{} precedes previous end {previous_end}",
                 span.start, span.end
             ),
+
             Self::ResourceLimit { resource, limit } => write!(f, "{resource} limit: {limit}"),
         }
     }
 }
+
 impl std::error::Error for SourceError {}
 
 #[cfg(test)]
@@ -126,11 +141,13 @@ mod tests {
         edits: Vec<Edit>,
         expected: String,
     }
+
     #[derive(Deserialize)]
     struct Range {
         start: usize,
         end: usize,
     }
+
     impl Range {
         fn span(&self) -> Span {
             Span {
@@ -139,12 +156,14 @@ mod tests {
             }
         }
     }
+
     #[derive(Deserialize)]
     struct Edit {
         start: usize,
         end: usize,
         text: String,
     }
+
     impl Edit {
         fn span(&self) -> Span {
             Span {
@@ -160,10 +179,13 @@ mod tests {
             "../../../../../tests/fixtures/source-spans.json"
         ))
         .unwrap();
+
         for fixture in fixtures {
             let source = SourceText::new(&fixture.source);
+
             assert_eq!(source.as_str(), fixture.source);
             assert_eq!(source.byte_len(), fixture.source.len());
+
             for slice in fixture.slices {
                 assert_eq!(
                     source.slice(slice.span()).unwrap(),
@@ -172,9 +194,11 @@ mod tests {
                     fixture.name
                 );
             }
+
             for span in fixture.invalid_spans {
                 assert!(source.slice(span.span()).is_err(), "{}", fixture.name);
             }
+
             let edits: Vec<_> = fixture
                 .edits
                 .iter()
@@ -183,18 +207,21 @@ mod tests {
                     text: &edit.text,
                 })
                 .collect();
+
             assert_eq!(
                 source.replace(&edits).unwrap(),
                 fixture.expected,
                 "{}",
                 fixture.name
             );
+
             assert_eq!(
                 source
                     .replace_with_limit(&edits, fixture.expected.len())
                     .unwrap(),
                 fixture.expected
             );
+
             assert!(
                 source
                     .replace_with_limit(&edits, fixture.expected.len() - 1)
@@ -206,17 +233,21 @@ mod tests {
     #[test]
     fn edits_are_validated_before_output_and_must_be_disjoint() {
         let source = SourceText::new("éab");
+
         assert!(!source.is_boundary(1));
         assert!(!source.is_boundary(5));
         assert!(source.is_boundary(4));
+
         let first = SourceEdit {
             span: Span { start: 0, end: 3 },
             text: "x",
         };
+
         let crossing = SourceEdit {
             span: Span { start: 2, end: 4 },
             text: "y",
         };
+
         assert_eq!(
             source.replace(&[first, crossing]),
             Err(SourceError::OverlappingEdits {
@@ -224,14 +255,17 @@ mod tests {
                 previous_end: 3
             })
         );
+
         let invalid = SourceEdit {
             span: Span { start: 1, end: 2 },
             text: "y",
         };
+
         assert_eq!(
             source.replace(&[first, invalid]),
             Err(SourceError::InvalidSpan { span: invalid.span })
         );
+
         assert!(matches!(
             source.replace_with_limit(&[], 3),
             Err(SourceError::ResourceLimit {
@@ -239,6 +273,7 @@ mod tests {
                 limit: 3
             })
         ));
+
         // A removed suffix does not count toward the bounded output.
         assert_eq!(
             source

@@ -12,33 +12,41 @@ test('real browser applies plugin layout, spoiler and stamp styles', async ({
   await expect(page.locator('#blocks li')).toHaveCount(2)
   await expect(page.locator('#blocks blockquote')).toHaveText('quoted')
   await expect(page.locator('#table th')).toHaveCount(2)
+
   await expect(page.locator('#table td').last()).toHaveCSS(
     'text-align',
     'right'
   )
+
   await expect(page.locator('#table tbody tr').last()).toHaveCSS(
     'background-color',
     'rgb(246, 248, 250)'
   )
+
   await expect(page.locator('#blocks h5')).toHaveCSS('transform', 'none')
   await expect(page.locator('#blocks h6')).toHaveCSS('transform', 'none')
+
   await expect(page.locator('#inline strong').first()).toHaveCSS(
     'font-weight',
     '700'
   )
+
   const spoiler = page.locator('#inline .spoiler')
   await expect(spoiler).toHaveCSS('color', 'rgba(0, 0, 0, 0)')
   await expect(spoiler.locator('strong')).toHaveCSS('visibility', 'hidden')
   await spoiler.evaluate(element => element.setAttribute('shown', ''))
   await expect(spoiler.locator('strong')).toHaveCSS('visibility', 'visible')
+
   await expect(page.locator('#inline .emoji')).toHaveCSS(
     'background-color',
     'rgb(255, 0, 0)'
   )
+
   await expect(page.locator('#inline .emoji')).toHaveCSS(
     'display',
     'inline-block'
   )
+
   await expect(page.locator('#image img')).toHaveAttribute('alt', 'alternative')
   await expect(page.locator('#image img')).toHaveJSProperty('naturalWidth', 8)
 })
@@ -47,6 +55,7 @@ test('RGB and RGBA stamps apply their parsed alpha values in the browser', async
   page
 }) => {
   const stamps = page.locator('#colors .emoji')
+
   const colors = [
     'ff0000',
     'ff000088',
@@ -55,18 +64,23 @@ test('RGB and RGBA stamps apply their parsed alpha values in the browser', async
     'ff000000',
     'ff0000ff'
   ]
+
   await expect(stamps).toHaveCount(colors.length)
-  for (const [index, color] of colors.entries())
+
+  for (const [index, color] of colors.entries()) {
     await expect(stamps.nth(index)).toHaveAttribute(
       'style',
       `background-color: #${color};`
     )
+  }
+
   // CSSOM may serialize 0x80 alpha as either 0.5 or 0.502. Compare pixels.
   const pixels = await stamps.evaluateAll(elements => {
     const canvas = document.createElement('canvas')
     canvas.width = canvas.height = 1
     const context = canvas.getContext('2d')
     if (!context) throw new Error('Canvas unavailable')
+
     return elements.map(element => {
       context.clearRect(0, 0, 1, 1)
       context.fillStyle = getComputedStyle(element).backgroundColor
@@ -74,6 +88,7 @@ test('RGB and RGBA stamps apply their parsed alpha values in the browser', async
       return Array.from(context.getImageData(0, 0, 1, 1).data)
     })
   })
+
   expect(pixels).toEqual([
     [255, 0, 0, 255],
     [255, 0, 0, 136],
@@ -88,10 +103,12 @@ test('optional math and highlighting adapters work with the published browser mo
   page
 }) => {
   await expect(page.locator('#math .katex')).toBeVisible()
+
   await expect(page.locator('#math .katex')).toHaveCSS(
     'font-family',
     /KaTeX_Main/
   )
+
   await expect(page.locator('#math pre code .hljs-keyword')).toHaveText('const')
   await expect(page.locator('#condensed')).toHaveText('hello')
   await expect(page.locator('#condensed a')).toHaveCount(0)
@@ -106,6 +123,7 @@ test('fallback image labels keep formatting and reference names in one link', as
   await expect(page.locator('#fallback')).toContainText('#general')
   await expect(page.locator('#fallback')).not.toContainText('"type"')
   await expect(page.locator('#fallback a')).toHaveCount(1)
+
   await expect(page.locator('#fallback a')).toHaveAttribute(
     'href',
     'https://example.test/no.png'
@@ -117,9 +135,11 @@ test('URL boundaries keep surrounding prose and explicit punctuation in browser 
 }) => {
   const links = page.locator('#links')
   await expect(links).toContainText('hogehoge(https://example.test/a)fugafuga')
+
   await expect(links).toContainText(
     'hogehoge(https://en.wikipedia.org/wiki/Function_(mathematics))fugafuga'
   )
+
   expect(
     await links
       .locator('a')
@@ -138,6 +158,7 @@ test('URL boundaries keep surrounding prose and explicit punctuation in browser 
     'https://example.test/a(b(c))',
     'https://example.test/a'
   ])
+
   await expect(links.locator('s a')).toHaveText('https://example.test/a')
   await expect(links.locator('em a')).toHaveText('https://example.test/a_')
 })
@@ -148,9 +169,11 @@ test('safe rendering and explicit drafts preserve the owned document', async ({
   await expect(page.locator('#safe img')).toHaveCount(0)
   await expect(page.locator('#safe a[href^="javascript:"]')).toHaveCount(0)
   await expect(page.locator('body')).not.toHaveAttribute('data-injected')
+
   await expect(
     page.locator('#safe a[href="https://example.test"]')
   ).toHaveAttribute('rel', /noopener/)
+
   await page.getByRole('button', { name: 'Edit draft' }).click()
   await expect(page.locator('#edited')).toHaveText('modified')
   await expect(page.locator('#original')).toHaveText('original')

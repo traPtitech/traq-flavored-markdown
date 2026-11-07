@@ -20,6 +20,7 @@ export const inputLifecycleExtension = Extension.create({
       key: inputLifecycleKey,
       state: {
         init: () => ({ composing: false, focused: false, markdown: false }),
+
         apply: (transaction, previous) => ({
           ...previous,
           ...(transaction.getMeta(inputLifecycleKey) as

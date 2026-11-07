@@ -31,6 +31,7 @@ impl TextFeature {
         }
         .definition()
     }
+
     pub fn plugin(self, options: TextOptions) -> markdown_renderer::RenderPlugin {
         match self {
             Self::Core => {
@@ -38,12 +39,15 @@ impl TextFeature {
                     explicit_links: options.explicit_links,
                 })
             }
+
             Self::Html => markdown_commonmark_text::html::plugin(),
+
             Self::Math => markdown_extensions_text::math::plugin_with_options(
                 markdown_extensions_text::math::Options {
                     style: options.math,
                 },
             ),
+
             Self::Mark => markdown_extensions_text::mark::plugin(),
             Self::Strikethrough => markdown_extensions_text::strikethrough::plugin(),
             Self::Table => markdown_extensions_text::table::plugin(),

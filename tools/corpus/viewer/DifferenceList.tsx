@@ -45,10 +45,13 @@ function DifferenceEntry({
   initialOpen: boolean
 }) {
   const [open, setOpen] = useState(initialOpen)
+
   const rules = classificationRules.filter(rule =>
     classification.tags.includes(rule.id)
   )
+
   const review = needsReview(classification)
+
   return (
     <details
       className="difference-entry"

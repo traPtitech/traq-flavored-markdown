@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
+
 export default defineConfig({
   plugins: [vue()],
   build: {

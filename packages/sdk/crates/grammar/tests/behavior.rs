@@ -15,6 +15,7 @@ fn has_link(nodes: &[Node]) -> bool {
 #[test]
 fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
     let parser = presets::traq::v1::parser();
+
     for (source, expected) in [
         (
             ":foo0x123456:",
@@ -31,13 +32,17 @@ fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
         (":0x123456:", StampKind::HexColor { rgb: 0x123456 }),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert_eq!(document.children.len(), 1, "{source}");
+
         assert_eq!(
             document.children[0].payload::<Stamp>().unwrap().kind,
             expected
         );
     }
+
     let document = parser.parse_inline(":foohsl(0, 20%, 30%):").unwrap();
+
     assert!(
         document
             .children
@@ -49,6 +54,7 @@ fn stamp_parser_distinguishes_complete_colors_from_named_stamps() {
 #[test]
 fn parser_and_dispatch_can_be_shared_without_leaking_references() {
     let parser = presets::traq::v1::parser();
+
     std::thread::scope(|scope| {
         for _ in 0..4 {
             scope.spawn(|| {
@@ -56,6 +62,7 @@ fn parser_and_dispatch_can_be_shared_without_leaking_references() {
                     assert!(has_link(
                         &parser.parse("[a][r]\n\n[r]: /here").unwrap().children
                     ));
+
                     assert!(!has_link(&parser.parse("[a][r]").unwrap().children));
                 }
             });
@@ -110,14 +117,17 @@ fn limits_cover_multibyte_input_and_nested_results() {
 #[test]
 fn syntax_and_rendering_policy_are_separate() {
     let source = "[x](javascript:alert) <file:///a>";
+
     for parser in [presets::commonmark::parser(), presets::traq::v1::parser()] {
         let document = parser.parse_inline(source).unwrap();
+
         let destinations: Vec<_> = document
             .children
             .iter()
             .filter_map(|node| node.payload::<Link>())
             .map(|link| link.destination.as_str())
             .collect();
+
         assert_eq!(destinations, ["javascript:alert", "file:///a"]);
     }
 }
@@ -167,11 +177,13 @@ fn intermediate_tokens_syntax_nesting_and_final_tree_limits_are_independent() {
         let result = presets::traq::v1::parser()
             .with_limits(limits)
             .parse_inline(source);
+
         assert!(
             matches!(result, Err(ParseError::ResourceLimit { resource: actual }) if actual.as_str() == resource),
             "{source}: {resource}"
         );
     }
+
     assert!(
         presets::traq::v1::parser()
             .with_limits(Limits {

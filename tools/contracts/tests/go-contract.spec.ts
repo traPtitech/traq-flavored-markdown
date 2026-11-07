@@ -19,9 +19,11 @@ async function writeModule(directory: string) {
   const core = path
     .join(repositoryRoot, 'packages/core/go')
     .replaceAll('\\', '/')
+
   const manifest = await Bun.file(path.join(core, 'go.mod')).text()
   const version = /^go (.+)$/m.exec(manifest)?.[1]
   if (!version) throw new Error('Missing Go version')
+
   await write(
     path.join(directory, 'go.mod'),
     'module example.com/contract\ngo ' +
@@ -44,12 +46,15 @@ test('named scalar contracts preserve strict decoding and bounded round trips', 
     },
     { title: 'Enabled', type: 'boolean' }
   ]
+
   await withTempDirectory('go-scalars-', async directory => {
     await writeModule(directory)
+
     await write(
       `${directory}/contract.go`,
       goFile('contract', emitGoDeclarations(normalizeContracts(schemas)))
     )
+
     await write(
       `${directory}/contract_test.go`,
       `package contract
@@ -71,6 +76,7 @@ func TestScalars(t *testing.T) {
 }
 `
     )
+
     await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
@@ -83,6 +89,7 @@ test('string enums retain their values in named Go types', () => {
       enum: ['user', 'group']
     })
   ).toContain('type LookupKind string')
+
   expect(
     goContract({
       title: 'LookupKind',
@@ -90,6 +97,7 @@ test('string enums retain their values in named Go types', () => {
       enum: ['user', 'group']
     })
   ).toContain('LookupKindGroup LookupKind = "group"')
+
   expect(
     goContract({
       title: 'StampAnimation',
@@ -128,12 +136,15 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
       }
     }
   }
+
   const definitions = Object.entries(schema.$defs ?? {})
     .map(([name, definition]) =>
       goContract({ ...definition, title: name }, schema)
     )
     .join('\n')
+
   const source = goFile('contract', definitions + goContract(schema))
+
   const cases = [
     ['{"kind":"user","nested":{"count":255},"entries":[]}', true],
     [
@@ -149,6 +160,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     ['{"kind":"user","nested":{"count":1},"entries":null}', false],
     ['{"kind":"user","nested":{"count":1},"entries":[],"optional":null}', false]
   ] as const
+
   const testSource =
     'package contract\nimport ("encoding/json"; "testing")\n' +
     'func TestDecode(t *testing.T) {\n' +
@@ -167,6 +179,7 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
       if _, err := json.Marshal(LookupKind("")); err == nil { t.Fatal("accepted empty enum") }
     }
     `
+
   await withTempDirectory('go-contract-', async directory => {
     await writeModule(directory)
     await write(`${directory}/contract.go`, source)
@@ -213,14 +226,17 @@ test('tagged Rust unions generate typed Go variants and strict round trips', asy
       }
     }
   }
+
   const source = goFile(
     'contract',
     goContract({ ...schema.$defs!.StampKind, title: 'StampKind' }, schema) +
       goContract(schema)
   )
+
   expect(goNodes([['example::StampData', schema]], 'traq')).toContain(
     'type StampKindHexColor struct'
   )
+
   const testSource = `package contract
 import ("encoding/json"; "testing")
 func TestStampKind(t *testing.T) {
@@ -240,6 +256,7 @@ func TestStampKind(t *testing.T) {
  if string(raw) != "{\\"kind\\":{\\"type\\":\\"hex_color\\",\\"name\\":\\"x\\",\\"rgb\\":0}}" { t.Fatalf("wrong round trip: %s", raw) }
 }
 `
+
   await withTempDirectory('go-union-', async directory => {
     await writeModule(directory)
     await write(`${directory}/contract.go`, source)
@@ -286,12 +303,15 @@ test('request defaults omit invalid enum zeros and preserve valid explicit zero 
       EmptyChoice: { type: 'string', enum: ['', 'fallback'] }
     }
   }
+
   await withTempDirectory('go-defaults-', async directory => {
     await writeModule(directory)
+
     await write(
       `${directory}/contract.go`,
       goFile('contract', emitGoDeclarations(normalizeContracts([schema])))
     )
+
     await write(
       `${directory}/contract_test.go`,
       `package contract
@@ -317,6 +337,7 @@ func TestRequest(t *testing.T) {
 }
 `
     )
+
     await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
@@ -329,6 +350,7 @@ test('direct generated decoders reject duplicate keys and lossy Unicode repairs'
     properties: { value: { type: 'string' } },
     required: ['value']
   }
+
   const invalid = [
     String.raw`{"value":"a","value":"b"}`,
     String.raw`{"value":"a","\u0076alue":"b"}`,
@@ -338,17 +360,21 @@ test('direct generated decoders reject duplicate keys and lossy Unicode repairs'
     String.raw`{"value":"\ud800\u0041"}`,
     String.raw`{"value":"x"} {"value":"y"}`
   ]
+
   const valid = [
     String.raw`{"value":"\ud83d\ude00"}`,
     String.raw`{"value":"\\ud800"}`,
     String.raw`{"value":"\ufffd"}`
   ]
+
   await withTempDirectory('go-strict-json-', async directory => {
     await writeModule(directory)
+
     await write(
       `${directory}/contract.go`,
       goFile('contract', goContract(schema))
     )
+
     await write(
       `${directory}/contract_test.go`,
       `package contract
@@ -366,6 +392,7 @@ func TestDirectDecoder(t *testing.T) {
 }
 `
     )
+
     await runCommand(['go', 'test', './...'], directory)
   })
 }, 60_000)
@@ -383,7 +410,9 @@ test('generated Go string bounds count Unicode scalars and preserve one-sided an
     },
     required: ['value', 'lower', 'upper', 'empty']
   }
+
   const fields = { lower: '日😀字', upper: '', empty: '' }
+
   const cases = [
     ...['ab', '日😀', 'e\u0301'].map(
       value => [{ ...fields, value }, true] as const
@@ -395,11 +424,13 @@ test('generated Go string bounds count Unicode scalars and preserve one-sided an
     [{ ...fields, value: '日😀', upper: '日😀字' }, false],
     [{ ...fields, value: '日😀', empty: '😀' }, false]
   ] as const
+
   const testSource =
     'package contract\nimport ("encoding/json"; "testing")\nfunc TestStringLengths(t *testing.T) {\n' +
     cases
       .map(([value, valid]) => {
         const raw = JSON.stringify(JSON.stringify(value))
+
         return (
           'if err := json.Unmarshal([]byte(' +
           raw +
@@ -412,12 +443,15 @@ test('generated Go string bounds count Unicode scalars and preserve one-sided an
       })
       .join('\n') +
     '\n}\n'
+
   await withTempDirectory('go-string-length-', async directory => {
     await writeModule(directory)
+
     await write(
       directory + '/contract.go',
       goFile('contract', goContract(schema))
     )
+
     await write(directory + '/contract_test.go', testSource)
     await runCommand(['go', 'test', './...'], directory)
   })

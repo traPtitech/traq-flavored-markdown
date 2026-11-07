@@ -12,6 +12,7 @@ import { type RawSchema, shape } from '../model/schema.ts'
 
 test('string bounds remain in normalized contracts and reject malformed constraints', () => {
   const bounded = { type: 'string', minLength: 2, maxLength: 2 }
+
   const module = normalizeContracts([
     {
       title: 'Label',
@@ -21,25 +22,31 @@ test('string bounds remain in normalized contracts and reject malformed constrai
       required: ['value']
     }
   ])
+
   expect(module.definitions.get('Label')?.shape).toMatchObject({
     kind: 'object',
     fields: [{ shape: { kind: 'string', minLength: 2, maxLength: 2 } }]
   })
+
   expect(shape({ ...bounded, type: ['string', 'null'] })).toEqual({
     kind: 'nullable',
     inner: { kind: 'string', minLength: 2, maxLength: 2 }
   })
+
   for (const bound of [-1, 0.5, Infinity, Number.MAX_SAFE_INTEGER + 1, '2']) {
     expect(() => shape({ type: 'string', minLength: bound })).toThrow(
       /Invalid string length bound/
     )
+
     expect(() => shape({ type: 'string', maxLength: bound })).toThrow(
       /Invalid string length bound/
     )
   }
+
   expect(() => shape({ ...bounded, minLength: 3 })).toThrow(
     /Invalid string length bounds/
   )
+
   expect(() => shape({ ...bounded, pattern: '[a-z]+' })).toThrow(
     /Unsupported schema keyword/
   )
@@ -58,6 +65,7 @@ test('generated string validators count Unicode scalars rather than bytes, UTF-1
     },
     required: ['value', 'lower', 'upper', 'empty']
   }
+
   const generated = emitTypeScriptValidators(
     [['example::Text', schema]],
     pathToFileURL(
@@ -66,20 +74,25 @@ test('generated string validators count Unicode scalars rather than bytes, UTF-1
     pathToFileURL(path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts'))
       .href
   )
+
   const compiled = ts.transpileModule(generated, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ESNext
     }
   }).outputText
+
   await withTempDirectory('traq-string-', async directory => {
     const filename = path.join(directory, 'text.mjs')
     await write(filename, compiled)
     const { definitions } = await import(pathToFileURL(filename).href)
     const validate = definitions.Text.validateData
     const fields = { lower: '日😀字', upper: '', empty: '' }
-    for (const value of ['ab', '日😀', 'e\u0301'])
+
+    for (const value of ['ab', '日😀', 'e\u0301']) {
       expect(validate({ ...fields, value })).toBe(true)
+    }
+
     for (const value of [
       '',
       '日',
@@ -90,8 +103,10 @@ test('generated string validators count Unicode scalars rather than bytes, UTF-1
       'x\udc00',
       null,
       2
-    ])
+    ]) {
       expect(validate({ ...fields, value })).toBe(false)
+    }
+
     expect(validate({ ...fields, value: '日😀', lower: '😀' })).toBe(false)
     expect(validate({ ...fields, value: '日😀', upper: '日😀字' })).toBe(false)
     expect(validate({ ...fields, value: '日😀', empty: '😀' })).toBe(false)

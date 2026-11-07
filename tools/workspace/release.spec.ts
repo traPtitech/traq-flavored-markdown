@@ -52,15 +52,20 @@ test('release labels are strict and choose the dist-tag', () => {
     tag: 'latest',
     mode: 'dry-run'
   })
+
   expect(parseRelease(['v1.2.3-rc.1', '--publish'])).toEqual({
     version: '1.2.3-rc.1',
     tag: 'next',
     mode: 'publish'
   })
-  for (const label of ['1.2.3', 'core@1.2.3', 'v01.2.3', 'v1.2.3+build.1'])
+
+  for (const label of ['1.2.3', 'core@1.2.3', 'v01.2.3', 'v1.2.3+build.1']) {
     expect(() => parseRelease([label])).toThrow('usage:')
+  }
+
   expect(() => parseRelease([])).toThrow('usage:')
   expect(() => parseRelease(['v1.2.3', '--unknown'])).toThrow('usage:')
+
   expect(() => parseRelease(['v1.2.3', '--check', '--publish'])).toThrow(
     'usage:'
   )
@@ -70,15 +75,20 @@ test('workspace validation rejects version and peer mismatches', () => {
   expect(() => validateWorkspace(workspace(), '0.1.0')).not.toThrow()
   const versionMismatch = workspace()
   versionMismatch.packages.sdk.version = '0.1.1'
+
   expect(() => validateWorkspace(versionMismatch, '0.1.0')).toThrow(
     'sdk manifest does not match'
   )
+
   const peerMismatch = workspace()
+
   peerMismatch.packages['traq-plugin'].peerDependencies![names.commonmark] =
     '0.1.1'
+
   expect(() => validateWorkspace(peerMismatch, '0.1.0')).toThrow(
     'peer dependencies'
   )
+
   expect(() => validateWorkspace(peerMismatch)).not.toThrow()
 
   const missingPeer = workspace()
@@ -87,6 +97,7 @@ test('workspace validation rejects version and peer mismatches', () => {
 
   const extraPeer = workspace()
   extraPeer.packages['commonmark-plugin'].peerDependencies![names.sdk] = '0.1.0'
+
   expect(() => validateWorkspace(extraPeer, '0.1.0')).toThrow(
     'Circular package dependency'
   )
@@ -96,6 +107,7 @@ test('repository root keeps package versions and peers synchronized', async () =
   const root = (await Bun.file(
     path.join(repositoryRoot, 'package.json')
   ).json()) as Manifest
+
   const packages = Object.fromEntries(
     await Promise.all(
       packageNames.map(
@@ -109,6 +121,7 @@ test('repository root keeps package versions and peers synchronized', async () =
       )
     )
   ) as ReturnType<typeof workspace>['packages']
+
   expect(() =>
     validateWorkspace({ root, packages }, root.version)
   ).not.toThrow()

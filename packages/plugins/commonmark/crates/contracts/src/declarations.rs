@@ -10,10 +10,12 @@ pub struct PluginDeclarations {
 pub fn declarations() -> &'static PluginDeclarations {
     static PRESET: LazyLock<PluginDeclarations> = LazyLock::new(|| {
         let commonmark = PluginDeclaration::group("CommonMark");
+
         PluginDeclarations {
             plugin: commonmark.plugin("Core"),
             html: commonmark.plugin("Html"),
         }
     });
+
     &PRESET
 }

@@ -26,6 +26,7 @@ export default function App({ bootstrap }: { bootstrap: BootstrapResult }) {
 function ReportViewer({ repository }: { repository: ReportRepository }) {
   const controller = useViewerController(repository)
   const metadata = repository.metadata
+
   return (
     <>
       <ReportHeader metadata={metadata} />

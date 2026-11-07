@@ -13,22 +13,27 @@ import (
 func TestRuntimeOwnership(t *testing.T) {
 	ctx := context.Background()
 	wasm, err := os.ReadFile("../dist/parser.wasm")
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	runtime, err := NewRuntime(ctx, wasm)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer runtime.Close(ctx)
 
 	traqParser, err := runtime.NewParser(ctx, GrammarTraqV1)
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	common, err := runtime.NewParser(ctx, GrammarCommonMark)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,9 +43,11 @@ func TestRuntimeOwnership(t *testing.T) {
 		common:     commonmark.TextName,
 	} {
 		doc, err := parser.ParseInline(ctx, ":stamp:")
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if doc.Children()[0].Kind() != kind {
 			t.Fatal("parser grammars were shared")
 		}
@@ -49,6 +56,7 @@ func TestRuntimeOwnership(t *testing.T) {
 	if _, err := runtime.NewParser(ctx, GrammarPresetID("missing")); err == nil {
 		t.Fatal("accepted invalid preset")
 	}
+
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
 
@@ -56,17 +64,21 @@ func TestRuntimeOwnership(t *testing.T) {
 		parser.Close(ctx)
 		t.Fatal("accepted canceled creation")
 	}
+
 	if err := traqParser.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := common.Parse(ctx, "still open"); err != nil {
 		t.Fatal(err)
 	}
 
 	// Creation and parsing share only the compiled module, including after a failure or Close.
 	var wg sync.WaitGroup
+
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
 			p, err := runtime.NewParser(ctx, GrammarTraqV1)
@@ -74,7 +86,9 @@ func TestRuntimeOwnership(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
 			defer p.Close(ctx)
+
 			if _, err := p.Parse(ctx, "**parallel**"); err != nil {
 				t.Error(err)
 			}
@@ -86,15 +100,19 @@ func TestRuntimeOwnership(t *testing.T) {
 	if err := runtime.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := runtime.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := common.Parse(ctx, "closed"); err == nil {
 		t.Fatal("Runtime.Close left a parser open")
 	}
+
 	if _, err := runtime.NewParser(ctx, GrammarTraqV1); err == nil {
 		t.Fatal("closed Runtime created a parser")
 	}
+
 	if err := common.Close(ctx); err != nil {
 		t.Fatal(err)
 	}

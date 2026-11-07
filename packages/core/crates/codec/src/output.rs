@@ -9,6 +9,7 @@ pub struct SerializableDocument<'a> {
     document: &'a MutableDocument,
     codec: &'a Codec,
 }
+
 impl<'a> SerializableDocument<'a> {
     pub(crate) fn new(
         codec: &'a Codec,
@@ -17,9 +18,11 @@ impl<'a> SerializableDocument<'a> {
     ) -> CodecResult<Self> {
         let document = document.into_view_with_limits(limits)?;
         let mut path = vec![];
+
         for visit in document.walk() {
             path.truncate(visit.depth - 1);
             path.push(visit.index);
+
             if !codec.entries.contains_key(&visit.node.payload_type_id()) {
                 return Err(Error::new(ErrorKind::UnregisteredPayload {
                     payload_type: visit.node.payload_type_name(),
@@ -48,6 +51,7 @@ pub fn write_json<W: Write, T: Serialize + ?Sized>(
         limit,
         exceeded: false,
     };
+
     serde_json::to_writer(&mut output, value).map_err(|error| {
         if output.exceeded {
             Error::new(ErrorKind::ResourceLimit {
@@ -59,22 +63,26 @@ pub fn write_json<W: Write, T: Serialize + ?Sized>(
         }
     })
 }
+
 struct LimitedOutput<W> {
     writer: W,
     written: usize,
     limit: usize,
     exceeded: bool,
 }
+
 impl<W: Write> Write for LimitedOutput<W> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
         if bytes.len() > self.limit.saturating_sub(self.written) {
             self.exceeded = true;
             return Err(std::io::Error::other("json byte limit"));
         }
+
         let written = self.writer.write(bytes)?;
         self.written += written;
         Ok(written)
     }
+
     fn flush(&mut self) -> std::io::Result<()> {
         self.writer.flush()
     }
@@ -98,6 +106,7 @@ impl Serialize for SerializableDocument<'_> {
         .serialize(serializer)
     }
 }
+
 struct NodeOutput<'a> {
     node: &'a Node,
     codec: &'a Codec,
@@ -141,6 +150,7 @@ impl Serialize for NodeOutput<'_> {
         .serialize(serializer)
     }
 }
+
 struct Children<'a> {
     nodes: &'a [Node],
     codec: &'a Codec,

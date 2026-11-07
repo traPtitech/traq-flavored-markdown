@@ -8,4 +8,5 @@ const compiler = path.join(
   ),
   'bin/tsc'
 )
+
 await $`node ${compiler} ${Bun.argv.slice(2)}`

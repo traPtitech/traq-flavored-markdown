@@ -18,16 +18,19 @@ test('empty highlighted HTML is explicit while undefined selects escaped source'
       }
     ]
   }
+
   expect(
     createHtmlRenderer({
       highlight: () => ({ kind: 'content', html: '' })
     }).render(document)
   ).toBe('<pre><code class="language-text"></code></pre>\n')
+
   expect(
     createHtmlRenderer({
       highlight: () => ({ kind: 'block', html: '' })
     }).render(document)
   ).toBe('\n')
+
   expect(
     createHtmlRenderer({ highlight: () => undefined }).render(document)
   ).toContain('source')
@@ -35,6 +38,7 @@ test('empty highlighted HTML is explicit while undefined selects escaped source'
 
 test('display defaults resolve undefined before HTML and link handlers run', () => {
   const source = '<script>evil()</script>'
+
   const raw = {
     source,
     children: [
@@ -45,9 +49,11 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
       }
     ]
   }
+
   expect(createHtmlRenderer({ rawHtml: undefined }).render(raw)).toBe(
     '&lt;script&gt;evil()&lt;/script&gt;'
   )
+
   const unsafe = {
     source: '[x](javascript:x)',
     children: [
@@ -61,6 +67,7 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
       }
     ]
   }
+
   expect(createHtmlRenderer({ validateLink: undefined }).render(unsafe)).toBe(
     'x'
   )
@@ -69,6 +76,7 @@ test('display defaults resolve undefined before HTML and link handlers run', () 
 test('rejected images use the link policy and escape their labels and attributes', () => {
   const destination = 'https://example.test/a.png?a=1&b=2'
   const source = `![<image>&](${destination})`
+
   const document = {
     source,
     children: [
@@ -86,6 +94,7 @@ test('rejected images use the link policy and escape their labels and attributes
       }
     ]
   }
+
   expect(
     createHtmlRenderer({
       validateImage: () => false,
@@ -94,6 +103,7 @@ test('rejected images use the link policy and escape their labels and attributes
   ).toBe(
     '!<a href="https://example.test/a.png?a=1&amp;b=2" target="_blank" rel="noopener" title="a&quot;b">&lt;image&gt;&amp;</a>'
   )
+
   expect(
     createHtmlRenderer({
       validateImage: () => false,
@@ -106,6 +116,7 @@ test('a rejected image inside a link keeps the enclosing destination even when i
   const destination = 'https://example.test/page'
   const imageUrl = 'https://blocked.test/badge.svg'
   const source = `[![badge](${imageUrl})](${destination})`
+
   const document = {
     source,
     children: [
@@ -134,6 +145,7 @@ test('a rejected image inside a link keeps the enclosing destination even when i
       }
     ]
   }
+
   expect(
     createHtmlRenderer({
       validateImage: () => false,
@@ -148,24 +160,28 @@ test('list layout uses visible children and applies item replacement through ren
     data: { value: start ? 'b' : 'a' },
     span: { start, end: start + 1 }
   })
+
   const paragraph = (start: number): ReadonlyNode => ({
     kind: names.Paragraph,
     data: {},
     span: { start, end: start + 1 },
     children: [text(start)]
   })
+
   const first: ReadonlyNode = {
     kind: names.ListItem,
     data: {},
     span: { start: 0, end: 1 },
     children: [paragraph(0)]
   }
+
   const second: ReadonlyNode = {
     kind: names.ListItem,
     data: {},
     span: { start: 1, end: 2 },
     children: [paragraph(1)]
   }
+
   const document: ReadonlyDocument = {
     source: 'ab',
     children: [
@@ -180,10 +196,13 @@ test('list layout uses visible children and applies item replacement through ren
       }
     ]
   }
+
   const view = createHtmlRenderer()
+
   expect(view.render(document)).toBe(
     '<ol start="3">\n<li>a</li>\n<li>b</li>\n</ol>\n'
   )
+
   expect(
     view.render(document, {
       omittedNodes: new Set([first]),

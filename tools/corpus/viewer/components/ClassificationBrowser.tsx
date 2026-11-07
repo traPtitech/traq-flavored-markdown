@@ -29,6 +29,7 @@ export function ClassificationTree({
       </span>
     </button>
   )
+
   return (
     <nav className="classification-tree" aria-label="差分の分類">
       <p className="classification-caption">差分メッセージ</p>
@@ -62,6 +63,7 @@ export function ClassificationSummary({
   onReview: (only: boolean) => void
 }) {
   const rule = classificationRules.find(rule => rule.id === selection)
+
   const title =
     rule?.title ??
     classificationGroups[selection as keyof typeof classificationGroups] ??
@@ -70,7 +72,9 @@ export function ClassificationSummary({
       residual: '未説明の差分あり',
       unclassified: '分類なし'
     }[selection as 'all']
+
   const count = counts[selection]
+
   return (
     <section className="classification-summary" aria-label="選択中の分類">
       {rule && (

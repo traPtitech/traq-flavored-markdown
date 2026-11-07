@@ -15,9 +15,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let references = extractor.extract(validated)?;
     // Single-line formatting is an application decision, after rendering blocks.
     let plain_text = text.split_whitespace().collect::<Vec<_>>().join(" ");
+
     println!(
         "{}",
         serde_json::json!({"plainText":plain_text,"references":references})
     );
+
     Ok(())
 }

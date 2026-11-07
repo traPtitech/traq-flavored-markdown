@@ -14,14 +14,19 @@ import type { EditPlan } from '../src/editor/index.js'
 const runtime = await createRuntime(
   await file(new URL('../../dist/parser.wasm', import.meta.url)).bytes()
 )
+
 const parser = runtime.createParser(presets.traq.v1)
 afterAll(() => runtime.dispose())
+
 const analyze = (source: string) =>
   analyzeForEditing(parser.parseWithSyntax(source))
+
 const apply = (source: string, plan: EditPlan) => {
-  for (const change of [...plan.changes].reverse())
+  for (const change of [...plan.changes].reverse()) {
     source =
       source.slice(0, change.from) + change.text + source.slice(change.to)
+  }
+
   return source
 }
 
@@ -29,15 +34,19 @@ test('source descriptions preserve disjoint content and original node identities
   const source = '> 😀 **a\r\n> b** and [label](https://example.com)'
   const editing = analyze(source)
   const description = describeSource(editing)
+
   const strong = description.nodes.find(
     node => node.kind === 'style' && node.style === 'strong'
   )!
+
   expect(
     strong.content.map(range => source.slice(range.from, range.to))
   ).toEqual(['a\r\n', 'b'])
+
   expect(
     strong.syntax.map(range => source.slice(range.from, range.to))
   ).toEqual(['**', '**'])
+
   expect(editing.nodes.some(entry => entry.node === strong.native)).toBe(true)
   expect(description.document).toBe(editing.document)
   expect(describeSource(editing)).toBe(description)
@@ -49,10 +58,12 @@ test('source descriptions preserve disjoint content and original node identities
 test('source descriptions retain delimiters without deciding which source an editor hides', () => {
   const source = '$math$ :stamp: ![alt](https://example.com/a.png)'
   const nodes = describeSource(analyze(source)).nodes
+
   const syntax = (kind: string) =>
     nodes
       .find(node => node.kind === kind)!
       .syntax.map(range => source.slice(range.from, range.to))
+
   expect(syntax('math')).toEqual(['$', '$'])
   expect(syntax('stamp')).toEqual([])
   expect(syntax('image')).toEqual(['![', '](https://example.com/a.png)'])
@@ -71,6 +82,7 @@ test.each([
   for (const node of describeSource(analyze(source)).nodes) {
     expect(node.from).toBeGreaterThanOrEqual(0)
     expect(node.to).toBeLessThanOrEqual(source.length)
+
     for (const range of [...node.content, ...node.syntax]) {
       expect(range.from).toBeGreaterThanOrEqual(node.from)
       expect(range.to).toBeGreaterThanOrEqual(range.from)
@@ -82,6 +94,7 @@ test.each([
 test('list marker ranges exclude continuation prefixes and literals keep their classification', () => {
   const source = '> - **a**\n>   b\n\n`code` $math$'
   const result = describeSource(analyze(source))
+
   expect(
     result.nodes
       .filter(node => node.kind === 'list-marker')
@@ -89,6 +102,7 @@ test('list marker ranges exclude continuation prefixes and literals keep their c
         node.content.map(range => source.slice(range.from, range.to))
       )
   ).toEqual(['-'])
+
   expect(result.nodes.filter(isLiteralSource).map(node => node.kind)).toEqual([
     'code',
     'math'
@@ -110,12 +124,15 @@ test.each([
   (before, after) => {
     const source = before.replace('¦', '')
     const position = before.indexOf('¦')
+
     const plan = planLineBreak(
       source,
       { from: position, to: position },
       { analyze }
     )
+
     expect(apply(source, plan)).toBe(after.replace('¦', ''))
+
     expect(plan.selection).toEqual({
       from: after.indexOf('¦'),
       to: after.indexOf('¦')
@@ -125,36 +142,44 @@ test.each([
 
 test('soft line breaks and selected replacements have no list completion', () => {
   const source = '> 12. item'
+
   const plan = planLineBreak(
     source,
     { from: source.length, to: source.length },
     { analyze, continueItem: true }
   )
+
   expect(apply(source, plan)).toBe('> 12. item\n>     ')
   expect(plan.completion).toBeUndefined()
+
   const replacement = planLineBreak(
     source,
     { from: 2, to: source.length },
     { analyze }
   )
+
   expect(apply(source, replacement)).toBe('> \n')
   expect(replacement.completion).toBeUndefined()
 })
 
 test('list completion uses resulting UTF-16 coordinates including CRLF', () => {
   const source = 'previous\r\n\r\n12. 😀'
+
   const plan = planLineBreak(
     source,
     { from: source.length, to: source.length },
     { analyze }
   )
+
   const result = apply(source, plan)
   expect(result).toBe('previous\r\n\r\n12. 😀\r\n13. ')
+
   expect(plan.completion).toMatchObject({
     text: '13. ',
     continuation: '    ',
     child: '    1. '
   })
+
   expect(result.slice(plan.completion!.from, plan.completion!.to)).toBe('13. ')
   expect(Object.isFrozen(plan.completion)).toBe(true)
 })
@@ -182,10 +207,12 @@ test('edit plans reject invalid ranges and UTF-16 boundaries', () => {
     { from: 1, to: 1 }
   ]) {
     expect(() => planIndent('😀x', selection)).toThrow(RangeError)
+
     expect(() => planLineBreak('😀x', selection, { analyze })).toThrow(
       RangeError
     )
   }
+
   expect(() => planIndent('x', { from: 0, to: 0 }, 'indent', 0)).toThrow(
     RangeError
   )

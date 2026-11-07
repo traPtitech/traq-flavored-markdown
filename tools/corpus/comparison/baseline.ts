@@ -27,8 +27,10 @@ async function packageVersion(name: string, parent: string) {
     typeof metadata !== 'object' ||
     !('version' in metadata) ||
     typeof metadata.version !== 'string'
-  )
+  ) {
     throw new Error('Missing installed version for ' + name)
+  }
+
   return metadata.version
 }
 
@@ -51,20 +53,27 @@ export async function prepareBaseline({
   traqRevision?: string
   cache: string
 }): Promise<Baseline> {
-  if (Boolean(traq) !== Boolean(traqRevision))
+  if (Boolean(traq) !== Boolean(traqRevision)) {
     throw new Error(
       'Plain-text baseline requires both a repository and revision'
     )
+  }
+
   const lock = JSON.parse(await sui.show(suiRevision, 'package-lock.json'))
+
   const rendererVersion: unknown =
     lock.packages?.['node_modules/@traptitech/traq-markdown-it']?.version
-  if (typeof rendererVersion !== 'string' || !rendererVersion)
+  if (typeof rendererVersion !== 'string' || !rendererVersion) {
     throw new Error('S-UI lockfile does not identify its Markdown renderer')
+  }
+
   const katex = await packageVersion('katex', packageRoot('extensions-plugin'))
+
   const highlight = await packageVersion(
     'highlight.js',
     packageRoot('commonmark-plugin')
   )
+
   const workerFiles = traq
     ? [
         ...new Bun.Glob('comparison/{go,go-app}/**/*.{go,json,mod}').scanSync({
@@ -73,6 +82,7 @@ export async function prepareBaseline({
         })
       ]
     : []
+
   const key = new Bun.CryptoHasher('sha256')
     .update(
       JSON.stringify({
@@ -86,16 +96,22 @@ export async function prepareBaseline({
       })
     )
     .digest('hex')
+
   const directory = path.join(cache, key)
+
   const dependencies = {
     katex: { before: katex, after: katex },
     'highlight.js': { before: highlight, after: highlight },
     renderer: { before: rendererVersion, after: 'candidate artifact' }
   }
-  if (await Bun.file(path.join(directory, 'baseline.json')).exists())
+
+  if (await Bun.file(path.join(directory, 'baseline.json')).exists()) {
     return { directory, dependencies }
+  }
+
   await mkdir(cache, { recursive: true })
   const staging = await mkdtemp(path.join(cache, '.preparing-'))
+
   try {
     await writeJson(path.join(staging, 'package.json'), {
       private: true,
@@ -107,51 +123,65 @@ export async function prepareBaseline({
       },
       overrides: { katex, 'highlight.js': highlight }
     })
+
     await runProcess(
       Bun.argv[0],
       ['install', '--ignore-scripts', '--no-save', '--no-progress'],
       staging,
       { timeoutMs: installTimeoutMs }
     )
+
     if (
       (await packageVersion('katex', staging)) !== katex ||
       (await packageVersion('highlight.js', staging)) !== highlight
-    )
+    ) {
       throw new Error(
         'Comparison requires matching KaTeX and highlight.js versions'
       )
+    }
+
     if (traq && traqRevision) {
       const goRoot = path.join(staging, 'plain-text')
       await mkdir(path.join(goRoot, 'go-before'), { recursive: true })
-      for (const name of ['parser.go', 'spoiler.go'])
+
+      for (const name of ['parser.go', 'spoiler.go']) {
         await Bun.write(
           path.join(goRoot, 'go-before', name),
           await traq.show(traqRevision, 'utils/message/' + name)
         )
+      }
+
       await Bun.write(
         path.join(goRoot, 'main.go'),
         await readFile(path.join(corpusRoot, 'comparison/go-app/main.go'))
       )
+
       const goMod = await traq.show(traqRevision, 'go.mod')
+
       const getVersion = (name: string) => {
         const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const match = goMod.match(new RegExp('\\s' + escaped + '\\s+(\\S+)'))
         if (!match) throw new Error('Missing baseline dependency ' + name)
+
         return match[1]
       }
+
       const workerDirectory = path.join(goRoot, 'worker')
       await mkdir(workerDirectory)
       const workerSource = path.join(corpusRoot, 'comparison/go')
+
       for (const file of new Bun.Glob('*.{go,json,mod}').scanSync({
         cwd: workerSource,
         onlyFiles: true
       })) {
-        if (!file.endsWith('_test.go'))
+        if (!file.endsWith('_test.go')) {
           await Bun.write(
             path.join(workerDirectory, file),
             await readFile(path.join(workerSource, file))
           )
+        }
       }
+
       await Bun.write(
         path.join(goRoot, 'go.mod'),
         await applicationGoModule(
@@ -164,24 +194,29 @@ export async function prepareBaseline({
           './worker'
         )
       )
+
       await captureProcess('go', ['mod', 'tidy'], goRoot, {
         env: { ...process.env, GOWORK: 'off' },
         timeoutMs: installTimeoutMs
       })
     }
+
     await writeJson(path.join(staging, 'baseline.json'), {
       key,
       suiRevision,
       traqRevision,
       dependencies
     })
+
     try {
       await rename(staging, directory)
     } catch (error) {
       // A concurrent preparation of the identical cache key may finish first.
-      if (!(await Bun.file(path.join(directory, 'baseline.json')).exists()))
+      if (!(await Bun.file(path.join(directory, 'baseline.json')).exists())) {
         throw error
+      }
     }
+
     return { directory, dependencies }
   } finally {
     await rm(staging, { recursive: true, force: true })

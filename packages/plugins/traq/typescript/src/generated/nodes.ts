@@ -17,6 +17,7 @@ import {
  * A source blank line preserved for document layout.
  */
 export type BlankLine = Record<string, never>
+
 export type Embedding = {
   id: ReferenceIdentity
   label: string
@@ -26,24 +27,31 @@ export type Embedding = {
   literal: string
   type: EmbeddingKind
 }
+
 export type EmbeddingKind = 'file' | 'message'
+
 /**
  * Lossless authored ID with its semantic identity parsed once on construction.
  * Invalid UUIDs remain accepted syntax and serialize exactly as authored.
  */
 export type ReferenceIdentity = string
+
 export type Reference = {
   id: ReferenceIdentity
   label: string
   type: ReferenceKind
 }
+
 export type ReferenceKind = 'user' | 'group' | 'channel'
+
 export type Spoiler = Record<string, never>
+
 export type Stamp = {
   effects: StampEffects
   kind: StampKind
   literal: string
 }
+
 export type StampAnimation =
   | 'rotate'
   | 'rotate-inv'
@@ -67,10 +75,12 @@ export type StampAnimation =
   | 'shake'
   | 'party'
   | 'attract'
+
 export type StampEffects = {
   animations: Array<StampAnimation>
   size: StampSize
 }
+
 /**
  * Syntax and display data are parsed once, before any host renders the stamp.
  */
@@ -97,7 +107,9 @@ export type StampKind =
       saturation: number
       type: 'hsl_color'
     }
+
 export type StampSize = 'none' | 'ex-large' | 'large' | 'small'
+
 export const contractValues = Object.freeze({
   EmbeddingKind: Object.freeze(['file', 'message'] as const),
   ReferenceKind: Object.freeze(['user', 'group', 'channel'] as const),
@@ -127,6 +139,7 @@ export const contractValues = Object.freeze({
   ] as const),
   StampSize: Object.freeze(['none', 'ex-large', 'large', 'small'] as const)
 })
+
 export const arrayLimits = Object.freeze({
   StampEffects: Object.freeze({ animations: Object.freeze({ maxItems: 5 }) })
 })
@@ -141,6 +154,7 @@ export type NodeVariant =
 function validateBlankLine(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateEmbedding(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -154,12 +168,15 @@ function validateEmbedding(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateEmbeddingKind(value: unknown): boolean {
   return oneOf('file', 'message')(value)
 }
+
 function validateReferenceIdentity(value: unknown): boolean {
   return string(value)
 }
+
 function validateReference(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -172,12 +189,15 @@ function validateReference(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateReferenceKind(value: unknown): boolean {
   return oneOf('user', 'group', 'channel')(value)
 }
+
 function validateSpoiler(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateStamp(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -190,6 +210,7 @@ function validateStamp(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateStampAnimation(value: unknown): boolean {
   return oneOf(
     'rotate',
@@ -216,6 +237,7 @@ function validateStampAnimation(value: unknown): boolean {
     'attract'
   )(value)
 }
+
 function validateStampEffects(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -230,6 +252,7 @@ function validateStampEffects(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateStampKind(value: unknown): boolean {
   return ((value: unknown) =>
     [
@@ -288,9 +311,11 @@ function validateStampKind(value: unknown): boolean {
         )
     ].filter(check => check(value)).length === 1)(value)
 }
+
 function validateStampSize(value: unknown): boolean {
   return oneOf('none', 'ex-large', 'large', 'small')(value)
 }
+
 export const names = Object.freeze({
   BlankLine: 'traq.blank_line',
   Embedding: 'traq.embedding',
@@ -298,6 +323,7 @@ export const names = Object.freeze({
   Spoiler: 'traq.spoiler',
   Stamp: 'traq.stamp'
 } as const)
+
 const validators = new Map<string, (data: unknown) => boolean>([
   ['traq.blank_line', validateBlankLine],
   ['traq.embedding', validateEmbedding],
@@ -305,6 +331,7 @@ const validators = new Map<string, (data: unknown) => boolean>([
   ['traq.spoiler', validateSpoiler],
   ['traq.stamp', validateStamp]
 ])
+
 export const definitions = Object.freeze({
   BlankLine: defineNode<Extract<NodeVariant, { kind: typeof names.BlankLine }>>(
     names.BlankLine,
@@ -335,9 +362,11 @@ export const definitions = Object.freeze({
     { role: 'inline', children: { kind: 'leaf' } }
   )
 })
+
 export const schema = new DocumentSchema<NodeVariant>(
   Object.values(definitions)
 )
+
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T

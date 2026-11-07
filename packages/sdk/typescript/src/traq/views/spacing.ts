@@ -13,6 +13,7 @@ export function configureSpacing(common: RenderPlugin, xhtmlOut: boolean) {
             ? '<br />\n'
             : '<br>\n'
       )
+
       return '<blockquote>\n' + content + '</blockquote>\n'
     }
   )

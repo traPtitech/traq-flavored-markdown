@@ -24,6 +24,7 @@ export type MarkdownFormat = FormatBase &
       }
     | {
         readonly kind: 'rendered-inline'
+
         readonly replacement: Readonly<{
           type: 'markdown' | 'stamp'
           text: string
@@ -31,6 +32,7 @@ export type MarkdownFormat = FormatBase &
           node: ReadonlyNode
           renderKey: string
         }>
+
         readonly container?: never
       }
     | {
@@ -57,6 +59,7 @@ const toFormat = (
   const first = node.content[0]
   const last = node.content.at(-1)
   const content = { from: first?.from ?? from, to: last?.to ?? from }
+
   const base = {
     from,
     to,

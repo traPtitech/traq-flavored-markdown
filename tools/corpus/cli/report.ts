@@ -13,20 +13,26 @@ const { values } = parseArgs({
   options: { data: { type: 'string' }, out: { type: 'string' } }
 })
 if (!values.data) throw new Error('--data required')
+
 const data = resolveRepositoryPath(values.data)
 const output = resolveRepositoryPath(values.out ?? values.data)
 const template = Bun.file(path.join(corpusRoot, 'dist/index.html'))
-if (!(await template.exists()))
+if (!(await template.exists())) {
   throw new Error('Build the report viewer first: bun run build:corpus')
+}
+
 const report = await buildReport(data, await template.text())
 await mkdir(output, { recursive: true })
 await Bun.write(path.join(output, 'differences.html'), report.html)
 const classifications = summarizeClassifications(report.metadata)
+
 await Bun.write(
   path.join(output, 'classification-summary.json'),
   JSON.stringify(classifications, null, 2) + '\n'
 )
+
 const profiles = profilesFor(report.metadata.run)
+
 printJson({
   runId: report.metadata.run.runId,
   messages: report.metadata.messages,

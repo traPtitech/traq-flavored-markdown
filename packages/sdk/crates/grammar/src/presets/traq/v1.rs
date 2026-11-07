@@ -14,12 +14,15 @@ pub fn builder() -> GrammarBuilder {
 pub fn grammar() -> &'static Grammar {
     static GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
         let grammar = builder().build().expect("valid V1 profile");
+
         // Product-specific lazy recognizers are warmed here, never in the generic hosts.
         Parser::new(&grammar)
             .parse("example.com :stamp: <a@example.com>")
             .expect("valid warmup");
+
         grammar
     });
+
     &GRAMMAR
 }
 

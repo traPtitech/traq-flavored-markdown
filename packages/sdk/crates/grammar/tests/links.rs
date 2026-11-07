@@ -5,6 +5,7 @@ use traq_markdown_grammar::presets;
 #[test]
 fn direct_and_reference_images_share_the_same_node_contract() {
     let parser = presets::traq::v1::parser();
+
     for source in [
         "![alt](https://trap.jp/a.png)",
         "![alt](https://example.com/a.png)",
@@ -12,8 +13,10 @@ fn direct_and_reference_images_share_the_same_node_contract() {
     ] {
         let document = parser.parse(source).unwrap();
         let paragraph = &document.children[0];
+
         assert_eq!(paragraph.children.len(), 1, "{source}");
         let image = paragraph.children[0].payload::<Image>().unwrap();
+
         assert_eq!(image.label_source, "alt");
         assert!(image.destination.ends_with("/a.png"));
     }
@@ -24,12 +27,14 @@ fn links_cannot_contain_other_links() {
     fn assert_no_nested_links(nodes: &[Node], inside_link: bool) {
         for node in nodes {
             let is_link = node.payload::<Link>().is_some();
+
             assert!(!(inside_link && is_link), "{node:?}");
             assert_no_nested_links(&node.children, inside_link || is_link);
         }
     }
 
     let parser = presets::traq::v1::parser();
+
     for source in [
         "[<https://inner.example>](https://outer.example)",
         "[<a@example.com>](https://outer.example)",
@@ -38,6 +43,7 @@ fn links_cannot_contain_other_links() {
     ] {
         let document = parser.parse_inline(source).unwrap();
         assert_no_nested_links(&document.children, false);
+
         assert!(
             document
                 .children
@@ -52,14 +58,18 @@ fn images_remain_valid_inside_links_and_can_contain_autolink_labels() {
     let parser = presets::traq::v1::parser();
     let document = parser.parse_inline("[![alt](/image)](/page)").unwrap();
     let link = &document.children[0];
+
     assert_eq!(link.payload::<Link>().unwrap().destination, "/page");
     assert!(link.children[0].payload::<Image>().is_some());
 
     let document = parser
         .parse_inline("![<https://example.com>](/image)")
         .unwrap();
+
     let image = &document.children[0];
+
     assert!(image.payload::<Image>().is_some());
+
     assert_eq!(
         image.children[0].payload::<Link>().unwrap().form,
         LinkForm::Autolink
@@ -69,6 +79,7 @@ fn images_remain_valid_inside_links_and_can_contain_autolink_labels() {
 #[test]
 fn destination_syntax_is_independent_of_rendering_policy() {
     let parser = presets::traq::v1::parser();
+
     for destination in [
         "javascript:alert",
         "vbscript:alert",
@@ -83,12 +94,14 @@ fn destination_syntax_is_independent_of_rendering_policy() {
         ] {
             let document = parser.parse(&source).unwrap();
             let link = document.children[0].children[0].payload::<Link>().unwrap();
+
             assert_eq!(link.destination, destination, "{source}");
         }
 
         let document = parser
             .parse_inline(&format!("![x]({destination})"))
             .unwrap();
+
         assert_eq!(
             document.children[0].payload::<Image>().unwrap().destination,
             destination
@@ -99,13 +112,16 @@ fn destination_syntax_is_independent_of_rendering_policy() {
 #[test]
 fn destinations_are_encoded_without_losing_source_notation() {
     let parser = presets::traq::v1::parser();
+
     for source in [
         "[x](<https://example.com/日本>)",
         "<https://example.com/日本>",
         "<example.com/日本>",
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert_eq!(document.source, source);
+
         assert_eq!(
             document.children[0].payload::<Link>().unwrap().destination,
             "https://example.com/%E6%97%A5%E6%9C%AC"
@@ -117,18 +133,22 @@ fn destinations_are_encoded_without_losing_source_notation() {
 fn scheme_less_angle_links_are_a_traq_extension() {
     let source = "<trap.jp> <README.md> <//trap.jp>";
     let commonmark = presets::commonmark::parser().parse_inline(source).unwrap();
+
     assert!(
         commonmark
             .children
             .iter()
             .all(|node| node.payload::<Link>().is_none())
     );
+
     let traq = presets::traq::v1::parser().parse_inline(source).unwrap();
+
     let links: Vec<_> = traq
         .children
         .iter()
         .filter_map(|node| node.payload::<Link>())
         .collect();
+
     assert_eq!(
         links
             .iter()
@@ -136,6 +156,7 @@ fn scheme_less_angle_links_are_a_traq_extension() {
             .collect::<Vec<_>>(),
         ["https://trap.jp", "https://readme.md", "https://trap.jp"]
     );
+
     assert!(links.iter().all(|link| link.form == LinkForm::Autolink));
 }
 
@@ -143,18 +164,22 @@ fn scheme_less_angle_links_are_a_traq_extension() {
 fn bare_scheme_urls_are_an_opt_in_traq_extension() {
     let source = "https://trap.jp http://localhost:3000 ftp://trap.jp info@trap.jp //trap.jp";
     let commonmark = presets::commonmark::parser().parse_inline(source).unwrap();
+
     assert!(
         commonmark
             .children
             .iter()
             .all(|node| node.payload::<Link>().is_none())
     );
+
     let traq = presets::traq::v1::parser().parse_inline(source).unwrap();
+
     let links: Vec<_> = traq
         .children
         .iter()
         .filter_map(|node| node.payload::<Link>())
         .collect();
+
     assert_eq!(links.len(), 5);
     assert!(links.iter().all(|link| link.form == LinkForm::Linkify));
 }
@@ -162,13 +187,16 @@ fn bare_scheme_urls_are_an_opt_in_traq_extension() {
 #[test]
 fn malformed_unicode_hosts_do_not_panic_or_lose_ports() {
     let parser = presets::traq::v1::parser();
+
     for (destination, encoded) in [
         ("http://😀!:80/path", "http://%F0%9F%98%80!:80/path"),
         ("http://abc.!é:80/path", "http://abc.!%C3%A9:80/path"),
     ] {
         let source = format!("[x]({destination})");
         let document = parser.parse_inline(&source).unwrap();
+
         assert_eq!(document.source, source);
+
         assert_eq!(
             document.children[0].payload::<Link>().unwrap().destination,
             encoded

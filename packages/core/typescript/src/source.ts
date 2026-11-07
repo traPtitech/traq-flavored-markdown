@@ -18,6 +18,7 @@ export class SourceText {
 
   constructor(text: string) {
     if (typeof text !== 'string') throw new TypeError('Expected source string')
+
     utf8ByteLength(text)
     this.#bytes = encoder.encode(text)
     this.text = text
@@ -40,8 +41,9 @@ export class SourceText {
       span.end < span.start ||
       !this.isBoundary(span.start) ||
       !this.isBoundary(span.end)
-    )
+    ) {
       throw new TypeError('Invalid source UTF-8 span')
+    }
   }
 
   slice(span: Span): string {
@@ -56,8 +58,10 @@ export class SourceText {
 
   /** Convert an original UTF-8 byte boundary to a JavaScript string offset. */
   utf16Offset(byteOffset: number): number {
-    if (!this.isBoundary(byteOffset))
+    if (!this.isBoundary(byteOffset)) {
       throw new TypeError('Invalid source UTF-8 offset')
+    }
+
     return this.offsets().bytes[byteOffset]
   }
 
@@ -67,21 +71,26 @@ export class SourceText {
       !Number.isSafeInteger(utf16Offset) ||
       utf16Offset < 0 ||
       utf16Offset > this.text.length
-    )
+    ) {
       throw new TypeError('Invalid source UTF-16 offset')
+    }
+
     const result = this.offsets().utf16[utf16Offset]
     if (result < 0) throw new TypeError('Invalid source UTF-16 boundary')
+
     return result
   }
 
   private offsets() {
     if (this.#offsets) return this.#offsets
+
     const bytes = new Int32Array(this.byteLength + 1).fill(-1)
     const utf16 = new Int32Array(this.text.length + 1).fill(-1)
     let byte = 0
     let unit = 0
     bytes[0] = 0
     utf16[0] = 0
+
     for (const character of this.text) {
       const code = character.codePointAt(0)!
       byte += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4
@@ -89,6 +98,7 @@ export class SourceText {
       bytes[byte] = unit
       utf16[unit] = byte
     }
+
     return (this.#offsets = { bytes, utf16 })
   }
 
@@ -96,16 +106,23 @@ export class SourceText {
   replace(edits: Iterable<SourceEdit>): string {
     let position = 0
     const output: string[] = []
+
     for (const { span, text } of edits) {
       this.assertSpan(span)
-      if (span.start < position)
+
+      if (span.start < position) {
         throw new TypeError('Overlapping or unordered source edits')
-      if (typeof text !== 'string')
+      }
+
+      if (typeof text !== 'string') {
         throw new TypeError('Invalid replacement text')
+      }
+
       utf8ByteLength(text)
       output.push(this.slice({ start: position, end: span.start }), text)
       position = span.end
     }
+
     output.push(this.slice({ start: position, end: this.byteLength }))
     return output.join('')
   }

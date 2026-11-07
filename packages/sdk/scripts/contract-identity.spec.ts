@@ -9,13 +9,16 @@ test('contract identity is independent of order and provenance but includes sema
     provenance: { sourceFingerprint: 'a' },
     contractId: 'unbound'
   }
+
   const second = {
     contractId: 'old',
     provenance: { sourceFingerprint: 'b' },
     nodes: first.nodes,
     abi: first.abi
   }
+
   expect(semanticContractId(first)).toBe(semanticContractId(second))
+
   expect(semanticContractId({ ...first, abi: { version: 2 } })).not.toBe(
     semanticContractId(first)
   )
@@ -36,12 +39,15 @@ test('wire identity ignores schema documentation and unordered declarations', ()
     required: ['description', 'flags'],
     additionalProperties: false
   }
+
   const first = { abi: { version: 1 }, nodes: { text: { schema } } }
   const second = structuredClone(first)
   second.nodes.text.schema.title = 'Renamed'
   second.nodes.text.schema.description = 'New documentation'
+
   second.nodes.text.schema.properties.description.description =
     'Edited field docs'
+
   second.nodes.text.schema.required.reverse()
   second.nodes.text.schema.properties.flags.enum.reverse()
   expect(semanticContractId(first)).toBe(semanticContractId(second))
@@ -71,6 +77,7 @@ test('wire identity retains defaults, structural constraints, bounds and ABI par
       }
     }
   }
+
   for (const change of [
     (value: typeof first) => {
       value.abi.exports.parse.params.reverse()
@@ -99,19 +106,23 @@ test('renaming a contract root and its bounded storage type leaves wire identity
     minimum: 0,
     maximum: 255
   }
+
   const first = {
     abi: { operations: { configure: { requestSchema: 'Before' } } },
     nodes: {},
     processing: { Before: request },
     directions: { Before: 'request' as const }
   }
+
   const second = {
     abi: { operations: { configure: { requestSchema: 'After' } } },
     nodes: {},
     processing: { After: { ...request, title: 'After', format: 'uint16' } },
     directions: { After: 'request' as const }
   }
+
   expect(semanticContractId(first)).toBe(semanticContractId(second))
+
   expect(
     semanticContractId({
       ...second,
@@ -149,6 +160,7 @@ test('wire identity binds request and response shapes to their operations', () =
       SecondResponse: 'response' as const
     }
   }
+
   for (const field of ['requestSchema', 'responseSchema'] as const) {
     const swapped = structuredClone(manifest)
     const { first, second } = swapped.abi.operations
@@ -157,8 +169,10 @@ test('wire identity binds request and response shapes to their operations', () =
     second[field] = previous
     expect(semanticContractId(swapped)).not.toBe(semanticContractId(manifest))
   }
+
   const unresolved = structuredClone(manifest)
   unresolved.abi.operations.first.requestSchema = 'Missing'
+
   expect(() => semanticContractId(unresolved)).toThrow(
     '$.abi.operations.first.requestSchema'
   )
@@ -166,6 +180,7 @@ test('wire identity binds request and response shapes to their operations', () =
 
 test('reachable helper roots do not add wire semantics or make type names significant', () => {
   const helper = { type: 'string' }
+
   const manifest = {
     abi: { operations: { configure: { requestSchema: 'Options' } } },
     nodes: {},
@@ -180,6 +195,7 @@ test('reachable helper roots do not add wire semantics or make type names signif
     },
     directions: { Options: 'request' as const, Helper: 'request' as const }
   }
+
   const renamed = {
     ...manifest,
     processing: {
@@ -192,7 +208,9 @@ test('reachable helper roots do not add wire semantics or make type names signif
     },
     directions: { Options: 'request' as const, Renamed: 'request' as const }
   }
+
   expect(semanticContractId(renamed)).toBe(semanticContractId(manifest))
+
   expect(
     semanticContractId({
       ...manifest,

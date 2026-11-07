@@ -30,6 +30,7 @@ interface ReferenceEditorOptions<R> {
   model: Ref<string>
   adapter: ReferenceInputAdapter<R>
   popupId: string
+
   props: {
     singleLine: boolean
     readonly: boolean
@@ -37,6 +38,7 @@ interface ReferenceEditorOptions<R> {
     documentKey?: string | number
     preparePaste?: PreparePaste
   }
+
   attributes: (suggestions: SuggestionController) => Record<string, string>
   onKeyDown: (event: KeyboardEvent) => void
   onKeyUp: (event: KeyboardEvent) => void
@@ -55,14 +57,16 @@ export default function useReferenceEditor<R>(
   const updateInputRuntimeState = (runtime: Partial<InputRuntimeState>) => {
     const current = editor.value
     if (!current || current.isDestroyed) return
+
     const previous = inputLifecycleKey.getState(current.state)
 
     if (
       Object.entries(runtime).every(
         ([key, value]) => previous?.[key as keyof InputRuntimeState] === value
       )
-    )
+    ) {
       return
+    }
 
     current.view.dispatch(current.state.tr.setMeta(inputLifecycleKey, runtime))
     nextTick(() => options.onLayoutChange())
@@ -77,6 +81,7 @@ export default function useReferenceEditor<R>(
   } = useInputComposition({
     view: () => editor.value?.view,
     onChange: composing => updateInputRuntimeState({ composing }),
+
     onSettled: () =>
       nextTick(() => {
         updateTarget()
@@ -145,6 +150,7 @@ export default function useReferenceEditor<R>(
     editor: () => editor.value,
     isComposing,
     finishComposition,
+
     insertParts: (parts, range, focus) =>
       insertParts(
         parts,
@@ -264,8 +270,10 @@ export default function useReferenceEditor<R>(
 
   const syncEditorAttributes = () => {
     const current = editor.value
-    if (current && !current.isDestroyed && !isComposing())
+
+    if (current && !current.isDestroyed && !isComposing()) {
       current.setOptions({})
+    }
   }
 
   watch([editor, editorAttributes], syncEditorAttributes)
@@ -297,6 +305,7 @@ export default function useReferenceEditor<R>(
 
   const focus: ReferenceInputHandle['focus'] = position =>
     editor.value?.commands.focus(position)
+
   const element = computed(() => editor.value?.view.dom)
 
   useResizeObserver(element, () => {

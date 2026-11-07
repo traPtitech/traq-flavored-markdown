@@ -123,9 +123,11 @@ describe('reference input empty state', () => {
       await nextTick()
 
       expect(lastValue(wrapper)).toBe('text\n')
+
       expect(
         wrapper.vm.element?.querySelector('.ProseMirror-trailingBreak')
       ).not.toBeNull()
+
       expect(wrapper.vm.element?.getAttribute('data-is-empty')).toBe('false')
 
       editor.commands.setTextSelection({
@@ -198,8 +200,9 @@ describe('reference input empty state', () => {
 
         const current = paragraph.firstChild
 
-        if (!(current instanceof Text))
+        if (!(current instanceof Text)) {
           throw new Error('Missing composition text')
+        }
 
         current.data = ''
         document.getSelection()?.collapse(current, 0)
@@ -266,9 +269,11 @@ it('preserves Undo for an external edit and resets it for a new document key', a
   editor.commands.setTextSelection(2)
   wrapper.vm.insertText(' draft')
   await nextTick()
+
   await wrapper.setProps({
     modelValue: `${embedded} draft\nhttps://example.com/file`
   })
+
   await focus(wrapper)
   press(wrapper, 'z', { ctrlKey: true })
   await nextTick()
@@ -287,11 +292,13 @@ it('preserves Undo for an external edit and resets it for a new document key', a
 
 it('updates all accessible attributes through reactive props', async () => {
   const wrapper = await makeInput({ mode: 'single-line' })
+
   await wrapper.setProps({
     placeholder: 'updated',
     labelledBy: 'search-label',
     testId: 'search-field'
   })
+
   const element = wrapper.vm.element
   expect(element?.getAttribute('data-placeholder')).toBe('updated')
   expect(element?.getAttribute('aria-labelledby')).toBe('search-label')

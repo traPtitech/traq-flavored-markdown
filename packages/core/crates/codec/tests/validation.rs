@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use support::{Heading, Text};
 
 static CHECKS: AtomicUsize = AtomicUsize::new(0);
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
 #[wire_type(key = "test.group")]
 struct Group {}
@@ -17,18 +18,23 @@ impl NodeData for Group {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
+
     fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = {
             CHECKS.fetch_add(1, Ordering::Relaxed);
+
             children
                 .iter()
                 .all(|node| node.payload::<Group>().is_some() || node.payload::<Text>().is_some())
         };
+
         if valid {
             Ok(())
         } else {
@@ -65,22 +71,28 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
 
     let validated = codec.decode(&bytes).unwrap();
+
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
     assert_eq!(validated.as_view().node_count(), 3);
     assert_eq!(codec.encode(validated.as_view()).unwrap(), bytes);
     assert_eq!(codec.encode(validated.as_view()).unwrap(), bytes);
+
     let view = codec
         .serialization_view(&validated, Default::default())
         .unwrap();
+
     let mut streamed = vec![];
     markdown_codec::write_json(&mut streamed, &view, bytes.len()).unwrap();
+
     assert_eq!(streamed, bytes);
+
     assert_eq!(
         markdown_codec::write_json(Vec::new(), &view, bytes.len() - 1)
             .unwrap_err()
             .resource(),
         Some("json_bytes")
     );
+
     assert_eq!(
         CHECKS.load(Ordering::Relaxed),
         0,
@@ -94,16 +106,19 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
         },
         ..Default::default()
     };
+
     assert!(
         codec
             .encode_with_limits(validated.as_view(), limited)
             .is_err()
     );
+
     assert_eq!(
         CHECKS.load(Ordering::Relaxed),
         0,
         "tightening limits uses validation facts"
     );
+
     assert_eq!(validated.into_mutable(), doc);
     assert_eq!(codec.decode(&bytes).unwrap(), doc);
     assert_eq!(CHECKS.swap(0, Ordering::Relaxed), 2);
@@ -120,6 +135,7 @@ fn type_owned_checks_apply_once_per_node_in_both_directions() {
     doc.children[0].payload_mut::<Heading>().unwrap().level = 7;
 
     assert!(codec.encode(&doc).is_err());
+
     assert!(
         codec
             .decode(json.replace("\"level\":2", "\"level\":7").as_bytes())

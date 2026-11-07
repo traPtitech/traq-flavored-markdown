@@ -12,6 +12,7 @@ import { messageExtension } from './messageExtension.js'
 
 export type { ReferenceInputHandle } from '../types.js'
 export { partsToContent, contentToParts } from './input/document.js'
+
 export const inputExtensions = <R>({
   label,
   editText,
@@ -25,6 +26,7 @@ export const inputExtensions = <R>({
   singleLine?: boolean
   isComposing?: () => boolean
   markdown?: MarkdownServices
+
   normalize?: (
     parts: readonly InputPart<R>[],
     analysis?: SourceAnalysis

@@ -33,8 +33,10 @@ pub(super) fn close(
     )?;
 
     let opening = state.tokens.pop().ok_or(ParseError::InternalError)?;
+
     let syntax = match syntax {
         Some(syntax) => Some(syntax),
+
         None => state.source.syntax(
             &[state.source.range(opening.end..state.position)?],
             &[
@@ -50,6 +52,7 @@ pub(super) fn close(
             state.budget,
         )?,
     };
+
     state.push(opening.start, end, TokenKind::Atom(kind, children, syntax))?;
 
     if inhibit {

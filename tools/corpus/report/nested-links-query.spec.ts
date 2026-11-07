@@ -39,6 +39,7 @@ test('nested-link indexes compose with other filters, pagination, search, author
     },
     { ...fixtureNestedLink, index: 4, profile: 'inline' as const }
   ]
+
   const aggregate = await aggregateDifferences(
     (async function* () {
       yield* rows
@@ -46,29 +47,36 @@ test('nested-link indexes compose with other filters, pagination, search, author
     1,
     index => (index === 3 ? 'b' : 'h')
   )
+
   expect(aggregate.excluded.render.nestedLinks).toBe(1)
   expect(aggregate.excluded.render.caseAndNestedLinks).toBe(2)
   expect(aggregate.excluded.inline.nestedLinks).toBe(1)
+
   const metadata = {
     ...fixtureMetadata(aggregate.counts, 1, rows.length),
     filters: aggregate.filters,
     authors: aggregate.authors
   }
+
   const decoded: string[] = []
+
   const repository = new ReportRepository(
     parseReport(metadata, aggregate.payload),
     async encoded => {
       decoded.push(encoded)
+
       return JSON.parse(
         new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
       )
     }
   )
+
   const query = { ...initialViewerState.query, ignoreNestedLinks: true }
   const first = await repository.query(query)
   expect(first.rows[0].index).toBe(1)
   expect(first.totalHits).toBe(3)
   expect(decoded).toEqual([aggregate.payload.render[1]])
+
   const combined = {
     ...query,
     ignoreWhitespace: true,
@@ -78,36 +86,45 @@ test('nested-link indexes compose with other filters, pagination, search, author
     ignoreKatexErrors: true,
     ignoreLinkPolicy: true
   }
+
   const found = await repository.query(combined)
   expect(found.totalHits).toBe(2)
   expect(found.rows[0].index).toBe(2)
+
   expect(
     (await repository.query({ ...combined, page: 2 })).rows[0].after.kind
   ).toBe('error')
+
   const reads = decoded.length
   await repository.query(combined)
   expect(decoded).toHaveLength(reads)
+
   expect(
     (await repository.query({ ...combined, ignoreNestedLinks: false }))
       .totalHits
   ).toBe(4)
+
   expect(
     (await repository.query({ ...combined, profile: 'inline' })).totalHits
   ).toBe(0)
+
   expect(
     (await repository.query({ ...combined, search: 'mixed' })).rows[0].index
   ).toBe(2)
+
   expect(
     (await repository.query({ ...combined, excludeBots: true })).totalHits
   ).toBe(1)
+
   for (const render of [
     '0'.repeat(aggregate.counts.render * 16),
     encodeFilterMasks([1n << 127n, 0n, 0n, 0n])
-  ])
+  ]) {
     expect(() =>
       parseReport(
         { ...metadata, filters: { ...metadata.filters, render } },
         aggregate.payload
       )
     ).toThrow('Invalid report profile')
+  }
 })

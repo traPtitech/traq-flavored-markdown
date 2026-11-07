@@ -32,6 +32,7 @@ pub(crate) fn destination(
     let Some(parsed) = target(source, i, budget)? else {
         return Ok(None);
     };
+
     i = parsed.end.get();
 
     let before_space = i;
@@ -81,11 +82,14 @@ pub(crate) fn target(
 ) -> Result<Option<ParsedTarget>, ParseError> {
     let mut cursor = Cursor::from_byte_index(source, position, budget)?;
     let angle = cursor.peek() == Some('<');
+
     if angle {
         cursor.next_char()?;
     }
+
     let start = cursor.position();
     let mut depth = 0;
+
     while let Some(ch) = cursor.peek() {
         if ch == '\\'
             && cursor
@@ -97,10 +101,12 @@ pub(crate) fn target(
             cursor.advance(2)?;
             continue;
         }
+
         if angle {
             if ch == '>' {
                 break;
             }
+
             if ch == '<' || ch == '\n' {
                 return Ok(None);
             }
@@ -108,23 +114,30 @@ pub(crate) fn target(
             if ch <= ' ' || ch == ')' && depth == 0 {
                 break;
             }
+
             if ch == '(' {
                 depth += 1;
                 cursor.nesting(depth)?;
             }
+
             if ch == ')' {
                 depth -= 1;
             }
         }
+
         cursor.next_char()?;
     }
+
     if depth != 0 || angle && cursor.peek() != Some('>') {
         return Ok(None);
     }
+
     let end = cursor.position();
+
     if angle {
         cursor.next_char()?;
     }
+
     Ok(Some(ParsedTarget {
         end: cursor.position(),
         target: url::encode(&unescape(&source[start.get()..end.get()])),
@@ -137,15 +150,19 @@ pub(crate) fn parse_title(
     budget: &mut Budget,
 ) -> Result<Option<String>, ParseError> {
     let mut cursor = Cursor::from_byte_index(source, *index, budget)?;
+
     let Some(opening) = cursor.next_char()? else {
         return Ok(None);
     };
+
     let closing = if opening == '(' { ')' } else { opening };
     let start = cursor.position();
+
     while let Some(ch) = cursor.peek() {
         if ch == closing {
             break;
         }
+
         if ch == '\\'
             && cursor
                 .tail()
@@ -158,9 +175,11 @@ pub(crate) fn parse_title(
             cursor.next_char()?;
         }
     }
+
     if cursor.peek() != Some(closing) {
         return Ok(None);
     }
+
     let title = unescape(&source[start.get()..cursor.position().get()]);
     cursor.next_char()?;
     *index = cursor.position().get();

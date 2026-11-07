@@ -11,6 +11,7 @@ pub use markdown_traq_contracts::{Embedding, EmbeddingKind, Reference, Reference
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> =
         std::sync::LazyLock::new(|| InlineRule::new(b"!", parse).named("json_reference"));
+
     &RULE
 }
 
@@ -20,6 +21,7 @@ pub fn plugin() -> &'static SyntaxPlugin {
         plugin.add(inline_rule());
         plugin
     });
+
     &PLUGIN
 }
 
@@ -31,6 +33,7 @@ fn parse(input: &InlineInput<'_>, budget: &mut Budget) -> Result<Option<InlineMa
     let Some(end) = json_end(input, budget)? else {
         return Ok(None);
     };
+
     budget.spend(end - input.position)?;
 
     let text = &input.source[input.position + 1..end];
@@ -63,23 +66,28 @@ fn json_end(
             } else if byte == b'"' {
                 quote = false;
             }
+
             continue;
         }
 
         match byte {
             b'"' => quote = true,
+
             b'{' | b'[' => {
                 stack.push(byte);
                 budget.nesting(stack.len())?;
             }
+
             b'}' | b']' => {
                 if stack.pop() != Some(if byte == b'}' { b'{' } else { b'[' }) {
                     return Ok(None);
                 }
+
                 if stack.is_empty() {
                     return Ok(Some(input.source.offset(index + 1)?));
                 }
             }
+
             _ => {}
         }
     }

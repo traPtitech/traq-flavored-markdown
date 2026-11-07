@@ -14,8 +14,10 @@ export const inputHistoryExtension = (isComposing?: () => boolean) =>
       return compositionSafeShortcuts(
         {
           'Mod-z': () => undo(this.editor.state, this.editor.view.dispatch),
+
           'Mod-Shift-z': () =>
             redo(this.editor.state, this.editor.view.dispatch),
+
           'Mod-y': () => redo(this.editor.state, this.editor.view.dispatch)
         },
         isComposing

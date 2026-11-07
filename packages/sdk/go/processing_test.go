@@ -17,23 +17,28 @@ func TestASTConsumers(t *testing.T) {
 	ctx := context.Background()
 
 	wasm, err := os.ReadFile("../dist/parser.wasm")
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	runtime, err := NewRuntime(ctx, wasm)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer runtime.Close(ctx)
 
 	parser, err := runtime.NewParser(ctx, GrammarTraqV1)
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	parse := func(source string) *Document {
 		doc, err := parser.Parse(ctx, source)
+
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -42,21 +47,25 @@ func TestASTConsumers(t *testing.T) {
 	}
 
 	extractor, err := runtime.NewExtractor(ctx, ExtractorOptions{Origin: "https://q.example.test"})
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	renderer, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{Origin: "https://q.example.test"})
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	plain, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{})
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	raw, err := os.ReadFile("../tests/fixtures/processing-plain-text.json")
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,6 +75,7 @@ func TestASTConsumers(t *testing.T) {
 		Source    string
 		PlainText string `json:"plainText"`
 	}
+
 	if err := json.Unmarshal(raw, &fixtures); err != nil {
 		t.Fatal(err)
 	}
@@ -76,6 +86,7 @@ func TestASTConsumers(t *testing.T) {
 
 	for _, fixture := range fixtures {
 		text, err := renderer.Render(ctx, parse(fixture.Source))
+
 		if err != nil || text != fixture.PlainText {
 			t.Fatalf("%s: got %q, want %q: %v", fixture.Name, text, fixture.PlainText, err)
 		}
@@ -88,83 +99,103 @@ func TestASTConsumers(t *testing.T) {
 	original, _ := json.Marshal(document)
 
 	result, err := extractor.Extract(ctx, document)
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	text, err := renderer.Render(ctx, document)
+
 	if err != nil || text != "@alice ██████ "+user || !reflect.DeepEqual(result.References.Mentions, []string{id, id}) || !strings.HasPrefix(result.MessageText, "**@alice**") {
 		t.Fatalf("%+v %q %v", result, text, err)
 	}
 
 	after, _ := json.Marshal(document)
+
 	if string(after) != string(original) {
 		t.Fatal("consumers changed document")
 	}
 
 	t.Run("malformed sibling spans are rejected without poisoning the extractor", func(t *testing.T) {
 		doc, err := parser.ParseInline(ctx, user+" "+user)
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		check := func(document *Document) {
 			t.Helper()
 			result, err := extractor.Extract(ctx, document)
+
 			if err != nil || result.MessageText != "@alice @alice" || result.ReferenceEmbedding.UnembeddedText != "@alice @alice" {
 				t.Fatalf("source edits: %+v %v", result, err)
 			}
 		}
+
 		checkInvalid := func(document *MutableDocument) {
 			t.Helper()
 			_, err := NewDocument(document)
 			var failure *ast.ValidationError
+
 			if !errors.As(err, &failure) || failure.Path == "" {
 				t.Fatalf("expected invalid span for malformed siblings, got %v", err)
 			}
 		}
+
 		reordered, err := doc.ToMutable()
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		slices.Reverse(reordered.Children)
 		checkInvalid(reordered)
 		duplicated, err := doc.ToMutable()
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		duplicated.Children = append(slices.Clone(duplicated.Children), duplicated.Children...)
 		checkInvalid(duplicated)
 		crossing, err := doc.ToMutable()
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		crossing.Children[len(crossing.Children)-1].Span.Start = crossing.Children[0].Span.End - 1
 		checkInvalid(crossing)
 		check(doc)
 	})
 
 	url := "https://q.example.test/files/" + id
+
 	if text, err := plain.Render(ctx, parse(url)); err != nil || text != url {
 		t.Fatalf("%q %v", text, err)
 	}
 
 	for _, version := range []string{"commonmark", "traq.v1", "commonmark"} {
 		p, err := runtime.NewParser(ctx, GrammarPresetID(version))
+
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		doc, err := p.Parse(ctx, user+" !!secret!!")
+
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		r, err := extractor.Extract(ctx, doc)
+
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		text, err := renderer.Render(ctx, doc)
+
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -181,50 +212,64 @@ func TestASTConsumers(t *testing.T) {
 	}
 
 	invalid, err := parse("text").ToMutable()
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	invalid.Children[0].Span.End++
+
 	if _, err := NewDocument(invalid); err == nil {
 		t.Fatal("accepted invalid AST")
 	}
+
 	if _, err := renderer.Render(ctx, &Document{}); err == nil {
 		t.Fatal("rendered invalid AST")
 	}
+
 	if _, err := runtime.NewExtractor(ctx, ExtractorOptions{Origin: strings.Repeat("x", 2049)}); err == nil {
 		t.Fatal("accepted oversized origin")
 	}
+
 	if _, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{Origin: strings.Repeat("x", 2049)}); err == nil {
 		t.Fatal("accepted oversized origin")
 	}
 
 	large := parse(strings.Repeat("x", 60000))
+
 	if r, err := extractor.Extract(ctx, large); err != nil || r.MessageText != large.Source() {
 		t.Fatalf("large AST: %v", err)
 	}
+
 	if text, err := renderer.Render(ctx, large); err != nil || text != large.Source() {
 		t.Fatalf("large AST: %v", err)
 	}
 
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
+
 	if _, err := extractor.Extract(canceled, document); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
+
 	if _, err := renderer.Render(canceled, document); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 
 	var wg sync.WaitGroup
+
 	for range 8 {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			for range 8 {
 				if r, err := extractor.Extract(ctx, document); err != nil || !reflect.DeepEqual(r, result) {
 					t.Errorf("concurrent extraction: %v", err)
 					return
 				}
+
 				if text, err := renderer.Render(ctx, document); err != nil || text != "@alice ██████ "+user {
 					t.Errorf("concurrent rendering: %v", err)
 					return
@@ -240,6 +285,7 @@ func TestASTConsumers(t *testing.T) {
 	if _, err := extractor.Extract(ctx, document); err == nil {
 		t.Fatal("closed extractor accepted document")
 	}
+
 	if _, err := renderer.Render(ctx, document); err != nil {
 		t.Fatal(err)
 	}
@@ -250,17 +296,21 @@ func TestASTConsumers(t *testing.T) {
 	if _, err := renderer.Render(ctx, document); err == nil {
 		t.Fatal("closed renderer accepted document")
 	}
+
 	if _, err := plain.Render(ctx, document); err != nil {
 		t.Fatal(err)
 	}
 
 	runtime.Close(ctx)
+
 	if _, err := plain.Render(ctx, document); err == nil {
 		t.Fatal("runtime left renderer open")
 	}
+
 	if _, err := runtime.NewExtractor(ctx, ExtractorOptions{}); err == nil {
 		t.Fatal("closed runtime accepted creation")
 	}
+
 	if _, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{}); err == nil {
 		t.Fatal("closed runtime accepted creation")
 	}

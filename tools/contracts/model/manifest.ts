@@ -7,25 +7,32 @@ export type NodeContract = {
   schema: RawSchema
   structure: NodeStructure
 }
+
 export type NodeManifest = { nodes: Record<string, NodeContract> }
 export type PresetTree = { [name: string]: number | PresetTree }
+
 export type DocumentLimits = {
   sourceBytes: number
   payloadBytes: number
   nodes: number
   depth: number
 }
+
 export type ArtifactLimits = {
   inputBytes: number
   outputBytes: number
   memoryBytes: number
   document: DocumentLimits
 }
+
 export type Provenance = { sourceFingerprint: string }
 export type WasmType = 'i32'
+
 export type OperationResult =
   'configuration' | 'document' | 'extraction' | 'text' | 'processing' | 'syntax'
+
 export type Signature = { params: WasmType[]; results: WasmType[] }
+
 export type Operation = {
   export: string
   input: 'text' | 'json'
@@ -35,18 +42,21 @@ export type Operation = {
   requestSchema?: string
   responseSchema?: string
 }
+
 export type Abi = {
   version: number
   operations: Record<string, Operation>
   exports: Record<string, Signature>
   error: RawSchema
 }
+
 export type ArtifactMetadata = {
   contractId: string
   provenance: Provenance
   limits: ArtifactLimits
   presets: PresetTree
 }
+
 export type ArtifactManifest = ArtifactMetadata &
   NodeManifest & {
     abi: Abi
@@ -57,30 +67,38 @@ export type ArtifactManifest = ArtifactMetadata &
 function invalid(path: string): never {
   throw new TypeError('Invalid contract manifest: ' + path)
 }
+
 function record(value: unknown, path: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid(path)
   return value as Record<string, unknown>
 }
+
 function string(value: unknown, path: string): string {
   if (typeof value !== 'string') invalid(path)
   return value
 }
+
 function integer(value: unknown, path: string): number {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
     invalid(path)
+  }
+
   return value
 }
+
 function positive(value: unknown, path: string): number {
   const result = integer(value, path)
   if (result === 0) invalid(path)
   return result
 }
+
 function wasmTypes(value: unknown, path: string): WasmType[] {
   return strings(value, path).map((type, index) => {
     if (type !== 'i32') invalid(`${path}[${index}]`)
     return type
   })
 }
+
 function operationResult(value: unknown, path: string): OperationResult {
   if (
     value !== 'configuration' &&
@@ -89,18 +107,23 @@ function operationResult(value: unknown, path: string): OperationResult {
     value !== 'text' &&
     value !== 'processing' &&
     value !== 'syntax'
-  )
+  ) {
     invalid(path)
+  }
+
   return value
 }
+
 function boolean(value: unknown, path: string): boolean {
   if (typeof value !== 'boolean') invalid(path)
   return value
 }
+
 function strings(value: unknown, path: string): string[] {
   if (!Array.isArray(value)) invalid(path)
   return value.map((entry, index) => string(entry, `${path}[${index}]`))
 }
+
 function entries<T>(
   value: unknown,
   path: string,
@@ -113,44 +136,57 @@ function entries<T>(
     ])
   )
 }
+
 function schema(value: unknown, path: string): RawSchema {
   const result = record(value, path)
+
   try {
     shape(result)
   } catch (cause) {
     throw new TypeError('Invalid contract schema: ' + path, { cause })
   }
+
   return result
 }
+
 const nodeRoles = ['block', 'inline', 'structural', 'opaque'] as const
+
 function role(value: unknown, path: string): NodeRole {
   if (!nodeRoles.some(role => role === value)) invalid(path)
   return value as NodeRole
 }
+
 function structure(value: unknown, path: string): NodeStructure {
   const input = record(value, path),
     children = record(input.children, path + '.children')
+
   const kind = children.kind
   let result: NodeStructure['children']
+
   switch (kind) {
     case 'leaf':
     case 'any':
       result = { kind }
       break
+
     case 'roles':
       result = {
         kind,
         roles: strings(children.roles, path).map(value => role(value, path)),
         nonempty: boolean(children.nonempty, path)
       }
+
       break
+
     case 'types':
       result = {
         kind,
         types: strings(children.types, path),
         nonempty: boolean(children.nonempty, path)
       }
+
       break
+
     case 'sequence':
       result = {
         kind,
@@ -160,18 +196,23 @@ function structure(value: unknown, path: string): NodeStructure {
           ? {}
           : { arityField: string(children.arityField, path + '.arityField') })
       }
+
       break
+
     default:
       invalid(path + '.children.kind')
   }
+
   return { role: role(input.role, path + '.role'), children: result }
 }
 
 export function parseNodeManifest(value: unknown): NodeManifest {
   const input = record(value, '$')
+
   return {
     nodes: entries(input.nodes, '$.nodes', (value, path) => {
       const node = record(value, path)
+
       return {
         group: string(node.group, path + '.group'),
         schema: schema(node.schema, path + '.schema'),
@@ -190,7 +231,9 @@ function presets(value: unknown, path: string): PresetTree {
 export function parseArtifactMetadata(value: unknown): ArtifactMetadata {
   const input = record(value, '$'),
     limits = record(input.limits, '$.limits')
+
   const provenance = record(input.provenance, '$.provenance')
+
   return {
     contractId: string(input.contractId, '$.contractId'),
     provenance: {
@@ -212,6 +255,7 @@ export function parseArtifactMetadata(value: unknown): ArtifactMetadata {
 export function parseArtifactManifest(value: unknown): ArtifactManifest {
   const input = record(value, '$'),
     abi = record(input.abi, '$.abi')
+
   const result: ArtifactManifest = {
     ...parseArtifactMetadata(input),
     ...parseNodeManifest(input),
@@ -220,8 +264,11 @@ export function parseArtifactManifest(value: unknown): ArtifactManifest {
       error: schema(abi.error, '$.abi.error'),
       operations: entries(abi.operations, '$.abi.operations', (value, path) => {
         const operation = record(value, path)
-        if (operation.input !== 'text' && operation.input !== 'json')
+
+        if (operation.input !== 'text' && operation.input !== 'json') {
           invalid(path + '.input')
+        }
+
         return {
           export: string(operation.export, path + '.export'),
           input: operation.input,
@@ -251,6 +298,7 @@ export function parseArtifactManifest(value: unknown): ArtifactManifest {
       }),
       exports: entries(abi.exports, '$.abi.exports', (value, path) => {
         const signature = record(value, path)
+
         return {
           params: wasmTypes(signature.params, path + '.params'),
           results: wasmTypes(signature.results, path + '.results')
@@ -263,23 +311,30 @@ export function parseArtifactManifest(value: unknown): ArtifactManifest {
       return value
     })
   }
+
   for (const [name, operation] of Object.entries(result.abi.operations)) {
     const signature = result.abi.exports[operation.export]
+
     if (
       !signature ||
       JSON.stringify(signature.params) !== JSON.stringify(operation.params) ||
       signature.results.length !== 1 ||
       signature.results[0] !== 'i32'
-    )
+    ) {
       invalid(`$.abi.operations.${name}.export`)
-    if (operation.configuration !== (operation.result === 'configuration'))
+    }
+
+    if (operation.configuration !== (operation.result === 'configuration')) {
       invalid(`$.abi.operations.${name}.configuration`)
+    }
   }
+
   validateOperationSchemas(
     result.abi.operations,
     result.processing,
     result.directions
   )
+
   if (result.limits.memoryBytes % 65536 !== 0) invalid('$.limits.memoryBytes')
   return result
 }
@@ -296,48 +351,64 @@ export function validateOperationSchemas(
     ...Object.keys(processing),
     ...Object.keys(directions)
   ])) {
-    if (!Object.hasOwn(processing, name) || !Object.hasOwn(directions, name))
+    if (!Object.hasOwn(processing, name) || !Object.hasOwn(directions, name)) {
       invalid(`$.directions.${name}`)
+    }
   }
+
   const reached = new Set<string>()
+
   function visit(value: Shape, direction: Direction): void {
     if (value.name && Object.hasOwn(processing, value.name)) {
-      if (directions[value.name] !== direction)
+      if (directions[value.name] !== direction) {
         invalid(`$.directions.${value.name}`)
+      }
+
       reached.add(value.name)
     }
+
     switch (value.kind) {
       case 'nullable':
         visit(value.inner, direction)
         break
+
       case 'array':
         visit(value.items, direction)
         break
+
       case 'object':
         for (const field of value.fields) visit(field.shape, direction)
         break
+
       case 'union':
         for (const variant of value.variants) visit(variant, direction)
         break
     }
   }
+
   for (const [name, operation] of Object.entries(operations)) {
     for (const direction of ['request', 'response'] as const) {
       const field = `${direction}Schema` as const
       const reference = operation[field]
       if (reference === undefined) continue
+
       if (
         !Object.hasOwn(processing, reference) ||
         directions[reference] !== direction
-      )
+      ) {
         invalid(`$.abi.operations.${name}.${field}`)
+      }
+
       reached.add(reference)
       visit(shape(processing[reference]), direction)
     }
   }
-  for (const name of Object.keys(processing))
-    if (!reached.has(name))
+
+  for (const name of Object.keys(processing)) {
+    if (!reached.has(name)) {
       invalid(`$.processing.${name}: unreachable operation schema`)
+    }
+  }
 }
 
 export function parseDocumentLimits(
@@ -345,6 +416,7 @@ export function parseDocumentLimits(
   path = '$.limits'
 ): DocumentLimits {
   const input = record(value, path)
+
   return {
     sourceBytes: positive(input.sourceBytes, path + '.sourceBytes'),
     payloadBytes: positive(input.payloadBytes, path + '.payloadBytes'),
@@ -352,6 +424,7 @@ export function parseDocumentLimits(
     depth: positive(input.depth, path + '.depth')
   }
 }
+
 export function parseCoreManifest(value: unknown): { limits: DocumentLimits } {
   return { limits: parseDocumentLimits(record(value, '$').limits) }
 }

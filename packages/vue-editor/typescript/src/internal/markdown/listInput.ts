@@ -33,8 +33,9 @@ export const changeMarkdownListCompletion = (
     !state.selection.empty ||
     state.selection.head !== completion.to ||
     state.doc.textBetween(completion.from, completion.to) !== completion.text
-  )
+  ) {
     return
+  }
 
   const text =
     action === 'continue' ? completion.continuation : completion.child
@@ -75,8 +76,9 @@ export const markdownListInput = () =>
           preview?.markdown === false ||
           preview?.focused === false ||
           preview?.composing === true
-        )
+        ) {
           return undefined
+        }
 
         return previous
       }
@@ -97,8 +99,9 @@ export const markdownListInput = () =>
           (event.shiftKey && event.key !== 'Tab') ||
           !inputLifecycleKey.getState(view.state)?.markdown ||
           (event.key !== 'Backspace' && event.key !== 'Tab')
-        )
+        ) {
           return false
+        }
 
         if (event.key === 'Tab') {
           const completion = !event.shiftKey
@@ -134,8 +137,9 @@ export const markdownListInput = () =>
             !event.cancelable ||
             !inputLifecycleKey.getState(view.state)?.markdown ||
             event.inputType !== 'deleteContentBackward'
-          )
+          ) {
             return false
+          }
 
           const transaction = changeMarkdownListCompletion(
             view.state,

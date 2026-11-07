@@ -11,6 +11,7 @@ pub fn inline_rule() -> &'static InlineRule {
             AnyPayload::new(Spoiler {})
         })
     });
+
     &RULE
 }
 
@@ -21,5 +22,6 @@ pub fn plugin() -> &'static SyntaxPlugin {
             inline_rule(),
         )
     });
+
     &PLUGIN
 }

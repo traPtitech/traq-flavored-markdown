@@ -7,6 +7,7 @@ import { expectedBareUrl } from './url-boundaries.ts'
 
 const anchor = (href: string, label = href) =>
   `<a href="${escapeAttribute(href)}" target="_blank" rel="nofollow noopener noreferrer">${escapeText(label)}</a>`
+
 const filtered = (source: string, before: string, after: string) =>
   Boolean(
     differenceFilterMask({
@@ -16,6 +17,7 @@ const filtered = (source: string, before: string, after: string) =>
       after: { kind: 'html', value: after }
     }) & differenceFilters.linkPolicy
   )
+
 const url = 'https://example.test/a'
 
 test('link-policy filtering verifies the current boundary and preserves required link counts', () => {
@@ -42,8 +44,10 @@ test('link-policy filtering verifies the current boundary and preserves required
       '//localhost.test:3000とか',
       anchor('https://localhost.test:3000', '//localhost.test:3000') + 'とか'
     ]
-  ])
+  ]) {
     expect(filtered(source, before, after), source).toBe(true)
+  }
+
   for (const [source, before, after] of [
     [url + '(b)', anchor(url + '(b)'), anchor(url) + '(b)'],
     [url + '(b)', url + '(b)', anchor(url) + '(b)'],
@@ -66,8 +70,9 @@ test('link-policy filtering verifies the current boundary and preserves required
       '<code>' + url + '</code> ' + url + '(b)',
       '<code>' + url + '</code> ' + anchor(url) + '(b)'
     ]
-  ])
+  ]) {
     expect(filtered(source, before, after), source).toBe(false)
+  }
 })
 
 test('source-backed URL formatting composes with boundary changes and keeps unrelated markup changes', () => {
@@ -78,8 +83,10 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '<s>' + anchor(url) + '</s>'
     )
   ).toBe(true)
+
   const raw = 'https://example.test/%E6%97%A5'
   const label = 'https://example.test/日'
+
   expect(
     filtered(
       '~~' + raw + '~~',
@@ -87,6 +94,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '<s>' + anchor(raw, label) + '</s>'
     )
   ).toBe(true)
+
   expect(
     filtered(
       raw + '~',
@@ -94,7 +102,9 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       anchor(raw, label) + '~'
     )
   ).toBe(true)
+
   const formatted = 'https://example.test/__name__'
+
   expect(
     filtered(
       '[' + formatted + ']',
@@ -102,6 +112,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '[https://example.test/<strong>name</strong>]'
     )
   ).toBe(true)
+
   expect(
     filtered(
       '~~' + url + '~~',
@@ -109,6 +120,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '<s class="changed">' + anchor(url) + '</s>'
     )
   ).toBe(false)
+
   expect(
     filtered(
       '~~' + url + '~~',
@@ -116,6 +128,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '<p title="a" title="b"><s>' + anchor(url) + '</s></p>'
     )
   ).toBe(false)
+
   expect(
     filtered(
       '~~' + url + '~~',
@@ -123,6 +136,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '<s>' + anchor(url) + '</s><br>'
     )
   ).toBe(false)
+
   expect(
     filtered(
       '`~~' + url + '~~`',
@@ -130,6 +144,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       '<code><s>' + anchor(url) + '</s></code>'
     )
   ).toBe(false)
+
   expect(
     filtered(
       '[label](' + url + '~)',
@@ -137,6 +152,7 @@ test('source-backed URL formatting composes with boundary changes and keeps unre
       anchor(url, 'label') + '~'
     )
   ).toBe(false)
+
   expect(
     filtered(
       url + ': ~~https://other.test~~',
@@ -156,7 +172,9 @@ test('the boundary verifier handles nested parentheses and long punctuation with
     [url + '([b)]', url],
     [url + '~user/_', url + '~user/_'],
     [url + ';'.repeat(20_000), url]
-  ])
+  ]) {
     expect(expectedBareUrl(input, input), input.slice(0, 80)).toBe(expected)
+  }
+
   expect(expectedBareUrl(url + ' ' + url + '(b)', url)).toBeNull()
 })

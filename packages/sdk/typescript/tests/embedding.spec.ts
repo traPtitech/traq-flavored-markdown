@@ -11,6 +11,7 @@ import {
 const bytes = await file(
   new URL('../../dist/parser.wasm', import.meta.url)
 ).bytes()
+
 const fixtures = JSON.parse(
   await file(
     new URL('../../tests/fixtures/embedding.json', import.meta.url)
@@ -19,6 +20,7 @@ const fixtures = JSON.parse(
 
 const userId = 'dfdff0c9-5de0-46ee-9721-2525e8bb3d44'
 const groupId = 'dfabf0c9-5de0-46ee-9721-2525e8bb3d45'
+
 const identities = {
   user: {
     a: userId,
@@ -40,6 +42,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
   const parser = runtime.createParser(presets.traq.v1)
   const extractor = runtime.createExtractor({ origin: '' })
   const process = (source: string) => extractor.extract(parser.parse(source))
+
   const embed = (source: string) =>
     embedReferences(
       source,
@@ -54,6 +57,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     }
 
     const reference = `!${JSON.stringify({ type: 'user', raw: '@a', id: userId })}`
+
     const preserved = [
       '~~~\n@a\n~~~',
       '> ```\n> @a\n> ```',
@@ -69,6 +73,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     for (const source of preserved) {
       expect(embed(source)).toBe(source)
     }
+
     expect(embed('info@trap.jp @a')).toBe(`info@trap.jp ${reference}`)
 
     expect(embed('日本語😀 **@a**')).toBe(`日本語😀 **${reference}**`)
@@ -77,6 +82,7 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
     expect(process(escaped).referenceEmbedding.unembeddedText).toBe('@a"b')
 
     const linkedReference = '[label ' + reference + '](https://example.com)'
+
     expect(
       process(linkedReference).referenceEmbedding.unembeddedText,
       '[label @a](https://example.com)'
@@ -94,27 +100,35 @@ test('embedding and restoration use Rust AST ranges without reparsing source tex
 
     const source = `日本語😀 ${reference} \`${reference}\` !!${reference}!!`
     const output = process(source)
+
     expect(
       output.referenceEmbedding.unembeddedText,
       `日本語😀 @a \`${reference}\` !!@a!!`
     ).toBe(`日本語😀 @a \`${reference}\` !!@a!!`)
+
     expect(mentionsUser(output.references, userId, [])).toBe(true)
+
     expect(
       mentionsUser(process(`\`${reference}\``).references, userId, [])
     ).toBe(false)
 
     const groupReference =
       '!' + JSON.stringify({ type: 'group', raw: '@group', id: groupId })
+
     expect(
       mentionsUser(process(groupReference).references, userId, [groupId])
     ).toBe(true)
+
     expect(mentionsUser(process(groupReference).references, userId, [])).toBe(
       false
     )
+
     expect(mentionsUser(process(reference).references, groupId, [])).toBe(false)
+
     expect(
       mentionsUser(process('!{invalid:json}').references, userId, [groupId])
     ).toBe(false)
+
     expect(mentionsUser(process('').references, userId, [groupId])).toBe(false)
 
     expect(() =>

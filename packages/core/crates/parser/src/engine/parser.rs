@@ -52,14 +52,17 @@ impl Parser {
         capture: bool,
     ) -> Result<crate::syntax::ParsedSyntax, ParseError> {
         let grammar = &self.grammar;
+
         if source.len() > self.limits.document.source_bytes {
             return Err(ParseError::limit(ParseResource::SourceBytes));
         }
 
         let mut view = SourceView::new(source);
+
         if capture {
             view.set_context(crate::engine::syntax::CaptureSyntax);
         }
+
         let mut budget = Budget::new(self.limits);
         let mut state = ParseState::default();
 
@@ -86,11 +89,14 @@ impl Parser {
         .map_err(|error| match error.kind {
             ValidationErrorKind::SourceBytes => ParseError::limit(ParseResource::SourceBytes),
             ValidationErrorKind::PayloadBytes => ParseError::limit(ParseResource::PayloadBytes),
+
             ValidationErrorKind::Nodes if remaining_work <= self.limits.document.nodes => {
                 ParseError::limit(ParseResource::Work)
             }
+
             ValidationErrorKind::Nodes => ParseError::limit(ParseResource::Nodes),
             ValidationErrorKind::Depth => ParseError::limit(ParseResource::Depth),
+
             ValidationErrorKind::InvalidSpan | ValidationErrorKind::InvalidNode => {
                 ParseError::InvalidDocument(error)
             }
@@ -102,9 +108,11 @@ impl Parser {
             children: children.syntax.unwrap_or_default(),
             detached: std::mem::take(&mut budget.detached_syntax),
         };
+
         if capture {
             syntax.validate(&document, &mut budget)?;
         }
+
         Ok(crate::syntax::ParsedSyntax { document, syntax })
     }
 }

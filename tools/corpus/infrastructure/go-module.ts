@@ -14,8 +14,10 @@ export async function applicationGoModule(
   const { published } = await readGoPackageGraph()
   const sdk = published.find(module => module.owner === 'sdk')
   if (!sdk) throw new Error('Missing Go SDK workspace module')
+
   const replacement = (module: string, folder: string) =>
     `replace ${module} => ${JSON.stringify(folder.replaceAll('\\', '/'))}`
+
   return [
     'module corpuscomparison',
     'go 1.26.0',

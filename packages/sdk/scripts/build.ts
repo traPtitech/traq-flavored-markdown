@@ -11,17 +11,20 @@ export async function buildSdkWasm({ checkGenerated = false } = {}) {
   const bundledWasm = path.join(sdkRoot, 'go', 'parser.wasm')
   const wasm = await buildWasm()
   const bytes = await Bun.file(wasm).bytes()
+
   if (checkGenerated) {
     const committed = Bun.file(bundledWasm)
     if (!(await committed.exists())) {
       throw new Error('Bundled Go Wasm is missing; run bun run build')
     }
+
     const bundled = await committed.bytes()
     assertNoHostPaths(bundled)
     await assertBundledWasmMatches(bytes, bundled)
   } else {
     await Bun.write(bundledWasm, bytes)
   }
+
   await mkdir(dist, { recursive: true })
   await Bun.write(path.join(dist, 'parser.wasm'), bytes)
 }
@@ -29,5 +32,6 @@ export async function buildSdkWasm({ checkGenerated = false } = {}) {
 if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
   const { buildWorkspace } =
     await import('../../../tools/workspace/build/workspace.ts')
+
   await buildWorkspace({ packages: ['sdk'] })
 }

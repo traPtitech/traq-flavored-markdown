@@ -16,12 +16,15 @@ export async function runFrontend(
 ) {
   using warnings = countPrivateWarnings()
   using adapters = await frontendAdapters(plan)
+
   await using output = await createJsonlSink(
     path.join(plan.output, 'frontend-differences.jsonl')
   )
+
   await using embeddings = await createJsonlSink(
     path.join(plan.output, 'embedding-differences.jsonl')
   )
+
   const result = await compareSources({
     runId: plan.runId,
     input: () => readSources(plan.corpus),
@@ -32,6 +35,7 @@ export async function runFrontend(
     embeddingDifference: row => embeddings.write(row),
     progress
   })
+
   const report = parseWorkerResults({
     runId: plan.runId,
     corpusSha256: plan.corpusSha256,
@@ -50,9 +54,11 @@ export async function runFrontend(
       ])
     )
   })
+
   await output.close()
   await embeddings.close()
   await writeJson(path.join(plan.output, 'frontend-results.json'), report)
+
   return {
     results: report.results,
     warnings: warnings.count,

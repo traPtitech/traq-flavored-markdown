@@ -27,6 +27,7 @@ fn options_select_plain_or_delimited_tex() {
         renderer(&math::plugin()).render(&document()).unwrap(),
         "xy\n"
     );
+
     assert_eq!(
         renderer(&math::plugin_with_options(Options {
             style: Style::DelimitedTex,

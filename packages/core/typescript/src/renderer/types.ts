@@ -22,24 +22,29 @@ export interface RenderContext {
   ancestors: readonly ReadonlyNode[]
   /** Position among the node's original siblings. */
   index: number
+
   /** Narrow an owned node using a contract already validated by its schema. */
   matches<Variant extends NodeVariant>(
     node: ReadonlyNode,
     definition: NodeDefinition<Variant>
   ): node is ReadonlyNode & ReadonlyNode<Variant>
+
   /** Get a typed ancestor whose contract was validated by the document schema. */
   parent<Variant extends NodeVariant>(
     definition: NodeDefinition<Variant>,
     distance?: number
   ): ReadonlyNode<Variant> | undefined
+
   source: string
   /** Escape text before including it in a custom HTML handler. */
   escape(text: string): string
+
   /** Dispatch visible children, then join them. childText bypasses the join callback. */
   renderChildren(
     join?: string | ((children: readonly RenderedChild[]) => string),
     options?: { insideLink?: boolean }
   ): string
+
   /** Dispatch an existing document node with its original ancestry and plan. */
   renderNode(node: ReadonlyNode): string
   sourceSlice(span: Span): string
@@ -78,6 +83,7 @@ export interface RenderSession {
 
 export interface Renderer {
   createSession(document: ReadonlyDocument | DocumentContext): RenderSession
+
   render(
     document: ReadonlyDocument | DocumentContext,
     plan?: RenderPlan

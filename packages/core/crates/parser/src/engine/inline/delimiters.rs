@@ -107,11 +107,13 @@ fn mark_pairs(
         let close_token = ds[end].token;
 
         let policy = ds[i].pairing.policy;
+
         let make = if combined {
             policy.combined.expect("combined pair was checked")
         } else {
             policy.single
         };
+
         tokens[open_token].kind = TokenKind::Open(make);
         tokens[close_token].kind = TokenKind::Close;
 

@@ -56,6 +56,7 @@ describe('Markdown Tab editing', () => {
       editor.view.dispatch(markdownIndent(editor.state))
 
       expect(source(editor)).toBe('  a\n  b\nc')
+
       expect(editor.state.selection.anchor > editor.state.selection.head).toBe(
         reverse
       )

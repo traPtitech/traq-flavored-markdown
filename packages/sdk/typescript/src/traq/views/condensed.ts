@@ -10,8 +10,9 @@ function configureCommonCondensed(
   common: RenderPlugin,
   options: Pick<ResolvedOptions, 'validateLink'>
 ) {
-  for (const definition of [definitions.Softbreak, definitions.Hardbreak])
+  for (const definition of [definitions.Softbreak, definitions.Hardbreak]) {
     common = common.withReplacedHandler(definition, () => ' ')
+  }
 
   common = common.withReplacedHandler(definitions.Paragraph, (n, ctx) =>
     ctx.renderChildren()
@@ -34,12 +35,15 @@ function configureCommonCondensed(
   common = common.withReplacedHandler(definitions.ListItem, (n, ctx) => {
     const list = ctx.parent(definitions.List)
     if (!list) throw new TypeError('Expected list parent')
+
     const kind = list.data.kind
+
     const marker =
       kind.type === 'ordered'
         ? String(kind.start + ctx.index) +
           (kind.delimiter === 'period' ? '.' : ')')
         : kind.marker
+
     return marker + ' ' + ctx.renderChildren(' ')
   })
 
@@ -62,8 +66,10 @@ function configureCommonCondensed(
       ctx.insideLink ||
       !n.data.destination ||
       !options.validateLink(n.data.destination)
-    )
+    ) {
       return ctx.renderChildren()
+    }
+
     const label = ctx.renderChildren('', { insideLink: true })
 
     return (
@@ -88,14 +94,17 @@ function configureExtensionsCondensed(extensions: RenderPlugin) {
     extensionDefinitions.Table,
     (_n, ctx) => ctx.renderChildren(' ')
   )
+
   for (const definition of [
     extensionDefinitions.Row,
     extensionDefinitions.HeaderRow
-  ])
+  ]) {
     extensions = extensions.withReplacedHandler(
       definition,
       (_n, ctx) => ctx.renderChildren(' ') + ' |'
     )
+  }
+
   extensions = extensions.withReplacedHandler(
     extensionDefinitions.Cell,
     (_n, ctx) => '| ' + ctx.renderChildren()

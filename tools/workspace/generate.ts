@@ -21,16 +21,26 @@ export async function generateBindings(
   outputRoot = repositoryRoot
 ) {
   if (packageName === 'core') return generateCoreContracts(outputRoot)
+
   if (packageName === 'vue-editor') return new OutputManifest()
-  if (packageName === 'sdk')
+
+  if (packageName === 'sdk') {
     return generateSdk(input ? path.resolve(input) : undefined, outputRoot)
-  if (packageName && contractPackages.has(packageName))
+  }
+
+  if (packageName && contractPackages.has(packageName)) {
     return generateContracts(packageName as ContractPackage, outputRoot)
+  }
+
   if (packageName) throw new Error('Unknown generation target: ' + packageName)
+
   const plan = new OutputManifest()
   const { graph } = await readNpmPackageGraph()
-  for (const owner of graph.order)
+
+  for (const owner of graph.order) {
     plan.merge(await generateBindings(owner, undefined, outputRoot))
+  }
+
   return plan
 }
 
@@ -40,10 +50,12 @@ export async function main() {
     rest.length ||
     (owner !== undefined && !packageNames.includes(owner as PackageName)) ||
     (input !== undefined && owner !== 'sdk')
-  )
+  ) {
     throw new Error(
       'usage: bun scripts/generate-bindings.ts [core|commonmark-plugin|extensions-plugin|traq-plugin|sdk] [contracts-dir]'
     )
+  }
+
   await generateBindings(owner as PackageName | undefined, input)
 }
 

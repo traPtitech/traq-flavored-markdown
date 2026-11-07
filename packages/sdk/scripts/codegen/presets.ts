@@ -21,33 +21,36 @@ function frozen(tree: PresetTree, path: string[] = []): string {
         ? q([...path, key].join('.'))
         : frozen(value, [...path, key]))
   )
+
   return `Object.freeze({ ${entries.join(', ')} } as const)`
 }
 
 export function presetFiles(tree: PresetTree): Map<string, string> {
   const paths = leaves(tree)
+
   const goName = (part: string) =>
     (({ traq: 'Traq', commonmark: 'CommonMark' }) as Record<string, string>)[
       part
     ] ?? part[0].toUpperCase() + part.slice(1)
+
   return new Map([
     [
       'typescript/src/generated/presets.ts',
       '// Generated from Rust preset exports. Do not edit.\n' +
         'export type GrammarPresetId = ' +
         paths.map(p => q(p.join('.'))).join(' | ') +
-        ';\n' +
+        ';\n\n' +
         'export const presets = ' +
         frozen(tree) +
-        ';\n' +
+        ';\n\n' +
         'const knownPresets: ReadonlySet<string> = new Set([' +
         paths.map(path => q(path.join('.'))).join(', ') +
-        ']);\n' +
+        ']);\n\n' +
         'export function isGrammarPresetId(value: string): value is GrammarPresetId { return knownPresets.has(value); }\n'
     ],
     [
       'go/generated_presets.go',
-      '// Code generated from Rust preset exports. DO NOT EDIT.\npackage markdown\ntype GrammarPresetID string\nconst (\n' +
+      '// Code generated from Rust preset exports. DO NOT EDIT.\npackage markdown\n\ntype GrammarPresetID string\n\nconst (\n' +
         paths
           .map(
             p =>

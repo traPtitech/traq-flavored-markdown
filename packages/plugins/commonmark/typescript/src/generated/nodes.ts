@@ -14,6 +14,7 @@ import {
 
 // Generated from Rust contracts. Do not edit.
 export type Blockquote = Record<string, never>
+
 export type CodeBlock = {
   fenced: boolean
   /**
@@ -22,36 +23,48 @@ export type CodeBlock = {
   info: string
   literal: string
 }
+
 export type Emphasis = Record<string, never>
+
 export type Hardbreak = Record<string, never>
+
 export type Heading = {
   level: number
 }
+
 export type HtmlBlock = {
   literal: string
 }
+
 export type HtmlInline = {
   literal: string
 }
+
 export type Image = {
   destination: string
   labelSource: string
   title: string | null
 }
+
 export type InlineCode = {
   literal: string
 }
+
 export type Link = {
   destination: string
   form: LinkForm
   title: string | null
 }
+
 export type LinkForm = 'explicit' | 'autolink' | 'linkify'
+
 export type List = {
   kind: ListKind
   tight: boolean
 }
+
 export type BulletMarker = '-' | '+' | '*'
+
 export type ListKind =
   | {
       delimiter: OrderedDelimiter
@@ -62,22 +75,31 @@ export type ListKind =
       marker: BulletMarker
       type: 'bullet'
     }
+
 export type OrderedDelimiter = 'period' | 'parenthesis'
+
 export type ListItem = Record<string, never>
+
 export type Paragraph = Record<string, never>
+
 export type Softbreak = Record<string, never>
+
 export type Strong = Record<string, never>
+
 export type Text = {
   value: string
 }
+
 export type ThematicBreak = {
   marker: string
 }
+
 export const contractValues = Object.freeze({
   LinkForm: Object.freeze(['explicit', 'autolink', 'linkify'] as const),
   BulletMarker: Object.freeze(['-', '+', '*'] as const),
   OrderedDelimiter: Object.freeze(['period', 'parenthesis'] as const)
 })
+
 export const arrayLimits = Object.freeze({})
 
 export type NodeVariant =
@@ -102,18 +124,22 @@ export type NodeVariant =
 function validateBlockquote(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateCodeBlock(value: unknown): boolean {
   return ((value: unknown) =>
     fields(value, { fenced: boolean, info: string, literal: string }, {}))(
     value
   )
 }
+
 function validateEmphasis(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateHardbreak(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateHeading(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -128,12 +154,15 @@ function validateHeading(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateHtmlBlock(value: unknown): boolean {
   return ((value: unknown) => fields(value, { literal: string }, {}))(value)
 }
+
 function validateHtmlInline(value: unknown): boolean {
   return ((value: unknown) => fields(value, { literal: string }, {}))(value)
 }
+
 function validateImage(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -142,9 +171,11 @@ function validateImage(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateInlineCode(value: unknown): boolean {
   return ((value: unknown) => fields(value, { literal: string }, {}))(value)
 }
+
 function validateLink(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -153,16 +184,20 @@ function validateLink(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateLinkForm(value: unknown): boolean {
   return oneOf('explicit', 'autolink', 'linkify')(value)
 }
+
 function validateList(value: unknown): boolean {
   return ((value: unknown) =>
     fields(value, { kind: validateListKind, tight: boolean }, {}))(value)
 }
+
 function validateBulletMarker(value: unknown): boolean {
   return oneOf('-', '+', '*')(value)
 }
+
 function validateListKind(value: unknown): boolean {
   return ((value: unknown) =>
     [
@@ -188,27 +223,35 @@ function validateListKind(value: unknown): boolean {
         )
     ].filter(check => check(value)).length === 1)(value)
 }
+
 function validateOrderedDelimiter(value: unknown): boolean {
   return oneOf('period', 'parenthesis')(value)
 }
+
 function validateListItem(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateParagraph(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateSoftbreak(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateStrong(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateText(value: unknown): boolean {
   return ((value: unknown) => fields(value, { value: string }, {}))(value)
 }
+
 function validateThematicBreak(value: unknown): boolean {
   return ((value: unknown) => fields(value, { marker: string }, {}))(value)
 }
+
 export const names = Object.freeze({
   Blockquote: 'commonmark.blockquote',
   CodeBlock: 'commonmark.code_block',
@@ -228,6 +271,7 @@ export const names = Object.freeze({
   Text: 'commonmark.text',
   ThematicBreak: 'commonmark.thematic_break'
 } as const)
+
 const validators = new Map<string, (data: unknown) => boolean>([
   ['commonmark.blockquote', validateBlockquote],
   ['commonmark.code_block', validateCodeBlock],
@@ -247,6 +291,7 @@ const validators = new Map<string, (data: unknown) => boolean>([
   ['commonmark.text', validateText],
   ['commonmark.thematic_break', validateThematicBreak]
 ])
+
 export const definitions = Object.freeze({
   Blockquote: defineNode<
     Extract<NodeVariant, { kind: typeof names.Blockquote }>
@@ -366,9 +411,11 @@ export const definitions = Object.freeze({
     children: { kind: 'leaf' }
   })
 })
+
 export const schema = new DocumentSchema<NodeVariant>(
   Object.values(definitions)
 )
+
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T

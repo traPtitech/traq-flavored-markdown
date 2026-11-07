@@ -76,6 +76,7 @@ impl ParsedNodes {
         ) -> Result<Vec<NodeSyntax>, ParseError> {
             budget.nesting(depth)?;
             budget.spend(nodes.len())?;
+
             nodes
                 .iter()
                 .map(|node| {
@@ -86,11 +87,13 @@ impl ParsedNodes {
                 })
                 .collect()
         }
+
         let syntax = if capture {
             Some(unknown(&nodes, budget, 0)?)
         } else {
             None
         };
+
         Ok(Self { nodes, syntax })
     }
 
@@ -102,6 +105,7 @@ impl ParsedNodes {
         source: Option<SourceSyntax>,
     ) {
         self.nodes.push(Node::new(span, payload, children.nodes));
+
         if let Some(syntax) = &mut self.syntax {
             syntax.push(NodeSyntax {
                 source,
@@ -118,42 +122,55 @@ impl SyntaxTree {
         budget: &mut Budget,
     ) -> Result<(), ParseError> {
         let source = document.source.as_str();
+
         let check = |span: Span, phase| {
             source.get(span.start..span.end).map(|_| ()).ok_or_else(|| {
                 ParseError::invalid_rule(phase, None, span.start, "invalid source syntax span")
             })
         };
+
         let mut pending: Vec<_> = self.children.iter().zip(&document.children).collect();
+
         while let Some((node, ast)) = pending.pop() {
             let phase = if ast.role() == crate::NodeRole::Inline {
                 ParsePhase::Inline
             } else {
                 ParsePhase::Block
             };
+
             budget.spend(1)?;
+
             if let Some(facts) = &node.source {
                 budget.spend(facts.content.len() + facts.markers.len())?;
+
                 for &span in &facts.content {
                     check(span, phase)?;
                 }
+
                 for marker in &facts.markers {
                     budget.spend(marker.spans.len())?;
                     budget.spend(marker.text.as_ref().map_or(0, String::len))?;
+
                     for &span in &marker.spans {
                         check(span, phase)?;
                     }
                 }
             }
+
             pending.extend(node.children.iter().zip(&ast.children));
         }
+
         budget.spend(self.detached.len())?;
+
         for marker in &self.detached {
             budget.spend(marker.spans.len())?;
             budget.spend(marker.text.as_ref().map_or(0, String::len))?;
+
             for &span in &marker.spans {
                 check(span, ParsePhase::Block)?;
             }
         }
+
         Ok(())
     }
 }

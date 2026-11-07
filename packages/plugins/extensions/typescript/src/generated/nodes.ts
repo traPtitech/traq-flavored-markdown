@@ -16,21 +16,31 @@ import {
 export type BlockMath = {
   tex: string
 }
+
 export type Cell = Record<string, never>
+
 export type InlineMath = {
   tex: string
 }
+
 export type Mark = Record<string, never>
+
 export type Row = Record<string, never>
+
 export type Strikethrough = Record<string, never>
+
 export type Table = {
   alignments: Array<Alignment | null>
 }
+
 export type Alignment = 'left' | 'center' | 'right'
+
 export type HeaderRow = Record<string, never>
+
 export const contractValues = Object.freeze({
   Alignment: Object.freeze(['left', 'center', 'right'] as const)
 })
+
 export const arrayLimits = Object.freeze({
   Table: Object.freeze({ alignments: Object.freeze({ minItems: 1 }) })
 })
@@ -48,21 +58,27 @@ export type NodeVariant =
 function validateBlockMath(value: unknown): boolean {
   return ((value: unknown) => fields(value, { tex: string }, {}))(value)
 }
+
 function validateCell(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateInlineMath(value: unknown): boolean {
   return ((value: unknown) => fields(value, { tex: string }, {}))(value)
 }
+
 function validateMark(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateRow(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateStrikethrough(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 function validateTable(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -76,12 +92,15 @@ function validateTable(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateAlignment(value: unknown): boolean {
   return oneOf('left', 'center', 'right')(value)
 }
+
 function validateHeaderRow(value: unknown): boolean {
   return ((value: unknown) => fields(value, {}, {}))(value)
 }
+
 export const names = Object.freeze({
   BlockMath: 'extensions.block_math',
   Cell: 'extensions.cell',
@@ -92,6 +111,7 @@ export const names = Object.freeze({
   Table: 'extensions.table',
   HeaderRow: 'extensions.table_header_row'
 } as const)
+
 const validators = new Map<string, (data: unknown) => boolean>([
   ['extensions.block_math', validateBlockMath],
   ['extensions.cell', validateCell],
@@ -102,6 +122,7 @@ const validators = new Map<string, (data: unknown) => boolean>([
   ['extensions.table', validateTable],
   ['extensions.table_header_row', validateHeaderRow]
 ])
+
 export const definitions = Object.freeze({
   BlockMath: defineNode<Extract<NodeVariant, { kind: typeof names.BlockMath }>>(
     names.BlockMath,
@@ -166,9 +187,11 @@ export const definitions = Object.freeze({
     }
   )
 })
+
 export const schema = new DocumentSchema<NodeVariant>(
   Object.values(definitions)
 )
+
 // Check this payload only; children can still contain unknown nodes.
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T

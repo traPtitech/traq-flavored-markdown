@@ -27,6 +27,7 @@ pub(crate) fn label_end(source: &str) -> Option<usize> {
             escaped = false;
             continue;
         }
+
         match ch {
             '\\' => escaped = true,
             '[' => return None,
@@ -69,16 +70,20 @@ pub(crate) fn definition(
     let bytes = source.as_bytes();
     let mut position = end + 2;
     skip_spaces(source, &mut position, budget)?;
+
     if position == source.len() {
         return Ok(None);
     }
+
     let Some(parsed) = target(source, position, budget)? else {
         return Ok(None);
     };
+
     position = parsed.end.get();
     let destination_end = position;
     let plain_end = line_end(source, destination_end);
     skip_spaces(source, &mut position, budget)?;
+
     if position > destination_end
         && bytes
             .get(position)
@@ -101,12 +106,14 @@ pub(crate) fn definition(
                 ),
             }));
         }
+
         // A malformed title on a later line leaves the preceding destination
         // definition valid. An invalid title on the same line invalidates it.
         if !source[destination_end..position].contains('\n') {
             return Ok(None);
         }
     }
+
     Ok(plain_end.map(|end| ParsedDefinition {
         end: leading + end,
         key,
@@ -119,6 +126,7 @@ fn line_end(source: &str, position: usize) -> Option<usize> {
     let tail = &source[position..];
     let trimmed = tail.trim_start_matches([' ', '\t']);
     let end = position + tail.len() - trimmed.len();
+
     if trimmed.starts_with('\n') {
         Some(end + 1)
     } else if trimmed.is_empty() {

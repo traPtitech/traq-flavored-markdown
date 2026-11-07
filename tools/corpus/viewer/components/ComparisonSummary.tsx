@@ -26,6 +26,7 @@ export function ComparisonSummary({
             .filter(profile => results[profile])
             .map(profile => {
               const result = results[profile]!
+
               return (
                 <tr key={profile} data-profile={profile}>
                   <th>{profileLabels[profile]}</th>

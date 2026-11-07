@@ -20,6 +20,7 @@ pub(super) fn build(
 
     for token in tokens {
         budget.spend(1)?;
+
         let kind = match token.kind {
             TokenKind::Empty => continue,
 
@@ -32,6 +33,7 @@ pub(super) fn build(
                         text = Some((token.start, token.end, value));
                     }
                 }
+
                 continue;
             }
 
@@ -43,15 +45,18 @@ pub(super) fn build(
         match kind {
             TokenKind::Atom(kind, nested, syntax) => {
                 budget.node()?;
+
                 let syntax = match syntax {
                     Some(syntax) => Some(syntax),
                     None => source.syntax(&[source.range(token.start..token.end)?], &[], budget)?,
                 };
+
                 children.push(source.span(token.start, token.end), kind, nested, syntax);
             }
 
             TokenKind::Open(make) => {
                 budget.nesting(stack.len() + 1)?;
+
                 stack.push((
                     make,
                     token.start,
@@ -63,7 +68,9 @@ pub(super) fn build(
             TokenKind::Close => {
                 let (make, start, open_end, previous) =
                     stack.pop().ok_or(ParseError::InternalError)?;
+
                 let nested = std::mem::replace(&mut children, previous);
+
                 let syntax = source.syntax(
                     &[source.range(open_end..token.start)?],
                     &[
@@ -72,6 +79,7 @@ pub(super) fn build(
                     ],
                     budget,
                 )?;
+
                 children.push(source.span(start, token.end), make(), nested, syntax);
             }
 
@@ -97,6 +105,7 @@ fn flush(
 ) -> Result<(), ParseError> {
     if let Some((start, end, value)) = text.take() {
         budget.node()?;
+
         children.push(
             source.span(start, end),
             make_text(value),
@@ -104,5 +113,6 @@ fn flush(
             source.syntax(&[source.range(start..end)?], &[], budget)?,
         );
     }
+
     Ok(())
 }

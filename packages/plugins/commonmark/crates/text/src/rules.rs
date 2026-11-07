@@ -41,12 +41,14 @@ pub(crate) fn register(renderer: &mut RenderPlugin, options: Options) -> Result<
                 ListKind::Ordered { start, .. } => format!("{}.", u64::from(start) + index as u64),
                 ListKind::Bullet { .. } => "•".into(),
             };
+
             let text = ctx.capture_children(std::slice::from_ref(node))?;
             output.push(&marker)?;
             output.push(" ")?;
             output.push(text.trim())?;
             output.push("\n")?;
         }
+
         Ok(())
     })
 }

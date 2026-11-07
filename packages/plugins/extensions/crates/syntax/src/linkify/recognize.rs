@@ -18,11 +18,13 @@ fn bare_pattern() -> &'static Regex {
         let host = format!(r"{domain}(?:\.{domain})*");
         let local = r"[a-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}";
         let mail_host = r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
+
         Regex::new(&format!(
             r"(?i)(?:(?:(?:https?|ftp)://|(?P<relative>//))(?:[^\s@/\[\]()<>]{{1,50}}@)?(?P<host>{host}|\[[0-9a-f:.]+\])(?P<port>:[0-9]{{1,5}})?|(?P<mail>mailto:)?(?P<email>{local}@(?P<email_host>{mail_host}(?:\.{mail_host})+)))"
         ))
         .expect("valid URL and email pattern")
     });
+
     &PATTERN
 }
 
@@ -37,20 +39,24 @@ pub(super) fn scan_len(tail: &str) -> usize {
             return 0;
         }
     }
+
     // Bound the initial scan at unmatched closing parentheses too, so adjacent
     // parenthesized URLs never rescan the full remaining line. Charge the
     // complete lookahead for unclosed openers before path validation rolls back.
     let mut parentheses = 0usize;
+
     for (position, ch) in tail.char_indices() {
         if ch.is_whitespace() || ch.is_control() || ch == ')' && parentheses == 0 {
             return position;
         }
+
         if ch == '(' {
             parentheses += 1;
         } else if ch == ')' {
             parentheses -= 1;
         }
     }
+
     tail.len()
 }
 
@@ -59,16 +65,19 @@ pub(super) fn bare_at(text: &str, position: usize, length: usize) -> Option<Matc
     if candidate.get(0)?.start() != 0 {
         return None;
     }
+
     bare_match(text, candidate, position)
 }
 
 pub(super) fn bare_urls(text: &str, budget: &mut Budget) -> Result<Vec<Match>, ParseError> {
     let mut occupied = 0;
     let mut matches = vec![];
+
     for candidate in bare_pattern().captures_iter(text) {
         if candidate.get(0).unwrap().start() < occupied {
             continue;
         }
+
         if let Some(found) = bare_match(text, candidate, 0) {
             // Text-rule fallback needs the same lookahead accounting as the
             // inline rule, including portions discarded by unclosed brackets.
@@ -77,6 +86,7 @@ pub(super) fn bare_urls(text: &str, budget: &mut Budget) -> Result<Vec<Match>, P
             matches.push(found);
         }
     }
+
     Ok(matches)
 }
 
@@ -85,11 +95,13 @@ fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Opti
     let start = offset + matched.start();
     let email = candidate.name("email").is_some();
     let relative = candidate.name("relative").is_some();
+
     // Case-insensitive regex matching also accepts Unicode aliases of ASCII
     // letters. Bare email syntax uses the ASCII CommonMark character set.
     if email && !candidate.name("email")?.as_str().is_ascii() {
         return None;
     }
+
     if text[..start].chars().next_back().is_some_and(|ch| {
         ch.is_ascii_alphanumeric()
             || if email {
@@ -102,6 +114,7 @@ fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Opti
     }) {
         return None;
     }
+
     let host = candidate
         .name("host")
         .or_else(|| candidate.name("email_host"))?
@@ -109,19 +122,26 @@ fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Opti
     if relative && !host.contains('.') && !host.starts_with('[') {
         return None;
     }
+
     if host.starts_with('[') {
         host[1..host.len() - 1].parse::<std::net::Ipv6Addr>().ok()?;
     }
+
     if host.split('.').any(|part| part.encode_utf16().count() > 63) {
         return None;
     }
+
     let port = candidate.name("port");
+
     if let Some(port) = port {
         port.as_str()[1..].parse::<u16>().ok()?;
     }
+
     let end = offset + matched.end();
+
     static TERMINATOR: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^(?:[\p{P}\p{Z}\p{C}<>｜]|$)").unwrap());
+
     let prose_after_port =
         port.is_some() && text[end..].chars().next().is_some_and(|ch| !ch.is_ascii());
     if (!TERMINATOR.is_match(&text[end..]) && !prose_after_port)
@@ -133,10 +153,13 @@ fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Opti
     {
         return None;
     }
+
     let end = if email { end } else { path_end(text, end) };
     let raw = &text[start..end];
+
     let destination = if relative {
         let host_start = offset + candidate.name("host")?.start();
+
         encode(&format!(
             "https:{}{}{}",
             &text[start..host_start],
@@ -148,6 +171,7 @@ fn bare_match(text: &str, candidate: regex::Captures<'_>, offset: usize) -> Opti
     } else {
         encode(raw)
     };
+
     Some(Match {
         start,
         end,
@@ -160,6 +184,7 @@ pub(super) fn destination(value: &str) -> Option<String> {
     static AUTHORITY: LazyLock<Regex> = LazyLock::new(|| {
         let letter = r"[^\p{P}\p{Z}\p{C}<>｜]";
         let domain = format!(r"{letter}(?:(?:{letter}|-)*{letter})?");
+
         Regex::new(&format!(
             r"^(?P<host>{domain}(?:\.{domain})+)(?::(?P<port>[0-9]{{1,5}}))?$"
         ))
@@ -174,6 +199,7 @@ pub(super) fn destination(value: &str) -> Option<String> {
     if host.split('.').any(|part| part.encode_utf16().count() > 63) {
         return None;
     }
+
     if let Some(port) = matched.name("port") {
         port.as_str().parse::<u16>().ok()?;
     }

@@ -58,6 +58,7 @@ export function analyzeMessage(
   const links = new Map<ReadonlyNode, MessageLink>()
   const cards: ResourceCard[] = []
   const identities = new Set<string>()
+
   for (const node of context.walk(
     undefined,
     node => node.kind !== traq.Spoiler && node.kind !== names.Image
@@ -68,23 +69,31 @@ export function analyzeMessage(
     ) {
       const value = resourceCardFromUrl(node.data.destination, origin)
       if (!value) continue
+
       const card = Object.freeze(value)
       links.set(node, Object.freeze({ card, form: node.data.form }))
+
       const identity =
         card.type === 'url' ? undefined : `${card.type}:${card.id}`
+
       if (identity === undefined || !identities.has(identity)) {
         cards.push(card)
         if (identity !== undefined) identities.add(identity)
       }
     }
   }
+
   const blocks = context.document.children.filter(
     node => node.kind !== traq.BlankLine
   )
+
   const paragraph = blocks.at(-1)
+
   const children =
     paragraph?.kind === names.Paragraph ? (paragraph.children ?? []) : []
+
   const last = children.at(-1)
+
   return Object.freeze({
     context,
     links,

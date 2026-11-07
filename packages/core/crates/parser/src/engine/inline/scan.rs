@@ -105,6 +105,7 @@ pub(crate) fn parse(
         let (key, result) = find_match(&mut state, grammar, parse_state)?;
         let rule = key.map(|key| &grammar.data.inline[key]);
         let position = source.source_offset(source.offset(state.position)?)?.get();
+
         validate_match(source, state.position, &result).map_err(|reason| {
             ParseError::invalid_rule(
                 ParsePhase::Inline,
@@ -152,6 +153,7 @@ fn find_match(
                     kind: TokenKind::Text(value),
                     ..
                 }) => value,
+
                 _ => "",
             },
         };
@@ -188,6 +190,7 @@ fn validate_match(
             result.end
         ));
     }
+
     if result.end.get() > source.text().len() {
         return Err(format!(
             "match end {} exceeds view length {}",
@@ -195,6 +198,7 @@ fn validate_match(
             source.text().len()
         ));
     }
+
     if !source.text().is_char_boundary(result.end.get()) {
         return Err(format!("match end {} is not a UTF-8 boundary", result.end));
     }

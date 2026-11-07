@@ -19,10 +19,12 @@ export type Query = {
   category?: ClassificationSelection
   onlyReview?: boolean
 }
+
 export type ClassificationCounts = Record<
   string,
   { total: number; review: number }
 >
+
 export type QueryResult = {
   rows: DifferenceRow[]
   totalHits: number
@@ -32,6 +34,7 @@ export type QueryResult = {
   classifications: Classification[]
   classificationCounts: ClassificationCounts
 }
+
 export type Progress = { done: number; total: number }
 
 export function normalizePage(page: number, totalPages: number) {

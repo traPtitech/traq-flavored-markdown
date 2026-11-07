@@ -46,6 +46,7 @@ pub(crate) fn decode(
     };
 
     let children = state.children(Some(children), parent, 1)?;
+
     Ok(Document::with_limits(
         MutableDocument { source, children },
         limits.document,
@@ -79,6 +80,7 @@ struct State<'a> {
     path: Vec<usize>,
     error: Option<CodecError>,
 }
+
 impl State<'_> {
     fn node(
         &mut self,
@@ -95,6 +97,7 @@ impl State<'_> {
 
         let kind: String = Deserialize::deserialize(fields.take("kind")?)?;
         let raw_children = fields.0.remove("children");
+
         let kind =
             (self.decode_kind)(&kind, fields).map_err(|error| error.at(&self.path, Some(span)))?;
 
@@ -165,6 +168,7 @@ impl State<'_> {
                     .take()
                     .unwrap_or_else(|| CodecError::from(error).at(&self.path, None))
             }),
+
             None => Ok(vec![]),
         }
     }
@@ -177,6 +181,7 @@ struct Children<'a, 'b> {
     parent: Span,
     depth: usize,
 }
+
 impl<'de> DeserializeSeed<'de> for Children<'_, '_> {
     type Value = Vec<Node>;
 
@@ -198,8 +203,10 @@ impl<'de> Visitor<'de> for Children<'_, '_> {
 
         while let Some(raw) = sequence.next_element::<&RawValue>()? {
             self.state.path.push(nodes.len());
+
             let node = match self.state.node(raw, self.parent, previous_end, self.depth) {
                 Ok(node) => node,
+
                 Err(error) => {
                     let error = error.at(&self.state.path, None);
                     let message = error.to_string();
@@ -207,6 +214,7 @@ impl<'de> Visitor<'de> for Children<'_, '_> {
                     return Err(S::Error::custom(message));
                 }
             };
+
             self.state.path.pop();
             previous_end = node.span.end;
             nodes.push(node);

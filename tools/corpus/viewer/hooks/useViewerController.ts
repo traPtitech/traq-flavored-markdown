@@ -12,10 +12,13 @@ export function useViewerController(repository: ReportRepository) {
   const [state, dispatch] = useReducer(viewerReducer, initialViewerState)
   const response = useReportQuery(repository, state.query)
   const result = response.status === 'ready' ? response.result : undefined
+
   const totalHits =
     result?.totalHits ?? repository.metadata.counts[state.query.profile]
+
   const totalPages = result?.totalPages ?? 1
   const loading = response.status === 'loading'
+
   const status =
     response.status === 'failed'
       ? `読込エラー: ${response.message}`
@@ -24,12 +27,15 @@ export function useViewerController(repository: ReportRepository) {
           ? `検索 ${number(response.progress.done)} / ${number(response.progress.total)}`
           : '読込中…'
         : `${number(totalHits)} 件${result?.filtered ? ` / 全 ${number(repository.metadata.counts[state.query.profile])} 件` : ''}`
+
   return {
     rows: result?.rows ?? [],
     classifications: result?.classifications ?? [],
     classificationCounts: result?.classificationCounts ?? {},
+
     onCategory: (category: ClassificationSelection) =>
       dispatch({ type: 'category', category }),
+
     onReview: (only: boolean) => dispatch({ type: 'review', only }),
     outputView: state.outputView,
     empty: response.status === 'ready' && totalHits === 0,
@@ -43,14 +49,19 @@ export function useViewerController(repository: ReportRepository) {
       loading,
       failed: response.status === 'failed',
       totalPages,
+
       onProfile: (profile: ProfileId) => {
-        if (repository.metadata.results[profile])
+        if (repository.metadata.results[profile]) {
           dispatch({ type: 'profile', profile })
+        }
       },
+
       onSearchDraft: (text: string) => dispatch({ type: 'draft', text }),
       onSearch: () => dispatch({ type: 'search' }),
+
       onWhitespace: (ignore: boolean) =>
         dispatch({ type: 'whitespace', ignore }),
+
       onCase: (ignore: boolean) => dispatch({ type: 'case', ignore }),
       onPage: (page: number) => dispatch({ type: 'page', page, totalPages }),
       onOutput: (view: OutputView) => dispatch({ type: 'output', view })

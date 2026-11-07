@@ -7,6 +7,7 @@ type NodeFor<D> =
   D extends NodeDefinition<infer K>
     ? ReadonlyNode & DeepReadonly<K>
     : ReadonlyNode
+
 type DefinedHandler<D> = (node: NodeFor<D>, context: RenderContext) => string
 
 export interface Implementation {
@@ -20,19 +21,22 @@ const implementations = new WeakMap<RenderPlugin, Implementation>()
 export function implementation(plugin: RenderPlugin) {
   const value = implementations.get(plugin)
   if (!value) throw new TypeError('Expected RenderPlugin')
+
   return value
 }
 
 export class RenderPlugin {
   constructor(declaration: PluginDeclaration) {
-    if (!(declaration instanceof PluginDeclaration))
+    if (!(declaration instanceof PluginDeclaration)) {
       throw new TypeError('Expected RenderPlugin declaration')
+    }
 
     implementations.set(this, {
       declaration,
       handlers: new Map(),
       requiredContracts: new Map()
     })
+
     Object.freeze(this)
   }
 
@@ -56,12 +60,17 @@ export class RenderPlugin {
     replacing: boolean
   ) {
     const kind = typeof definition === 'string' ? definition : definition?.kind
+
     const validateData =
       typeof definition === 'string' ? undefined : definition?.validateData
-    if (typeof kind !== 'string' || typeof handler !== 'function')
+
+    if (typeof kind !== 'string' || typeof handler !== 'function') {
       throw new TypeError('Expected node kind and render handler')
-    if (typeof definition !== 'string' && typeof validateData !== 'function')
+    }
+
+    if (typeof definition !== 'string' && typeof validateData !== 'function') {
       throw new TypeError('Expected node payload validator')
+    }
 
     const state = implementation(this)
 
@@ -77,11 +86,13 @@ export class RenderPlugin {
     if (typeof definition !== 'string') requiredContracts.set(kind, definition)
 
     const next = new RenderPlugin(state.declaration)
+
     implementations.set(next, {
       declaration: state.declaration,
       handlers,
       requiredContracts
     })
+
     return next
   }
 }

@@ -12,23 +12,29 @@ import {
 test('output replacement removes retired managed files and preserves user files', async () => {
   await withTempDirectory('manifest-test-', async root => {
     await Bun.write(path.join(root, 'notes.txt'), 'user content')
+
     await applyOutputManifest(
       root,
       new OutputManifest().add('core', 'generated/old.txt', 'old')
     )
+
     await applyOutputManifest(
       root,
       new OutputManifest().add('core', 'generated/new.txt', 'new')
     )
+
     expect(await Bun.file(path.join(root, 'generated/old.txt')).exists()).toBe(
       false
     )
+
     expect(await Bun.file(path.join(root, 'generated/new.txt')).text()).toBe(
       'new'
     )
+
     expect(await Bun.file(path.join(root, 'notes.txt')).text()).toBe(
       'user content'
     )
+
     expect((await readOutputIndex(root)).outputs).toEqual([
       { owner: 'core', path: 'generated/new.txt' }
     ])

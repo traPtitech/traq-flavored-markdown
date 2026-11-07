@@ -7,6 +7,7 @@ import { SourceText } from '../src/source.js'
 
 test('UTF-8 and UTF-16 offsets roundtrip scalar boundaries and preserve original spelling', () => {
   const source = new SourceText('\uFEFF猫😀\r\n\0é')
+
   const boundaries = [
     [0, 0],
     [3, 1],
@@ -18,14 +19,20 @@ test('UTF-8 and UTF-16 offsets roundtrip scalar boundaries and preserve original
     [14, 8],
     [16, 9]
   ]
+
   for (const [byte, unit] of boundaries) {
     expect(source.utf16Offset(byte)).toBe(unit)
     expect(source.byteOffset(unit)).toBe(byte)
   }
-  for (const byte of [-1, 1, 7, 15, 17, NaN, 0.5])
+
+  for (const byte of [-1, 1, 7, 15, 17, NaN, 0.5]) {
     expect(() => source.utf16Offset(byte)).toThrow()
-  for (const unit of [-1, 3, 10, NaN, 0.5])
+  }
+
+  for (const unit of [-1, 3, 10, NaN, 0.5]) {
     expect(() => source.byteOffset(unit)).toThrow()
+  }
+
   expect(new SourceText('').byteOffset(0)).toBe(0)
   expect(new SourceText('').utf16Offset(0)).toBe(0)
 })
@@ -33,10 +40,15 @@ test('UTF-8 and UTF-16 offsets roundtrip scalar boundaries and preserve original
 test('source operations follow the shared cross-language byte contract', () => {
   for (const fixture of sourceFixtures) {
     const source = new SourceText(fixture.source)
-    for (const slice of fixture.slices)
+
+    for (const slice of fixture.slices) {
       expect(source.slice(slice), fixture.name).toBe(slice.text)
-    for (const span of fixture.invalidSpans)
+    }
+
+    for (const span of fixture.invalidSpans) {
       expect(() => source.slice(span), fixture.name).toThrow()
+    }
+
     expect(
       source.replace(
         fixture.edits.map(({ start, end, text }) => ({
@@ -56,9 +68,11 @@ test('source byte slicing and edits preserve BOM, Unicode, NUL and line endings'
   expect(source.slice({ start: 3, end: 6 })).toBe('猫')
   expect(source.slice({ start: 10, end: 13 })).toBe('\uFEFF')
   expect(source.replace([])).toBe(source.text)
+
   expect(source.replace([{ span: { start: 3, end: 6 }, text: '犬' }])).toBe(
     '\uFEFF犬\r\n\0x\uFEFF'
   )
+
   const bytes = source.bytes()
   bytes.fill(0)
   expect(source.slice({ start: 0, end: 3 })).toBe('\uFEFF')
@@ -66,6 +80,7 @@ test('source byte slicing and edits preserve BOM, Unicode, NUL and line endings'
 
 test('source operations reject invalid UTF-8 boundaries and conflicting edits', () => {
   const source = new SourceText('猫x')
+
   for (const span of [
     { start: -1, end: 1 },
     { start: 1, end: 3 },
@@ -73,9 +88,12 @@ test('source operations reject invalid UTF-8 boundaries and conflicting edits', 
     { start: 0, end: 5 },
     { start: 3, end: 0 },
     { start: NaN, end: 0 }
-  ])
+  ]) {
     expect(() => source.slice(span)).toThrow(/span/)
+  }
+
   expect(() => new SourceText('\uD800')).toThrow(/unpaired surrogate/)
+
   expect(() =>
     source.replace([
       { span: { start: 0, end: 4 }, text: 'one' },
@@ -90,6 +108,7 @@ test('document contexts own snapshots without freezing or trusting mutable calle
     span: { start: 0, end: 3 },
     data: { label: '猫' }
   }
+
   const original = { source: '猫', children: [node] }
   const context = new DocumentContext(original)
   const snapshot = context.node(node)
@@ -112,14 +131,19 @@ test('document context validates the whole tree before a consumer can traverse i
     data: {},
     children: []
   }
+
   node.children!.push(node)
+
   expect(() => new DocumentContext({ source: '', children: [node] })).toThrow(
     /tree/
   )
+
   expect(() => new DocumentContext({} as never)).toThrow(/source/)
+
   expect(
     () => new DocumentContext({ source: '', children: [{}] } as never)
   ).toThrow(/node/)
+
   expect(
     () =>
       new DocumentContext({

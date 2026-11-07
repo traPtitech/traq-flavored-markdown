@@ -10,11 +10,13 @@ import { applyMarkdownEdit } from './operations.js'
 import { getMarkdownServices } from './services.js'
 
 export type { MarkdownLineBreakOptions } from '../../types.js'
+
 export const markdownLineBreak = (
   state: EditorState,
   options: MarkdownLineBreakOptions = {}
 ) => {
   const source = editorTextBetween(state.doc)
+
   const plan = planLineBreak(
     source,
     {
@@ -23,6 +25,7 @@ export const markdownLineBreak = (
     },
     {
       ...options,
+
       analyze: source =>
         analyzeEditorProbe(
           state.doc,
@@ -31,12 +34,16 @@ export const markdownLineBreak = (
         )
     }
   )
+
   const transaction = applyMarkdownEdit(state, plan)
-  if (plan.completion)
+
+  if (plan.completion) {
     transaction.setMeta(markdownListInputKey, {
       ...plan.completion,
       from: toDocumentPosition(plan.completion.from),
       to: toDocumentPosition(plan.completion.to)
     })
+  }
+
   return transaction
 }

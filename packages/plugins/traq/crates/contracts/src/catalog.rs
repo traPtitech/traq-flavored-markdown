@@ -27,4 +27,5 @@ macro_rules! node_catalog {
         $crate::feature_catalog!($crate::__nodes_from_features, $consumer);
     };
 }
+
 feature_catalog!(markdown_definitions::define_feature_contracts);

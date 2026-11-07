@@ -8,6 +8,7 @@ test('Rust features resolve separately for every library and feature combination
     features: Record<string, string[]>,
     kind = 'lib'
   ) => ({ id: name, name, features, targets: [{ kind: [kind] }] })
+
   const metadata: CargoMetadata = {
     workspace_members: ['core', 'processing', 'features', 'wasm', 'example'],
     packages: [
@@ -19,6 +20,7 @@ test('Rust features resolve separately for every library and feature combination
       crate('external', { contracts: [] })
     ]
   }
+
   const flags = (name: string, ...args: string[]) => [
     'check',
     '--locked',
@@ -27,6 +29,7 @@ test('Rust features resolve separately for every library and feature combination
     '--lib',
     ...args
   ]
+
   expect(rustFeatureChecks(metadata)).toEqual([
     flags('core', '--no-default-features'),
     flags('processing', '--no-default-features'),

@@ -46,6 +46,7 @@ fn generic_child_contracts_preserve_each_concrete_type_identity() {
         GenericContainer::<GenericLeaf<u8, 2>> { value: None },
         vec![leaf::<2>()],
     );
+
     assert!(other.validate().is_ok());
 }
 
@@ -54,9 +55,11 @@ fn generic_payload_fields_are_accounted_for_and_leaf_contracts_are_enforced() {
     let payload = GenericLeaf {
         value: [String::from("hello"), String::from("世界")],
     };
+
     assert_eq!(payload.payload_bytes(), 11);
 
     let node = Node::new(Span { start: 0, end: 0 }, payload, vec![leaf::<1>()]);
+
     assert!(node.validate().is_err());
 }
 
@@ -64,6 +67,7 @@ fn generic_payload_fields_are_accounted_for_and_leaf_contracts_are_enforced() {
 fn recursive_child_contracts_do_not_require_cyclic_trait_bounds() {
     let span = Span { start: 0, end: 0 };
     let node = Node::new(span, Recursive {}, vec![Node::leaf(span, Recursive {})]);
+
     assert!(node.validate().is_ok());
 
     let node = Node::new(
@@ -71,6 +75,7 @@ fn recursive_child_contracts_do_not_require_cyclic_trait_bounds() {
         NamedRecursive { value: 0u8 },
         vec![Node::leaf(span, NamedRecursive { value: 1u8 })],
     );
+
     assert!(node.validate().is_ok());
 
     let wrong = Node::new(
@@ -78,5 +83,6 @@ fn recursive_child_contracts_do_not_require_cyclic_trait_bounds() {
         NamedRecursive { value: 0u8 },
         vec![Node::leaf(span, NamedRecursive { value: 1u16 })],
     );
+
     assert!(wrong.validate().is_err());
 }

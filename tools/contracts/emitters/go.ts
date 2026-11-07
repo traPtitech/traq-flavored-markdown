@@ -11,6 +11,7 @@ import type { NodeStructure } from '../model/structure.ts'
 type Definitions = ContractModule['definitions']
 
 const typeName = (name: string) => name
+
 const fieldName = (name: string) =>
   name
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
@@ -26,9 +27,11 @@ const fieldName = (name: string) =>
           utf8: 'UTF8'
         } as Record<string, string>
       )[part.toLowerCase()]
+
       return initialism ?? part[0].toUpperCase() + part.slice(1)
     })
     .join('')
+
 const enumName = (value: string) =>
   (({
     '*': 'Asterisk',
@@ -48,22 +51,30 @@ function goType(shape: ContractShape, definitions: Definitions): string {
   switch (shape.kind) {
     case 'reference':
       return typeName(shape.name)
+
     case 'string':
     case 'enum':
     case 'literal':
       return 'string'
+
     case 'boolean':
       return 'bool'
+
     case 'integer':
       return shape.format
+
     case 'number':
       return 'float64'
+
     case 'nullable':
       return '*' + goType(shape.inner, definitions)
+
     case 'array':
       return '[]' + goType(shape.items, definitions)
+
     case 'object':
       return `struct {\n${fields(shape.fields, definitions)}\n}`
+
     case 'union':
       throw new Error('Go unions must be named contracts')
   }
@@ -71,6 +82,7 @@ function goType(shape: ContractShape, definitions: Definitions): string {
 
 const optional = (field: ContractField) =>
   !field.required && !Object.hasOwn(field, 'default')
+
 const fieldType = (field: ContractField, definitions: Definitions) =>
   (optional(field) ? '*' : '') + goType(field.shape, definitions)
 
@@ -81,8 +93,10 @@ function excludesEmptyString(
   if (shape.kind === 'reference') {
     const definition = definitions.get(shape.name)
     if (!definition) throw new Error('Unresolved Go contract: ' + shape.name)
+
     return excludesEmptyString(definition.shape, definitions)
   }
+
   return shape.kind === 'enum'
     ? !shape.values.includes('')
     : shape.kind === 'literal' && shape.value !== ''
@@ -99,6 +113,7 @@ const canOmit = (field: ContractField, definitions: Definitions) =>
     field.default === 0 ||
     (Array.isArray(field.default) && field.default.length === 0) ||
     excludesEmptyString(field.shape, definitions))
+
 const fields = (value: readonly ContractField[], definitions: Definitions) =>
   value
     .map(
@@ -110,25 +125,61 @@ const fields = (value: readonly ContractField[], definitions: Definitions) =>
 /** A decoder builds each value once; named references invoke their own decoder. */
 function decoder(shape: ContractShape, definitions: Definitions): string {
   const type = goType(shape, definitions)
+
   switch (shape.kind) {
     case 'string':
-      if (shape.minLength === undefined && shape.maxLength === undefined)
+      if (shape.minLength === undefined && shape.maxLength === undefined) {
         return 'contract.Decode[string]'
-      return `func(raw json.RawMessage, value *string) error { if err := contract.Decode(raw, value); err != nil { return err }; length := uint64(utf8.RuneCountInString(*value)); ${shape.minLength !== undefined ? `if length < ${shape.minLength} { return fmt.Errorf("string shorter than schema bound") };` : ''} ${shape.maxLength !== undefined ? `if length > ${shape.maxLength} { return fmt.Errorf("string longer than schema bound") };` : ''} return nil }`
+      }
+
+      return `func(raw json.RawMessage, value *string) error {
+if err := contract.Decode(raw, value); err != nil { return err }
+
+length := uint64(utf8.RuneCountInString(*value))
+${shape.minLength !== undefined ? `if length < ${shape.minLength} { return fmt.Errorf("string shorter than schema bound") }\n\n` : ''}${shape.maxLength !== undefined ? `if length > ${shape.maxLength} { return fmt.Errorf("string longer than schema bound") }\n\n` : ''}return nil
+}`
+
     case 'integer':
     case 'number':
-      return `func(raw json.RawMessage, value *${type}) error { if err := contract.Decode(raw, value); err != nil { return err }; if *value < ${shape.min} || *value > ${shape.max} { return fmt.Errorf("number outside schema range") }; return nil }`
+      return `func(raw json.RawMessage, value *${type}) error {
+if err := contract.Decode(raw, value); err != nil { return err }
+
+if *value < ${shape.min} || *value > ${shape.max} { return fmt.Errorf("number outside schema range") }
+
+return nil
+}`
+
     case 'nullable':
       return `func(raw json.RawMessage, value *${type}) error { return contract.Nullable(raw, value, ${decoder(shape.inner, definitions)}) }`
+
     case 'array':
-      return `func(raw json.RawMessage, value *${type}) error { if err := contract.Array(raw, value, ${decoder(shape.items, definitions)}); err != nil { return err }; ${shape.minItems !== undefined ? `if len(*value) < ${shape.minItems} { return fmt.Errorf("array shorter than schema bound") };` : ''} ${shape.maxItems !== undefined ? `if len(*value) > ${shape.maxItems} { return fmt.Errorf("array longer than schema bound") };` : ''} return nil }`
+      return `func(raw json.RawMessage, value *${type}) error {
+if err := contract.Array(raw, value, ${decoder(shape.items, definitions)}); err != nil { return err }
+
+${shape.minItems !== undefined ? `if len(*value) < ${shape.minItems} { return fmt.Errorf("array shorter than schema bound") }\n\n` : ''}${shape.maxItems !== undefined ? `if len(*value) > ${shape.maxItems} { return fmt.Errorf("array longer than schema bound") }\n\n` : ''}return nil
+}`
+
     case 'enum':
     case 'literal': {
       const choices = shape.kind === 'literal' ? [shape.value] : shape.values
-      return `func(raw json.RawMessage, value *string) error { if err := contract.Decode(raw, value); err != nil { return err }; return contract.Enum(*value, ${choices.map(value => q(value)).join(', ')}) }`
+
+      return `func(raw json.RawMessage, value *string) error {
+if err := contract.Decode(raw, value); err != nil { return err }
+
+return contract.Enum(*value, ${choices.map(value => q(value)).join(', ')})
+}`
     }
+
     case 'object':
-      return `func(raw json.RawMessage, value *${type}) error { object, err := contract.Object(raw); if err != nil { return err }; ${decodeFields(shape.fields, definitions, '*value', true)}; return nil }`
+      return `func(raw json.RawMessage, value *${type}) error {
+object, err := contract.Object(raw)
+if err != nil { return err }
+
+${decodeFields(shape.fields, definitions, '*value', true)}
+
+return nil
+}`
+
     default:
       return `contract.Decode[${type}]`
   }
@@ -142,24 +193,29 @@ function decodeFields(
   extraAllowed: string[] = []
 ) {
   const target = parenthesize ? `(${destination})` : destination
+
   const allowed = [...extraAllowed, ...value.map(field => field.name)].map(
     name => q(name)
   )
+
   return [
     `if err := contract.Fields(object${allowed.length ? ', ' + allowed.join(', ') : ''}); err != nil { return err }`,
     ...value.map(field => {
       const member = `${target}.${fieldName(field.name)}`
+
       const decode = optional(field)
-        ? `var present ${goType(field.shape, definitions)}\nif err := (${decoder(field.shape, definitions)})(raw, &present); err != nil { return fmt.Errorf("field %q: %w", ${q(field.name)}, err) }\n${member} = &present`
+        ? `var present ${goType(field.shape, definitions)}\nif err := (${decoder(field.shape, definitions)})(raw, &present); err != nil { return fmt.Errorf("field %q: %w", ${q(field.name)}, err) }\n\n${member} = &present`
         : `if err := (${decoder(field.shape, definitions)})(raw, &${member}); err != nil { return fmt.Errorf("field %q: %w", ${q(field.name)}, err) }`
+
       const missing = field.required
         ? `return fmt.Errorf("missing required field %q", ${q(field.name)})`
         : Object.hasOwn(field, 'default')
           ? `if err := (${decoder(field.shape, definitions)})(json.RawMessage(${q(JSON.stringify(field.default))}), &${member}); err != nil { return err }`
           : ''
+
       return `if raw, present := object[${q(field.name)}]; present {\n${decode}\n}${missing ? ` else {\n${missing}\n}` : ''}`
     })
-  ].join('\n')
+  ].join('\n\n')
 }
 
 function objectDeclaration(
@@ -168,27 +224,30 @@ function objectDeclaration(
   definitions: Definitions
 ) {
   return (
-    `type ${name} struct {\n${fields(value.fields, definitions)}\n}\n` +
+    `type ${name} struct {\n${fields(value.fields, definitions)}\n}\n\n` +
     `func (value *${name}) UnmarshalJSON(raw []byte) error {\n` +
-    `object, err := contract.Object(raw)\nif err != nil { return err }\n` +
-    `type wire ${name}\nvar decoded wire\n${decodeFields(value.fields, definitions, 'decoded')}\n` +
+    `object, err := contract.Object(raw)\nif err != nil { return err }\n\n` +
+    `type wire ${name}\nvar decoded wire\n\n${decodeFields(value.fields, definitions, 'decoded')}\n\n` +
     `*value = ${name}(decoded)\nreturn nil\n}\n`
   )
 }
 
 function enumDeclaration(name: string, values: string[]) {
   const constants = values.map(value => name + enumName(value))
-  if (new Set(constants).size !== constants.length)
+  if (new Set(constants).size !== constants.length) {
     throw new Error('Conflicting Go enum members: ' + name)
+  }
+
   const choices = values.map(value => q(value)).join(', ')
+
   return (
-    `type ${name} string\nconst (\n` +
+    `type ${name} string\n\nconst (\n` +
     values
       .map((value, index) => `${constants[index]} ${name} = ${q(value)}`)
       .join('\n') +
-    '\n)\n' +
-    `func (value *${name}) UnmarshalJSON(raw []byte) error {\nvar decoded string\nif err := contract.Decode(raw, &decoded); err != nil { return err }\nif err := contract.Enum(decoded, ${choices}); err != nil { return err }\n*value = ${name}(decoded)\nreturn nil\n}\n` +
-    `func (value ${name}) MarshalJSON() ([]byte, error) {\nif err := contract.Enum(string(value), ${choices}); err != nil { return nil, err }\nreturn json.Marshal(string(value))\n}\n`
+    '\n)\n\n' +
+    `func (value *${name}) UnmarshalJSON(raw []byte) error {\nvar decoded string\nif err := contract.Decode(raw, &decoded); err != nil { return err }\n\nif err := contract.Enum(decoded, ${choices}); err != nil { return err }\n\n*value = ${name}(decoded)\nreturn nil\n}\n\n` +
+    `func (value ${name}) MarshalJSON() ([]byte, error) {\nif err := contract.Enum(string(value), ${choices}); err != nil { return nil, err }\n\nreturn json.Marshal(string(value))\n}\n`
   )
 }
 
@@ -197,52 +256,63 @@ function unionDeclaration(
   shape: Extract<ContractShape, { kind: 'union' }>,
   definitions: Definitions
 ) {
-  if (!shape.discriminator)
+  if (!shape.discriminator) {
     throw new Error('Go unions require a string type tag: ' + name)
+  }
+
   const variants = shape.variants.map(variant => {
-    if (variant.kind !== 'object')
+    if (variant.kind !== 'object') {
       throw new Error('Go unions require tagged object variants: ' + name)
+    }
+
     const tag = variant.fields.find(field => field.name === shape.discriminator)
-    if (!tag || tag.shape.kind !== 'literal')
+    if (!tag || tag.shape.kind !== 'literal') {
       throw new Error('Go unions require a string type tag: ' + name)
+    }
+
     return {
       tag: tag.shape.value,
       member: enumName(tag.shape.value),
       fields: variant.fields.filter(field => field !== tag)
     }
   })
-  if (new Set(variants.map(variant => variant.member)).size !== variants.length)
+  if (
+    new Set(variants.map(variant => variant.member)).size !== variants.length
+  ) {
     throw new Error('Conflicting Go union variants: ' + name)
+  }
+
   return (
-    `type ${name} struct {\n${variants.map(variant => `${variant.member} *${name}${variant.member}`).join('\n')}\n}\n` +
+    `type ${name} struct {\n${variants.map(variant => `${variant.member} *${name}${variant.member}`).join('\n')}\n}\n\n` +
     variants
       .map(
         variant =>
-          `type ${name}${variant.member} struct {\n${fields(variant.fields, definitions)}\n}\n`
+          `type ${name}${variant.member} struct {\n${fields(variant.fields, definitions)}\n}\n\n`
       )
       .join('') +
-    `func (value *${name}) UnmarshalJSON(raw []byte) error {\nobject, err := contract.Object(raw)\nif err != nil { return err }\nvar tag string\nif err := contract.Decode(object[${q(shape.discriminator)}], &tag); err != nil { return err }\nswitch tag {\n` +
+    `func (value *${name}) UnmarshalJSON(raw []byte) error {\nobject, err := contract.Object(raw)\nif err != nil { return err }\n\nvar tag string\nif err := contract.Decode(object[${q(shape.discriminator)}], &tag); err != nil { return err }\n\nswitch tag {\n` +
     variants
       .map(
         variant =>
-          `case ${q(variant.tag)}:\nvar decoded ${name}${variant.member}\n${decodeFields(variant.fields, definitions, 'decoded', false, [shape.discriminator!])}\n*value = ${name}{${variant.member}: &decoded}\nreturn nil`
+          `case ${q(variant.tag)}:\nvar decoded ${name}${variant.member}\n\n${decodeFields(variant.fields, definitions, 'decoded', false, [shape.discriminator!])}\n\n*value = ${name}{${variant.member}: &decoded}\nreturn nil`
       )
-      .join('\n') +
-    '\n}\nreturn fmt.Errorf("unknown union tag %q", tag)\n}\n' +
-    `func (value ${name}) MarshalJSON() ([]byte, error) {\ncount := 0\n${variants.map(variant => `if value.${variant.member} != nil { count++ }`).join('\n')}\nif count != 1 { return nil, fmt.Errorf("union requires exactly one variant") }\nvar raw []byte\nvar err error\n` +
+      .join('\n\n') +
+    '\n}\n\nreturn fmt.Errorf("unknown union tag %q", tag)\n}\n\n' +
+    `func (value ${name}) MarshalJSON() ([]byte, error) {\ncount := 0\n\n${variants.map(variant => `if value.${variant.member} != nil { count++ }`).join('\n\n')}\n\nif count != 1 { return nil, fmt.Errorf("union requires exactly one variant") }\n\nvar raw []byte\nvar err error\n\n` +
     variants
       .map(
         variant =>
           `if value.${variant.member} != nil { raw, err = json.Marshal(struct { Type string \`json:"type"\`; *${name}${variant.member} }{Type: ${q(variant.tag)}, ${name}${variant.member}: value.${variant.member}}) }`
       )
-      .join('\n') +
-    `\nif err != nil { return nil, err }\nvar checked ${name}\nif err := json.Unmarshal(raw, &checked); err != nil { return nil, err }\nreturn raw, nil\n}\n`
+      .join('\n\n') +
+    `\n\nif err != nil { return nil, err }\n\nvar checked ${name}\nif err := json.Unmarshal(raw, &checked); err != nil { return nil, err }\n\nreturn raw, nil\n}\n`
   )
 }
 
 export function goFile(packageName: string, source: string) {
   // Ignore generated string literals, including struct tags, when selecting imports.
   const code = source.replace(/"(?:\\.|[^"\\])*"|`[^`]*`/g, '')
+
   const imports = Object.entries({
     json: 'encoding/json',
     fmt: 'fmt',
@@ -253,12 +323,13 @@ export function goFile(packageName: string, source: string) {
     binding:
       'github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding'
   }).filter(([name]) => new RegExp('\\b' + name + '\\.').test(code))
+
   return (
     '// Code generated from Rust contracts. DO NOT EDIT.\npackage ' +
     packageName +
-    '\n' +
+    '\n\n' +
     (imports.length
-      ? 'import (' + imports.map(([, path]) => q(path)).join('\n') + ')\n'
+      ? 'import (' + imports.map(([, path]) => q(path)).join('\n') + ')\n\n'
       : '') +
     source
   )
@@ -271,23 +342,29 @@ function emitGoDefinition(
   const name = typeName(definition.name)
   const value = definition.shape
   if (value.kind === 'enum') return enumDeclaration(name, value.values)
+
   if (value.kind === 'union') return unionDeclaration(name, value, definitions)
-  if (value.kind === 'object')
+
+  if (value.kind === 'object') {
     return objectDeclaration(name, value, definitions)
+  }
+
   if (
     ['string', 'boolean', 'integer', 'number', 'literal'].includes(value.kind)
   ) {
     const type = goType(value, definitions)
+
     return (
-      `type ${name} ${type}\n` +
-      `func (value *${name}) UnmarshalJSON(raw []byte) error {\nvar decoded ${type}\nif err := (${decoder(value, definitions)})(raw, &decoded); err != nil { return err }\n*value = ${name}(decoded)\nreturn nil\n}\n` +
+      `type ${name} ${type}\n\n` +
+      `func (value *${name}) UnmarshalJSON(raw []byte) error {\nvar decoded ${type}\nif err := (${decoder(value, definitions)})(raw, &decoded); err != nil { return err }\n\n*value = ${name}(decoded)\nreturn nil\n}\n\n` +
       `func (value ${name}) MarshalJSON() ([]byte, error) {\n` +
       (type === 'string'
-        ? `if !utf8.ValidString(string(value)) { return nil, fmt.Errorf("invalid UTF-8") }\n`
+        ? `if !utf8.ValidString(string(value)) { return nil, fmt.Errorf("invalid UTF-8") }\n\n`
         : '') +
-      `raw, err := json.Marshal(${type}(value))\nif err != nil { return nil, err }\nvar checked ${name}\nif err := json.Unmarshal(raw, &checked); err != nil { return nil, err }\nreturn raw, nil\n}\n`
+      `raw, err := json.Marshal(${type}(value))\nif err != nil { return nil, err }\n\nvar checked ${name}\nif err := json.Unmarshal(raw, &checked); err != nil { return nil, err }\n\nreturn raw, nil\n}\n`
     )
   }
+
   throw new Error(`Unsupported named Go contract: ${name} (${value.kind})`)
 }
 
@@ -299,6 +376,7 @@ export function emitGoDeclarations(module: ContractModule) {
 
 export function goContract(schema: RawSchema, root = schema) {
   const module = normalizeContracts([schema], {}, root)
+
   return emitGoDefinition(
     module.definitions.get(schema.title!)!,
     module.definitions
@@ -308,13 +386,16 @@ export function goContract(schema: RawSchema, root = schema) {
 export function goPayload(wireName: string, schema: RawSchema) {
   const module = normalizeContracts([schema])
   const definition = module.definitions.get(schema.title!)!
-  if (definition.shape.kind !== 'object')
+  if (definition.shape.kind !== 'object') {
     throw new Error('Payload must be object')
+  }
+
   const name = typeName(definition.name)
+
   return (
-    `const ${name}Name = ${q(wireName)}\n` +
+    `const ${name}Name = ${q(wireName)}\n\n` +
     emitGoDefinition(definition, module.definitions) +
-    `func (*${name}) NodePayload() {}\n`
+    `\nfunc (*${name}) NodePayload() {}\n`
   )
 }
 
@@ -324,16 +405,19 @@ export function goNodes(
   structures: Readonly<Record<string, NodeStructure | undefined>> = {}
 ) {
   const names = entries.map(([, schema]) => typeName(schema.title!))
-  if (new Set(names).size !== names.length)
+  if (new Set(names).size !== names.length) {
     throw new Error('Duplicate generated payload type')
+  }
+
   const module = normalizeContracts(entries.map(([, schema]) => schema))
+
   return goFile(
     packageName,
     emitGoDeclarations(module) +
       entries
         .map(
           ([key, schema]) =>
-            `const ${typeName(schema.title!)}Name = ${q(key)}\nfunc (*${typeName(schema.title!)}) NodePayload() {}\n` +
+            `const ${typeName(schema.title!)}Name = ${q(key)}\n\nfunc (*${typeName(schema.title!)}) NodePayload() {}\n\n` +
             (structures[key]
               ? goStructure(typeName(schema.title!), structures[key]!)
               : '')
@@ -346,33 +430,41 @@ export function goNodes(
             `case ${typeName(schema.title!)}Name: return &${typeName(schema.title!)}{}`
         )
         .join('\n') +
-      '\n};return nil\n}\n'
+      '\n}\n\nreturn nil\n}\n'
   )
 }
 
 function goStructure(name: string, structure: NodeStructure) {
   const strings = (values: readonly string[]) =>
     `[]string{${values.map(value => q(value)).join(',')}}`
+
   const children = structure.children
   const fields = [`Kind:${q(children.kind)}`]
-  if ('roles' in children)
+
+  if ('roles' in children) {
     fields.push(
       `Roles:${strings(children.roles)}`,
       `Nonempty:${children.nonempty}`
     )
-  if ('types' in children)
+  }
+
+  if ('types' in children) {
     fields.push(
       `Types:${strings(children.types)}`,
       `Nonempty:${children.nonempty}`
     )
-  if (children.kind === 'sequence')
+  }
+
+  if (children.kind === 'sequence') {
     fields.push(
       `Prefix:${strings(children.prefix)}`,
       `Rest:${q(children.rest)}`,
       `HasArity:${children.arityField !== undefined}`
     )
+  }
+
   return (
-    `func (*${name}) NodeStructure() ast.NodeStructure { return ast.NodeStructure{Role:${q(structure.role)},Children:ast.ChildStructure{${fields.join(',')}}} }\n` +
+    `func (*${name}) NodeStructure() ast.NodeStructure { return ast.NodeStructure{Role:${q(structure.role)},Children:ast.ChildStructure{${fields.join(',')}}} }\n\n` +
     (children.kind === 'sequence' && children.arityField !== undefined
       ? `func (value *${name}) ChildArity() int { return len(value.${fieldName(children.arityField)}) }\n`
       : '')

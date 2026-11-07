@@ -37,6 +37,7 @@ pub fn parse(
                 source,
                 lines[end].clone(),
             )?);
+
             ranges.push(lines[end].clone());
         } else {
             break;
@@ -46,6 +47,7 @@ pub fn parse(
     }
 
     let mut view = source.join(&ranges)?;
+
     let syntax = source.prefix_syntax(
         &ranges,
         ranges
@@ -54,6 +56,7 @@ pub fn parse(
             .map(|(index, range)| lines[first + index].start..range.start),
         budget,
     )?;
+
     super::super::context::mark_lazy(&mut view, lazy_lines, budget)?;
 
     Ok(Some(BlockMatch::node(

@@ -12,12 +12,15 @@ struct Item;
 
 #[derive(Default)]
 struct Depths(Vec<(usize, usize)>);
+
 impl<'a> Collector<'a> for Depths {
     type Scope = usize;
     type Error = Error;
+
     fn initial(&self) -> usize {
         0
     }
+
     fn observe(&mut self, context: AnalysisContext<'a>, inherited: &usize) -> Result<usize, Error> {
         self.0.push((context.visit.node.span.start, *inherited));
         Ok(inherited + 1)
@@ -39,9 +42,11 @@ fn typed_handlers_and_scoped_collectors_share_source_and_location() {
     }
     .finish()
     .unwrap();
+
     let mut plugin = ExtractionPlugin::<Vec<String>>::new(
         &markdown_definitions::PluginDeclaration::new("source"),
     );
+
     plugin
         .on::<Item>(|_, context, result| {
             let span = context.visit.node.span;
@@ -49,11 +54,13 @@ fn typed_handlers_and_scoped_collectors_share_source_and_location() {
             Ok(())
         })
         .unwrap();
+
     let mut builder = ExtractionPresetBuilder::new();
     builder.add(&plugin).unwrap();
     let extractor = Extractor::new(&builder.build().unwrap());
     let mut collectors = (Depths::default(), extractor.collector::<Error>());
     markdown_extractor::collect(&document, &mut collectors).unwrap();
+
     assert_eq!(collectors.0.0, [(0, 0), (1, 1), (2, 0)]);
     assert_eq!(collectors.1.finish(), ["ab", "b", "c"]);
 }

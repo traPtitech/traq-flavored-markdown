@@ -92,6 +92,7 @@ export const referenceNode = <R>(
 
           update(next) {
             if (next.type !== current.value.type) return false
+
             current.value = next
             return true
           },
@@ -99,6 +100,7 @@ export const referenceNode = <R>(
           destroy: stop
         }
       },
+
     addProseMirrorPlugins: () => [
       new Plugin({
         props: {
@@ -113,8 +115,9 @@ export const referenceNode = <R>(
                   syncInputSelection(view),
                   view.dispatch
                 )
-              )
+              ) {
                 return false
+              }
 
               event.preventDefault()
               return true
@@ -137,8 +140,9 @@ export const referenceNode = <R>(
             const { selection, tr } = this.editor.state
             const node = selection.$from.nodeAfter
 
-            if (!selection.empty || node?.type.name !== 'reference')
+            if (!selection.empty || node?.type.name !== 'reference') {
               return false
+            }
 
             this.editor.view.dispatch(
               tr.delete(selection.from, selection.from + node.nodeSize)

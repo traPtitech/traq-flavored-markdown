@@ -30,19 +30,25 @@ test('Go tags use each module directory as their prefix', async () => {
 test('Go module validation rejects unpublished versions and replacements', async () => {
   const graph = await readGoPackageGraph()
   const original = graph.modules.get('packages/sdk/go')!
+
   const manifest = {
     Module: { Path: sdk },
     Require: [{ Path: core, Version: 'v0.1.4' }],
     Replace: null
   }
+
   expect(() =>
     validateGoMod({ ...original, manifest }, graph, 'v0.1.4')
   ).not.toThrow()
+
   manifest.Require[0].Version = 'v0.0.0-00010101000000-000000000000'
+
   expect(() =>
     validateGoMod({ ...original, manifest }, graph, 'v0.1.4')
   ).toThrow('Go dependencies')
+
   manifest.Require[0].Version = 'v0.1.4'
+
   expect(() =>
     validateGoMod(
       { ...original, manifest: { ...manifest, Replace: [{}] } },
@@ -54,6 +60,7 @@ test('Go module validation rejects unpublished versions and replacements', async
 
 test('workspace replacements must point at the tagged local modules', async () => {
   const graph = await readGoPackageGraph()
+
   const workspace = {
     Use: [
       'packages/core/go',
@@ -74,8 +81,10 @@ test('workspace replacements must point at the tagged local modules', async () =
       New: { Path: `./${directory}` }
     }))
   }
+
   expect(() => validateGoWork(workspace, graph, 'v0.1.4')).not.toThrow()
   workspace.Replace[0].Old.Version = 'v0.1.3'
+
   expect(() => validateGoWork(workspace, graph, 'v0.1.4')).toThrow(
     'go.work replacements'
   )
@@ -91,6 +100,7 @@ test('Go release preparation synchronizes all module and workspace versions', as
   const publishedModules = (await readGoPackageGraph()).published.map(
     module => module.path
   )
+
   await withTempDirectory('markdown-go-release-', async root => {
     const directories = [
       'packages/core/go',
@@ -100,43 +110,54 @@ test('Go release preparation synchronizes all module and workspace versions', as
       'packages/sdk/go',
       'packages/sdk/examples/go'
     ]
+
     await copyFile(
       path.join(repositoryRoot, 'go.work'),
       path.join(root, 'go.work')
     )
+
     for (const directory of directories) {
       await mkdir(path.join(root, directory), { recursive: true })
+
       await copyFile(
         path.join(repositoryRoot, directory, 'go.mod'),
         path.join(root, directory, 'go.mod')
       )
+
       await copyFile(
         path.join(repositoryRoot, directory, 'go.sum'),
         path.join(root, directory, 'go.sum')
       )
     }
+
     await runGoRelease(['v0.1.4', '--prepare'], root)
     await runGoRelease(['v0.1.4', '--check'], root)
+
     expect(await Bun.file(path.join(root, 'go.work')).text()).toContain(
       'packages/sdk/go v0.1.4 => ./packages/sdk/go'
     )
+
     expect(
       await Bun.file(path.join(root, 'packages/sdk/go/go.mod')).text()
     ).toContain(`${core} v0.1.4`)
+
     expect(
       await Bun.file(path.join(root, 'packages/sdk/go/go.sum')).text()
     ).not.toContain('v0.0.0-20260909')
+
     const list = Bun.spawn(['go', 'list', '-m', ...publishedModules], {
       cwd: path.join(root, 'packages/sdk/go'),
       env: { ...Bun.env, GOWORK: path.join(root, 'go.work'), GOPROXY: 'off' },
       stdout: 'pipe',
       stderr: 'pipe'
     })
+
     const [modules, diagnostics, exitCode] = await Promise.all([
       new Response(list.stdout).text(),
       new Response(list.stderr).text(),
       list.exited
     ])
+
     expect(diagnostics).toBe('')
     expect(exitCode).toBe(0)
     expect(modules.trim().split(/\r?\n/)).toEqual(publishedModules)

@@ -10,12 +10,15 @@ import {
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical)
-  if (value && typeof value === 'object')
+
+  if (value && typeof value === 'object') {
     return Object.fromEntries(
       Object.entries(value)
         .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
         .map(([key, entry]) => [key, canonical(entry)])
     )
+  }
+
   return value
 }
 
@@ -23,12 +26,14 @@ const ordered = (values: unknown[]) =>
   values.map(canonical).sort((a, b) => {
     const left = JSON.stringify(a),
       right = JSON.stringify(b)
+
     return left < right ? -1 : left > right ? 1 : 0
   })
 
 /** Type names and documentation describe generated APIs, not their wire values. */
 function wireShape(value: Shape): unknown {
   const { name: _name, ...contract } = value
+
   switch (contract.kind) {
     case 'integer':
       return { kind: contract.kind, min: contract.min, max: contract.max }
@@ -70,6 +75,7 @@ export interface IdentityContract {
     operations?: Record<string, Partial<Operation>>
     [key: string]: unknown
   }
+
   nodes: Record<string, { schema: RawSchema; structure?: unknown }>
   processing?: Record<string, RawSchema>
   presets?: unknown
@@ -80,11 +86,13 @@ export interface IdentityContract {
 /** Hash only validated wire semantics; provenance and bytes have separate identities. */
 export function semanticContractId(manifest: IdentityContract) {
   const processing = manifest.processing ?? {}
+
   validateOperationSchemas(
     manifest.abi.operations ?? {},
     processing,
     manifest.directions ?? {}
   )
+
   const contract = {
     abi: {
       ...manifest.abi,
@@ -96,6 +104,7 @@ export function semanticContractId(manifest: IdentityContract) {
                 ([name, operation]) => {
                   const { requestSchema, responseSchema, ...descriptor } =
                     operation
+
                   return [
                     name,
                     {
@@ -129,6 +138,7 @@ export function semanticContractId(manifest: IdentityContract) {
     presets: manifest.presets,
     limits: manifest.limits
   }
+
   return new Bun.CryptoHasher('sha256')
     .update(JSON.stringify(canonical(contract)))
     .digest('hex')

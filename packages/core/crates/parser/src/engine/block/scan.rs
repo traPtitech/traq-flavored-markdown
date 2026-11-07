@@ -73,6 +73,7 @@ fn tokenize(
 
     while position < LineIndex::new(lines.len()) {
         budget.token()?;
+
         let input = BlockInput {
             source,
             lines: Lines(&lines),
@@ -104,6 +105,7 @@ fn tokenize(
             if next < position || next > LineIndex::new(lines.len()) {
                 return Err(ParseError::InternalError);
             }
+
             position = next;
         }
     }
@@ -117,6 +119,7 @@ fn match_block(
 ) -> Result<super::BlockMatch, ParseError> {
     for entry in &input.grammar.data.block {
         budget.spend(1)?;
+
         let position = input
             .source
             .span_for(input.lines[input.start].start..input.lines[input.start].start)?
@@ -127,6 +130,7 @@ fn match_block(
             validate_match(&found, input.start, input.lines.end()).map_err(|reason| {
                 ParseError::invalid_rule(ParsePhase::Block, entry.name(), position, reason)
             })?;
+
             return Ok(found);
         }
     }
@@ -159,30 +163,39 @@ fn resolve_blocks(
     budget.nesting(depth)?;
     let mut metadata = ParseState::default();
     let mut syntax = draft.syntax;
+
     let content = match draft.content {
         DraftContent::Leaf => ResolvedContent::Leaf,
+
         DraftContent::Inline(source) => {
             if syntax.is_none() {
                 syntax = source.syntax(&[source.range(0..source.text().len())?], &[], budget)?;
             }
+
             ResolvedContent::Inline(source)
         }
+
         DraftContent::Blocks(source) => {
             if syntax.is_none() {
                 syntax = source.syntax(&[source.range(0..source.text().len())?], &[], budget)?;
             }
+
             let batch = tokenize(&source, grammar, budget, state, depth + 1)?;
             metadata = batch.metadata;
             ResolvedContent::Nodes(batch.nodes)
         }
+
         DraftContent::Nodes(children) => {
             let mut resolved = Vec::with_capacity(children.len());
+
             for child in children {
                 resolved.push(resolve_blocks(child, grammar, budget, state, depth + 1)?);
             }
+
             ResolvedContent::Nodes(resolved)
         }
     };
+
     let mut node = ResolvedBlock {
         span: draft.span,
         payload: draft.payload,
@@ -190,9 +203,11 @@ fn resolve_blocks(
         metadata,
         syntax,
     };
+
     if let Some(finish) = draft.finish {
         finish(&mut node);
     }
+
     Ok(node)
 }
 

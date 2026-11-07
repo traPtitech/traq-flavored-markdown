@@ -12,6 +12,7 @@ pub struct Visit<'a> {
 pub struct Walk<'a> {
     stack: Vec<Frame<'a>>,
 }
+
 struct Frame<'a> {
     nodes: &'a [Node],
     parent: Option<&'a Node>,
@@ -38,32 +39,39 @@ impl<'a> DocumentView<'a> {
         mut visitor: impl FnMut(Visit<'a>, &S) -> Result<S, E>,
     ) -> Result<(), E> {
         let mut scopes = vec![initial];
+
         for visit in self.walk() {
             scopes.truncate(visit.depth);
             let next = visitor(visit, &scopes[visit.depth - 1])?;
             scopes.push(next);
         }
+
         Ok(())
     }
 }
 
 impl<'a> Iterator for Walk<'a> {
     type Item = Visit<'a>;
+
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let depth = self.stack.len();
             let frame = self.stack.last_mut()?;
+
             let Some(node) = frame.nodes.get(frame.index) else {
                 self.stack.pop();
                 continue;
             };
+
             let visit = Visit {
                 node,
                 parent: frame.parent,
                 index: frame.index,
                 depth,
             };
+
             frame.index += 1;
+
             if !node.children.is_empty() {
                 self.stack.push(Frame {
                     nodes: &node.children,
@@ -71,6 +79,7 @@ impl<'a> Iterator for Walk<'a> {
                     index: 0,
                 });
             }
+
             return Some(visit);
         }
     }

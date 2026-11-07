@@ -12,9 +12,11 @@ pub fn get() -> Option<Grammar> {
 
 pub fn parse(grammar: &Grammar, source: &str, mode: u32) -> Result<markdown_ast::Document, Error> {
     let parser = traq_markdown_grammar::Parser::new(grammar);
+
     match mode {
         0 => parser.parse(source).map_err(Error::from),
         1 => parser.parse_inline(source).map_err(Error::from),
+
         _ => Err(Error::new(
             ErrorCode::InvalidMode,
             "parse mode must be 0 or 1",
@@ -28,11 +30,14 @@ pub extern "C" fn configure() -> u32 {
     IO.with_borrow_mut(|io| {
         let result = (|| -> Result<_, Error> {
             let source = io.source()?;
+
             let grammar = bindings::grammar(source)
                 .map_err(|error| Error::new(ErrorCode::UnknownPreset, error))?;
+
             GRAMMAR.set(Some(grammar));
             Ok(abi::configured())
         })();
+
         io.reply(&result);
         io.output.len() as u32
     })

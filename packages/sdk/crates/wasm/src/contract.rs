@@ -7,6 +7,7 @@ use traq_markdown_grammar::bindings::{ExportTree, PresetId};
 struct Provenance {
     source_fingerprint: &'static str,
 }
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeContract {

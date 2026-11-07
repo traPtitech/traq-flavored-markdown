@@ -26,8 +26,10 @@ test('request contracts retain omission, defaults, and named references', () => 
     ],
     { Options: 'request' }
   )
+
   const options = module.definitions.get('Options')!
   expect(options.direction).toBe('request')
+
   expect(options.shape).toMatchObject({
     kind: 'object',
     fields: [
@@ -44,5 +46,6 @@ test('request contracts retain omission, defaults, and named references', () => 
       }
     ]
   })
+
   expect(module.definitions.get('Nested')?.direction).toBe('request')
 })

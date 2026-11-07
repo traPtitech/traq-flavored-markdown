@@ -13,7 +13,8 @@ const fixtures = JSON.parse(
 
 const view = createRenderer(rendering.createHtmlPreset())
 
-for (const { name, markdown, html } of fixtures)
+for (const { name, markdown, html } of fixtures) {
   test('corpus regression: ' + name, () => {
     expect(view.render(parser.parse(markdown))).toBe(html)
   })
+}

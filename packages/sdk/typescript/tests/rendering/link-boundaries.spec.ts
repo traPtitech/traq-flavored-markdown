@@ -8,6 +8,7 @@ import { parser } from './setup.js'
 
 test('bare URLs balance parentheses and trim terminal tildes while preserving identifier suffixes', () => {
   const view = createHtmlRenderer()
+
   for (const [source, destination, formatting] of [
     ['~~https://example.test/a~~', 'https://example.test/a', '<s>'],
     ['~~\\https://example.test/a~~', 'https://example.test/a', '<s>'],
@@ -29,9 +30,11 @@ test('bare URLs balance parentheses and trim terminal tildes while preserving id
     expect(html, source).toContain(formatting)
     expect(html.match(/<a\b/g)?.length, source).toBe(1)
   }
+
   expect(view.render(parser.parseInline('wordhttps://example.test/a'))).toBe(
     'wordhttps://example.test/a'
   )
+
   expect(
     view.render(parser.parseInline('[https://example.test/__name__]'))
   ).toBe('[https://example.test/<strong>name</strong>]')
@@ -39,8 +42,10 @@ test('bare URLs balance parentheses and trim terminal tildes while preserving id
 
 test('bare URL boundaries preserve surrounding prose and explicit links retain the complete URL', () => {
   const view = createHtmlRenderer()
+
   const link = (href: string, label = href) =>
     `<a href="${href}" target="_blank" rel="nofollow noopener noreferrer">${label}</a>`
+
   for (const [source, expected] of [
     [
       'hogehoge(https://example.test/a)fugafuga',
@@ -113,28 +118,34 @@ test('bare URL boundaries preserve surrounding prose and explicit links retain t
       '<em>' + link('https://example.test/a_') + '</em>'
     ],
     ['_https://example.test/a_', '_' + link('https://example.test/a_')]
-  ])
+  ]) {
     expect(view.render(parser.parseInline(source)), source).toBe(expected)
+  }
 })
 
 test('fallback image labels retain formatting and resolved references without nested links', () => {
   const image = 'https://example.test/image.png'
   const page = 'https://example.test/page'
+
   const reference =
     '!{"type":"channel","raw":"#general","id":"00000000-0000-0000-0000-000000000001"}'
+
   const label =
     '**bold** *em* ~~strike~~ `code` [child](https://child.test) ' + reference
+
   const views = messageRenderers({
     origin: 'https://q.example.test',
     images: { validate: () => false },
     references: { resolve: () => ({ href: '#channel', label: '#resolved<&' }) }
   })
+
   for (const source of [
     `![${label}](${image})`,
     `[![${label.replace('[child](https://child.test)', 'child')}](${image})](${page})`
   ]) {
     const document = parser.parse(source)
     const snapshot = document.toMutable()
+
     for (const renderer of [views.standard, views.condensed]) {
       const html = renderer.render(document).html
       expect(html).toContain('<strong>bold</strong>')
@@ -148,8 +159,10 @@ test('fallback image labels retain formatting and resolved references without ne
       expect(html.match(/<a\b/g)?.length).toBe(1)
       expect(html).toContain(`href="${source.startsWith('[!') ? page : image}"`)
     }
+
     expect(document.document).toEqual(snapshot)
   }
+
   expect(
     createHtmlRenderer({ images: { validate: () => true } }).render(
       parser.parseInline('![**bold** `code`](https://example.test/image.png)')
@@ -159,6 +172,7 @@ test('fallback image labels retain formatting and resolved references without ne
 
 test('rejected destinations and empty images retain readable formatted labels', () => {
   const view = createHtmlRenderer({ images: { validate: () => false } })
+
   for (const destination of [
     'javascript:alert(1)',
     'spotify:track:123',
@@ -168,9 +182,11 @@ test('rejected destinations and empty images retain readable formatted labels', 
       '<strong>label</strong>'
     )
   }
+
   expect(view.render(parser.parseInline('![**Uploading**]()'))).toBe(
     '!<strong>Uploading</strong>'
   )
+
   expect(
     view.render(parser.parseInline('![image](blob:https://example.test/id)'))
   ).toBe('!image')

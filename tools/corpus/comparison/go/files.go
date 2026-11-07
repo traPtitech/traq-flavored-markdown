@@ -17,11 +17,13 @@ func digestFile(file string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer handle.Close()
 	hash := sha256.New()
 	if _, err := io.Copy(hash, handle); err != nil {
 		return "", err
 	}
+
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
@@ -30,19 +32,24 @@ func RunFiles(plan ComparisonPlan, before, after Adapter, initialization Initial
 	if err != nil {
 		return result, err
 	}
+
 	if digest != plan.CorpusSHA256 {
 		return result, fmt.Errorf("corpus digest mismatch")
 	}
+
 	output, err := os.OpenFile(filepath.Join(plan.Output, "plain-text-differences.jsonl"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return result, err
 	}
+
 	closed := false
+
 	defer func() {
 		if !closed {
 			err = errors.Join(err, output.Close())
 		}
 	}()
+
 	writer := bufio.NewWriterSize(output, 1<<20)
 	encoder := json.NewEncoder(writer)
 	encoder.SetEscapeHTML(false)
@@ -50,27 +57,34 @@ func RunFiles(plan ComparisonPlan, before, after Adapter, initialization Initial
 	if err != nil {
 		return result, err
 	}
+
 	if err = writer.Flush(); err != nil {
 		return result, err
 	}
+
 	err = output.Close()
 	closed = true
+
 	if err != nil {
 		return result, err
 	}
+
 	result.Initialization = initialization
 	summary := WorkerResults{RunID: plan.RunID, CorpusSHA256: plan.CorpusSHA256, Results: map[string]ProfileResult{"plainText": result}}
 	data, err := json.MarshalIndent(summary, "", "  ")
 	if err != nil {
 		return result, err
 	}
+
 	if err = Validate("results", data); err != nil {
 		return result, err
 	}
+
 	summaryFile, err := os.OpenFile(filepath.Join(plan.Output, "plain-text-results.json"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return result, err
 	}
+
 	_, writeErr := summaryFile.Write(append(data, '\n'))
 	return result, errors.Join(writeErr, summaryFile.Close())
 }

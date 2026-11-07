@@ -25,6 +25,7 @@ function document(): ReadonlyDocument {
     span: { start, end: start + 4 },
     children: [{ kind: 'text', data: {}, span: { start, end: start + 4 } }]
   })
+
   return {
     source: 'headbody',
     children: [
@@ -57,10 +58,12 @@ test('table nodes share dispatch, ancestry, column alignment and node-bound plan
   const [header, body] = table.children!
   const cell = header.children![0]
   const ancestry: string[][] = []
+
   const textDefinition = defineNode('text', () => true, {
     role: 'inline',
     children: { kind: 'leaf' }
   })
+
   const text = new RenderPlugin(new PluginDeclaration('test-text')).withHandler(
     textDefinition,
     (node, ctx) => {
@@ -68,23 +71,29 @@ test('table nodes share dispatch, ancestry, column alignment and node-bound plan
       return ctx.sourceSlice(node.span)
     }
   )
+
   const extensions = plugin().withReplacedHandler(
     definitions.Row,
     (_node, ctx) => '<tr class="custom">' + ctx.renderChildren() + '</tr>\n'
   )
+
   const view = createRenderer(
     new PresetBuilder().add(extensions).add(text).build(),
     { schema: schema.extend([textDefinition]) }
   )
+
   expect(view.render(input)).toContain('<th style="text-align:right">head</th>')
   expect(view.render(input)).toContain('<tr class="custom">')
   expect(ancestry[0]).toEqual([names.Table, names.HeaderRow, names.Cell])
+
   expect(view.render(input, { omittedNodes: new Set([body]) })).not.toContain(
     '<tbody>'
   )
+
   expect(
     view.render(input, { childText: new Map([[cell, '<replacement>']]) })
   ).toContain('>&lt;replacement&gt;</th>')
+
   expect(
     view.render(input, { childText: new Map([[table, '<whole table>']]) })
   ).toBe('<table>\n&lt;whole table&gt;</table>\n')
@@ -101,22 +110,27 @@ test('custom math adapters are optional and missing adapters preserve escaped so
       }
     ]
   }
+
   expect(
     createRenderer(new PresetBuilder().add(plugin()).build(), {
       schema
     }).render(input)
   ).toBe('$&lt;x&gt;$')
+
   const seen: unknown[][] = []
+
   const custom = plugin({
     math: (tex, displayMode) => {
       seen.push([tex, displayMode])
       return '<math />'
     }
   })
+
   expect(
     createRenderer(new PresetBuilder().add(custom).build(), { schema }).render(
       input
     )
   ).toBe('<math />')
+
   expect(seen).toEqual([['<x>', false]])
 })

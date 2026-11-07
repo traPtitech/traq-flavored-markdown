@@ -46,6 +46,7 @@ pub fn punctuation(ch: char) -> bool {
 fn flanking(prev: char, next: char, marker: u8) -> (bool, bool) {
     let left = !whitespace(next) && (!punctuation(next) || whitespace(prev) || punctuation(prev));
     let right = !whitespace(prev) && (!punctuation(prev) || whitespace(next) || punctuation(next));
+
     (
         left && (marker != b'_' || !right || punctuation(prev)),
         right && (marker != b'_' || !left || punctuation(next)),
@@ -82,17 +83,21 @@ pub fn paired(
     let pos = input.position;
     let marker = source.as_bytes()[pos.get()];
     let mut end = pos;
+
     while source.as_bytes().get(end.get()) == Some(&marker) {
         budget.spend(1)?;
         end += 1;
     }
+
     let length = end - pos;
     if length < width.get() {
         return Ok(None);
     }
+
     let prev = source[..pos.get()].chars().next_back().unwrap_or(' ');
     let next = source[end.get()..].chars().next().unwrap_or(' ');
     let (open, close) = flanking(prev, next, marker);
+
     let pairing = Pairing {
         marker,
         width,
@@ -101,6 +106,7 @@ pub fn paired(
         close,
         policy,
     };
+
     Ok(Some(InlineMatch {
         syntax: None,
         end: pos + length / width.get() * width.get(),

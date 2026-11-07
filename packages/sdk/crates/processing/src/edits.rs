@@ -12,6 +12,7 @@ pub(crate) fn apply(source: &str, mut edits: Vec<(Span, &str)>) -> crate::Result
 
     for (span, replacement) in edits {
         source.slice(span)?;
+
         if span.start < position {
             if span.end > position {
                 return Err(crate::Error::OverlappingEdits {
@@ -19,14 +20,18 @@ pub(crate) fn apply(source: &str, mut edits: Vec<(Span, &str)>) -> crate::Result
                     previous_end: position,
                 });
             }
+
             continue;
         }
+
         selected.push(SourceEdit {
             span,
             text: replacement,
         });
+
         position = span.end;
     }
+
     source.replace(&selected).map_err(Into::into)
 }
 
@@ -37,10 +42,12 @@ mod tests {
     #[test]
     fn edits_are_ordered_bounded_and_outermost() {
         let edit = |start, end, text| (Span { start, end }, text);
+
         assert_eq!(
             apply("", vec![edit(0, 0, "first"), edit(0, 0, "duplicate")]),
             Ok("first".into())
         );
+
         assert_eq!(
             apply(
                 "あいうえ",
@@ -53,6 +60,7 @@ mod tests {
             ),
             Ok("ABCえ".into())
         );
+
         assert_eq!(
             apply("abcd", vec![edit(0, 3, "x"), edit(2, 4, "y")]),
             Err(crate::Error::OverlappingEdits {
@@ -60,6 +68,7 @@ mod tests {
                 previous_end: 3
             })
         );
+
         for (start, end) in [(1, 3), (3, 1), (0, 4)] {
             assert_eq!(
                 apply("あ", vec![edit(start, end, "x")]),

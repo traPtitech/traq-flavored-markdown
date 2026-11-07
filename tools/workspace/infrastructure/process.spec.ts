@@ -92,6 +92,7 @@ test.skipIf(process.platform !== 'win32')(
 
 test('process environment and progress reporting are explicit inputs', async () => {
   const progress: string[] = []
+
   const output = await captureProcess(
     Bun.argv[0],
     ['-e', 'console.log(process.env.PROCESS_TEST_VALUE)'],
@@ -101,6 +102,7 @@ test('process environment and progress reporting are explicit inputs', async () 
       log: message => progress.push(message)
     }
   )
+
   expect(output.trim()).toBe('injected')
   expect(progress).toHaveLength(2)
 })

@@ -13,6 +13,7 @@ await vi.hoisted(async () => {
   vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
     'Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
   )
+
   vi.spyOn(navigator, 'vendor', 'get').mockReturnValue('Apple Computer, Inc.')
 })
 
@@ -26,6 +27,7 @@ const beforeEnter = (wrapper: Awaited<ReturnType<typeof makeInput>>) => {
     bubbles: true,
     cancelable: true
   })
+
   wrapper.vm.element?.dispatchEvent(event)
 
   return event
@@ -74,6 +76,7 @@ it('uses the current DOM selection before selectionchange is delivered', async (
   editor.commands.setTextSelection(6)
   const text = editor.view.dom.querySelector('p')?.firstChild
   if (!(text instanceof Text)) throw new Error('Missing text')
+
   document.getSelection()?.setBaseAndExtent(text, 1, text, 4)
   vi.useFakeTimers()
 
@@ -119,6 +122,7 @@ it('does not treat an IME confirmation as an iOS Enter action', async () => {
   const wrapper = await makeInput()
   await focus(wrapper)
   vi.useFakeTimers()
+
   wrapper.vm.element?.dispatchEvent(
     new CompositionEvent('compositionstart', { bubbles: true })
   )
@@ -130,8 +134,10 @@ it('does not treat an IME confirmation as an iOS Enter action', async () => {
 
   expect(lastValue(wrapper)).toBeUndefined()
   expect(wrapper.emitted('keydown')).toBeUndefined()
+
   wrapper.vm.element?.dispatchEvent(
     new CompositionEvent('compositionend', { bubbles: true })
   )
+
   await vi.advanceTimersByTimeAsync(1)
 })

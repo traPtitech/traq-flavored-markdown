@@ -5,7 +5,9 @@ export function typescriptFiles(manifest: {
 }) {
   const files = new Map<string, string>()
   const owners = [...new Set(Object.values(manifest.nodes).map(n => n.group))]
+
   for (const group of owners) nodeGroup(group)
+
   files.set(
     'typescript/src/generated/nodes.ts',
     '// Generated from Rust contracts. Do not edit.\n' +
@@ -16,16 +18,17 @@ export function typescriptFiles(manifest: {
             `import * as ${g} from '@traq-flavored-markdown/${nodeGroup(g).typescriptNodes}';`
         )
         .join('\n') +
-      '\n' +
-      `export type NodeVariant = ${owners.map(g => `${g}.NodeVariant`).join(' | ')};\n` +
+      '\n\n' +
+      `export type NodeVariant = ${owners.map(g => `${g}.NodeVariant`).join(' | ')};\n\n` +
       'export type MutableNode = AstMutableNode<NodeVariant>;\n' +
       'export type MutableDocument = AstMutableDocument<NodeVariant>;\n' +
       'export type ReadonlyNode = AstReadonlyNode<NodeVariant>;\n' +
-      'export type ReadonlyDocument = AstReadonlyDocument<NodeVariant>;\n' +
-      `export const names = Object.freeze({${owners.map(g => `...${g}.names`).join(',')}});\n` +
-      `export const definitions = Object.freeze({${owners.map(g => `...${g}.definitions`).join(',')}});\n` +
-      'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions));\n' +
+      'export type ReadonlyDocument = AstReadonlyDocument<NodeVariant>;\n\n' +
+      `export const names = Object.freeze({${owners.map(g => `...${g}.names`).join(',')}});\n\n` +
+      `export const definitions = Object.freeze({${owners.map(g => `...${g}.definitions`).join(',')}});\n\n` +
+      'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions));\n\n' +
       'export function isKnownNode<T extends {kind: string; data:unknown}>(node:T):node is T & DeepReadonly<NodeVariant> {return schema.isKnownNode(node);}\n'
   )
+
   return files
 }

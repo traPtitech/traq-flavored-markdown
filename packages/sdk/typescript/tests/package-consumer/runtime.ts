@@ -15,10 +15,12 @@ const readBytes = async (url: URL) => new Uint8Array(await readFile(url))
 
 for (const dependency of ['highlight.js', 'katex']) {
   let installed = false
+
   try {
     import.meta.resolve(dependency)
     installed = true
   } catch {}
+
   check(
     !installed,
     dependency + ' should be optional for runtime and custom renderers'
@@ -28,45 +30,57 @@ for (const dependency of ['highlight.js', 'katex']) {
 const bytes = await readBytes(
   new URL(import.meta.resolve('@traq-flavored-markdown/sdk/parser.wasm'))
 )
+
 const runtime = await createRuntime(bytes)
 const parser = runtime.createParser(presets.traq.v1)
 const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))
+
 const hash = [...digest]
   .map(byte => byte.toString(16).padStart(2, '0'))
   .join('')
+
 const expectedHash = argv[2]
 check(hash === expectedHash, 'Packed Wasm hash does not match the contract')
+
 try {
   const captured = parser.parseWithSyntax('😀 **hello**')
   const editing = analyzeForEditing(captured)
+
   const strong = editing.nodes.find(
     entry => entry.node.kind === 'commonmark.strong'
   )!
+
   deepStrictEqual(
     strong.content,
     [{ from: 5, to: 10 }],
     'Packed editor ranges must use original UTF-16 coordinates'
   )
+
   check(
     captured.syntaxFor(strong.node).source !== null,
     'Packed source facts did not bind to the document'
   )
+
   check(
     parser.parseInline(':stamp:').document.children[0].kind === names.Stamp,
     'Packed parser did not load the traQ preset'
   )
+
   check(
     createHtmlRenderer({
       math: { render: tex => '<math>' + tex + '</math>' }
     }).render(parser.parseInline('$x$')) === '<math>x</math>',
     'Custom adapters should work without bundled dependencies'
   )
+
   const extractor = runtime.createExtractor({ origin: '' })
+
   check(
     runtime.createPlainTextRenderer().render(parser.parse('**hello**')) ===
       'hello',
     'Packed native text renderer failed'
   )
+
   deepStrictEqual(
     extractor.extract(parser.parse('**hello**')),
     {
@@ -86,4 +100,5 @@ try {
 } finally {
   runtime.dispose()
 }
+
 console.log('Packed TypeScript consumer passed')

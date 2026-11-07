@@ -51,6 +51,7 @@ impl<H: Clone> Handlers<H> {
                 Some(std::any::type_name::<T>()),
             ));
         }
+
         Arc::make_mut(&mut self.entries).insert(id, handler);
         Arc::make_mut(&mut self.types).insert(id, std::any::type_name::<T>());
         Ok(())
@@ -95,6 +96,7 @@ impl<H: Clone> HandlerRegistry<H> {
                     None,
                 ));
             }
+
             if let Some(id) = plugin
                 .entries
                 .keys()
@@ -107,6 +109,7 @@ impl<H: Clone> HandlerRegistry<H> {
                 ));
             }
         }
+
         let handle = RegistrationHandle::new(&plugin.declaration);
         self.plugins.push((handle.clone(), plugin.clone()));
         Ok(handle)
@@ -120,6 +123,7 @@ impl<H: Clone> HandlerRegistry<H> {
             .ok_or_else(|| {
                 RegistrationError::new(ErrorKind::MissingPlugin, handle.plugin(), None)
             })?;
+
         self.plugins.remove(index);
         Ok(())
     }
@@ -133,6 +137,7 @@ impl<H: Clone> HandlerRegistry<H> {
                 scope: Some(error.scope),
             },
         )?;
+
         Ok(Arc::new(
             self.plugins
                 .iter()

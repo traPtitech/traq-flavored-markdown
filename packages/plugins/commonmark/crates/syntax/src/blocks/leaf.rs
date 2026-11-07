@@ -22,13 +22,16 @@ pub(super) fn fenced(
     let first = input.start;
 
     let info_end = lines[first].start + input.current().trim_end_matches([' ', '\t']).len();
+
     let info =
         super::super::inlines::entities::unescape(&source.literal(info_end - info.len()..info_end));
+
     let indent = input.current().len() - input.current().trim_start_matches(' ').len();
 
     let mut end = closing_fence(input, marker, count);
     let closing = end;
     let literal = fenced_literal(input, end, indent);
+
     let body: Vec<_> = if source.captures_syntax() {
         lines[first + 1..closing]
             .iter()
@@ -41,10 +44,13 @@ pub(super) fn fenced(
     } else {
         vec![]
     };
+
     let mut markers = vec![(MarkerKind::Open, lines[first].clone())];
+
     if closing < lines.end() {
         markers.push((MarkerKind::Close, lines[closing].clone()));
     }
+
     let syntax = source.syntax(&body, &markers, budget)?;
 
     // Include the closing fence in the node span when one was found.
@@ -75,6 +81,7 @@ fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> LineIndex 
         {
             break;
         }
+
         end += 1;
     }
 
@@ -108,6 +115,7 @@ pub(super) fn indented(
     let first = input.start;
     let mut body = vec![];
     let mut prefixes = vec![];
+
     if source.captures_syntax() {
         for line in &lines[first..end] {
             let raw = &source[line.clone()];
@@ -116,6 +124,7 @@ pub(super) fn indented(
             prefixes.push(line.start..line.start + remove);
         }
     }
+
     let syntax = source.prefix_syntax(&body, prefixes, budget)?;
 
     Ok(Some(BlockMatch::node(
@@ -160,9 +169,11 @@ fn indented_content(
                     let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());
                     literal.push_str(&source.literal(line.start + remove..line.end));
                 }
+
                 end = next;
                 continue;
             }
+
             break;
         }
 
@@ -177,6 +188,7 @@ fn indented_content(
     if !literal.ends_with('\n') {
         literal.push('\n');
     }
+
     Ok((end, literal))
 }
 
@@ -206,6 +218,7 @@ pub(super) fn atx(
     }
 
     let view = source.join(&[line.start + prefix..end])?;
+
     let syntax = source.syntax(
         &[line.start + prefix..end],
         &[
@@ -235,6 +248,7 @@ pub(super) fn thematic_break(
     }
 
     let line = &input.lines[input.start];
+
     let marker = input
         .current()
         .chars()

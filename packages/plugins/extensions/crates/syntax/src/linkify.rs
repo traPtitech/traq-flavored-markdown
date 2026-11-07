@@ -21,14 +21,18 @@ fn inline_rule() -> InlineRule {
             {
                 return Ok(None);
             }
+
             let length = recognize::scan_len(input.tail());
             budget.spend(length)?;
+
             let Some(found) = recognize::bare_at(input.source.text(), input.position.get(), length)
             else {
                 return Ok(None);
             };
+
             let range = input.source.range(found.start..found.end)?;
             let span = input.source.span_for(range.clone())?;
+
             return Ok(Some(InlineMatch {
                 syntax: None,
                 end: range.end,
@@ -43,24 +47,31 @@ fn inline_rule() -> InlineRule {
                 },
             }));
         }
+
         let start = input.position + 1;
         let mut end = start;
         let source = input.source.text();
+
         while end.get() < source.len() && source.as_bytes()[end.get()] != b'>' {
             budget.spend(1)?;
+
             if source.as_bytes()[end.get()] <= 32 || source.as_bytes()[end.get()] == b'<' {
                 return Ok(None);
             }
+
             end += 1;
         }
+
         if end.get() == source.len() {
             return Ok(None);
         }
 
         let value = &source[start.get()..end.get()];
+
         let Some(destination) = recognize::destination(value) else {
             return Ok(None);
         };
+
         Ok(Some(InlineMatch {
             syntax: input.source.syntax(
                 &[start..end],
@@ -101,6 +112,7 @@ fn text_rule() -> TextRule {
             .map(|found| {
                 let start = input.range.start + found.start;
                 let end = input.range.start + found.end;
+
                 Ok(TextMatch {
                     start,
                     end,
@@ -127,6 +139,7 @@ pub struct Syntax {
     pub inline: InlineRule,
     pub text: TextRule,
 }
+
 impl Syntax {
     pub fn new() -> Self {
         let inline = inline_rule();
@@ -134,6 +147,7 @@ impl Syntax {
         let mut plugin = SyntaxPlugin::new(&markdown_extensions_contracts::declarations().linkify);
         plugin.add(&inline);
         plugin.add(&text);
+
         Self {
             plugin,
             inline,
@@ -141,6 +155,7 @@ impl Syntax {
         }
     }
 }
+
 impl Default for Syntax {
     fn default() -> Self {
         Self::new()

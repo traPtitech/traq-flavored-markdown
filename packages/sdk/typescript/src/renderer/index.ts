@@ -38,7 +38,9 @@ function buildPreset(
   const extensionsPlugin = extensions({
     math: condensed ? options.condensedMath : options.math
   })
+
   const trapPlugin = trap(options)
+
   const defaults = condensed
     ? configureCondensed(commonPlugin, extensionsPlugin, trapPlugin, options)
     : {
@@ -46,13 +48,16 @@ function buildPreset(
         extensions: extensionsPlugin,
         traq: trapPlugin
       }
+
   const selected = configurePlugins?.(defaults) ?? defaults
 
   const builder = new PresetBuilder()
     .add(selected.common)
     .add(selected.extensions)
     .add(selected.traq)
+
   for (const plugin of plugins) builder.add(plugin)
+
   return builder.build()
 }
 
@@ -73,14 +78,17 @@ export function messageRenderers({
   ...options
 }: HtmlRendererOptions & { origin: string }) {
   const parsedOrigin = new URL(origin)
-  if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:')
+  if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:') {
     throw new TypeError('Expected an HTTP(S) origin')
+  }
+
   const cardOrigin = normalizeTraqOrigin(origin)
   const resolvedOptions = resolveOptions(options)
 
   const standardView = createRenderer(buildPreset(resolvedOptions), {
     schema: resolvedOptions.schema
   })
+
   const condensedView = createRenderer(buildPreset(resolvedOptions, true), {
     schema: resolvedOptions.schema
   })
@@ -89,12 +97,15 @@ export function messageRenderers({
     const standard = standardView.createSession(document)
     const context = messageContext(standard.context)
     const condensed = condensedView.createSession(context)
+
     const analysis = analyzeMessage(
       context,
       cardOrigin,
       resolvedOptions.validateLink
     )
+
     const plan = messageRenderPlan(analysis, resolvedOptions.labels)
+
     const render = (compact: boolean) => ({
       rawText: context.source.text,
       html: (compact ? condensed : standard).render({
@@ -105,6 +116,7 @@ export function messageRenderers({
       }),
       cards: analysis.cards.map(card => ({ ...card }))
     })
+
     return Object.freeze({
       context,
       analysis,
@@ -115,10 +127,12 @@ export function messageRenderers({
 
   return Object.freeze({
     prepare,
+
     render(document: ReadonlyDocument | DocumentContext) {
       const message = prepare(document)
       return { standard: message.standard(), condensed: message.condensed() }
     },
+
     standard: Object.freeze({
       render: (document: ReadonlyDocument | DocumentContext) =>
         prepare(document).standard()

@@ -51,6 +51,7 @@ pub struct Options {
 pub fn plugin() -> RenderPlugin {
     static PLUGIN: LazyLock<RenderPlugin> =
         LazyLock::new(|| build(Options::default()).expect("valid CommonMark text plugin"));
+
     PLUGIN.clone()
 }
 

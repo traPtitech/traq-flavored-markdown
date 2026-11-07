@@ -19,6 +19,7 @@ export interface ResolvedStamp {
 }
 
 export type NamedStamp = Extract<StampKind, { type: 'normal' | 'user' }>
+
 export type StampResolver = (
   stamp: Readonly<NamedStamp>
 ) => Readonly<ResolvedStamp> | undefined

@@ -50,6 +50,7 @@ impl<R> Clone for ExtractionPreset<R> {
         }
     }
 }
+
 impl<R> Clone for ExtractionPresetBuilder<R> {
     fn clone(&self) -> Self {
         Self {
@@ -57,6 +58,7 @@ impl<R> Clone for ExtractionPresetBuilder<R> {
         }
     }
 }
+
 impl<R> Default for ExtractionPresetBuilder<R> {
     fn default() -> Self {
         Self {

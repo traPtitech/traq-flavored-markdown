@@ -2,13 +2,16 @@
 export function countPrivateWarnings() {
   const previous = console.warn
   let count = 0
+
   console.warn = () => {
     count++
   }
+
   return {
     get count() {
       return count
     },
+
     [Symbol.dispose]() {
       console.warn = previous
     }

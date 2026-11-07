@@ -17,6 +17,7 @@ pub(super) fn escape(
     match bytes.get((pos + 1).get()).copied() {
         Some(b'\n') => {
             let mut end = pos + 2;
+
             while matches!(bytes.get(end.get()), Some(b' ' | b'\t')) {
                 budget.spend(1)?;
                 end += 1;

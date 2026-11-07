@@ -42,6 +42,7 @@ impl PlainTextRenderer {
     ) -> crate::Result<String> {
         let document = document.into_view()?;
         let text = self.renderer.render(document)?;
+
         Ok(match self.whitespace {
             WhitespacePolicy::Preserve => text,
             WhitespacePolicy::Collapse => text.split_whitespace().collect::<Vec<_>>().join(" "),

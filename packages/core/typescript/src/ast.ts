@@ -42,6 +42,7 @@ export type ReadonlyNode<
   readonly span: Readonly<Span>
   readonly children?: readonly ReadonlyNode<Kind>[]
 }
+
 export interface ReadonlyDocument<
   Kind extends { kind: string; data: unknown } = {
     kind: string

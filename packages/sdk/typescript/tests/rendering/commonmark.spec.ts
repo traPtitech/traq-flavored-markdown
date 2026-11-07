@@ -20,12 +20,14 @@ const fixtures = JSON.parse(
 test('CommonMark specification examples render with the specification HTML renderer', () => {
   const parser = commonParser()
   const view = createSpecHtmlRenderer()
+
   try {
-    for (const entry of fixtures)
+    for (const entry of fixtures) {
       expect(
         view.render(parser.parse(entry.markdown)),
         `example ${entry.example}`
       ).toBe(entry.html)
+    }
   } finally {
     parser.dispose()
   }
@@ -33,16 +35,21 @@ test('CommonMark specification examples render with the specification HTML rende
 
 test('CommonMark fixture inputs match markdown-it with the same escaped-HTML policy', () => {
   const parser = commonParser()
+
   const view = createHtmlRenderer({
     validateLink: () => true,
     validateImage: () => true
   })
+
   const expected = new MarkdownIt('commonmark', { html: true, xhtmlOut: false })
   expected.validateLink = () => true
+
   expected.renderer.rules.html_inline = (tokens, index) =>
     expected.utils.escapeHtml(tokens[index].content)
+
   expected.renderer.rules.html_block = (tokens, index) =>
     '<p>' + expected.utils.escapeHtml(tokens[index].content) + '</p>\n'
+
   try {
     for (const entry of fixtures) {
       // markdown-it omits the newline inside empty blockquotes, unlike the spec.
@@ -52,6 +59,7 @@ test('CommonMark fixture inputs match markdown-it with the same escaped-HTML pol
           '<blockquote></blockquote>\n',
           '<blockquote>\n</blockquote>\n'
         )
+
       expect(view.render(parser.parse(entry.markdown))).toBe(expectedHtml)
     }
   } finally {
@@ -61,15 +69,19 @@ test('CommonMark fixture inputs match markdown-it with the same escaped-HTML pol
 
 test('URL destinations and labels match markdown-it without normalizing source notation', () => {
   const parser = commonParser()
+
   const view = createHtmlRenderer({
     validateLink: () => true,
     validateImage: () => true
   })
+
   const expected = new MarkdownIt('commonmark', {
     html: false,
     xhtmlOut: false
   })
+
   expected.validateLink = () => true
+
   const hosts = [
     'example.com',
     '日本語.jp',
@@ -81,6 +93,7 @@ test('URL destinations and labels match markdown-it without normalizing source n
     'user:pass@[2001:db8::1]:8080',
     'user:pass@日本語.jp:8080'
   ]
+
   // JS uppercases reserved escapes in labels; the existing Rust policy retains
   // their spelling, which is covered separately by the native URL tests.
   const paths = [
@@ -93,22 +106,28 @@ test('URL destinations and labels match markdown-it without normalizing source n
     '/a/../b',
     '/x[0]'
   ]
+
   try {
-    for (const scheme of ['https://', 'http://', '//', 'HTTPS://'])
-      for (const host of hosts)
+    for (const scheme of ['https://', 'http://', '//', 'HTTPS://']) {
+      for (const host of hosts) {
         for (const path of paths) {
           const destination = scheme + host + path
+
           for (const source of [
             `[x](<${destination}>)`,
             `![x](<${destination}>)`,
             ...(destination.includes(' ') || scheme === '//'
               ? []
               : [`<${destination}>`])
-          ])
+          ]) {
             expect(view.render(parser.parse(source)), source).toBe(
               expected.render(source)
             )
+          }
         }
+      }
+    }
+
     for (const destination of [
       '../a/../b?q=%2f#x',
       '?query=%20',
@@ -120,6 +139,7 @@ test('URL destinations and labels match markdown-it without normalizing source n
       'javascript:alert'
     ]) {
       const source = `[x](<${destination}>)`
+
       expect(view.render(parser.parse(source)), source).toBe(
         expected.render(source)
       )

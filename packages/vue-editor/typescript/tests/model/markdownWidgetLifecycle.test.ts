@@ -35,13 +35,17 @@ it.each([
   const widget = editor.view.dom.querySelector('.markdown-input-rendered')
   expect(widget).not.toBeNull()
 
-  if (typeof options.editable === 'boolean')
+  if (typeof options.editable === 'boolean') {
     editor.setEditable(options.editable)
-  if ('composing' in options)
+  }
+
+  if ('composing' in options) {
     configure(editor, { composing: options.composing })
+  }
 
   const selection = editor.state.selection
   const revealed = markdownPreviewKey.getState(editor.state)?.revealed
+
   widget?.dispatchEvent(
     new MouseEvent('click', {
       bubbles: true,
@@ -71,6 +75,7 @@ it('reveals a widget through the shared pointer handler', () => {
   )
 
   expect(editor.state.selection.head).toBe(4)
+
   expect(markdownPreviewKey.getState(editor.state)?.revealed).toEqual([
     { from: 0, to: 3 }
   ])

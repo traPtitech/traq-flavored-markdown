@@ -71,9 +71,11 @@ impl PayloadError {
 impl std::fmt::Display for PayloadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "expected {}", self.expected)?;
+
         if let Some(actual) = &self.actual {
             write!(f, ", got {actual}")?;
         }
+
         Ok(())
     }
 }
@@ -130,6 +132,7 @@ impl<T: NodeData> Payload for T {
 /// This is an open container, not an enum of Markdown node kinds.
 #[derive(Debug)]
 pub struct AnyPayload(Box<dyn Payload>);
+
 impl AnyPayload {
     pub fn new<T: NodeData>(data: T) -> Self {
         Self(Box::new(data))

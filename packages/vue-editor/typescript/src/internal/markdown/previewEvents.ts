@@ -70,7 +70,9 @@ export const markdownPreviewEvents: EditorProps = {
       const box = (
         widget.querySelector('img') ?? widget
       ).getBoundingClientRect()
+
       const { direction, lineHeight } = getComputedStyle(widget)
+
       const padding = Math.max(
         0,
         ((Number.parseFloat(lineHeight) || 0) - box.height) / 2
@@ -79,15 +81,17 @@ export const markdownPreviewEvents: EditorProps = {
       if (
         event.clientY < Math.floor(box.top - padding) ||
         event.clientY > Math.ceil(box.bottom + padding)
-      )
+      ) {
         continue
+      }
 
       if (
         direction === 'rtl'
           ? event.clientX > box.left
           : event.clientX < box.right
-      )
+      ) {
         continue
+      }
 
       caret = toDocumentPosition(format.to)
     }
@@ -97,6 +101,7 @@ export const markdownPreviewEvents: EditorProps = {
     view.dispatch(
       view.state.tr.setSelection(TextSelection.create(view.state.doc, caret))
     )
+
     view.focus()
     return true
   },
@@ -111,8 +116,9 @@ export const markdownPreviewEvents: EditorProps = {
       event.ctrlKey ||
       event.metaKey ||
       event.altKey
-    )
+    ) {
       return false
+    }
 
     const result =
       event.key === 'ArrowLeft' || event.key === 'ArrowRight'
@@ -150,6 +156,7 @@ export const markdownPreviewEvents: EditorProps = {
 
       const position = view.posAtDOM(widget, 0)
       const preview = markdownPreviewKey.getState(view.state)
+
       const format = preview?.formats.find(
         format =>
           format.kind === 'rendered-inline' &&
@@ -171,6 +178,7 @@ export const markdownPreviewEvents: EditorProps = {
             revealed: [{ from: format.from, to: format.to }]
           })
       )
+
       view.focus()
       event.preventDefault()
 
@@ -185,8 +193,9 @@ export const markdownPreviewEvents: EditorProps = {
         !view.editable ||
         isComposingInput(view, event, () => preview.composing) ||
         !event.cancelable
-      )
+      ) {
         return false
+      }
 
       if (
         event.inputType === 'insertText' &&
@@ -221,8 +230,9 @@ export const markdownPreviewEvents: EditorProps = {
       if (
         event.inputType !== 'deleteContentBackward' &&
         event.inputType !== 'deleteContentForward'
-      )
+      ) {
         return false
+      }
 
       const result = deleteAtInputSelection(
         view,
@@ -242,10 +252,11 @@ const applyMarkdownEdit = (
   event: Event,
   result: NonNullable<ReturnType<typeof deleteMarkdownSource>>
 ) => {
-  if (result.revealed)
+  if (result.revealed) {
     result.transaction.setMeta(markdownPreviewKey, {
       revealed: result.revealed
     })
+  }
 
   view.dispatch(result.transaction)
   event.preventDefault()

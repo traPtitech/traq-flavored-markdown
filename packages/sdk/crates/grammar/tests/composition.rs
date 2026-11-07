@@ -12,14 +12,17 @@ use traq_markdown_grammar::syntax::extensions;
 
 #[derive(Debug, Clone, PartialEq)]
 struct ExternalNode;
+
 impl NodeData for ExternalNode {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -28,6 +31,7 @@ impl NodeData for ExternalNode {
 #[test]
 fn third_party_syntax_can_extend_a_published_preset() {
     let mut external = SyntaxPlugin::new(&Declaration::new("external"));
+
     external.add(InlineRule::new(b"^", |input, _| {
         Ok(Some(InlineMatch::leaf(
             input.position + 1,
@@ -40,6 +44,7 @@ fn third_party_syntax_can_extend_a_published_preset() {
     let parser = Parser::new(&builder.build().unwrap());
 
     let document = parser.parse_inline("before ^ after").unwrap();
+
     assert!(
         document
             .children
@@ -48,6 +53,7 @@ fn third_party_syntax_can_extend_a_published_preset() {
     );
 
     let nested = parser.parse("before ^ after").unwrap();
+
     assert!(nested.children.iter().any(|paragraph| {
         paragraph
             .children
@@ -60,6 +66,7 @@ fn third_party_syntax_can_extend_a_published_preset() {
 fn removing_an_extension_does_not_change_an_existing_parser() {
     let original = presets::traq::v1::parser();
     let mut builder = presets::traq::v1::builder();
+
     builder
         .remove(
             &builder
@@ -67,17 +74,22 @@ fn removing_an_extension_does_not_change_an_existing_parser() {
                 .expect("registered preset feature"),
         )
         .unwrap();
+
     let customized = Parser::new(&builder.build().unwrap());
     let plain = customized.parse_inline("$x$").unwrap();
+
     assert_eq!(plain.children[0].payload::<Text>().unwrap().value, "$x$");
     let math = original.parse_inline("$x$").unwrap();
+
     assert_eq!(math.children[0].payload::<InlineMath>().unwrap().tex, "x");
 }
 
 #[test]
 fn commonmark_html_is_opted_out_in_traq() {
     let commonmark = presets::commonmark::parser().parse_inline("<b>").unwrap();
+
     assert!(commonmark.children[0].payload::<HtmlInline>().is_some());
     let traq = presets::traq::v1::parser().parse_inline("<b>").unwrap();
+
     assert_eq!(traq.children[0].payload::<Text>().unwrap().value, "<b>");
 }

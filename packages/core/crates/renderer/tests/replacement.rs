@@ -7,14 +7,17 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 struct Text;
+
 impl NodeData for Text {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -22,14 +25,17 @@ impl NodeData for Text {
 
 #[derive(Clone, Debug, PartialEq)]
 struct Other;
+
 impl NodeData for Other {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -57,6 +63,7 @@ fn replacement_changes_only_the_selected_type_in_the_new_snapshot() {
     plugin
         .on::<Text>(move |_, _, _, output| output.push(&old_config))
         .unwrap();
+
     plugin
         .on::<Other>(|_, _, _, output| output.push("other"))
         .unwrap();
@@ -84,52 +91,64 @@ fn replacement_changes_only_the_selected_type_in_the_new_snapshot() {
             .unwrap(),
         "old"
     );
+
     assert_eq!(
         new.render(&document(Text))
             .map_err(|error| error.code())
             .unwrap(),
         "new"
     );
+
     assert_eq!(
         new.render(&document(Other))
             .map_err(|error| error.code())
             .unwrap(),
         "other"
     );
+
     assert!(old_weak.upgrade().is_some());
     assert!(weak.upgrade().is_some());
     drop(old);
+
     assert!(old_weak.upgrade().is_none());
     assert!(weak.upgrade().is_some());
     drop(new);
+
     assert!(weak.upgrade().is_none());
 }
 
 #[test]
 fn missing_replacement_is_atomic_and_does_not_register_a_handler() {
     let mut plugin = RenderPlugin::new(&Declaration::new("text"));
+
     plugin
         .on::<Text>(|_, _, _, output| output.push("unchanged"))
         .unwrap();
+
     let mut builder = RenderPresetBuilder::new();
     builder.add(&plugin).unwrap();
+
     assert_eq!(
         plugin
             .replace::<Other>(|_, _, _, output| output.push("unexpected"))
             .map_err(|error| error.code()),
         Err("missing_handler")
     );
+
     // Failure must not fork the registered implementation snapshot.
     builder
         .remove(&builder.registration(&plugin).unwrap())
         .unwrap();
+
     let renderer = renderer(&plugin);
+
     assert_eq!(
         renderer
             .render(&document(Other))
             .map_err(|error| error.code()),
         Err("unsupported_node")
     );
+
     assert_eq!(
         renderer
             .render(&document(Text))

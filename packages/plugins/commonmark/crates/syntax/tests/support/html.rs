@@ -68,6 +68,7 @@ fn render_node(node: &Node, tight: bool) -> String {
                     String::new()
                 },
             ),
+
             ListKind::Bullet { .. } => ("ul", String::new()),
         };
 

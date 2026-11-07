@@ -9,6 +9,7 @@ type Stamp = DeepReadonly<MutableStamp>
 
 function wrapWithEffects(html: string, { animations, size }: Stamp['effects']) {
   const sizeClass = size === 'none' ? '' : size
+
   const opening = animations
     .map(
       (effect, index) =>
@@ -43,6 +44,7 @@ function renderImage(
     /[\s"'()\\]/g,
     character => '%' + character.charCodeAt(0).toString(16).toUpperCase()
   )
+
   return renderWithStyle(
     stamp,
     name,
@@ -63,6 +65,7 @@ export function stampRenderer({
       case 'user': {
         const value = resolveStamp?.(kind)
         const label = (kind.type === 'user' ? '@' : '') + kind.name
+
         return value
           ? renderImage(
               stamp,
@@ -78,8 +81,10 @@ export function stampRenderer({
         const digits = (kind.type === 'hex_color' ? kind.rgb : kind.rgba)
           .toString(16)
           .padStart(kind.type === 'hex_color' ? 6 : 8, '0')
+
         const color = '#' + digits
         const label = '0x' + digits
+
         return renderWithStyle(
           stamp,
           label,
@@ -89,6 +94,7 @@ export function stampRenderer({
       }
       case 'hsl_color': {
         const color = `hsl(${kind.hue}, ${kind.saturation}%, ${kind.lightness}%)`
+
         return renderWithStyle(
           stamp,
           color,

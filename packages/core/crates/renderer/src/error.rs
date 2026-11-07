@@ -19,6 +19,7 @@ pub enum Error {
         message: String,
     },
 }
+
 impl Error {
     pub fn code(&self) -> &'static str {
         match self {
@@ -31,16 +32,19 @@ impl Error {
         }
     }
 }
+
 impl From<ValidationError> for Error {
     fn from(error: ValidationError) -> Self {
         Self::Validation(error)
     }
 }
+
 impl From<RegistrationError> for Error {
     fn from(error: RegistrationError) -> Self {
         Self::Registration(error)
     }
 }
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -53,6 +57,7 @@ impl std::fmt::Display for Error {
         }
     }
 }
+
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {

@@ -14,6 +14,7 @@ pub fn builder() -> GrammarBuilder {
 pub fn grammar() -> &'static Grammar {
     static GRAMMAR: LazyLock<Grammar> =
         LazyLock::new(|| builder().build().expect("valid CommonMark profile"));
+
     &GRAMMAR
 }
 

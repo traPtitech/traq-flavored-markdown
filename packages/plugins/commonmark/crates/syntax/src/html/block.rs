@@ -21,10 +21,12 @@ pub(super) enum HtmlBlockKind {
     BlockTag,
     CompleteTag,
 }
+
 impl HtmlBlockKind {
     pub fn interrupts(self) -> bool {
         self != Self::CompleteTag
     }
+
     fn blank_terminated(self) -> bool {
         matches!(self, Self::BlockTag | Self::CompleteTag)
     }
@@ -71,6 +73,7 @@ fn closes(kind: HtmlBlockKind, line: &str) -> bool {
         HtmlBlockKind::RawText => {
             static END: LazyLock<Regex> =
                 LazyLock::new(|| Regex::new(r"(?i)</(?:script|pre|style|textarea)>").unwrap());
+
             END.is_match(line)
         }
 
@@ -78,6 +81,7 @@ fn closes(kind: HtmlBlockKind, line: &str) -> bool {
         HtmlBlockKind::ProcessingInstruction => line.contains("?>"),
         HtmlBlockKind::Declaration => line.contains('>'),
         HtmlBlockKind::Cdata => line.contains("]]>"),
+
         HtmlBlockKind::BlockTag | HtmlBlockKind::CompleteTag => {
             line.bytes().all(|b| matches!(b, b' ' | b'\t'))
         }
@@ -122,6 +126,7 @@ fn block_end(
                 if !kind.blank_terminated() {
                     end += 1;
                 }
+
                 break;
             }
 

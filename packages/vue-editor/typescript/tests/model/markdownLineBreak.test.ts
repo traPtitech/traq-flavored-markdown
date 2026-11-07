@@ -20,9 +20,11 @@ const create = createInputEditor
 
 const tailContainers = (text: string) => {
   const parsed = markdownParser.parse(text)
+
   const tail = [...parsed.walk()].find(
     node => node.kind === 'commonmark.text' && node.data.value.includes('tail')
   )
+
   return tail
     ? parsed
         .location(tail)
@@ -198,9 +200,11 @@ describe('generated list prefix shortcuts', () => {
 
         expect(source(editor)).toBe(sibling)
         expect(key(editor, action).defaultPrevented).toBe(true)
+
         expect(source(editor)).toBe(
           action === 'Backspace' ? continuation : child
         )
+
         expect(markdownListInputKey.getState(editor.state)).toBeUndefined()
 
         undo(editor.state, editor.view.dispatch)
@@ -240,9 +244,11 @@ describe('generated list prefix shortcuts', () => {
     ] as const) {
       const editor = complete('- aaa')
       if (action !== 'Enter') key(editor, action)
+
       editor.commands.insertContent('tail')
 
       expect(tailContainers(source(editor))).toEqual(Array(depth).fill('li'))
+
       expect(
         [...markdownParser.parse(source(editor)).walk()].filter(
           node => node.kind === 'commonmark.list_item'
@@ -337,11 +343,13 @@ describe('parsed container display contexts', () => {
       const lines = analyzeMarkdownSource(text).lines
 
       expect(lines.map(line => line.quoteDepth)).toEqual(quotes)
+
       expect(
         lines.map(
           line => line.containers.filter(part => part.kind === 'list').length
         )
       ).toEqual(lists)
+
       expect(lines.map(line => line.indent)).toEqual(indent)
     }
   )

@@ -63,6 +63,7 @@ impl Codec {
     pub fn encode<'a>(&'a self, document: impl markdown_ast::DocumentInput<'a>) -> Result<Vec<u8>> {
         self.encode_with_limits(document, CodecLimits::default())
     }
+
     pub fn encode_with_limits<'a>(
         &'a self,
         document: impl markdown_ast::DocumentInput<'a>,
@@ -72,6 +73,7 @@ impl Codec {
         self.encode_to_writer(document, &mut output, limits)?;
         Ok(output)
     }
+
     pub fn serialization_view<'a>(
         &'a self,
         document: impl markdown_ast::DocumentInput<'a>,
@@ -79,6 +81,7 @@ impl Codec {
     ) -> Result<crate::SerializableDocument<'a>> {
         crate::SerializableDocument::new(self, document, limits)
     }
+
     pub fn encode_to_writer<'a>(
         &'a self,
         document: impl markdown_ast::DocumentInput<'a>,
@@ -88,15 +91,18 @@ impl Codec {
         let document = self.serialization_view(document, limits.document)?;
         crate::write_json(writer, &document, limits.json_bytes)
     }
+
     pub fn decode(&self, json: &[u8]) -> Result<Document> {
         self.decode_with_limits(json, CodecLimits::default())
     }
+
     pub fn decode_with_limits(&self, json: &[u8], limits: CodecLimits) -> Result<Document> {
         crate::receive::decode(json, limits, &|name, mut fields| {
             let id = self
                 .names
                 .get(name)
                 .ok_or_else(|| Error::new(ErrorKind::UnknownContract { name: name.into() }))?;
+
             let raw = fields.take("data")?;
             fields.end()?;
             Ok((self.entries[id].decode)(Deserialize::deserialize(raw)?)?)

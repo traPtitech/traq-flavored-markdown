@@ -34,6 +34,7 @@ const hasDirectory = async (directory: string) => {
     return (await stat(directory)).isDirectory()
   } catch (error) {
     if ((error as { code?: string }).code === 'ENOENT') return false
+
     throw error
   }
 }
@@ -43,27 +44,36 @@ const snapshot = async (
   { directories, files: targetFiles }: GeneratedTargets
 ) => {
   const snapshotFiles = new Map<string, string>()
+
   const capture = async (relative: string) => {
     try {
       const hash = createHash('sha256')
-      for await (const chunk of createReadStream(path.join(root, relative)))
+
+      for await (const chunk of createReadStream(path.join(root, relative))) {
         hash.update(chunk)
+      }
+
       snapshotFiles.set(relative, hash.digest('hex'))
     } catch (error) {
       if ((error as { code?: string }).code !== 'ENOENT') throw error
     }
   }
+
   for (const file of targetFiles) await capture(file)
+
   for (const directory of directories) {
     const absolute = path.join(root, directory)
-    if (await hasDirectory(absolute))
+
+    if (await hasDirectory(absolute)) {
       for await (const relative of new Bun.Glob('**/*').scan({
         cwd: absolute,
         onlyFiles: true
       })) {
         await capture(path.join(directory, relative))
       }
+    }
   }
+
   return snapshotFiles
 }
 
@@ -92,21 +102,26 @@ export async function checkGenerated(
     sourceRoot,
     targets ?? (await indexedTargets(sourceRoot, owner))
   )
+
   await withTempDirectory('generated-check-', async outputRoot => {
     await generate(outputRoot)
+
     const expected = await snapshot(
       outputRoot,
       targets ?? (await indexedTargets(outputRoot, owner))
     )
+
     const changes = generatedChanges(source, expected)
-    if (changes.length)
+    if (changes.length) {
       throw new Error(`Generated files are out of date:\n${changes.join('\n')}`)
+    }
   })
 }
 
 /** Check exactly one artifact owner, including added and retired outputs. */
 export function checkGeneratedOwner(owner: PackageName) {
   if (owner === 'vue-editor') return Promise.resolve()
+
   return checkGenerated(
     outputRoot => generateBindings(owner, undefined, outputRoot),
     undefined,

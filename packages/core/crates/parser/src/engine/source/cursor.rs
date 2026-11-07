@@ -5,6 +5,7 @@ use std::ops::{Add, AddAssign, Range, Sub};
 /// substituted for one another. Conversion is performed by SourceView.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SourceOffset(pub(crate) usize);
+
 impl SourceOffset {
     pub fn get(self) -> usize {
         self.0
@@ -22,6 +23,7 @@ impl SourceOffset {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ViewOffset(pub(crate) usize);
+
 impl ViewOffset {
     pub fn get(self) -> usize {
         self.0
@@ -33,27 +35,34 @@ pub type ViewRange = Range<ViewOffset>;
 
 impl Add<usize> for ViewOffset {
     type Output = Self;
+
     fn add(self, bytes: usize) -> Self {
         Self(self.0 + bytes)
     }
 }
+
 impl AddAssign<usize> for ViewOffset {
     fn add_assign(&mut self, bytes: usize) {
         self.0 += bytes;
     }
 }
+
 impl Sub<usize> for ViewOffset {
     type Output = Self;
+
     fn sub(self, bytes: usize) -> Self {
         Self(self.0 - bytes)
     }
 }
+
 impl Sub for ViewOffset {
     type Output = usize;
+
     fn sub(self, other: Self) -> usize {
         self.0 - other.0
     }
 }
+
 impl std::fmt::Display for ViewOffset {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(formatter)
@@ -67,6 +76,7 @@ pub struct Cursor<'source, 'budget> {
     position: ViewOffset,
     budget: &'budget mut Budget,
 }
+
 impl<'source, 'budget> Cursor<'source, 'budget> {
     pub fn new(
         source: &'source str,
@@ -86,21 +96,26 @@ impl<'source, 'budget> Cursor<'source, 'budget> {
         if !source.is_char_boundary(start) {
             return Err(ParseError::InternalError);
         }
+
         Ok(Self {
             source,
             position: ViewOffset(start),
             budget,
         })
     }
+
     pub fn position(&self) -> ViewOffset {
         self.position
     }
+
     pub fn tail(&self) -> &'source str {
         &self.source[self.position.0..]
     }
+
     pub fn peek(&self) -> Option<char> {
         self.tail().chars().next()
     }
+
     pub fn advance(&mut self, bytes: usize) -> Result<(), ParseError> {
         let end = self
             .position
@@ -110,23 +125,30 @@ impl<'source, 'budget> Cursor<'source, 'budget> {
         if !self.source.is_char_boundary(end) {
             return Err(ParseError::InternalError);
         }
+
         self.budget.spend(bytes)?;
         self.position = ViewOffset(end);
         Ok(())
     }
+
     pub fn next_char(&mut self) -> Result<Option<char>, ParseError> {
         let next = self.peek();
+
         if let Some(value) = next {
             self.advance(value.len_utf8())?;
         }
+
         Ok(next)
     }
+
     pub fn skip_while(&mut self, predicate: impl Fn(char) -> bool) -> Result<(), ParseError> {
         while self.peek().is_some_and(&predicate) {
             self.next_char()?;
         }
+
         Ok(())
     }
+
     pub fn nesting(&self, depth: usize) -> Result<(), ParseError> {
         self.budget.nesting(depth)
     }

@@ -1,6 +1,8 @@
 use super::{Export, FeatureDefinition};
+
 #[cfg(feature = "syntax")]
 use crate::commonmark_syntax;
+
 use std::sync::LazyLock;
 
 // Generate the closed identifier set and its complete, ordered table together.

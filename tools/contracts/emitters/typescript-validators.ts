@@ -9,30 +9,58 @@ import type { NodeStructure } from '../model/structure.ts'
 
 function validator(s: ContractShape): string {
   if (s.kind === 'reference') return `validate${s.name}`
+
   if (s.kind === 'string') {
     if (s.minLength === undefined && s.maxLength === undefined) return 'string'
+
     const bounds = [
       ...(s.minLength !== undefined ? [`length >= ${s.minLength}`] : []),
       ...(s.maxLength !== undefined ? [`length <= ${s.maxLength}`] : [])
     ]
-    return `(value: unknown) => { if (!string(value)) return false; let length = 0; for (const scalar of value) { const point = scalar.codePointAt(0)!; if (point >= 0xd800 && point <= 0xdfff) return false; length++ }; return ${bounds.join(' && ')} }`
+
+    return `(value: unknown) => {
+  if (!string(value)) return false;
+
+  let length = 0;
+
+  for (const scalar of value) {
+    const point = scalar.codePointAt(0)!;
+    if (point >= 0xd800 && point <= 0xdfff) return false;
+
+    length++;
   }
+
+  return ${bounds.join(' && ')};
+}`
+  }
+
   if (s.kind === 'boolean') return s.kind
-  if (s.kind === 'integer')
+
+  if (s.kind === 'integer') {
     return `(value: unknown) => typeof value === "number" && Number.isInteger(value) && value >= ${s.min} && value <= ${s.max}`
-  if (s.kind === 'number')
+  }
+
+  if (s.kind === 'number') {
     return `(value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= ${s.min} && value <= ${s.max}`
-  if (s.kind === 'enum')
+  }
+
+  if (s.kind === 'enum') {
     return 'oneOf(' + s.values.map(v => q(v)).join(',') + ')'
+  }
+
   if (s.kind === 'literal') return 'oneOf(' + q(s.value) + ')'
-  if (s.kind === 'union')
+
+  if (s.kind === 'union') {
     return (
       '(value: unknown) => [' +
       s.variants.map(validator).join(',') +
       '].filter(check => check(value)).length === 1'
     )
+  }
+
   if (s.kind === 'nullable') return 'nullable(' + validator(s.inner) + ')'
-  if (s.kind === 'array')
+
+  if (s.kind === 'array') {
     return (
       '(value: unknown) => Array.isArray(value) && value.every(' +
       validator(s.items) +
@@ -40,6 +68,8 @@ function validator(s: ContractShape): string {
       (s.minItems !== undefined ? ` && value.length >= ${s.minItems}` : '') +
       (s.maxItems !== undefined ? ` && value.length <= ${s.maxItems}` : '')
     )
+  }
+
   if (s.kind === 'object') {
     const fields = (required: boolean) =>
       '{' +
@@ -48,6 +78,7 @@ function validator(s: ContractShape): string {
         .map(f => q(f.name) + ':' + validator(f.shape))
         .join(',') +
       '}'
+
     return (
       '(value: unknown) => fields(value,' +
       fields(true) +
@@ -56,6 +87,7 @@ function validator(s: ContractShape): string {
       ')'
     )
   }
+
   throw new Error('Unsupported validator')
 }
 
@@ -64,14 +96,14 @@ export function emitContractValidators(
   fieldsImport: string
 ) {
   return (
-    `import {fields,string,boolean,nullable,oneOf} from ${q(fieldsImport)}\n` +
+    `import {fields,string,boolean,nullable,oneOf} from ${q(fieldsImport)}\n\n` +
     [...module.definitions.values()]
       .map(
         definition =>
           `function validate${definition.name}(value: unknown): boolean { return (${validator(definition.shape)})(value) }`
       )
-      .join('\n') +
-    '\n'
+      .join('\n\n') +
+    '\n\n'
   )
 }
 
@@ -83,10 +115,13 @@ export function emitTypeScriptValidators(
 ) {
   const used = new Set()
   const module = normalizeContracts(entries.map(([, schema]) => schema))
+
   for (const [, schema] of entries) {
     const name = typeName(schema).toLowerCase()
-    if (used.has(name))
+    if (used.has(name)) {
       throw new Error('Duplicate generated payload type: ' + name)
+    }
+
     used.add(name)
   }
 
@@ -100,14 +135,14 @@ export function emitTypeScriptValidators(
         entries.map(([name, schema]) => [typeName(schema), name])
       )
     ) +
-    ' as const)\n' +
+    ' as const)\n\n' +
     'const validators = new Map<string, (data: unknown) => boolean>([\n' +
     entries
       .map(
         ([name, schema]) => '  [' + q(name) + ',validate' + schema.title + '],'
       )
       .join('\n') +
-    '\n])\n' +
+    '\n])\n\n' +
     'export const definitions = Object.freeze({\n' +
     entries
       .map(([key, schema]) => {
@@ -115,8 +150,8 @@ export function emitTypeScriptValidators(
         return `${name}: defineNode<Extract<NodeVariant, { kind: typeof names.${name} }>>(names.${name}, validators.get(names.${name})!${structures[key] ? ', ' + q(structures[key]) : ''})`
       })
       .join(',\n') +
-    '\n})\n' +
-    'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions))\n' +
+    '\n})\n\n' +
+    'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions))\n\n' +
     '// Check this payload only; children can still contain unknown nodes.\n' +
     'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & DeepReadonly<NodeVariant> {\n' +
     '  return schema.isKnownNode(node)\n' +

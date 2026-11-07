@@ -23,16 +23,21 @@ test('owner checks ignore unrelated artifacts while detecting added and retired 
           }))
         })
       )
-      for (const file of files)
+
+      for (const file of files) {
         await Bun.write(path.join(directory, file), file)
+      }
     }
+
     await write(root, ['core.ts', 'sdk.ts'])
+
     await checkGenerated(
       output => write(output, ['core.ts']),
       undefined,
       root,
       'core'
     )
+
     await expect(
       checkGenerated(
         output => write(output, ['core-new.ts']),
@@ -41,6 +46,7 @@ test('owner checks ignore unrelated artifacts while detecting added and retired 
         'core'
       )
     ).rejects.toThrow('- core.ts')
+
     await expect(
       checkGenerated(
         output => write(output, ['core.ts', 'core-new.ts']),
@@ -72,10 +78,12 @@ test('generated checks compare isolated files without modifying the source', asy
     const directory = path.join('typescript', 'src', 'generated')
     const artifact = path.join(directory, 'artifact.ts')
     const goArtifact = path.join('go', 'generated_artifact.go')
+
     const targets: GeneratedTargets = {
       directories: [directory],
       files: [goArtifact]
     }
+
     await Bun.write(path.join(root, artifact), 'artifact\n')
     await Bun.write(path.join(root, goArtifact), 'go artifact\n')
 
@@ -96,9 +104,11 @@ test('generated checks compare isolated files without modifying the source', asy
         root
       )
     ).rejects.toThrow('~ ' + artifact)
+
     expect(await Bun.file(path.join(root, artifact)).text()).toBe('artifact\n')
 
     const added = path.join(directory, 'added.ts')
+
     await expect(
       checkGenerated(
         async outputRoot => {
@@ -109,6 +119,7 @@ test('generated checks compare isolated files without modifying the source', asy
         root
       )
     ).rejects.toThrow('+ ' + added)
+
     expect(await Bun.file(path.join(root, added)).exists()).toBe(false)
 
     await expect(
@@ -120,6 +131,7 @@ test('generated checks compare isolated files without modifying the source', asy
         root
       )
     ).rejects.toThrow('- ' + artifact)
+
     expect(await Bun.file(path.join(root, artifact)).text()).toBe('artifact\n')
   })
 })
@@ -128,6 +140,7 @@ test('snapshots compare output formatted by another process', async () => {
   await withTempDirectory('generated-format-', async root => {
     const artifact = 'artifact.ts'
     await Bun.write(path.join(root, artifact), '// original\n'.repeat(4096))
+
     await expect(
       checkGenerated(
         async outputRoot => {
@@ -137,6 +150,7 @@ test('snapshots compare output formatted by another process', async () => {
         root
       )
     ).rejects.toThrow('~ ' + artifact)
+
     expect(await Bun.file(path.join(root, artifact)).text()).toBe(
       '// original\n'.repeat(4096)
     )

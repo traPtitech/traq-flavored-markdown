@@ -14,37 +14,49 @@ test('Rust-exported payloads and presets generate the traQ host API', () => {
     properties: { label: { type: 'string' }, active: { type: 'boolean' } },
     required: ['label', 'active']
   }
+
   const key = 'custom::BadgeData'
 
   const manifest = {
     nodes: { [key]: { schema, group: 'traq' } }
   }
+
   const generated = typescriptFiles(manifest)
+
   expect(generated.get('typescript/src/generated/nodes.ts')).toMatch(
     /traq.NodeVariant/
   )
+
   expect(generated.get('typescript/src/generated/nodes.ts')).toMatch(
     /return schema\.isKnownNode\(node\)/
   )
+
   expect(sdkGoNodes({ nodes: { [key]: { group: 'traq' } } })).toContain(
     'packages/plugins/traq/go'
   )
+
   expect(() =>
     typescriptFiles({ nodes: { [key]: { group: 'custom' } } })
   ).toThrow('Unknown node contract group: custom')
+
   expect(() => sdkGoNodes({ nodes: { [key]: { group: 'custom' } } })).toThrow(
     'Unknown node contract group: custom'
   )
+
   const presets = presetFiles({ commonmark: 0, custom: { compact: 1 } })
+
   expect(presets.get('typescript/src/generated/presets.ts')).toMatch(
     /"custom.compact"/
   )
+
   expect(presets.get('typescript/src/generated/presets.ts')).toMatch(
     /Object\.freeze\(\{ "compact": "custom.compact" \} as const\)/
   )
+
   expect(presets.get('typescript/src/generated/presets.ts')).toContain(
     'export function isGrammarPresetId(value: string): value is GrammarPresetId'
   )
+
   expect(presets.get('go/generated_presets.go')).toMatch(
     /GrammarCustomCompact GrammarPresetID = "custom.compact"/
   )
@@ -62,23 +74,30 @@ test('Rust processing options and nested results generate without host changes',
     required: Object.keys(properties),
     $defs: undefined as Record<string, RawSchema> | undefined
   })
+
   const details = object('Details', {
     labels: { type: 'array', items: { type: 'string' } }
   })
+
   const options = object('ExtractorOptions', {
     compact: { type: 'boolean' },
     details: { $ref: '#/$defs/Details' }
   })
+
   options.$defs = { Details: details }
+
   const output = object('Extraction', {
     details: { $ref: '#/$defs/Details' },
     batches: { type: 'array', items: { $ref: '#/$defs/Details' } }
   })
+
   output.$defs = { Details: details }
+
   const schemas = {
     ExtractorOptions: options,
     Extraction: output
   }
+
   const files = processingFiles(schemas)
   const go = files.get('go/generated_processing.go')
   expect(go).toMatch(/Compact bool/)
@@ -90,8 +109,10 @@ test('Rust processing options and nested results generate without host changes',
   expect(ts).toMatch(/"compact": boolean/)
   expect(ts).toMatch(/"batches": Array<Details>/)
   expect(ts!.match(/export type Details/g)).toHaveLength(1)
+
   output.$defs = {
     Details: object('Details', { other: { type: 'boolean' } })
   }
+
   expect(() => processingFiles(schemas)).toThrow(/Conflicting contract/)
 })

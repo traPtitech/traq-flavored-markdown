@@ -31,6 +31,7 @@ pub(crate) fn rules() -> Rules {
         newline: InlineRule::new(b"\n", basic::newline).named("newline"),
     }
 }
+
 impl Rules {
     pub(crate) fn register(&self, plugin: &mut markdown_parser::grammar::SyntaxPlugin) {
         plugin.add(&self.escape);

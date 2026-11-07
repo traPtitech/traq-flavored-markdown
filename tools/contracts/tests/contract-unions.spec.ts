@@ -53,6 +53,7 @@ test('tagged Rust unions validate their discriminators and variant fields', asyn
       }
     }
   }
+
   const source = emitTypeScriptValidators(
     [['example::StampData', schema]],
     pathToFileURL(
@@ -61,33 +62,40 @@ test('tagged Rust unions validate their discriminators and variant fields', asyn
     pathToFileURL(path.join(packageRoot('core'), 'typescript', 'src', 'ast.ts'))
       .href
   )
+
   const compiled = ts.transpileModule(source, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ESNext
     }
   }).outputText
+
   await withTempDirectory('traq-union-', async directory => {
     const module = `${directory}/union.mjs`
     await write(module, compiled)
     const { definitions } = await import(pathToFileURL(module).href)
     const validate = definitions.StampData.validateData
+
     expect(
       validate({ kind: { type: 'normal', name: 'x' }, animations: [] })
     ).toBe(true)
+
     expect(
       validate({
         kind: { type: 'hex_color', name: 'x', rgb: 0 },
         animations: ['rotate']
       })
     ).toBe(true)
+
     for (const kind of [
       { type: 'invalid', name: 'x' },
       { type: 'normal' },
       { type: 'normal', name: 'x', rgb: 0 },
       { type: 'hex_color', name: 'x', rgb: -1 }
-    ])
+    ]) {
       expect(validate({ kind, animations: [] })).toBe(false)
+    }
+
     expect(
       validate({ kind: { type: 'normal', name: 'x' }, animations: ['bad'] })
     ).toBe(false)

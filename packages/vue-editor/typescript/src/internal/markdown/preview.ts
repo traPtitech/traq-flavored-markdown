@@ -12,6 +12,7 @@ export const markdownPreview = () =>
   new Plugin<PreviewState>({
     key: markdownPreviewKey,
     state: markdownPreviewState,
+
     view: () => ({
       update: (view, previousState) => {
         const preview = markdownPreviewKey.getState(view.state)
@@ -24,13 +25,15 @@ export const markdownPreview = () =>
           preview?.enabled &&
           !view.composing &&
           (!preview.composing || startingComposition)
-        )
+        ) {
           restoreMarkdownSourceCaret(view)
+        }
       }
     }),
 
     props: {
       ...markdownPreviewEvents,
+
       decorations: state => {
         const preview = markdownPreviewKey.getState(state)
         if (!preview?.enabled) return DecorationSet.empty

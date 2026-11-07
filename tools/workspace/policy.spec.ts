@@ -17,6 +17,7 @@ test('core and every plugin layer reject capabilities belonging to another stage
     ['traq-markdown-grammar', 'traq-markdown-processing']
   ]) {
     expect(Object.hasOwn(crateRestrictions, root)).toBe(true)
+
     expect(() => validateCapabilities(root, new Set([forbidden]))).toThrow(
       'disallowed capability'
     )
@@ -51,12 +52,14 @@ test('owner permissions and selected-root capabilities are independent policies'
       false
     )
   ).not.toThrow()
+
   expect(() =>
     validateCapabilities(
       'traq-markdown-processing',
       new Set(['features', 'markdown-renderer'])
     )
   ).not.toThrow()
+
   expect(() =>
     validateCapabilities(
       'traq-markdown-processing',

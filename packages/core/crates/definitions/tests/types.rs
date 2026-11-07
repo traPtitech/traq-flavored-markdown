@@ -4,6 +4,7 @@ use markdown_definitions::WireTypeKey;
 #[derive(WireTypeKey)]
 #[wire_type(key = "example.list")]
 struct List;
+
 type Alias = List;
 
 mod other {
@@ -37,6 +38,7 @@ fn keys_follow_types_and_distinguish_arguments() {
         Characters::<',', '>'>::wire_key(),
         Characters::<'<', ','>::wire_key()
     );
+
     assert!(
         !Characters::<'\n', '\0'>::wire_key()
             .chars()

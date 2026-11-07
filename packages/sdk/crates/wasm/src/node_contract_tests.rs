@@ -12,6 +12,7 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
         .iter()
         .map(|feature| feature.contract.payloads.len())
         .sum();
+
     assert_eq!(metadata.len(), payloads);
     let commonmark = traq_markdown_grammar::presets::commonmark::parser();
     let traq = traq_markdown_grammar::presets::traq::v1::parser();
@@ -28,7 +29,9 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join(directory)
             .join(file);
+
         let cases: Vec<Value> = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+
         for case in cases {
             let document = parser
                 .parse(
@@ -38,18 +41,23 @@ fn exported_types_cover_public_fixtures_and_roundtrip_the_native_tree() {
                         .unwrap(),
                 )
                 .unwrap();
+
             let json = nodes::codec().encode(&document).unwrap();
+
             assert_eq!(nodes::codec().decode(&json).unwrap(), document);
             let value: Value = serde_json::from_slice(&json).unwrap();
             let mut pending: Vec<_> = value["children"].as_array().unwrap().iter().collect();
+
             while let Some(node) = pending.pop() {
                 assert!(metadata.contains_key(node["kind"].as_str().unwrap()));
                 assert!(node["data"].is_object());
                 assert!(node.get("name").is_none());
+
                 if let Some(children) = node["children"].as_array() {
                     pending.extend(children);
                 }
             }
+
             count += 1;
         }
     }
@@ -65,9 +73,11 @@ fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
     };
 
     assert!(nodes::codec().encode(&document).is_err());
+
     let json = serde_json::json!({"source":"x", "children":[{
         "kind":Heading::wire_key(),"span":{"start":0,"end":1},"data":{"level":7}
     }]});
+
     assert!(
         nodes::codec()
             .decode(&serde_json::to_vec(&json).unwrap())
@@ -75,6 +85,7 @@ fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
     );
 
     let child = Node::leaf(Span { start: 0, end: 1 }, Text { value: "x".into() });
+
     let document = MutableDocument {
         source: "x".into(),
         children: vec![Node::new(
@@ -83,5 +94,6 @@ fn native_semantic_validation_is_applied_at_both_codec_boundaries() {
             vec![child],
         )],
     };
+
     assert!(nodes::codec().encode(&document).is_err());
 }

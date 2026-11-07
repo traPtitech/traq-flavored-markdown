@@ -21,15 +21,18 @@ test('aggregation, validation, filtering and cached querying share the same run 
     })(),
     1
   )
+
   const metadata = {
     ...fixtureMetadata(aggregate.counts, 1),
     filters: aggregate.filters
   }
+
   const html = reportDocument(
     '<script type="application/json" id="metadata"></script><script type="application/json" id="payload"></script>',
     metadata,
     aggregate.payload
   )
+
   const document = {
     getElementById: (id: string) => ({
       textContent: html.match(
@@ -37,10 +40,13 @@ test('aggregation, validation, filtering and cached querying share the same run 
       )![1]
     })
   }
+
   const data = readEmbeddedReport(document as unknown as Document)
+
   expect(() =>
     parseReport({ ...metadata, messages: 4 }, aggregate.payload)
   ).toThrow('message counts mismatch')
+
   expect(() =>
     parseReport(
       {
@@ -53,13 +59,17 @@ test('aggregation, validation, filtering and cached querying share the same run 
       aggregate.payload
     )
   ).toThrow('counts mismatch')
+
   let decodes = 0
+
   const repository = new ReportRepository(data, async encoded => {
     decodes++
+
     return JSON.parse(
       new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
     )
   })
+
   const query = {
     profile: 'render' as const,
     search: 'beta',
@@ -73,6 +83,7 @@ test('aggregation, validation, filtering and cached querying share the same run 
     excludeBots: false,
     page: 99
   }
+
   const found = await repository.query(query)
   expect(found.rows).toEqual([fixtureRows[1]])
   expect(found.page).toBe(1)
@@ -92,19 +103,24 @@ test('query cancellation cannot publish a partially scanned filter index', async
     })(),
     1
   )
+
   const data = parseReport(
     { ...fixtureMetadata(aggregate.counts, 1), filters: aggregate.filters },
     aggregate.payload
   )
+
   const abort = new AbortController()
   let decodes = 0
+
   const repository = new ReportRepository(data, async encoded => {
     decodes++
     if (decodes === 1) abort.abort()
+
     return JSON.parse(
       new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
     )
   })
+
   const query = {
     profile: 'render' as const,
     search: 'beta',
@@ -118,6 +134,7 @@ test('query cancellation cannot publish a partially scanned filter index', async
     excludeBots: false,
     page: 1
   }
+
   await expect(repository.query(query, abort.signal)).rejects.toThrow()
   expect((await repository.query(query)).rows).toEqual([fixtureRows[1]])
 })
@@ -135,6 +152,7 @@ test('case and whitespace filters compose with cached queries without decoding e
     before: { kind: 'html', value: before },
     after: { kind: 'html', value: after }
   }))
+
   rows.push(
     {
       ...fixtureRows[0],
@@ -151,12 +169,14 @@ test('case and whitespace filters compose with cached queries without decoding e
       after: { kind: 'text', value: 'a' }
     }
   )
+
   const aggregate = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   const data = parseReport(
     {
       ...fixtureMetadata(aggregate.counts, 1, rows.length),
@@ -164,13 +184,17 @@ test('case and whitespace filters compose with cached queries without decoding e
     },
     aggregate.payload
   )
+
   let decodes = 0
+
   const repository = new ReportRepository(data, async encoded => {
     decodes++
+
     return JSON.parse(
       new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
     )
   })
+
   const query = {
     profile: 'render' as const,
     search: '',
@@ -184,10 +208,12 @@ test('case and whitespace filters compose with cached queries without decoding e
     excludeBots: false,
     page: 1
   }
+
   const first = await repository.query(query)
   expect(first.rows.map(row => row.index)).toEqual([3])
   expect(first.totalHits).toBe(3)
   expect(decodes).toBe(1)
+
   for (const [ignoreWhitespace, ignoreCase, expected] of [
     [false, false, [0, 1, 2, 3, 4, 5]],
     [true, false, [1, 2, 3, 4, 5]],
@@ -195,6 +221,7 @@ test('case and whitespace filters compose with cached queries without decoding e
     [true, true, [3, 4, 5]]
   ] as const) {
     const found: number[] = []
+
     for (let page = 1; page <= expected.length; page++) {
       const result = await repository.query({
         ...query,
@@ -202,14 +229,18 @@ test('case and whitespace filters compose with cached queries without decoding e
         ignoreCase,
         page
       })
+
       expect(result.totalHits).toBe(expected.length)
       found.push(...result.rows.map(row => row.index))
     }
+
     expect(found).toEqual([...expected])
   }
+
   expect(
     (await repository.query({ ...query, search: 'row 2' })).totalHits
   ).toBe(0)
+
   expect(
     (
       await repository.query({
@@ -253,14 +284,17 @@ test('linked-image indexes preserve mixed differences and compose all filter com
       fixtureRows[1]
     ] satisfies DifferenceRow[]
   ).map((row, index) => ({ ...row, index, source: `image row ${index}` }))
+
   const aggregate = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   expect(aggregate.excluded.render.linkedImages).toBe(1)
   expect(aggregate.excluded.render.whitespaceAndCaseAndLinkedImages).toBe(4)
+
   const data = parseReport(
     {
       ...fixtureMetadata(aggregate.counts, 1, rows.length),
@@ -268,6 +302,7 @@ test('linked-image indexes preserve mixed differences and compose all filter com
     },
     aggregate.payload
   )
+
   expect(() =>
     parseReport(
       {
@@ -277,7 +312,8 @@ test('linked-image indexes preserve mixed differences and compose all filter com
       data.payload
     )
   ).toThrow('Invalid report profile')
-  for (const invalid of ['8000', '00gg', 'f000'])
+
+  for (const invalid of ['8000', '00gg', 'f000']) {
     expect(() =>
       parseReport(
         {
@@ -290,13 +326,18 @@ test('linked-image indexes preserve mixed differences and compose all filter com
         data.payload
       )
     ).toThrow('Invalid report profile')
+  }
+
   let decodes = 0
+
   const repository = new ReportRepository(data, async encoded => {
     decodes++
+
     return JSON.parse(
       new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
     )
   })
+
   const query = {
     profile: 'render' as const,
     search: '',
@@ -310,10 +351,13 @@ test('linked-image indexes preserve mixed differences and compose all filter com
     excludeBots: false,
     page: 1
   }
+
   expect((await repository.query(query)).rows.map(row => row.index)).toEqual([
     4
   ])
+
   expect(decodes).toBe(1)
+
   for (const [ignoreWhitespace, ignoreCase, expected] of [
     [false, false, [1, 2, 3, 4, 5]],
     [true, false, [2, 3, 4, 5]],
@@ -321,6 +365,7 @@ test('linked-image indexes preserve mixed differences and compose all filter com
     [true, true, [4, 5]]
   ] as const) {
     const found: number[] = []
+
     for (let page = 1; page <= expected.length; page++) {
       const result = await repository.query({
         ...query,
@@ -328,17 +373,22 @@ test('linked-image indexes preserve mixed differences and compose all filter com
         ignoreCase,
         page
       })
+
       expect(result.totalHits).toBe(expected.length)
       found.push(...result.rows.map(row => row.index))
     }
+
     expect(found).toEqual([...expected])
   }
+
   expect(
     (await repository.query({ ...query, ignoreLinkedImages: false })).totalHits
   ).toBe(rows.length)
+
   expect(
     (await repository.query({ ...query, search: 'image row 0' })).totalHits
   ).toBe(0)
+
   expect(
     (await repository.query({ ...query, search: 'image row 4' })).rows.map(
       row => row.index
@@ -360,13 +410,16 @@ test('HTML spelling filters compose with cached search and reject the previous i
       fixtureRows[1]
     ] satisfies DifferenceRow[]
   ).map((row, index) => ({ ...row, index, source: `HTML row ${index}` }))
+
   const aggregate = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   expect(aggregate.excluded.render.htmlSerialization).toBe(1)
+
   const data = parseReport(
     {
       ...fixtureMetadata(aggregate.counts, 1, rows.length),
@@ -374,6 +427,7 @@ test('HTML spelling filters compose with cached search and reject the previous i
     },
     aggregate.payload
   )
+
   expect(() =>
     parseReport(
       {
@@ -383,13 +437,17 @@ test('HTML spelling filters compose with cached search and reject the previous i
       data.payload
     )
   ).toThrow('Invalid report profile')
+
   let decodes = 0
+
   const repository = new ReportRepository(data, async encoded => {
     decodes++
+
     return JSON.parse(
       new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
     )
   })
+
   const query = {
     profile: 'render' as const,
     search: '',
@@ -403,17 +461,22 @@ test('HTML spelling filters compose with cached search and reject the previous i
     excludeBots: false,
     page: 1
   }
+
   expect((await repository.query(query)).rows.map(row => row.index)).toEqual([
     1
   ])
+
   expect(decodes).toBe(1)
+
   expect(
     (await repository.query({ ...query, search: 'HTML row 0' })).totalHits
   ).toBe(0)
+
   expect(
     (await repository.query({ ...query, search: 'HTML row 2' })).rows[0].after
       .kind
   ).toBe('error')
+
   expect(
     (await repository.query({ ...query, ignoreHtmlSerialization: false }))
       .totalHits

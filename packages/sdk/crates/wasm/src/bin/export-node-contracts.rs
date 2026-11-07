@@ -4,14 +4,19 @@
     reason = "The native exporter shares ABI declarations without calling runtime error helpers"
 )]
 mod abi;
+
 #[path = "../limits.rs"]
 mod limits;
+
 #[path = "../node_catalog.rs"]
 mod node_catalog;
+
 #[path = "../node_metadata.rs"]
 mod node_metadata;
+
 #[path = "../nodes.rs"]
 mod nodes;
+
 #[path = "../source_syntax.rs"]
 #[allow(
     dead_code,
@@ -38,6 +43,7 @@ fn main() -> markdown_contract_export::Result<()> {
     let directory = std::env::args().nth(1).ok_or("Pass the output directory")?;
     // Check that metadata and codec registrations agree before writing bindings.
     let _ = nodes::codec();
+
     let manifest = ArtifactContract {
         contract_id: abi::CONTRACT_ID.into(),
         provenance: Provenance {
@@ -90,6 +96,7 @@ fn main() -> markdown_contract_export::Result<()> {
         limits: limits::metadata().into(),
         nodes: node_metadata::export()?.nodes,
     };
+
     write(directory, &manifest)
 }
 
@@ -97,8 +104,10 @@ fn preset_entry(
     entry: traq_markdown_grammar::bindings::ExportEntry<traq_markdown_grammar::bindings::PresetId>,
 ) -> Result<markdown_contract_export::PresetEntry, Box<dyn std::error::Error>> {
     use traq_markdown_grammar::bindings::ExportEntry;
+
     Ok(match entry {
         ExportEntry::Id(id) => markdown_contract_export::PresetEntry::Id(id.0.try_into()?),
+
         ExportEntry::Group(group) => markdown_contract_export::PresetEntry::Group(
             group
                 .into_iter()

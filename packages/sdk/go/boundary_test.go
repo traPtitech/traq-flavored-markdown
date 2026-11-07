@@ -23,8 +23,10 @@ func TestConfigurationBoundsBeforeEncodingAndInstantiation(t *testing.T) {
 	origin := strings.Repeat("x", inputBytes+1)
 	_, extractorErr := runtime.NewExtractor(context.Background(), ExtractorOptions{Origin: origin})
 	_, rendererErr := runtime.NewPlainTextRenderer(context.Background(), PlainTextOptions{Origin: origin})
+
 	for _, err := range []error{extractorErr, rendererErr} {
 		var detail *Error
+
 		if !errors.As(err, &detail) || detail.Code != "resource_limit" || detail.Resource != "input_bytes" {
 			t.Fatalf("expected bounded configuration failure, got %v", err)
 		}
@@ -33,20 +35,25 @@ func TestConfigurationBoundsBeforeEncodingAndInstantiation(t *testing.T) {
 
 func TestSharedDocumentStructuralContract(t *testing.T) {
 	raw, err := os.ReadFile("../../../tests/fixtures/document-structure.json")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var fixtures []struct {
 		Name     string          `json:"name"`
 		Valid    bool            `json:"valid"`
 		Document json.RawMessage `json:"document"`
 	}
+
 	if err := json.Unmarshal(raw, &fixtures); err != nil {
 		t.Fatal(err)
 	}
+
 	for _, fixture := range fixtures {
 		t.Run(fixture.Name, func(t *testing.T) {
 			_, err := DecodeDocument(fixture.Document)
+
 			if (err == nil) != fixture.Valid {
 				t.Fatalf("valid=%t: %v", fixture.Valid, err)
 			}
@@ -57,64 +64,88 @@ func TestSharedDocumentStructuralContract(t *testing.T) {
 func TestValidatedSnapshotsAcrossConsumers(t *testing.T) {
 	ctx := context.Background()
 	runtime, err := NewBundledRuntime(ctx)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer runtime.Close(ctx)
 	parser, err := runtime.NewParser(ctx, GrammarTraqV1)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	renderer, err := runtime.NewPlainTextRenderer(ctx, PlainTextOptions{})
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	extractor, err := runtime.NewExtractor(ctx, ExtractorOptions{})
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	validated, err := parser.Parse(ctx, "**é😀**")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for range 2 {
 		text, err := renderer.Render(ctx, validated)
+
 		if err != nil || text != "é😀" {
 			t.Fatalf("%q %v", text, err)
 		}
+
 		result, err := extractor.Extract(ctx, validated)
+
 		if err != nil || result.MessageText != "**é😀**" {
 			t.Fatalf("%+v %v", result, err)
 		}
 	}
+
 	snapshot, err := parser.Parse(ctx, "original")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	mutable, err := snapshot.ToMutable()
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	mutable.Source = ""
 	mutable.Children[0].Span.End = 0
+
 	if text, err := renderer.Render(ctx, snapshot); err != nil || text != "original" {
 		t.Fatalf("snapshot: %q %v", text, err)
 	}
+
 	if _, err := parser.Parse(ctx, string([]byte{0xff})); err == nil {
 		t.Fatal("accepted invalid UTF-8")
 	} else {
 		var typed *Error
+
 		if !errors.As(err, &typed) || typed.Code != "invalid_utf8" {
 			t.Fatal(err)
 		}
 	}
+
 	if _, err := parser.Parse(ctx, "reusable"); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := runtime.NewExtractor(ctx, ExtractorOptions{Origin: strings.Repeat("x", 2049)}); err == nil {
 		t.Fatal("accepted resource excess")
 	} else {
 		var typed *Error
+
 		if !errors.As(err, &typed) || typed.Code != "resource_limit" || typed.Resource != "origin_bytes" {
 			t.Fatal(err)
 		}
@@ -125,19 +156,26 @@ func TestEmbeddingPreservesSourceBytesAndPreflightsCandidates(t *testing.T) {
 	source := "\ufeff@é\r\n\x00"
 	plan := ReferenceEmbeddingPlan{Candidates: []ReferenceEmbeddingCandidate{{Kind: ReferenceKindUser, Name: "é", Raw: "@é", Start: 3, End: 6}}}
 	unchanged, err := EmbedReferences(source, ReferenceEmbeddingPlan{}, func(ReferenceKind, string) (string, bool) { t.Fatal("unexpected resolver"); return "", false })
+
 	if err != nil || unchanged != source {
 		t.Fatalf("no-op %q %v", unchanged, err)
 	}
+
 	result, err := EmbedReferences(source, plan, func(ReferenceKind, string) (string, bool) { return "caller-defined-id", true })
+
 	if err != nil || !strings.HasPrefix(result, "\ufeff!{") || !strings.HasSuffix(result, "\r\n\x00") {
 		t.Fatalf("%q %v", result, err)
 	}
+
 	plan.Candidates = append(plan.Candidates, ReferenceEmbeddingCandidate{Kind: ReferenceKindUser, Raw: "bad", Start: 4, End: 99})
 	calls := 0
+
 	if _, err := EmbedReferences(source, plan, func(ReferenceKind, string) (string, bool) { calls++; return "id", true }); err == nil || calls != 0 {
 		t.Fatalf("malformed candidate passed resolver: %v, calls=%d", err, calls)
 	}
+
 	plan.Candidates = plan.Candidates[:1]
+
 	if _, err := EmbedReferences(source, plan, func(ReferenceKind, string) (string, bool) { return string([]byte{0xff}), true }); err == nil {
 		t.Fatal("accepted lossy identifier")
 	}
@@ -148,13 +186,16 @@ func TestEmbeddingResolverCannotChangeValidatedPlan(t *testing.T) {
 		{Kind: ReferenceKindUser, Name: "a", Raw: "@a", Start: 0, End: 2},
 		{Kind: ReferenceKindUser, Name: "b", Raw: "@b", Start: 3, End: 5},
 	}}
+
 	var seen []string
+
 	output, err := EmbedReferences("@a @b", plan, func(_ ReferenceKind, name string) (string, bool) {
 		seen = append(seen, name)
 		plan.Candidates[1].End = 1000
 		plan.Candidates[1].Name = "changed"
 		return name, true
 	})
+
 	if err != nil || strings.Join(seen, ",") != "a,b" || !strings.Contains(output, `"id":"b"`) {
 		t.Fatalf("plan changed after validation: %q %+v %v", output, seen, err)
 	}

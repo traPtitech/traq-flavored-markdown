@@ -33,7 +33,7 @@ let loading: Promise<BrowserRuntime> | undefined
 export function loadRuntime(): Promise<BrowserRuntime> {
   return (loading ??= (async () => {
     const response = await fetch(new URL('./parser.wasm', import.meta.url))
-    if (!response.ok)
+    if (!response.ok) {
       throw new MarkdownError(
         {
           code: 'transport_error',
@@ -41,6 +41,7 @@ export function loadRuntime(): Promise<BrowserRuntime> {
         },
         'load'
       )
+    }
 
     const runtime = await createRuntime(
       new Uint8Array(await response.arrayBuffer())
@@ -57,6 +58,7 @@ export function loadRuntime(): Promise<BrowserRuntime> {
   })().catch(error => {
     loading = undefined
     if (error instanceof MarkdownError) throw error
+
     throw new MarkdownError(
       { code: 'transport_error', message: 'Unable to load Wasm' },
       'load',
