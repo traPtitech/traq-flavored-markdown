@@ -23,7 +23,7 @@ for (const repo of graph.order) {
     if (source.includes('@traptitech/traq-markdown-it'))
       throw new Error(file + ': retired package dependency')
     const script = relative.endsWith('.vue')
-      ? [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+      ? [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
           .map(match => match[1])
           .join('\n')
       : source
