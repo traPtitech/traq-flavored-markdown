@@ -1,22 +1,23 @@
 import {
   type ContractDefinition,
   type ContractModule,
-  type ContractShape,
-  normalizeContracts
+  type ContractShape
 } from '../model/ir.ts'
-import { type RawSchema, quoted as q } from '../model/schema.ts'
+import { quoted as q } from '../model/schema.ts'
+import { block, lines } from './source.ts'
 
-function description(text?: string, indent = ''): string {
+function description(text?: string): string {
   if (!text) return ''
 
-  return (
-    `${indent}/**\n` +
-    text
-      .replaceAll('*/', '* /')
-      .split('\n')
-      .map(line => `${indent} * ${line}\n`)
-      .join('') +
-    `${indent} */\n`
+  return block(
+    '/**',
+    lines(
+      text
+        .replaceAll('*/', '* /')
+        .split('\n')
+        .map(line => ` * ${line}`)
+    ),
+    ' */'
   )
 }
 
@@ -50,22 +51,24 @@ function expression(contract: ContractShape): string {
 
     case 'object':
       return contract.fields.length
-        ? '{\n' +
-            contract.fields
-              .map(
-                field =>
-                  description(field.description, '  ') +
-                  `  ${q(field.name)}${field.required ? '' : '?'}: ${expression(field.shape)};`
+        ? block(
+            '{',
+            lines(
+              contract.fields.map(field =>
+                lines(
+                  description(field.description),
+                  `${q(field.name)}${field.required ? '' : '?'}: ${expression(field.shape)};`
+                )
               )
-              .join('\n') +
-            '\n}'
+            )
+          )
         : 'Record<string, never>'
   }
 }
 
 export function emitTypeScriptDefinition(definition: ContractDefinition) {
-  return (
-    description(definition.description) +
+  return lines(
+    description(definition.description),
     `export type ${definition.name} = ${expression(definition.shape)};`
   )
 }
@@ -77,8 +80,4 @@ export function emitTypeScriptDeclarations(module: ContractModule) {
       emitTypeScriptDefinition(definition)
     ])
   )
-}
-
-export function typescriptDeclarations(schemas: Iterable<RawSchema>) {
-  return emitTypeScriptDeclarations(normalizeContracts(schemas))
 }

@@ -2,8 +2,9 @@ import { normalizeContracts } from '../model/ir.ts'
 import type { RawSchema } from '../model/schema.ts'
 import { quoted as q } from '../model/schema.ts'
 import type { NodeStructure } from '../model/structure.ts'
+import { block, lines, sections, sourceFile } from './source.ts'
 import { emitTypeScriptValidators } from './typescript-validators.ts'
-import { typescriptDeclarations } from './typescript.ts'
+import { emitTypeScriptDeclarations } from './typescript.ts'
 
 type Manifest = {
   nodes: Record<
@@ -23,8 +24,8 @@ export function nodeFiles(manifest: Manifest) {
   for (const [group, entries] of groups) {
     if (!group || !entries) continue
 
-    const types = typescriptDeclarations(entries.map(([, schema]) => schema))
     const contracts = normalizeContracts(entries.map(([, schema]) => schema))
+    const types = emitTypeScriptDeclarations(contracts)
     const values: string[] = []
     const arrayLimits: string[] = []
 
@@ -58,15 +59,22 @@ export function nodeFiles(manifest: Manifest) {
 
     files.set(
       `${group}.ts`,
-      '// Generated from Rust contracts. Do not edit.\n' +
-        [...types.values()].join('\n\n') +
-        `\n\nexport const contractValues = Object.freeze({${values.join(', ')}});\n\n` +
-        `export const arrayLimits = Object.freeze({${arrayLimits.join(', ')}});\n` +
-        '\nexport type NodeVariant =\n' +
-        entries
-          .map(([key, s]) => ` | { kind: ${q(key)}; data: ${s.title} }`)
-          .join('\n') +
-        ';\n\n' +
+      sourceFile(
+        lines(
+          '// Generated from Rust contracts. Do not edit.',
+          sections([...types.values()])
+        ),
+        `export const contractValues = Object.freeze({${values.join(', ')}});`,
+        `export const arrayLimits = Object.freeze({${arrayLimits.join(', ')}});`,
+        block(
+          'export type NodeVariant =',
+          lines(
+            entries.map(
+              ([key, schema]) => ` | { kind: ${q(key)}; data: ${schema.title} }`
+            )
+          ),
+          ';'
+        ),
         emitTypeScriptValidators(
           entries,
           '@traq-flavored-markdown/core/validation',
@@ -78,6 +86,7 @@ export function nodeFiles(manifest: Manifest) {
             ])
           )
         )
+      )
     )
   }
 

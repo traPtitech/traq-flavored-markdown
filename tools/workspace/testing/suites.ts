@@ -29,7 +29,7 @@ export const suites = {
       'packages/sdk/scripts/{contract-identity,generation}.spec.ts',
       'tools/workspace/{build,checks,infrastructure,testing,release}/**/*.spec.ts',
       'tools/workspace/{release,policy,toolchains}.spec.ts',
-      'tools/contracts/tests/{generation,groups,ir,manifest,output-manifest}.spec.ts'
+      'tools/contracts/tests/{generation,groups,ir,manifest,output-manifest,source}.spec.ts'
     ]
   },
   assembly: {

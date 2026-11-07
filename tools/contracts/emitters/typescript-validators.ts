@@ -6,6 +6,7 @@ import {
 import type { RawSchema } from '../model/schema.ts'
 import { quoted as q, typeName } from '../model/schema.ts'
 import type { NodeStructure } from '../model/structure.ts'
+import { block, lines, sections, sourceFile } from './source.ts'
 
 function validator(s: ContractShape): string {
   if (s.kind === 'reference') return `validate${s.name}`
@@ -18,20 +19,24 @@ function validator(s: ContractShape): string {
       ...(s.maxLength !== undefined ? [`length <= ${s.maxLength}`] : [])
     ]
 
-    return `(value: unknown) => {
-  if (!string(value)) return false;
-
-  let length = 0;
-
-  for (const scalar of value) {
-    const point = scalar.codePointAt(0)!;
-    if (point >= 0xd800 && point <= 0xdfff) return false;
-
-    length++;
-  }
-
-  return ${bounds.join(' && ')};
-}`
+    return block(
+      '(value: unknown) => {',
+      sections(
+        'if (!string(value)) return false;',
+        'let length = 0;',
+        block(
+          'for (const scalar of value) {',
+          sections(
+            lines(
+              'const point = scalar.codePointAt(0)!;',
+              'if (point >= 0xd800 && point <= 0xdfff) return false;'
+            ),
+            'length++;'
+          )
+        ),
+        `return ${bounds.join(' && ')};`
+      )
+    )
   }
 
   if (s.kind === 'boolean') return s.kind
@@ -95,15 +100,14 @@ export function emitContractValidators(
   module: ContractModule,
   fieldsImport: string
 ) {
-  return (
-    `import {fields,string,boolean,nullable,oneOf} from ${q(fieldsImport)}\n\n` +
-    [...module.definitions.values()]
-      .map(
-        definition =>
-          `function validate${definition.name}(value: unknown): boolean { return (${validator(definition.shape)})(value) }`
+  return sections(
+    `import {fields,string,boolean,nullable,oneOf} from ${q(fieldsImport)}`,
+    [...module.definitions.values()].map(definition =>
+      block(
+        `function validate${definition.name}(value: unknown): boolean {`,
+        `return (${validator(definition.shape)})(value)`
       )
-      .join('\n\n') +
-    '\n\n'
+    )
   )
 }
 
@@ -125,36 +129,41 @@ export function emitTypeScriptValidators(
     used.add(name)
   }
 
-  return (
-    '// Generated from Rust node payload types. Do not edit.\n' +
-    `import { defineNode, DocumentSchema, type DeepReadonly } from ${q(definitionImport)}\n` +
-    emitContractValidators(module, fieldsImport) +
-    'export const names = Object.freeze(' +
-    q(
-      Object.fromEntries(
-        entries.map(([name, schema]) => [typeName(schema), name])
+  const names = Object.fromEntries(
+    entries.map(([name, schema]) => [typeName(schema), name])
+  )
+
+  return sourceFile(
+    lines(
+      '// Generated from Rust node payload types. Do not edit.',
+      `import { defineNode, DocumentSchema, type DeepReadonly } from ${q(definitionImport)}`,
+      emitContractValidators(module, fieldsImport)
+    ),
+    `export const names = Object.freeze(${q(names)} as const)`,
+    block(
+      'const validators = new Map<string, (data: unknown) => boolean>([',
+      lines(
+        entries.map(([name, schema]) => `[${q(name)},validate${schema.title}],`)
+      ),
+      '])'
+    ),
+    block(
+      'export const definitions = Object.freeze({',
+      lines(
+        entries.map(([key, schema]) => {
+          const name = typeName(schema)
+          return `${name}: defineNode<Extract<NodeVariant, { kind: typeof names.${name} }>>(names.${name}, validators.get(names.${name})!${structures[key] ? ', ' + q(structures[key]) : ''}),`
+        })
+      ),
+      '})'
+    ),
+    'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions))',
+    lines(
+      '// Check this payload only; children can still contain unknown nodes.',
+      block(
+        'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & DeepReadonly<NodeVariant> {',
+        'return schema.isKnownNode(node)'
       )
-    ) +
-    ' as const)\n\n' +
-    'const validators = new Map<string, (data: unknown) => boolean>([\n' +
-    entries
-      .map(
-        ([name, schema]) => '  [' + q(name) + ',validate' + schema.title + '],'
-      )
-      .join('\n') +
-    '\n])\n\n' +
-    'export const definitions = Object.freeze({\n' +
-    entries
-      .map(([key, schema]) => {
-        const name = typeName(schema)
-        return `${name}: defineNode<Extract<NodeVariant, { kind: typeof names.${name} }>>(names.${name}, validators.get(names.${name})!${structures[key] ? ', ' + q(structures[key]) : ''})`
-      })
-      .join(',\n') +
-    '\n})\n\n' +
-    'export const schema = new DocumentSchema<NodeVariant>(Object.values(definitions))\n\n' +
-    '// Check this payload only; children can still contain unknown nodes.\n' +
-    'export function isKnownNode<T extends {kind: string; data: unknown}>(node: T): node is T & DeepReadonly<NodeVariant> {\n' +
-    '  return schema.isKnownNode(node)\n' +
-    '}\n'
+    )
   )
 }

@@ -2,6 +2,11 @@ import {
   emitGoDeclarations,
   goFile
 } from '../../../../tools/contracts/emitters/go.ts'
+import {
+  lines,
+  sections,
+  sourceFile
+} from '../../../../tools/contracts/emitters/source.ts'
 import { emitContractValidators } from '../../../../tools/contracts/emitters/typescript-validators.ts'
 import { emitTypeScriptDeclarations } from '../../../../tools/contracts/emitters/typescript.ts'
 import {
@@ -19,21 +24,20 @@ export function processingFiles(
   return new Map([
     [
       'typescript/src/generated/processing.ts',
-      '// Generated from Rust processing contracts. Do not edit.\n' +
-        [...emitTypeScriptDeclarations(contracts).values()].join('\n\n') +
-        '\n\n' +
+      sourceFile(
+        lines(
+          '// Generated from Rust processing contracts. Do not edit.',
+          sections([...emitTypeScriptDeclarations(contracts).values()])
+        ),
         emitContractValidators(
           contracts,
           '@traq-flavored-markdown/core/validation'
-        ) +
-        '\n' +
-        contracts.roots
-          .map(
-            name =>
-              `export const is${name} = (value: unknown): value is ${name} => validate${name}(value)`
-          )
-          .join('\n\n') +
-        '\n'
+        ),
+        contracts.roots.map(
+          name =>
+            `export const is${name} = (value: unknown): value is ${name} => validate${name}(value)`
+        )
+      )
     ],
     [
       'go/generated_processing.go',
