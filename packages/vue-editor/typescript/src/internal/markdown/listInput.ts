@@ -6,9 +6,9 @@ import {
   TextSelection
 } from '@tiptap/pm/state'
 
-import { isComposingInput } from './composition.js'
-import { inputLifecycleKey } from './inputLifecycle.js'
-import { markdownIndent } from './markdownIndent.js'
+import { isComposingInput } from '../input/composition.js'
+import { inputLifecycleKey } from '../input/lifecycle.js'
+import { markdownIndent } from './indent.js'
 
 export type MarkdownListCompletion = {
   from: number

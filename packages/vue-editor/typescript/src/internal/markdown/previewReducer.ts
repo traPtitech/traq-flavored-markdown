@@ -1,22 +1,13 @@
 import type { StateField } from '@tiptap/pm/state'
 import { DecorationSet } from '@tiptap/pm/view'
 
-import { analyzeEditorDocument } from './documentAnalysis.js'
-import { inputLifecycleKey } from './inputLifecycle.js'
-import { markdownFormats } from './markdown.js'
-import {
-  buildMarkdownDecorations,
-  mergeSyntaxRanges
-} from './markdownDecorations.js'
-import {
-  markdownSourceRangesAt,
-  retainMarkdownSource
-} from './markdownEditing.js'
-import {
-  type PreviewState,
-  markdownPreviewKey
-} from './markdownPreviewState.js'
-import { getMarkdownServices } from './markdownServices.js'
+import { inputLifecycleKey } from '../input/lifecycle.js'
+import { analyzeEditorDocument } from './analysis.js'
+import { buildMarkdownDecorations, mergeSyntaxRanges } from './decorations.js'
+import { markdownSourceRangesAt, retainMarkdownSource } from './editing.js'
+import { markdownFormats } from './formats.js'
+import { type PreviewState, markdownPreviewKey } from './previewState.js'
+import { getMarkdownServices } from './services.js'
 
 export const markdownPreviewState: StateField<PreviewState> = {
   init: () => ({

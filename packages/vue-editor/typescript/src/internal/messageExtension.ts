@@ -2,10 +2,10 @@ import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 
 import type { ReferenceCodec } from '../types.js'
-import { analyzeEditorDocument } from './documentAnalysis.js'
-import { contentToParts } from './editorDocument.js'
-import { inputLifecycleKey } from './inputLifecycle.js'
-import { getMarkdownServices } from './markdownServices.js'
+import { contentToParts } from './input/document.js'
+import { inputLifecycleKey } from './input/lifecycle.js'
+import { analyzeEditorDocument } from './markdown/analysis.js'
+import { getMarkdownServices } from './markdown/services.js'
 
 export const messageExtension = Extension.create<{
   normalize: NonNullable<ReferenceCodec<unknown>['normalize']>

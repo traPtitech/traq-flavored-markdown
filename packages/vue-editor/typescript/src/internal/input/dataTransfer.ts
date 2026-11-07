@@ -1,15 +1,15 @@
 import type { Editor } from '@tiptap/core'
 import type { EditorProps, EditorView } from '@tiptap/pm/view'
 
-import { partsToDisplayText } from '../projection.js'
-import type { InputPart } from '../types.js'
-import type { PreparePaste, ReferenceInputAdapter } from '../types.js'
+import { partsToDisplayText } from '../../projection.js'
+import type { InputPart } from '../../types.js'
+import type { PreparePaste, ReferenceInputAdapter } from '../../types.js'
+import { contentToParts } from './document.js'
 import { editInput } from './editOperation.js'
-import { contentToParts } from './editorDocument.js'
-import { editorTextBetween } from './editorText.js'
 import { currentInputSelection } from './selection.js'
+import { editorTextBetween } from './text.js'
 
-export type { PastePlan, PreparePaste } from '../types.js'
+export type { PastePlan, PreparePaste } from '../../types.js'
 
 export const inputDataTransfer = <R>(options: {
   editor: () => Editor | undefined

@@ -1,6 +1,6 @@
 import type { EditorProps } from '@tiptap/pm/view'
 
-import type { MarkdownLineBreakOptions } from './markdownLineBreak.js'
+import type { MarkdownLineBreakOptions } from '../../types.js'
 import { syncInputSelection } from './selection.js'
 
 type Options = {

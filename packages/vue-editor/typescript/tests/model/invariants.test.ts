@@ -1,8 +1,8 @@
 import { redo, undo } from '@tiptap/pm/history'
 import { expect, it } from 'vitest'
 
-import { contentToParts } from '../../src/internal/editorDocument.js'
-import { editorTextBetween } from '../../src/internal/editorText.js'
+import { contentToParts } from '../../src/internal/input/document.js'
+import { editorTextBetween } from '../../src/internal/input/text.js'
 import { partsToProjectedText } from '../../src/projection.js'
 import { corpusReference, markdownCorpus } from '../helpers/markdownCorpus.js'
 import { normalizeSource } from '../helpers/references.js'

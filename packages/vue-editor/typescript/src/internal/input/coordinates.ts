@@ -1,4 +1,4 @@
-import type { SourceRange } from '../types.js'
+import type { SourceRange } from '../../types.js'
 
 declare const documentPosition: unique symbol
 export type DocumentPosition = number & { readonly [documentPosition]: true }

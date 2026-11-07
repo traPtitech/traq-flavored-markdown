@@ -1,14 +1,14 @@
 import { TextSelection } from '@tiptap/pm/state'
 import type { EditorProps, EditorView } from '@tiptap/pm/view'
 
-import { isComposingInput } from './composition.js'
-import { toDocumentPosition } from './editorCoordinates.js'
-import { deleteMarkdownSource, enterMarkdownSource } from './markdownEditing.js'
+import { isComposingInput } from '../input/composition.js'
+import { toDocumentPosition } from '../input/coordinates.js'
 import {
-  type PreviewState,
-  markdownPreviewKey
-} from './markdownPreviewState.js'
-import { currentInputSelection, syncInputSelection } from './selection.js'
+  currentInputSelection,
+  syncInputSelection
+} from '../input/selection.js'
+import { deleteMarkdownSource, enterMarkdownSource } from './editing.js'
+import { type PreviewState, markdownPreviewKey } from './previewState.js'
 
 const acceptsPreviewPointer = (view: EditorView, event: MouseEvent) => {
   const preview = markdownPreviewKey.getState(view.state)

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 
-import { markdownPreviewKey } from '../../src/internal/markdownPreviewState.js'
+import { markdownPreviewKey } from '../../src/internal/markdown/previewState.js'
 import { installInputEditorFixture } from './fixture.js'
 import { configure, create } from './previewFixture.js'
 

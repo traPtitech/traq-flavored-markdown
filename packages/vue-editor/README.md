@@ -128,6 +128,16 @@ SDK renderer styles can be imported separately when rendering its HTML.
 
 ## Development
 
+The implementation in `typescript/src/internal` is grouped by responsibility:
+
+- `input/` contains document conversion, reference atoms, selection, history,
+  composition, keyboard events and clipboard handling.
+- `markdown/` contains SDK analysis caching, edit-plan integration, decorations
+  and preview state/events. These modules build on the input primitives.
+- `editor.ts` and `useReferenceEditor.ts` assemble the extensions and Vue
+  lifecycle. `messageExtension.ts` connects host reference normalization with
+  input state and optional Markdown analysis.
+
 Build the SDK and this package first with `bun run build` at the repository root.
 `bun run test:vue` runs editor model, selection, history, Markdown and composition
 contracts in jsdom, using generic reference fixtures and the built SDK Wasm.

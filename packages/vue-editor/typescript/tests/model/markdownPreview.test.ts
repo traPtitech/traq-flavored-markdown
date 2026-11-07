@@ -1,7 +1,7 @@
 import { closeHistory, undo } from '@tiptap/pm/history'
 import { describe, expect, it } from 'vitest'
 
-import { markdownPreviewKey } from '../../src/internal/markdownPreview.js'
+import { markdownPreviewKey } from '../../src/internal/markdown/preview.js'
 import { encodeReference } from '../helpers/references.js'
 import { installInputEditorFixture, readSource as source } from './fixture.js'
 import { configure, create } from './previewFixture.js'

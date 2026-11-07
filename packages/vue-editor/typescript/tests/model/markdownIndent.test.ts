@@ -1,7 +1,7 @@
 import { undo } from '@tiptap/pm/history'
 import { describe, expect, it } from 'vitest'
 
-import { markdownIndent } from '../../src/internal/markdownIndent.js'
+import { markdownIndent } from '../../src/internal/markdown/indent.js'
 import { encodeReference } from '../helpers/references.js'
 import {
   createInputEditor,

@@ -1,10 +1,10 @@
 import type { Editor, JSONContent } from '@tiptap/core'
 import type { Fragment, Node as ProseMirrorNode } from '@tiptap/pm/model'
 
-import type { InputPart } from '../types.js'
-import type { ReferenceCodec } from '../types.js'
+import type { InputPart } from '../../types.js'
+import type { ReferenceCodec } from '../../types.js'
 import { editInput } from './editOperation.js'
-import { inputHistory } from './inputHistory.js'
+import { inputHistory } from './history.js'
 
 export const partsToInlineContent = <R>(
   parts: readonly InputPart<R>[]

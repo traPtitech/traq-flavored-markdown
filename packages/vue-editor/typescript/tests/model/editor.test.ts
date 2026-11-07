@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   contentToParts,
   partsToContent
-} from '../../src/internal/editorDocument.js'
+} from '../../src/internal/input/document.js'
 import {
   encodeReference,
   parseInput,

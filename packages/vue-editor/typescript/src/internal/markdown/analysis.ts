@@ -1,8 +1,8 @@
 import type { Node } from '@tiptap/pm/model'
 
-import type { ProjectedInputAnalysis } from '../projection.js'
-import { editorTextBetween } from './editorText.js'
-import type { MarkdownServices } from './markdownServices.js'
+import type { ProjectedInputAnalysis } from '../../projection.js'
+import { editorTextBetween } from '../input/text.js'
+import type { MarkdownServices } from './services.js'
 
 type DocumentAnalysis = {
   editorText: string

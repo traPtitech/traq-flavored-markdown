@@ -5,7 +5,7 @@ import { inputExtensions } from '../../src/internal/editor.js'
 import {
   readInputDocument,
   sourceToContent
-} from '../../src/internal/editorDocument.js'
+} from '../../src/internal/input/document.js'
 import { markdownServices } from '../helpers/markdown.js'
 import { type TestReference, referenceCodec } from '../helpers/references.js'
 

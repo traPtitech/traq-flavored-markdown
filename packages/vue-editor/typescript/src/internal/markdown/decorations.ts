@@ -1,15 +1,12 @@
 import type { EditorState } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-import { toDocumentPosition } from './editorCoordinates.js'
-import { type MarkdownFormat, isMarkdownSourceOnly } from './markdown.js'
-import {
-  markdownSourceActive,
-  markdownSourceVisible
-} from './markdownEditing.js'
-import type { PreviewState } from './markdownPreviewState.js'
-import { getMarkdownServices } from './markdownServices.js'
-import { renderMarkdownWidget } from './markdownWidget.js'
+import { toDocumentPosition } from '../input/coordinates.js'
+import { markdownSourceActive, markdownSourceVisible } from './editing.js'
+import { type MarkdownFormat, isMarkdownSourceOnly } from './formats.js'
+import type { PreviewState } from './previewState.js'
+import { getMarkdownServices } from './services.js'
+import { renderMarkdownWidget } from './widget.js'
 
 export const buildMarkdownDecorations = (
   state: EditorState,

@@ -1,7 +1,7 @@
 import { redo, undo } from '@tiptap/pm/history'
 import { describe, expect, it } from 'vitest'
 
-import { inputLifecycleKey } from '../../src/internal/inputLifecycle.js'
+import { inputLifecycleKey } from '../../src/internal/input/lifecycle.js'
 import { encodeReference } from '../helpers/references.js'
 import {
   createInputEditor,

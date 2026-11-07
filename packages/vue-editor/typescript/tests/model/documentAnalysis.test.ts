@@ -4,7 +4,7 @@ import * as markdown from '../helpers/markdown.js'
 import {
   analyzeEditorDocument,
   analyzeEditorProbe
-} from '../../src/internal/documentAnalysis.js'
+} from '../../src/internal/markdown/analysis.js'
 import { createInputEditor, installInputEditorFixture } from './fixture.js'
 
 installInputEditorFixture()
