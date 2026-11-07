@@ -73,6 +73,13 @@ export type Text = {
 export type ThematicBreak = {
   marker: string
 }
+export const contractValues = Object.freeze({
+  LinkForm: Object.freeze(['explicit', 'autolink', 'linkify'] as const),
+  BulletMarker: Object.freeze(['-', '+', '*'] as const),
+  OrderedDelimiter: Object.freeze(['period', 'parenthesis'] as const)
+})
+export const arrayLimits = Object.freeze({})
+
 export type NodeVariant =
   | { kind: 'commonmark.blockquote'; data: Blockquote }
   | { kind: 'commonmark.code_block'; data: CodeBlock }

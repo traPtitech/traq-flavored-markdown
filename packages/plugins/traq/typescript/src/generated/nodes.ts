@@ -98,6 +98,39 @@ export type StampKind =
       type: 'hsl_color'
     }
 export type StampSize = 'none' | 'ex-large' | 'large' | 'small'
+export const contractValues = Object.freeze({
+  EmbeddingKind: Object.freeze(['file', 'message'] as const),
+  ReferenceKind: Object.freeze(['user', 'group', 'channel'] as const),
+  StampAnimation: Object.freeze([
+    'rotate',
+    'rotate-inv',
+    'wiggle',
+    'parrot',
+    'zoom',
+    'inversion',
+    'turn',
+    'turn-v',
+    'happa',
+    'pyon',
+    'flashy',
+    'pull',
+    'atsumori',
+    'stretch',
+    'stretch-v',
+    'conga',
+    'conga-inv',
+    'rainbow',
+    'ascension',
+    'shake',
+    'party',
+    'attract'
+  ] as const),
+  StampSize: Object.freeze(['none', 'ex-large', 'large', 'small'] as const)
+})
+export const arrayLimits = Object.freeze({
+  StampEffects: Object.freeze({ animations: Object.freeze({ maxItems: 5 }) })
+})
+
 export type NodeVariant =
   | { kind: 'traq.blank_line'; data: BlankLine }
   | { kind: 'traq.embedding'; data: Embedding }
