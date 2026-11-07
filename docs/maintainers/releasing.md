@@ -5,7 +5,7 @@ it is not required reading for ordinary contributions.
 
 ## Release policy
 
-The five public npm packages and five Go modules are released together at one
+The six public npm packages and five Go modules are released together at one
 shared version:
 
 | npm package                                 | Package directory             |
@@ -15,6 +15,7 @@ shared version:
 | `@traq-flavored-markdown/extensions-plugin` | `packages/plugins/extensions` |
 | `@traq-flavored-markdown/traq-plugin`       | `packages/plugins/traq`       |
 | `@traq-flavored-markdown/sdk`               | `packages/sdk`                |
+| `@traq-flavored-markdown/vue-editor`        | `packages/vue-editor`         |
 
 | Go module directory              | Tag                                         |
 | -------------------------------- | ------------------------------------------- |
@@ -33,8 +34,9 @@ Release versions are `<version>`. The npm release tag is `v<version>`; each Go
 module uses its directory prefix, such as `packages/sdk/go/v<version>`. All six
 tags point to the same release commit. The workflow synchronizes npm manifests,
 `bun.lock`, Go requirements and sums, and `go.work` in its isolated runner. The
-SDK Go module includes its matching Wasm as `parser.wasm`. After checks pass, the
-workflow commits release metadata, publishes npm packages, pushes all tags, and
+SDK Go module includes its matching Wasm as `parser.wasm`. After validating
+release metadata and building the artifacts, the workflow commits release
+metadata, publishes npm packages, pushes all tags, and
 verifies a Go consumer with `GOWORK=off` before creating the GitHub Release.
 The first synchronized Go release is v0.1.4; earlier npm tags have no Go module
 tags. Go v2 and later require `/v2` module paths, so the workflow rejects a
@@ -73,12 +75,17 @@ From the Actions page, run `Release npm and Go packages` on the default branch.
 Select whether to increment `patch`, `minor`, or `major`, then turn off `dry_run`.
 Do not run a local build, dry run, `--prepare`, or create a tag.
 
+CI runs the full checks on pull requests and default-branch pushes. Run the
+release after CI has passed for the source commit; the release workflow does
+not repeat tests, lint, browser installation, or the full `bun run check`.
+
 The workflow checks out the current default branch, calculates the next stable
-SemVer version from its root `package.json`, synchronizes npm and Go release
-metadata, and runs `bun run check`. It commits the synchronized manifests,
+SemVer version from its root `package.json`, synchronizes and validates npm and
+Go release metadata, and runs `bun run build` to produce the npm distributions
+and bundled Go Wasm. It commits the synchronized manifests,
 `bun.lock`, `go.work`, Go sums, and tracked Go Wasm to the default branch with
 the message `chore(release): <version>`. It publishes the npm workspaces in
-dependency order (core, CommonMark, extensions, traQ, then SDK), then publishes
+dependency order derived from their manifests, then publishes
 the npm release tag and five Go module tags for that commit. A fresh consumer fetches the tagged Go SDK
 without `go.work` or local replacements and runs the bundled Wasm. The workflow
 then creates a GitHub Release with generated notes. These increment options
@@ -86,9 +93,9 @@ produce stable npm releases using the `latest` dist-tag. The global
 `package-publish` concurrency group serializes queued releases.
 
 The workflow uses GitHub Actions OIDC and only accepts manual dispatch from the
-default branch. A dry run synchronizes metadata and tests a local external Go
-consumer on its isolated runner without committing, tagging, publishing, or
-creating a GitHub Release.
+default branch. A dry run synchronizes and validates metadata, builds the same
+artifacts, and packs the npm workspaces on its isolated runner without
+committing, tagging, publishing, or creating a GitHub Release.
 
 ## Trusted publishing
 
