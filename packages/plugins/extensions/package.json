@@ -1,6 +1,6 @@
 {
   "name": "@traq-flavored-markdown/extensions-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Markdown table, math, mark, strikethrough and linkify extensions.",
   "license": "MIT",
@@ -48,7 +48,7 @@
     "build:styles": "sass --no-source-map styles/base.scss dist/index.css"
   },
   "peerDependencies": {
-    "@traq-flavored-markdown/core": "0.2.0",
+    "@traq-flavored-markdown/core": "0.3.0",
     "katex": "0.19.0"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@traq-flavored-markdown/traq-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "traQ-specific Markdown contracts and HTML rendering.",
   "repository": {
     "type": "git",
@@ -45,7 +45,7 @@
     "sass": "1.106.1"
   },
   "peerDependencies": {
-    "@traq-flavored-markdown/core": "0.2.0"
+    "@traq-flavored-markdown/core": "0.3.0"
   },
   "engines": {
     "node": ">=24"
