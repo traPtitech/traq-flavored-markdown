@@ -1,7 +1,7 @@
 import { Extension } from '@tiptap/core'
 
-import { markdownListInput } from './markdownListInput.js'
-import { markdownPreview } from './markdownPreview.js'
+import { markdownListInput } from './listInput.js'
+import { markdownPreview } from './preview.js'
 
 export const markdownExtension = Extension.create({
   name: 'markdownInput',

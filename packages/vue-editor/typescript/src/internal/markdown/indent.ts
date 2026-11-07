@@ -1,9 +1,9 @@
 import type { EditorState } from '@tiptap/pm/state'
 import { planIndent } from '@traq-flavored-markdown/sdk/editor'
 
-import { toEditorOffset } from './editorCoordinates.js'
-import { editorTextBetween } from './editorText.js'
-import { applyMarkdownEdit } from './markdownOperations.js'
+import { toEditorOffset } from '../input/coordinates.js'
+import { editorTextBetween } from '../input/text.js'
+import { applyMarkdownEdit } from './operations.js'
 
 export const markdownIndent = (
   state: EditorState,

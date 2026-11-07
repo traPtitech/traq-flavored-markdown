@@ -1,8 +1,8 @@
 import { PluginKey } from '@tiptap/pm/state'
 import type { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-import type { MarkdownFormat } from './markdown.js'
-import type { MarkdownEditingState } from './markdownEditing.js'
+import type { MarkdownEditingState } from './editing.js'
+import type { MarkdownFormat } from './formats.js'
 
 export type PreviewState = MarkdownEditingState & {
   compositionDecorations: DecorationSet | undefined

@@ -2,16 +2,16 @@ import { Extension, Node, extensions } from '@tiptap/core'
 import type { SourceAnalysis } from '@traq-flavored-markdown/sdk/editor'
 
 import type { InputPart, MarkdownServices } from '../types.js'
-import { compositionSafeShortcuts } from './composition.js'
-import { inputHistoryExtension } from './inputHistory.js'
-import { inputLifecycleExtension } from './inputLifecycle.js'
-import { markdownExtension } from './markdownExtension.js'
-import { markdownServicesPlugin } from './markdownServices.js'
+import { compositionSafeShortcuts } from './input/composition.js'
+import { inputHistoryExtension } from './input/history.js'
+import { inputLifecycleExtension } from './input/lifecycle.js'
+import { referenceNode } from './input/referenceNode.js'
+import { markdownExtension } from './markdown/extension.js'
+import { markdownServicesPlugin } from './markdown/services.js'
 import { messageExtension } from './messageExtension.js'
-import { referenceNode } from './referenceNode.js'
 
 export type { ReferenceInputHandle } from '../types.js'
-export { partsToContent, contentToParts } from './editorDocument.js'
+export { partsToContent, contentToParts } from './input/document.js'
 export const inputExtensions = <R>({
   label,
   editText,

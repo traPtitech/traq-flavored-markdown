@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { markdownPreviewKey } from '../../src/internal/markdownPreviewState.js'
+import { markdownPreviewKey } from '../../src/internal/markdown/previewState.js'
 import {
   focus,
   getEditor,

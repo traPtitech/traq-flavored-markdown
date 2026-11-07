@@ -4,13 +4,13 @@ import {
   type Transaction
 } from '@tiptap/pm/state'
 
-import type { SourceRange } from '../types.js'
+import type { SourceRange } from '../../types.js'
 import {
   toDocumentPosition,
   toDocumentRange,
   toEditorOffset
-} from './editorCoordinates.js'
-import type { MarkdownFormat } from './markdown.js'
+} from '../input/coordinates.js'
+import type { MarkdownFormat } from './formats.js'
 
 export type MarkdownEditingState = {
   enabled: boolean

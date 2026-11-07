@@ -2,7 +2,7 @@ import { closeHistory } from '@tiptap/pm/history'
 import { type EditorState, TextSelection } from '@tiptap/pm/state'
 import type { EditPlan } from '@traq-flavored-markdown/sdk/editor'
 
-import { toDocumentPosition } from './editorCoordinates.js'
+import { toDocumentPosition } from '../input/coordinates.js'
 
 export const applyMarkdownEdit = (
   state: EditorState,

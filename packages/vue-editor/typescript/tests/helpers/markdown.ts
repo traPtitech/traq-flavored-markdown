@@ -9,9 +9,9 @@ import {
 import { createHtmlRenderer } from '@traq-flavored-markdown/sdk/renderer'
 import { afterAll, vi } from 'vitest'
 
-import { markdownFormats as formats } from '../../src/internal/markdown.js'
-import type { MarkdownFormat } from '../../src/internal/markdown.js'
-import { renderMarkdownWidget as widget } from '../../src/internal/markdownWidget.js'
+import { markdownFormats as formats } from '../../src/internal/markdown/formats.js'
+import type { MarkdownFormat } from '../../src/internal/markdown/formats.js'
+import { renderMarkdownWidget as widget } from '../../src/internal/markdown/widget.js'
 import type { MarkdownServices } from '../../src/types.js'
 
 // Real published parser bytes; no application loader, stores or network requests.

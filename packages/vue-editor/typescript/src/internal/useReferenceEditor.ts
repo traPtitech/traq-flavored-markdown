@@ -5,26 +5,26 @@ import { type Ref, computed, nextTick, watch } from 'vue'
 import type { SuggestionController } from '../types.js'
 import type { ReferenceInputAdapter } from '../types.js'
 import type { InputPart } from '../types.js'
-import { type PreparePaste, inputDataTransfer } from './dataTransfer.js'
 import {
   type ReferenceInputHandle,
   contentToParts,
   inputExtensions
 } from './editor.js'
+import { type PreparePaste, inputDataTransfer } from './input/dataTransfer.js'
 import {
   loadInputDocument,
   partsToInlineContent,
   replaceInputDocument,
   sourceToContent
-} from './editorDocument.js'
-import { createInputEventHandlers } from './inputEvents.js'
-import { type InputRuntimeState, inputLifecycleKey } from './inputLifecycle.js'
+} from './input/document.js'
+import { createInputEventHandlers } from './input/events.js'
+import { type InputRuntimeState, inputLifecycleKey } from './input/lifecycle.js'
+import { isIOS } from './input/platform.js'
+import useInputComposition from './input/useComposition.js'
 import {
   type MarkdownLineBreakOptions,
   markdownLineBreak
-} from './markdownLineBreak.js'
-import { isIOS } from './platform.js'
-import useInputComposition from './useInputComposition.js'
+} from './markdown/lineBreak.js'
 
 interface ReferenceEditorOptions<R> {
   model: Ref<string>

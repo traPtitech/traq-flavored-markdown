@@ -1,15 +1,12 @@
 import { Plugin } from '@tiptap/pm/state'
 import { DecorationSet } from '@tiptap/pm/view'
 
-import { markdownPreviewEvents } from './markdownPreviewEvents.js'
-import { markdownPreviewState } from './markdownPreviewReducer.js'
-import {
-  type PreviewState,
-  markdownPreviewKey
-} from './markdownPreviewState.js'
-import { restoreMarkdownSourceCaret } from './markdownSelection.js'
+import { markdownPreviewEvents } from './previewEvents.js'
+import { markdownPreviewState } from './previewReducer.js'
+import { type PreviewState, markdownPreviewKey } from './previewState.js'
+import { restoreMarkdownSourceCaret } from './selection.js'
 
-export { markdownPreviewKey } from './markdownPreviewState.js'
+export { markdownPreviewKey } from './previewState.js'
 
 export const markdownPreview = () =>
   new Plugin<PreviewState>({

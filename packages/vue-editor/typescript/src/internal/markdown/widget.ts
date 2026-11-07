@@ -1,5 +1,5 @@
-import type { MarkdownFormat } from './markdown.js'
-import type { MarkdownServices } from './markdownServices.js'
+import type { MarkdownFormat } from './formats.js'
+import type { MarkdownServices } from './services.js'
 
 export const renderMarkdownWidget = (
   format: Extract<MarkdownFormat, { kind: 'rendered-inline' }>,

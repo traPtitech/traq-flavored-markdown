@@ -5,7 +5,7 @@ import type {
 } from '@traq-flavored-markdown/sdk/editor'
 import { names } from '@traq-flavored-markdown/sdk/nodes'
 
-import type { SourceRange } from '../types.js'
+import type { SourceRange } from '../../types.js'
 
 type FormatBase = SourceRange & {
   readonly classSuffix: string
