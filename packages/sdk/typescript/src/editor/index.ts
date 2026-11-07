@@ -28,6 +28,8 @@ export interface EditorContainer {
   readonly node: ReadonlyNode<NodeVariant>
   readonly kind: 'quote' | 'list'
   readonly prefix?: EditorMarker
+  /** The authored list symbol, distinct from indentation and continuation prefixes. */
+  readonly marker?: EditorMarker
   readonly continuation: string
   readonly list?: Readonly<{ marker: string; leading: string; spacing: string }>
 }
@@ -200,6 +202,7 @@ export function analyzeForEditing(parsed: ParsedSyntax): EditorAnalysis {
           kind: isQuote ? 'quote' : 'list',
           prefix,
           continuation,
+          ...(isList && opening ? { marker: opening } : {}),
           ...(list ? { list } : {})
         })
       )
@@ -230,3 +233,13 @@ export type {
   SyntaxMarker,
   SyntaxMarkerKind
 } from '../generated/processing.js'
+
+export { describeSource, isLiteralSource } from './source.js'
+export type { SourceAnalysis, SourceNode } from './source.js'
+export { planLineBreak, planIndent } from './operations.js'
+export type {
+  TextEdit,
+  EditPlan,
+  ListCompletion,
+  LineBreakOptions
+} from './operations.js'
