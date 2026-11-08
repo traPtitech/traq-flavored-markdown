@@ -42,7 +42,7 @@ export interface RenderContext {
   /** Dispatch visible children, then join them. childText bypasses the join callback. */
   renderChildren(
     join?: string | ((children: readonly RenderedChild[]) => string),
-    options?: { insideLink?: boolean }
+    options?: { insideLink?: boolean | undefined }
   ): string
 
   /** Dispatch an existing document node with its original ancestry and plan. */
@@ -68,12 +68,12 @@ export interface HtmlPreset {
 
 /** Presentation changes keyed by original or snapshot nodes in this document. */
 export interface RenderPlan {
-  roots?: readonly ReadonlyNode[]
-  omittedNodes?: ReadonlySet<ReadonlyNode>
+  roots?: readonly ReadonlyNode[] | undefined
+  omittedNodes?: ReadonlySet<ReadonlyNode> | undefined
   /** Plain text to show in place of a node's rendered children. */
-  childText?: ReadonlyMap<ReadonlyNode, string>
+  childText?: ReadonlyMap<ReadonlyNode, string> | undefined
   /** Separator between selected roots, for flattened document views. */
-  rootSeparator?: string
+  rootSeparator?: string | undefined
 }
 
 export interface RenderSession {

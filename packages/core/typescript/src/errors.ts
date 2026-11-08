@@ -2,7 +2,7 @@
 export class DocumentValidationError extends TypeError {
   readonly code: 'invalid_document' | 'resource_limit'
   readonly path: string
-  readonly resource?: string
+  readonly resource: string | undefined
 
   constructor(
     message: string,
@@ -11,8 +11,8 @@ export class DocumentValidationError extends TypeError {
       resource,
       cause
     }: {
-      path?: string
-      resource?: string
+      path?: string | undefined
+      resource?: string | undefined
       cause?: unknown
     } = {}
   ) {

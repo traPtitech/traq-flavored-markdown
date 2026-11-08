@@ -20,7 +20,7 @@ test('link label context is inherited by child dispatch and stays local to a ren
       'anchor',
       (_n, ctx) => '<a>' + ctx.renderChildren('', { insideLink: true }) + '</a>'
     )
-    .withHandler('wrapper', (n, ctx) => ctx.renderNode(n.children![0]))
+    .withHandler('wrapper', (n, ctx) => ctx.renderNode(n.children![0]!))
     .withHandler('reset', (_n, ctx) =>
       ctx.renderChildren('', { insideLink: false })
     )
@@ -246,7 +246,7 @@ test('invalid Unicode is rejected in source, node kinds, payload keys and payloa
     new DocumentContext({
       source: '',
       children: [{ ...node, data: { value: 'é😀\uFEFF' } }]
-    }).document.children[0].data
+    }).document.children[0]!.data
   ).toEqual({ value: 'é😀\uFEFF' })
 })
 
@@ -431,8 +431,8 @@ test('validation callbacks cannot change captured kinds, spans or expand schedul
   )
 
   expect(context.document.children).toHaveLength(1)
-  expect(context.document.children[0].kind).toBe('text')
-  expect(context.document.children[0].span).toEqual({ start: 0, end: 1 })
+  expect(context.document.children[0]!.kind).toBe('text')
+  expect(context.document.children[0]!.span).toEqual({ start: 0, end: 1 })
 })
 
 test('a schema captures a changing external declaration before consumers run', () => {

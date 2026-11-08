@@ -19,24 +19,53 @@ export class JsonBoundaryError extends TypeError {
   }
 }
 
-export interface JsonBoundaryOptions {
+export interface JsonLimits {
   bytes: number
   depth: number
-  values?: number
-  /** Payload snapshots retain all fields; wire JSON omits optional undefined fields. */
-  representation: 'payload' | 'wire'
+  values?: number | undefined
 }
 
-/** One traversal owns JSON data, Unicode, cycle, depth, work, and allocation checks. */
-export class JsonBoundary {
+/** Deeply frozen payload snapshots share a cumulative allocation and work budget. */
+export class JsonSnapshot {
+  readonly #traversal: JsonTraversal
+
+  constructor(limits: JsonLimits) {
+    this.#traversal = new JsonTraversal(limits, 'payload')
+  }
+
+  string(value: string, path = '$'): string {
+    return this.#traversal.string(value, path)
+  }
+
+  snapshot(value: unknown, path = '$'): unknown {
+    return this.#traversal.read(value, path)
+  }
+}
+
+/** Each encoding owns its budget and omits object fields whose value is undefined. */
+export function encodeJson(
+  value: unknown,
+  limits: JsonLimits,
+  path = '$'
+): string {
+  const traversal = new JsonTraversal(limits, 'wire')
+  traversal.read(value, path)
+  return traversal.encoded()
+}
+
+/** Both representations share data, Unicode, cycle, depth and work checks. */
+class JsonTraversal {
   readonly #budget: ByteBudget
   readonly #active = new Set<object>()
-  readonly #options: JsonBoundaryOptions
+  readonly #limits: JsonLimits
   readonly #chunks: string[] = []
   #values = 0
   #path = '$'
 
-  constructor(options: JsonBoundaryOptions) {
+  constructor(
+    options: JsonLimits,
+    readonly representation: 'payload' | 'wire'
+  ) {
     for (const value of [
       options.bytes,
       options.depth,
@@ -51,7 +80,7 @@ export class JsonBoundary {
       }
     }
 
-    this.#options = { ...options }
+    this.#limits = { ...options }
 
     this.#budget = new ByteBudget(
       options.bytes,
@@ -72,7 +101,7 @@ export class JsonBoundary {
 
     try {
       length =
-        this.#options.representation === 'wire'
+        this.representation === 'wire'
           ? jsonStringByteLength(value)
           : utf8ByteLength(value)
     } catch {
@@ -87,13 +116,12 @@ export class JsonBoundary {
     return value
   }
 
-  /** Snapshot mode returns deeply frozen data; wire mode returns encoded JSON. */
   read(value: unknown, path = '$'): unknown {
-    const result = this.#visit(value, path, 0)
+    return this.#visit(value, path, 0)
+  }
 
-    return this.#options.representation === 'wire'
-      ? this.#chunks.join('')
-      : result
+  encoded(): string {
+    return this.#chunks.join('')
   }
 
   #fail(message: string, reason: JsonFailure, path: string): never {
@@ -101,7 +129,7 @@ export class JsonBoundary {
   }
 
   #work(path: string): void {
-    if (++this.#values > (this.#options.values ?? this.#options.bytes + 1)) {
+    if (++this.#values > (this.#limits.values ?? this.#limits.bytes + 1)) {
       this.#fail('JSON value limit exceeded', 'values', path)
     }
   }
@@ -128,10 +156,10 @@ export class JsonBoundary {
   #visit(value: unknown, path: string, depth: number): unknown {
     this.#path = path
     this.#work(path)
-    const wire = this.#options.representation === 'wire'
+    const wire = this.representation === 'wire'
 
     if (!wire) {
-      if (depth > this.#options.depth) {
+      if (depth > this.#limits.depth) {
         this.#fail('JSON nesting limit exceeded', 'depth', path)
       }
 
@@ -159,7 +187,7 @@ export class JsonBoundary {
       this.#fail('Expected a finite JSON data value', 'data', path)
     }
 
-    if (wire && depth >= this.#options.depth) {
+    if (wire && depth >= this.#limits.depth) {
       this.#fail('JSON nesting limit exceeded', 'depth', path)
     }
 

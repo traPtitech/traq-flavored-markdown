@@ -164,9 +164,9 @@ test('renderer rejects invalid UTF-8 spans throughout the document', () => {
   expect(view.render(valid)).toBe('猫x')
 
   const middleOfCharacter = structuredClone(valid)
-  middleOfCharacter.children[0].span.end = 1
+  middleOfCharacter.children[0]!.span.end = 1
   const outsideSource = structuredClone(valid)
-  outsideSource.children[1].span.end = 5
+  outsideSource.children[1]!.span.end = 5
   const reversed = structuredClone(valid)
   reversed.children.reverse()
 
@@ -177,6 +177,6 @@ test('renderer rejects invalid UTF-8 spans throughout the document', () => {
   const omitted = structuredClone(outsideSource)
 
   expect(() =>
-    view.render(omitted, { omittedNodes: new Set([omitted.children[1]]) })
+    view.render(omitted, { omittedNodes: new Set([omitted.children[1]!]) })
   ).toThrow(/Invalid document span/)
 })

@@ -1,6 +1,8 @@
 {
   "extends": "../../../tsconfig.tooling.json",
   "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "lib": ["ESNext"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]

@@ -29,7 +29,7 @@ export type { RegistrationHandle } from './preset.js'
 
 export function createRenderer(
   preset: HtmlPreset,
-  { schema }: { schema?: DocumentSchema } = {}
+  { schema }: { schema?: DocumentSchema | undefined } = {}
 ): Renderer {
   const {
     handlers,

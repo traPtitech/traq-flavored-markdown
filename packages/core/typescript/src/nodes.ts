@@ -23,7 +23,7 @@ export interface NodeStructure {
         readonly kind: 'sequence'
         readonly prefix: readonly string[]
         readonly rest: string
-        readonly arityField?: string
+        readonly arityField?: string | undefined
       }
 }
 

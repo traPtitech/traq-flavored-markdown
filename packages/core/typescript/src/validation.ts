@@ -5,8 +5,8 @@ export {
   jsonStringByteLength,
   ByteBudget
 } from './boundary.js'
-export { JsonBoundary, JsonBoundaryError } from './bounded-json.js'
-export type { JsonBoundaryOptions, JsonFailure } from './bounded-json.js'
+export { JsonSnapshot, encodeJson, JsonBoundaryError } from './bounded-json.js'
+export type { JsonLimits, JsonFailure } from './bounded-json.js'
 export type Check = (value: unknown) => boolean
 type Checked<C> = C extends (value: unknown) => value is infer T ? T : unknown
 type Shape<S> = { [K in keyof S]: Checked<S[K]> }
@@ -50,7 +50,7 @@ export function fields<
     Object.entries(value).every(
       ([key, item]) =>
         Object.hasOwn(required, key) ||
-        (Object.hasOwn(optional, key) && optional[key](item))
+        (Object.hasOwn(optional, key) && (optional[key]?.(item) ?? false))
     )
   )
 }

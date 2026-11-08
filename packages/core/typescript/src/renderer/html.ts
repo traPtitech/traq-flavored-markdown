@@ -6,7 +6,7 @@ const escapes: Record<string, string> = {
 }
 
 export const escapeHtml = (text: string) =>
-  text.replace(/[&<>"]/g, c => escapes[c])
+  text.replace(/[&<>"]/g, c => escapes[c] ?? c)
 
 export function attributes(values: Iterable<readonly [string, string]>) {
   return Array.from(values, ([name, value]) => {

@@ -31,7 +31,7 @@ export class SourceText {
       Number.isSafeInteger(offset) &&
       offset >= 0 &&
       offset <= this.byteLength &&
-      (offset === this.byteLength || (this.#bytes[offset] & 0xc0) !== 0x80)
+      (offset === this.byteLength || (this.#bytes[offset]! & 0xc0) !== 0x80)
     )
   }
 
@@ -62,7 +62,7 @@ export class SourceText {
       throw new TypeError('Invalid source UTF-8 offset')
     }
 
-    return this.offsets().bytes[byteOffset]
+    return this.offsets().bytes[byteOffset]!
   }
 
   /** Convert a JavaScript offset, rejecting positions inside surrogate pairs. */
@@ -76,7 +76,9 @@ export class SourceText {
     }
 
     const result = this.offsets().utf16[utf16Offset]
-    if (result < 0) throw new TypeError('Invalid source UTF-16 boundary')
+    if (result === undefined || result < 0) {
+      throw new TypeError('Invalid source UTF-16 boundary')
+    }
 
     return result
   }

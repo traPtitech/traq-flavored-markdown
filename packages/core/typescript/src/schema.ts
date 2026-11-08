@@ -74,7 +74,7 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   /** Validate and own external input, or reuse an already owned document. */
   document(
     input: ReadonlyDocument | DocumentContext,
-    options: { limits?: Readonly<DocumentLimits> } = {}
+    options: { limits?: Readonly<DocumentLimits> | undefined } = {}
   ): DocumentContext<Variant> {
     if (input instanceof DocumentContext && options.limits === undefined) {
       return input.withSchema(this)

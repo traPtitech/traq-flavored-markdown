@@ -101,7 +101,9 @@ export class PresetBuilder {
     return this
   }
 
-  build({ fallback = defaultFallback }: { fallback?: Fallback } = {}) {
+  build({
+    fallback = defaultFallback
+  }: { fallback?: Fallback | undefined } = {}) {
     if (typeof fallback !== 'function') {
       throw new TypeError('Expected render fallback')
     }

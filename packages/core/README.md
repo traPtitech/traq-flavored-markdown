@@ -44,6 +44,11 @@ the schema's node union for traversal and accepts reuse by independent consumers
 editing. `SourceText` slices and edits UTF-8 byte spans while preserving BOM, CRLF,
 and NUL. `DocumentValidationError` exposes `code`, `path`, and optional `resource`.
 
+The `/validation` entrypoint provides `JsonSnapshot` for deeply frozen payloads
+sharing a cumulative budget, and `encodeJson(value, limits)` for one complete
+wire JSON string. These replace the two modes of `JsonBoundary.read()`. Reuse a
+`JsonSnapshot` across payloads in one document; call `encodeJson` for each request.
+
 `SourceText.utf16Offset(byteOffset)` and `byteOffset(utf16Offset)` translate
 between original byte boundaries and JavaScript string offsets. The conversion
 index is cached on first use. Invalid UTF-8 boundaries and positions inside a

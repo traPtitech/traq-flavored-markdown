@@ -173,17 +173,17 @@ test('all source nodes are snapshotted before a user validator executes', () => 
       parent.children!.push(node('unknown'))
       return true
     },
-    definitions[1].structure
+    definitions[1]!.structure
   )
 
   const context = new DocumentContext(
     { source: '', children: [parent] },
-    { schema: new DocumentSchema([mutate, definitions[0]]) }
+    { schema: new DocumentSchema([mutate, definitions[0]!]) }
   )
 
-  expect(context.document.children[0].children!.map(node => node.kind)).toEqual(
-    ['text']
-  )
+  expect(
+    context.document.children[0]!.children!.map(node => node.kind)
+  ).toEqual(['text'])
 })
 
 test('definition metadata is copied and mutable structural definitions are revalidated', () => {
@@ -205,7 +205,7 @@ test('definition metadata is copied and mutable structural definitions are reval
   let calls = 0
 
   const external = {
-    ...definitions[0],
+    ...definitions[0]!,
 
     validateData: () => {
       calls++

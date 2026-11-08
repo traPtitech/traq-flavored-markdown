@@ -114,9 +114,13 @@ test('schemas own their contracts and editing requires an explicit independent d
   expect(schema.withUnknownNodes().document(document)).toBe(document)
   expect(validations).toBe(1)
   const draft = document.toMutable()
-  draft.children[0].data.value = 'changed'
-  expect(document.document.children[0].data.value).toBe('original')
-  expect(schema.document(draft).document.children[0].data.value).toBe('changed')
+  draft.children[0]!.data.value = 'changed'
+  expect(document.document.children[0]!.data.value).toBe('original')
+
+  expect(schema.document(draft).document.children[0]!.data.value).toBe(
+    'changed'
+  )
+
   expect(validations).toBe(2)
 })
 
@@ -136,7 +140,7 @@ test('unknown node policy and typed renderer requirements are explicit', () => {
   expect(() => schema.document(unknown)).toThrow(/Unknown node/)
 
   expect(
-    schema.withUnknownNodes().document(unknown).document.children[0].kind
+    schema.withUnknownNodes().document(unknown).document.children[0]!.kind
   ).toBe('extension')
 
   let calls = 0

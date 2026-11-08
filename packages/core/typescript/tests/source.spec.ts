@@ -8,7 +8,7 @@ import { SourceText } from '../src/source.js'
 test('UTF-8 and UTF-16 offsets roundtrip scalar boundaries and preserve original spelling', () => {
   const source = new SourceText('\uFEFF猫😀\r\n\0é')
 
-  const boundaries = [
+  const boundaries: [number, number][] = [
     [0, 0],
     [3, 1],
     [6, 2],
