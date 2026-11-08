@@ -35,6 +35,7 @@ export default function useInputComposition(options: {
 
   return {
     isComposing,
+
     finish: (action: () => void) => {
       if (!isComposing()) {
         action()
@@ -46,6 +47,7 @@ export default function useInputComposition(options: {
       // ブラウザーに変換を確定させてから、候補の置換を行う。
       options.view()?.dom.blur()
     },
+
     isCompositionKeyEvent: (event: KeyboardEvent) =>
       isComposingInput(
         options.view() ?? { composing: false },

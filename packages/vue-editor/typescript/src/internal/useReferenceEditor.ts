@@ -4,21 +4,25 @@ import { type Ref, computed, nextTick, watch } from 'vue'
 
 import type { SuggestionController } from '../types.js'
 import type { ReferenceInputAdapter } from '../types.js'
-import type { InputPart } from '../types.js'
 import {
   type ReferenceInputHandle,
   contentToParts,
   inputExtensions
 } from './editor.js'
+import { createInputCommands } from './input/commands.js'
+import { toDocumentRange } from './input/coordinates.js'
 import { type PreparePaste, inputDataTransfer } from './input/dataTransfer.js'
 import {
   loadInputDocument,
-  partsToInlineContent,
   replaceInputDocument,
   sourceToContent
 } from './input/document.js'
 import { createInputEventHandlers } from './input/events.js'
-import { type InputRuntimeState, inputLifecycleKey } from './input/lifecycle.js'
+import {
+  type InputRuntimeState,
+  inputLifecycleKey,
+  inputLifecycleMetadata
+} from './input/lifecycle.js'
 import { isIOS } from './input/platform.js'
 import useInputComposition from './input/useComposition.js'
 import {
@@ -30,6 +34,7 @@ interface ReferenceEditorOptions<R> {
   model: Ref<string>
   adapter: ReferenceInputAdapter<R>
   popupId: string
+
   props: {
     singleLine: boolean
     readonly: boolean
@@ -37,6 +42,7 @@ interface ReferenceEditorOptions<R> {
     documentKey?: string | number
     preparePaste?: PreparePaste
   }
+
   attributes: (suggestions: SuggestionController) => Record<string, string>
   onKeyDown: (event: KeyboardEvent) => void
   onKeyUp: (event: KeyboardEvent) => void
@@ -55,16 +61,18 @@ export default function useReferenceEditor<R>(
   const updateInputRuntimeState = (runtime: Partial<InputRuntimeState>) => {
     const current = editor.value
     if (!current || current.isDestroyed) return
+
     const previous = inputLifecycleKey.getState(current.state)
 
     if (
       Object.entries(runtime).every(
         ([key, value]) => previous?.[key as keyof InputRuntimeState] === value
       )
-    )
+    ) {
       return
+    }
 
-    current.view.dispatch(current.state.tr.setMeta(inputLifecycleKey, runtime))
+    current.view.dispatch(inputLifecycleMetadata.set(current.state.tr, runtime))
     nextTick(() => options.onLayoutChange())
   }
 
@@ -77,6 +85,7 @@ export default function useReferenceEditor<R>(
   } = useInputComposition({
     view: () => editor.value?.view,
     onChange: composing => updateInputRuntimeState({ composing }),
+
     onSettled: () =>
       nextTick(() => {
         updateTarget()
@@ -84,41 +93,11 @@ export default function useReferenceEditor<R>(
       })
   })
 
-  const insertParts = (
-    parts: InputPart<R>[],
-    range?: { from: number; to: number },
-    focus = true
-  ) => {
-    const current = editor.value
-
-    if (!current || props.readonly) return
-
-    const content = partsToInlineContent(parts)
-    const chain = current.chain()
-    if (focus) chain.focus()
-
-    chain
-      .insertContentAt(range ?? current.state.selection, content, {
-        parseOptions: { preserveWhitespace: 'full' }
-      })
-      .run()
-  }
-
-  const insertTextAt = (
-    text: string,
-    range?: { from: number; to: number },
-    focus?: boolean
-  ) =>
-    insertParts(
-      [
-        {
-          type: 'text',
-          text: props.singleLine ? text.replace(/[\r\n]+/g, ' ') : text
-        }
-      ],
-      range,
-      focus
-    )
+  const { insertParts, insertText: insertTextAt } = createInputCommands<R>({
+    editor: () => editor.value,
+    readonly: () => props.readonly,
+    singleLine: () => props.singleLine
+  })
 
   const insertText: ReferenceInputHandle['insertText'] = (
     text,
@@ -145,12 +124,9 @@ export default function useReferenceEditor<R>(
     editor: () => editor.value,
     isComposing,
     finishComposition,
+
     insertParts: (parts, range, focus) =>
-      insertParts(
-        parts,
-        range ? { from: range.from + 1, to: range.to + 1 } : undefined,
-        focus
-      )
+      insertParts(parts, range ? toDocumentRange(range) : undefined, focus)
   }) ?? {
     update: () => undefined,
     updatePosition: () => undefined,
@@ -264,8 +240,10 @@ export default function useReferenceEditor<R>(
 
   const syncEditorAttributes = () => {
     const current = editor.value
-    if (current && !current.isDestroyed && !isComposing())
+
+    if (current && !current.isDestroyed && !isComposing()) {
       current.setOptions({})
+    }
   }
 
   watch([editor, editorAttributes], syncEditorAttributes)
@@ -297,6 +275,7 @@ export default function useReferenceEditor<R>(
 
   const focus: ReferenceInputHandle['focus'] = position =>
     editor.value?.commands.focus(position)
+
   const element = computed(() => editor.value?.view.dom)
 
   useResizeObserver(element, () => {

@@ -115,6 +115,7 @@ impl Catalog {
                 .get(index.0)
                 .ok_or_else(|| invalid("unknown namespace"))?
                 .plugin(name),
+
             None => Declaration::new(name),
         };
 
@@ -138,6 +139,7 @@ impl Catalog {
                 .plugins
                 .get(index.0)
                 .ok_or_else(|| invalid("unknown text provider"))?;
+
             plugin.inherit_text_from(source)?;
         }
 
@@ -146,6 +148,7 @@ impl Catalog {
                 .plugins
                 .get(index.0)
                 .ok_or_else(|| invalid("unknown block policy"))?;
+
             plugin.inherit_block_policy_from(source)?;
         }
 

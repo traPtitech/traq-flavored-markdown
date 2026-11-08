@@ -18,18 +18,24 @@ import (
 func parserFor(t *testing.T, preset GrammarPresetID) *Parser {
 	t.Helper()
 	bytes, err := os.ReadFile("../dist/parser.wasm")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	r, err := NewRuntime(context.Background(), bytes)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() { r.Close(context.Background()) })
 	p, err := r.NewParser(context.Background(), preset)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() { p.Close(context.Background()) })
 	return p
 }
@@ -37,26 +43,33 @@ func parserFor(t *testing.T, preset GrammarPresetID) *Parser {
 func TestFixtureAST(t *testing.T) {
 	p := parserFor(t, GrammarTraqV1)
 	raw, err := os.ReadFile("../../../tests/fixtures/commonmark-0.31.2.json")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var common []struct {
 		Example  int
 		Markdown string
 	}
+
 	if err = json.Unmarshal(raw, &common); err != nil {
 		t.Fatal(err)
 	}
+
 	sources := map[int]string{}
+
 	for _, c := range common {
 		sources[c.Example] = c.Markdown
 	}
 
 	for _, file := range []string{"traq-v1-commonmark", "traq-v1-extensions"} {
 		raw, err := os.ReadFile("../tests/fixtures/" + file + ".json")
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		var cases []struct {
 			Name     string
 			Source   string
@@ -66,37 +79,48 @@ func TestFixtureAST(t *testing.T) {
 				Err json.RawMessage
 			}
 		}
+
 		if err = json.Unmarshal(raw, &cases); err != nil {
 			t.Fatal(err)
 		}
+
 		for i, fixture := range cases {
 			parsers := map[string]func(context.Context, string) (*Document, error){
 				"block":  p.Parse,
 				"inline": p.ParseInline,
 			}
+
 			for mode, parse := range parsers {
 				source := fixture.Source
+
 				if fixture.Example != 0 {
 					source = sources[fixture.Example]
 				}
+
 				got, err := parse(context.Background(), source)
 				expected := fixture.Expected[mode]
 				if expected.OK == nil {
 					if err == nil {
 						t.Fatalf("%s %d %s: expected error", file, i, mode)
 					}
+
 					continue
 				}
+
 				if err != nil {
 					t.Fatalf("%s %d %s: %v", file, i, mode, err)
 				}
+
 				actual, err := json.Marshal(got)
+
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				var a, b any
 				json.Unmarshal(actual, &a)
 				json.Unmarshal(expected.OK, &b)
+
 				if !reflect.DeepEqual(a, b) {
 					t.Fatalf("%s %d %s: AST mismatch\ngot %s\nwant %s", file, i, mode, actual, expected.OK)
 				}
@@ -108,6 +132,7 @@ func TestFixtureAST(t *testing.T) {
 func TestHexStampPayloadsPreserveShortRGBAndFullRGBA(t *testing.T) {
 	ctx := context.Background()
 	p := parserFor(t, GrammarTraqV1)
+
 	for _, example := range []struct {
 		source string
 		value  uint32
@@ -122,19 +147,25 @@ func TestHexStampPayloadsPreserveShortRGBAndFullRGBA(t *testing.T) {
 		{":0xFFFFFFFF:", 0xffffffff, true},
 	} {
 		document, err := p.ParseInline(ctx, example.source)
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if len(document.Children()) != 1 {
 			t.Fatalf("%s: expected one stamp", example.source)
 		}
+
 		var stamp traq.Stamp
+
 		if err := document.Children()[0].DecodePayload(&stamp); err != nil {
 			t.Fatal(err)
 		}
+
 		if stamp.Literal != example.source {
 			t.Fatalf("literal changed: %q", stamp.Literal)
 		}
+
 		if example.alpha {
 			if stamp.Kind.HexRgbaColor == nil || stamp.Kind.HexRgbaColor.Rgba != example.value {
 				t.Fatalf("%s: incorrect RGBA payload: %#v", example.source, stamp.Kind)
@@ -142,14 +173,19 @@ func TestHexStampPayloadsPreserveShortRGBAndFullRGBA(t *testing.T) {
 		} else if stamp.Kind.HexColor == nil || stamp.Kind.HexColor.Rgb != example.value {
 			t.Fatalf("%s: incorrect RGB payload: %#v", example.source, stamp.Kind)
 		}
+
 		encoded, err := json.Marshal(stamp)
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		var roundTrip traq.Stamp
+
 		if err := json.Unmarshal(encoded, &roundTrip); err != nil {
 			t.Fatal(err)
 		}
+
 		if !reflect.DeepEqual(stamp, roundTrip) {
 			t.Fatalf("%s: payload changed during JSON round trip", example.source)
 		}
@@ -161,19 +197,25 @@ func TestLifecycleAndBounds(t *testing.T) {
 	p := parserFor(t, GrammarTraqV1)
 	common := parserFor(t, GrammarCommonMark)
 	first, err := p.ParseInline(ctx, ":stamp:")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := first.Children()[0].DecodePayload(&traq.Stamp{}); err != nil {
 		t.Fatal(err)
 	}
+
 	plain, err := common.ParseInline(ctx, ":stamp:")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if plain.Children()[0].Kind() != commonmark.TextName {
 		t.Fatal("commonmark used traq grammar")
 	}
+
 	for _, source := range []string{
 		strings.Repeat("x", inputBytes+1),
 		string([]byte{255}),
@@ -182,27 +224,35 @@ func TestLifecycleAndBounds(t *testing.T) {
 		if _, err := p.Parse(ctx, source); err == nil {
 			t.Fatal("expected error")
 		}
+
 		if _, err := p.Parse(ctx, "after"); err != nil {
 			t.Fatal(err)
 		}
 	}
+
 	if first.Source() != ":stamp:" {
 		t.Fatal("result aliases Wasm memory")
 	}
+
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
+
 	if _, err := p.Parse(canceled, "x"); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
+
 	if err := p.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := p.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := p.Parse(ctx, "closed"); err == nil {
 		t.Fatal("closed parser accepted input")
 	}
+
 	if _, err := common.Parse(ctx, "independent"); err != nil {
 		t.Fatal(err)
 	}
@@ -211,22 +261,27 @@ func TestLifecycleAndBounds(t *testing.T) {
 func TestConcurrentCalls(t *testing.T) {
 	p := parserFor(t, GrammarTraqV1)
 	var wg sync.WaitGroup
+
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
+
 			for j := 0; j < 20; j++ {
 				got, err := p.Parse(context.Background(), "**hello** 日本語")
 				if err != nil {
 					t.Error(err)
 					return
 				}
+
 				if got.Source() != "**hello** 日本語" {
 					t.Error("wrong source")
 				}
 			}
 		}()
 	}
+
 	wg.Wait()
 }
 
@@ -234,15 +289,21 @@ func TestInitialization(t *testing.T) {
 	if _, err := NewRuntime(context.Background(), []byte{0}); err == nil {
 		t.Fatal("accepted mismatched artifact")
 	}
+
 	bytes, err := os.ReadFile("../dist/parser.wasm")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	r, err := NewRuntime(context.Background(), bytes)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer r.Close(context.Background())
+
 	if _, err := r.NewParser(context.Background(), GrammarPresetID("invalid")); err == nil {
 		t.Fatal("accepted invalid preset")
 	}
@@ -250,22 +311,29 @@ func TestInitialization(t *testing.T) {
 
 func TestContractMismatch(t *testing.T) {
 	wasm, err := os.ReadFile("../dist/parser.wasm")
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !bytes.Contains(wasm, []byte(contractID)) {
 		t.Fatal("missing contract ID")
 	}
+
 	other := bytes.ReplaceAll(wasm, []byte(contractID), []byte(strings.Repeat("0", len(contractID))))
 	r, err := NewRuntime(context.Background(), other)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer r.Close(context.Background())
+
 	if _, err := r.NewParser(context.Background(), GrammarTraqV1); err == nil ||
 		!strings.Contains(err.Error(), "does not match") {
 		t.Fatal(err)
 	}
+
 	if _, err := NewRuntime(context.Background(), []byte{0, 97, 115, 109, 1, 0, 0, 0}); err == nil {
 		t.Fatal("accepted empty Wasm")
 	}

@@ -5,6 +5,7 @@ export type Draft = {
   readonly?: boolean
   documentKey?: string
 }
+
 declare global {
   interface Window {
     editorHarness: { ready: Promise<void>; load(draft: Draft): Promise<void> }

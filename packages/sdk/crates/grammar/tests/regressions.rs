@@ -9,8 +9,10 @@ fn table_pipes_follow_backslash_parity() {
     let even = "| a\\\\| b | c |\n| --- | --- | --- |\n| x | y | z |";
     let document = parser.parse(even).unwrap();
     let table = &document.children[0];
+
     assert!(table.payload::<Table>().is_some());
     assert_eq!(table.children[0].children.len(), 3);
+
     assert_eq!(
         table.children[0].children[0].children[0]
             .payload::<Text>()
@@ -22,8 +24,10 @@ fn table_pipes_follow_backslash_parity() {
     let odd = "| a\\\\\\| b | c |\n| --- | --- |\n| x | y |";
     let document = parser.parse(odd).unwrap();
     let table = &document.children[0];
+
     assert!(table.payload::<Table>().is_some());
     assert_eq!(table.children[0].children.len(), 2);
+
     assert_eq!(
         table.children[0].children[0].children[0]
             .payload::<Text>()
@@ -37,6 +41,7 @@ fn table_pipes_follow_backslash_parity() {
 fn many_short_links_fit_the_default_work_budget() {
     let source = "<trap.jp> ".repeat(1_000);
     let document = presets::traq::v1::parser().parse_inline(&source).unwrap();
+
     assert_eq!(
         document
             .children

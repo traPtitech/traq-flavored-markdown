@@ -60,26 +60,33 @@ export const string = { kind: 'string' } as const
 export const nonempty = { kind: 'string', minLength: 1 } as const
 export const digest = { kind: 'string', pattern: '^[0-9a-f]{64}$' } as const
 export const count = { kind: 'number', integer: true, minimum: 0 } as const
+
 export const positiveCount = {
   kind: 'number',
   integer: true,
   minimum: 1
 } as const
+
 export const duration = { kind: 'number', minimum: 0 } as const
 export const boolean = { kind: 'boolean' } as const
+
 export const enumeration = <const V extends readonly string[]>(
   name: string,
   values: V
 ) => ({ kind: 'enum', name, values }) as const
+
 export const object = <const P extends Record<string, Schema>>(
   name: string,
   properties: P,
   allowUnknown = false
 ) => ({ kind: 'object', name, properties, allowUnknown }) as const
+
 export const array = <S extends Schema>(items: S) =>
   ({ kind: 'array', items }) as const
+
 export const record = <S extends Schema>(values: S) =>
   ({ kind: 'record', values }) as const
+
 export function keyedRecord<
   S extends Schema,
   const K extends readonly string[]
@@ -111,50 +118,71 @@ export function validate(
   const fail = (): never => {
     throw new Error(`Invalid ${location}`)
   }
+
   switch (schema.kind) {
     case 'string':
       if (
         typeof value !== 'string' ||
         (schema.minLength !== undefined && value.length < schema.minLength) ||
         (schema.pattern && !new RegExp(schema.pattern).test(value))
-      )
+      ) {
         fail()
+      }
+
       break
+
     case 'number':
       if (
         typeof value !== 'number' ||
         !Number.isFinite(value) ||
         (schema.integer && !Number.isSafeInteger(value)) ||
         (schema.minimum !== undefined && value < schema.minimum)
-      )
+      ) {
         fail()
+      }
+
       break
+
     case 'boolean':
       if (typeof value !== 'boolean') fail()
+
       break
+
     case 'enum':
       if (typeof value !== 'string' || !schema.values.includes(value)) fail()
+
       break
+
     case 'array':
-      if (!Array.isArray(value)) fail()
+      if (!Array.isArray(value)) {
+        fail()
+      }
+
       ;(value as unknown[]).forEach((item, index) =>
         validate(schema.items, item, `${location}[${index}]`)
       )
+
       break
+
     case 'record':
     case 'object': {
       if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
+
       const fields = value as Record<string, unknown>
+
       if (schema.kind === 'object') {
-        for (const [key, field] of Object.entries(schema.properties))
+        for (const [key, field] of Object.entries(schema.properties)) {
           validate(field, fields[key], `${location}.${key}`)
+        }
+
         if (
           !schema.allowUnknown &&
           Object.keys(fields).some(
             key => !Object.hasOwn(schema.properties, key)
           )
-        )
+        ) {
           fail()
+        }
       } else {
         if (
           schema.keys &&
@@ -164,10 +192,13 @@ export function validate(
                 !schema.keys!.includes(key) &&
                 !schema.optionalKeys?.includes(key)
             ))
-        )
+        ) {
           fail()
-        for (const [key, field] of Object.entries(fields))
+        }
+
+        for (const [key, field] of Object.entries(fields)) {
           validate(schema.values, field, `${location}.${key}`)
+        }
       }
     }
   }

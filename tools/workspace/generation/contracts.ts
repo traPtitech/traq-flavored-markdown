@@ -2,11 +2,9 @@ import path from 'path'
 
 import { goNodes as contractGoNodes } from '../../contracts/emitters/go.ts'
 import { nodeFiles } from '../../contracts/emitters/nodes.ts'
+import { block, lines, sourceFile } from '../../contracts/emitters/source.ts'
 import { readManifest, runCommand } from '../../contracts/io/io.ts'
-import {
-  OutputManifest,
-  applyOutputManifest
-} from '../../contracts/io/output-manifest.ts'
+import { OutputManifest } from '../../contracts/io/output-manifest.ts'
 import {
   type ContractPackage,
   assertNodeGroup,
@@ -31,8 +29,9 @@ const runCargo = (command: string[], cwd = repositoryRoot) =>
     CARGO_TARGET_DIR: cargoTargetDirectory()
   })
 
-export async function generateCoreContracts(outputRoot = repositoryRoot) {
+export async function planCoreContracts() {
   const input = path.join(cargoTargetDirectory(), 'core-contracts')
+
   await runCargo([
     'cargo',
     'run',
@@ -44,31 +43,42 @@ export async function generateCoreContracts(outputRoot = repositoryRoot) {
     '--',
     input
   ])
+
   const { limits } = await readManifest(input, parseCoreManifest)
   const plan = new OutputManifest()
+
   plan.add(
     'core',
     'packages/core/typescript/src/generated/limits.ts',
-    '// Generated from Rust AST validation defaults. Do not edit.\n' +
-      'export const documentLimits = Object.freeze(' +
-      JSON.stringify(limits) +
-      ' as const)\n'
+    sourceFile(
+      lines(
+        '// Generated from Rust AST validation defaults. Do not edit.',
+        `export const documentLimits = Object.freeze(${JSON.stringify(limits)} as const)`
+      )
+    )
   )
+
   plan.add(
     'core',
     'packages/core/go/ast/generated_limits.go',
-    '// Code generated from Rust AST validation defaults. DO NOT EDIT.\npackage ast\n' +
-      'const (\nmaxSourceBytes = ' +
-      limits.sourceBytes +
-      '\nmaxJSONBytes = ' +
-      limits.payloadBytes +
-      '\nmaxDocumentNodes = ' +
-      limits.nodes +
-      '\nmaxDocumentDepth = ' +
-      limits.depth +
-      '\n)\n'
+    sourceFile(
+      lines(
+        '// Code generated from Rust AST validation defaults. DO NOT EDIT.',
+        'package ast'
+      ),
+      block(
+        'const (',
+        lines(
+          `maxSourceBytes = ${limits.sourceBytes}`,
+          `maxJSONBytes = ${limits.payloadBytes}`,
+          `maxDocumentNodes = ${limits.nodes}`,
+          `maxDocumentDepth = ${limits.depth}`
+        ),
+        ')'
+      )
+    )
   )
-  await applyOutputManifest(outputRoot, plan)
+
   return plan
 }
 
@@ -79,11 +89,14 @@ async function generateContractGroup(
   const root = packageRoot(packageName)
   const destination = packageOutputRoot(packageName)
   const metadata = nodeGroup(group)
-  if (metadata.owner !== packageName)
+  if (metadata.owner !== packageName) {
     throw new Error(
       `Node contract group ${group} does not belong to ${packageName}`
     )
+  }
+
   const input = path.join(cargoTargetDirectory(), 'typescript-contracts', group)
+
   await runCargo(
     [
       'cargo',
@@ -104,10 +117,13 @@ async function generateContractGroup(
   const manifest = await readManifest(input, parseNodeManifest)
   assertNodeGroup(group, manifest.nodes)
   const goPath = path.join(destination, metadata.goGeneratedPath)
+
   const entries: [string, RawSchema][] = Object.entries(manifest.nodes).map(
     ([key, node]) => [key, node.schema]
   )
+
   const plan = new OutputManifest()
+
   plan.add(
     packageName,
     path.relative(repositoryRoot, goPath),
@@ -122,9 +138,12 @@ async function generateContractGroup(
       )
     )
   )
+
   const typescript = nodeFiles(manifest).get(`${group}.ts`)
-  if (typescript === undefined)
+  if (typescript === undefined) {
     throw new Error('Missing TypeScript node group: ' + group)
+  }
+
   plan.add(
     packageName,
     path.relative(
@@ -133,17 +152,18 @@ async function generateContractGroup(
     ),
     typescript
   )
+
   return plan
 }
 
-export async function generateContracts(
-  packageName: ContractPackage,
-  outputRoot = repositoryRoot
-) {
+export async function planPluginContracts(packageName: ContractPackage) {
   const plan = new OutputManifest()
-  for (const [group, metadata] of Object.entries(nodeGroups))
-    if (metadata.owner === packageName)
+
+  for (const [group, metadata] of Object.entries(nodeGroups)) {
+    if (metadata.owner === packageName) {
       plan.merge(await generateContractGroup(packageName, group))
-  await applyOutputManifest(outputRoot, plan)
+    }
+  }
+
   return plan
 }

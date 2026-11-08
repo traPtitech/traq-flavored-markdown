@@ -5,7 +5,7 @@ import { contentToParts } from '../../src/internal/input/document.js'
 import { editorTextBetween } from '../../src/internal/input/text.js'
 import { partsToProjectedText } from '../../src/projection.js'
 import { corpusReference, markdownCorpus } from '../helpers/markdownCorpus.js'
-import { normalizeSource } from '../helpers/references.js'
+import { normalizeSource } from '../helpers/markdownReferences.js'
 import {
   parseInput,
   partsToDisplayText,
@@ -15,7 +15,7 @@ import {
   createInputEditor,
   installInputEditorFixture,
   readSource
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installInputEditorFixture()
 
@@ -34,9 +34,11 @@ it.each(markdownCorpus)(
     const { doc } = editor.state
     expect(doc.childCount).toBe(1)
     expect(doc.firstChild?.type.name).toBe('paragraph')
+
     expect(editorTextBetween(doc)).toBe(
       partsToProjectedText(contentToParts(doc))
     )
+
     expect(editorTextBetween(doc).length).toBe(doc.content.size - 2)
   }
 )
@@ -58,3 +60,19 @@ it.each(['😀 ', '**bold** ', '> quote\n', 'line\r\n'])(
     expect(editor.state.selection.from).toBe(position + 5)
   }
 )
+
+it('converts a reference surrounded by code to text in the same undo step', () => {
+  const editor = createInputEditor(corpusReference)
+  const tr = editor.state.tr.insertText('`', 2).insertText('`', 1)
+  editor.view.dispatch(tr)
+
+  expect(readSource(editor)).toBe('`@alice`')
+
+  undo(editor.state, editor.view.dispatch)
+
+  expect(readSource(editor)).toBe(corpusReference)
+
+  redo(editor.state, editor.view.dispatch)
+
+  expect(readSource(editor)).toBe('`@alice`')
+})

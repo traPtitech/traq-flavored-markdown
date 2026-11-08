@@ -133,6 +133,7 @@ impl Catalog {
                     .expect("registered plugin"),
             )
         };
+
         PluginSpec {
             group: plugin.namespace().map(|g| {
                 GroupId(
@@ -151,6 +152,7 @@ impl Catalog {
             block_policy: plugin.has_block_policy().then(provider_index),
         }
     }
+
     pub fn describe(&self) -> CatalogDescription {
         let rules = self
             .rules

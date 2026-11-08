@@ -18,7 +18,9 @@ export function math(
     return displayMode ? `<p class="katex-block is-scroll">${html}</p>\n` : html
   } catch (error) {
     if (!(error instanceof katex.ParseError)) throw error
+
     const tag = displayMode ? 'p' : 'span'
+
     const classes = displayMode
       ? 'katex-block katex-error is-scroll'
       : 'katex-error'

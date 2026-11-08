@@ -59,6 +59,7 @@ fn erase<T: NodeData>(
         let payload = node.payload::<T>().ok_or(Error::InvalidPayload {
             expected: std::any::type_name::<T>(),
         })?;
+
         handler(payload, &node.children, context, output)
     })
 }

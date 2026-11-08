@@ -1,6 +1,11 @@
-@use 'pkg:@traq-flavored-markdown/traq-plugin/styles/base';
-@use 'pkg:@traq-flavored-markdown/extensions-plugin/styles/base' as extensions;
+@use 'pkg:@traq-flavored-markdown/traq-plugin/styles/mixins' as traq;
+@use 'pkg:@traq-flavored-markdown/extensions-plugin/styles/mixins' as extensions;
 @forward './markdown';
+
+:where(.markdown-body, .markdown-inline-body) {
+  @include traq.styles;
+  @include extensions.styles;
+}
 
 // Condensed views align large stamps and all of their effect wrappers.
 .markdown-inline-body {

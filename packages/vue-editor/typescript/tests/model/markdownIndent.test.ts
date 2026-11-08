@@ -7,7 +7,7 @@ import {
   createInputEditor,
   installInputEditorFixture,
   readSource as source
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installInputEditorFixture()
 
@@ -56,6 +56,7 @@ describe('Markdown Tab editing', () => {
       editor.view.dispatch(markdownIndent(editor.state))
 
       expect(source(editor)).toBe('  a\n  b\nc')
+
       expect(editor.state.selection.anchor > editor.state.selection.head).toBe(
         reverse
       )

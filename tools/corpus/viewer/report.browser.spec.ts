@@ -18,9 +18,11 @@ type QueryProbe = {
   aborted: boolean
   settled: boolean
 }
+
 type ProbeWindow = typeof globalThis & { queryProbe: QueryProbe }
 
 const route = '/tools/corpus/viewer/index.html'
+
 const malicious =
   '<script>globalThis.previewExecuted = true</script><img src="https://external.test/image" onerror="globalThis.previewExecuted = true" alt="placeholder"><a href="https://external.test/link" onclick="globalThis.previewExecuted = true">inert link</a><iframe src="https://external.test/frame"></iframe><svg onload="globalThis.previewExecuted = true"><image href="https://external.test/svg-image" /></svg><div class="toolbar" style="background-image:url(https://external.test/css)">isolated class</div>'
 
@@ -71,10 +73,13 @@ function reportFixture(
     },
     ...extraRows
   ]
+
   const counts = byProfile(
     profile => rows.filter(row => row.profile === profile).length
   )
+
   const base = fixtureMetadata(counts, 1, 6 + extraRows.length)
+
   const filters = byProfile(profile =>
     encodeFilterMasks(
       rows
@@ -82,6 +87,7 @@ function reportFixture(
         .map(row => differenceFilterMask(row, origin))
     )
   )
+
   const metadata = {
     ...base,
     filters,
@@ -102,6 +108,7 @@ function reportFixture(
       plainText: { ...base.results.plainText, embeddingDifferences: 1 }
     }
   }
+
   return {
     metadata,
     payload: byProfile(profile =>
@@ -115,11 +122,13 @@ function reportFixture(
 async function openReport(page: Page, data = reportFixture()) {
   await page.route(`**${route}`, async intercepted => {
     const response = await intercepted.fetch()
+
     await intercepted.fulfill({
       response,
       body: reportDocument(await response.text(), data.metadata, data.payload)
     })
   })
+
   await page.goto(route)
 }
 
@@ -129,14 +138,17 @@ test('only whitespace and case exclusions are always visible alongside classific
   const data = reportFixture([
     { ...fixtureLinkedImage, index: 6, source: 'classified image' }
   ])
+
   data.metadata.authors.render = 'b'.repeat(data.metadata.counts.render)
   await openReport(page, data)
   const filters = page.getByRole('group', { name: '表記差分の除外' })
   await expect(filters.getByRole('checkbox')).toHaveCount(2)
   await expect(filters.getByLabel('ホワイトスペースのみを除外')).toBeVisible()
+
   await expect(
     filters.getByLabel('大文字・小文字の違いのみを除外')
   ).toBeVisible()
+
   await expect(filters.locator('xpath=ancestor::details')).toHaveCount(0)
   await expect(page.getByRole('checkbox')).toHaveCount(3)
   await page.locator('[data-category="image"]').click()
@@ -166,35 +178,45 @@ test('classification tree drills into mixed cases, retains unresolved changes an
       }
     ])
   )
+
   const tree = page.getByRole('navigation', { name: '差分の分類' })
   await tree.locator('[data-category="image"]').click()
   await expect(page.locator('#status')).toHaveText('2 件 / 全 5 件')
+
   await expect(page.locator('#rows .source')).toHaveText(
     'classified image accepted'
   )
+
   await expect(page.locator('.classification-summary')).toContainText(
     '要確認 1件'
   )
+
   await page.locator('#only-review').check()
+
   await expect(page.locator('#rows .source')).toHaveText(
     'classified image mixed'
   )
+
   await expect(page.locator('#rows')).toContainText('未説明の差分あり')
   await page.locator('#rows > details > summary').click()
   await expect(page.locator('#rows .comparison')).toHaveCount(0)
   await page.locator('#rows > details > summary').click()
   await expect(page.locator('#rows .comparison')).toHaveCount(1)
   await tree.locator('[data-category="image.linked"]').click()
+
   await expect(page.locator('.classification-summary')).toContainText(
     '外側のリンク先を優先'
   )
+
   await page.locator('#search').fill('accepted')
   await page.getByRole('button', { name: '検索', exact: true }).click()
   await expect(page.locator('#empty')).toBeVisible()
   await page.locator('#only-review').uncheck()
+
   await expect(page.locator('#rows .source')).toHaveText(
     'classified image accepted'
   )
+
   await page.locator('#profiles button').nth(1).click()
   await expect(page.locator('#empty')).toBeVisible()
   await tree.locator('[data-category="all"]').click()
@@ -205,16 +227,19 @@ test('classification layout reflows without clipping and retains child navigatio
   page
 }) => {
   await page.setViewportSize({ width: 375, height: 900 })
+
   await openReport(
     page,
     reportFixture([
       { ...fixtureLinkedImage, index: 6, source: 'image on mobile' }
     ])
   )
+
   await page.locator('[data-category="image"]').click()
   await expect(page.locator('[data-category="image.linked"]')).toBeVisible()
   await page.locator('[data-category="image.linked"]').click()
   await expect(page.locator('#rows .source')).toHaveText('image on mobile')
+
   expect(
     await page.evaluate(
       () =>
@@ -229,8 +254,10 @@ test('frontend-only reports show only measured profiles in controls and summarie
 }) => {
   const data = reportFixture()
   const { plainText: _unusedResult, ...results } = data.metadata.results
+
   const { plainText: _unusedBefore, ...before } =
     data.metadata.run.provenance.before
+
   await openReport(page, {
     metadata: {
       ...data.metadata,
@@ -246,6 +273,7 @@ test('frontend-only reports show only measured profiles in controls and summarie
     },
     payload: { ...data.payload, plainText: [] }
   })
+
   await expect(page.locator('#profiles button')).toHaveCount(2)
   await expect(page.locator('.result-summary tr[data-profile]')).toHaveCount(2)
   await expect(page.locator('#speed tbody tr')).toHaveCount(2)
@@ -264,9 +292,11 @@ test('real gzip data drives pagination, filters, search, profiles and error summ
   await openReport(page)
   await expect(page.locator('#rows .source')).toHaveText('Alpha')
   await expect(page.locator('#pages')).toHaveText('3')
+
   await expect(
     page.locator('.result-summary [data-profile="render"] td')
   ).toHaveText(['3', '1', '2', '0'])
+
   await page.getByRole('button', { name: '次のページ' }).click()
   await expect(page.locator('#rows .source')).toHaveText('Beta')
   await expect(page.locator('.output-error')).toContainText('実行エラー')
@@ -316,6 +346,7 @@ test('case filtering composes with whitespace, search and pagination', async ({
       }
     ])
   )
+
   const ignoreCase = page.getByLabel('大文字・小文字の違いのみを除外')
   await expect(ignoreCase).not.toBeChecked()
   await expect(page.locator('#pages')).toHaveText('5')
@@ -350,28 +381,35 @@ test('HTML preview remains inert and isolates corpus classes from viewer styles'
   page
 }) => {
   const externalRequests: string[] = []
+
   page.on('request', request => {
-    if (new URL(request.url()).hostname === 'external.test')
+    if (new URL(request.url()).hostname === 'external.test') {
       externalRequests.push(request.url())
+    }
   })
+
   await page.route('https://external.test/**', intercepted =>
     intercepted.abort()
   )
+
   await openReport(page)
   await page.getByLabel('原文を検索').fill('Gamma')
   await page.getByRole('button', { name: '検索', exact: true }).click()
   const previews = page.locator('.markdown-body')
   await expect(previews.nth(1)).toContainText('[画像: placeholder]')
   await expect(previews.nth(1).locator('.r-link')).toHaveText('inert link')
+
   await expect(
     previews.locator(
       'a, img, script, iframe, image, [href], [src], [onclick], [onload], [onerror], .toolbar'
     )
   ).toHaveCount(0)
+
   await expect(previews.nth(1).locator('.preview-toolbar')).toHaveCSS(
     'position',
     'static'
   )
+
   await previews.nth(1).locator('.r-link').click()
   expect(await page.evaluate(() => 'previewExecuted' in globalThis)).toBe(false)
   expect(externalRequests).toEqual([])
@@ -382,8 +420,10 @@ test('bootstrap distinguishes missing data, invalid data and unsupported browser
 }) => {
   await page.goto(route)
   await expect(page.locator('[data-reason="missing-data"]')).toBeVisible()
+
   await page.route(`**${route}`, async intercepted => {
     const response = await intercepted.fetch()
+
     await intercepted.fulfill({
       response,
       body: (await response.text())
@@ -391,15 +431,19 @@ test('bootstrap distinguishes missing data, invalid data and unsupported browser
         .replace('id="payload"></script>', 'id="payload">{}</script>')
     })
   })
+
   await page.reload()
   await expect(page.locator('[data-reason="invalid-data"]')).toBeVisible()
   await page.unroute(`**${route}`)
+
   await page.addInitScript(() =>
     Object.defineProperty(globalThis, 'DecompressionStream', {
       value: undefined
     })
   )
+
   await openReport(page)
+
   await expect(
     page.locator('[data-reason="unsupported-browser"]')
   ).toBeVisible()
@@ -414,6 +458,7 @@ test('chunk failures are visible and equal failures remain visible with zero out
   await expect(page.locator('#status')).toHaveAttribute('role', 'alert')
   await expect(page.locator('#status')).toContainText('読込エラー')
   const base = reportFixture()
+
   const empty = {
     metadata: {
       ...base.metadata,
@@ -428,9 +473,11 @@ test('chunk failures are visible and equal failures remain visible with zero out
     },
     payload: byProfile(() => [])
   }
+
   await page.unroute(`**${route}`)
   await openReport(page, empty)
   await expect(page.locator('#empty')).toBeVisible()
+
   await expect(
     page.locator('.result-summary [data-profile="render"] td')
   ).toHaveText(['0', '1', '2', '0'])
@@ -441,20 +488,27 @@ test('replaced queries are cancelled and late responses cannot replace the curre
 }) => {
   await openReport(page)
   await expect(page.locator('#rows .source')).toHaveText('Alpha')
+
   await page.evaluate(async () => {
     const modulePath = '/tools/corpus/viewer/data/repository.ts'
+
     const { ReportRepository } = (await import(
       modulePath
     )) as typeof RepositoryModule
+
     const original = ReportRepository.prototype.query
+
     const probe: QueryProbe = { started: false, aborted: false, settled: false }
     ;(globalThis as ProbeWindow).queryProbe = probe
+
     ReportRepository.prototype.query = async function (
       ...args: Parameters<ReportRepository['query']>
     ) {
       const [query, signal] = args
       if (query.search !== 'Alpha') return original.apply(this, args)
+
       probe.started = true
+
       signal?.addEventListener(
         'abort',
         () => {
@@ -462,9 +516,11 @@ test('replaced queries are cancelled and late responses cannot replace the curre
         },
         { once: true }
       )
+
       await new Promise<void>(resolve => {
         probe.release = resolve
       })
+
       // Simulate a decoder that finishes after cancellation. The hook must
       // discard this result even if a dependency ignores its abort signal.
       const result = await original.call(this, query)
@@ -472,24 +528,31 @@ test('replaced queries are cancelled and late responses cannot replace the curre
       return result
     }
   })
+
   await page.getByLabel('原文を検索').fill('Alpha')
   await page.getByRole('button', { name: '検索', exact: true }).click()
+
   await expect
     .poll(() =>
       page.evaluate(() => (globalThis as ProbeWindow).queryProbe.started)
     )
     .toBe(true)
+
   await page.getByLabel('原文を検索').fill('Beta')
   await page.getByRole('button', { name: '検索', exact: true }).click()
   await expect(page.locator('#rows .source')).toHaveText('Beta')
+
   expect(
     await page.evaluate(() => (globalThis as ProbeWindow).queryProbe.aborted)
   ).toBe(true)
+
   await page.evaluate(() => (globalThis as ProbeWindow).queryProbe.release?.())
+
   await expect
     .poll(() =>
       page.evaluate(() => (globalThis as ProbeWindow).queryProbe.settled)
     )
     .toBe(true)
+
   await expect(page.locator('#rows .source')).toHaveText('Beta')
 })

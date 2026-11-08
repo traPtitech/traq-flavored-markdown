@@ -12,8 +12,10 @@ impl NodeData for Text {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         self.0.len()
     }
@@ -42,6 +44,7 @@ fn shared_declaration_hierarchy_survives_its_original_owners() {
     builder.add(&plugin).unwrap();
 
     let grammar = builder.build().unwrap();
+
     assert!(grammar.describe().contains("generic/github/links"));
 
     let doc = Parser::new(&grammar).parse_inline("ordinary text").unwrap();
@@ -77,15 +80,19 @@ fn duplicate_checks_use_the_selected_shared_namespaces() {
 
     // Same display name under distinct parent groups is allowed.
     let nested = root.group("nested");
+
     builder
         .add(&SyntaxPlugin::new(&nested.plugin("base")))
         .unwrap();
+
     assert!(builder.clone().build().is_ok());
 
     // A separate, identically named root is a different symbol, and conflicts
     // only once it is actually included in the composition.
     let other = Declaration::group("generic");
+
     assert!(builder.clone().build().is_ok());
+
     builder
         .add(&SyntaxPlugin::new(&other.plugin("another")))
         .unwrap();

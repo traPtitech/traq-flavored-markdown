@@ -19,6 +19,7 @@ export async function frontendAdapters({
     '@traptitech/traq-markdown-it',
     path.resolve(baselineDirectory)
   )
+
   const {
     traQMarkdownIt
   }: {
@@ -28,27 +29,34 @@ export async function frontendAdapters({
       origin: string
     ) => {
       render(source: string): { renderedText: string; embeddings?: unknown }
+
       renderInline(source: string): {
         renderedText: string
         embeddings?: unknown
       }
     }
   } = await import(Bun.pathToFileURL(baselinePackage).href)
+
   const { createRuntime, presets }: typeof CandidateSDK = await import(
     Bun.pathToFileURL(path.join(candidateDirectory, 'index.js')).href
   )
+
   const { messageRenderers }: typeof CandidateRenderer = await import(
     Bun.pathToFileURL(path.join(candidateDirectory, 'renderer/index.js')).href
   )
+
   const { withDefaultAdapters }: typeof CandidateAdapters = await import(
     Bun.pathToFileURL(path.join(candidateDirectory, 'adapters/index.js')).href
   )
+
   const href = (type: string, id: string) =>
     '#' +
     ({ user: 'u', group: 'g', channel: 'c' }[type] ?? type) +
     '-' +
     encodeURIComponent(id)
+
   const stampUrl = (file: string) => '/api/v3/files/' + encodeURIComponent(file)
+
   const store = {
     getMe: () => ({ id: 'viewer' }),
     getUser: () => undefined,
@@ -61,14 +69,17 @@ export async function frontendAdapters({
     generateChannelHref: (id: string) => href('channel', id),
     generateStampHref: stampUrl
   }
+
   let started = performance.now()
   const baseline = new traQMarkdownIt(store, [], origin)
   const beforeInitializationMs = performance.now() - started
   const bytes = new Uint8Array(await Bun.file(wasm).arrayBuffer())
   started = performance.now()
   const runtime = await createRuntime(bytes)
+
   try {
     const parser = runtime.createParser(presets.traq.v1)
+
     const views = messageRenderers({
       origin,
       ...withDefaultAdapters({
@@ -87,7 +98,9 @@ export async function frontendAdapters({
         }
       })
     })
+
     const afterInitializationMs = performance.now() - started
+
     const baselineOutput = (value: {
       renderedText: string
       embeddings?: unknown
@@ -95,24 +108,29 @@ export async function frontendAdapters({
       outcome: { kind: 'html' as const, value: value.renderedText },
       embeddings: value.embeddings
     })
+
     const candidateOutput = (value: { html: string; cards?: unknown }) => ({
       outcome: { kind: 'html' as const, value: value.html },
       embeddings: value.cards
     })
+
     const profiles: Profile[] = [
       {
         id: 'render',
         before: source => baselineOutput(baseline.render(source)),
+
         after: source =>
           candidateOutput(views.standard.render(parser.parse(source)))
       },
       {
         id: 'inline',
         before: source => baselineOutput(baseline.renderInline(source)),
+
         after: source =>
           candidateOutput(views.condensed.render(parser.parse(source)))
       }
     ]
+
     return {
       profiles,
       beforeInitializationMs,

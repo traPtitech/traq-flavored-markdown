@@ -19,6 +19,7 @@ pub struct Options {
 pub fn plugin() -> RenderPlugin {
     static PLUGIN: LazyLock<RenderPlugin> =
         LazyLock::new(|| build(Options::default()).expect("valid math text plugin"));
+
     PLUGIN.clone()
 }
 
@@ -28,14 +29,18 @@ pub fn plugin_with_options(options: Options) -> RenderPlugin {
 
 fn build(options: Options) -> Result<RenderPlugin> {
     let mut math = RenderPlugin::new(&markdown_extensions_contracts::declarations().math);
+
     math.on::<InlineMath>(move |v, _, _, output| {
         if options.style == Style::DelimitedTex {
             output.push("$")?;
         }
+
         output.push(&v.tex)?;
+
         if options.style == Style::DelimitedTex {
             output.push("$")?;
         }
+
         Ok(())
     })?;
 
@@ -43,11 +48,15 @@ fn build(options: Options) -> Result<RenderPlugin> {
         if options.style == Style::DelimitedTex {
             output.push("$$")?;
         }
+
         output.push(&v.tex)?;
+
         if options.style == Style::DelimitedTex {
             output.push("$$")?;
         }
+
         output.push("\n")
     })?;
+
     Ok(math)
 }

@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
+
       - run: bun ci
 
   format:
@@ -23,10 +25,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
         with:
           go: 'true'
           rust: 'true'
+
       - name: Restore Prettier cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -34,9 +38,13 @@ jobs:
           key: prettier-cache-${{ runner.os }}-${{ hashFiles('prettier.config.*', '.prettierignore', 'bun.lock', 'package.json', 'packages/**/package.json') }}
           restore-keys: |
             prettier-cache-${{ runner.os }}-
+
       - run: bun ci
+
       - run: bun run prettier --cache --check .
+
       - run: bun run format:rust:check
+
       - run: bun run format:go:check
 
   eslint:
@@ -44,7 +52,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
+
       - name: Restore ESLint cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -52,7 +62,9 @@ jobs:
           key: eslint-cache-${{ runner.os }}-${{ hashFiles('eslint.config.*', 'bun.lock') }}
           restore-keys: |
             eslint-cache-${{ runner.os }}-
+
       - run: bun ci
+
       - run: bun run lint:check
 
   unit:
@@ -60,10 +72,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
+
       - run: bun ci
+
       - run: bun run build:typescript
+
       - run: bun run test:unit
+
       - run: bun run test:corpus
 
   typescript:
@@ -78,30 +95,44 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
         id: toolchains
         with:
           go: 'true'
           rust: 'true'
+
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           add-rust-environment-hash-key: false
           key: ${{ steps.toolchains.outputs.rust-cachekey }}-${{ hashFiles('Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml', '.cargo/config.toml') }}
           cache-workspace-crates: true
+
       - run: bun ci
+
       - run: bun run check:architecture
+
       - run: bun run build
+
       - run: bun run build:corpus
+
       - run: bun run typecheck
+
       - run: bun run test:typescript
+
       - run: bun run test:corpus
+
       - run: bun run check:package
         timeout-minutes: 5
+
       - run: bun run check:go-consumer
+
       - run: bunx playwright install --with-deps chromium firefox webkit
         if: runner.os == 'Linux'
+
       - run: bun run test:browser
         if: runner.os == 'Linux'
+
       - run: bun run test:vue:browser
         if: runner.os == 'Linux'
 
@@ -110,12 +141,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
         with:
           bun: 'false'
           rust: 'true'
+
       - run: node tools/workspace/checks/rust-features.ts
+
       - run: cargo test --locked --workspace --all-features
+
       - run: node tools/workspace/checks/rust-lint.ts
 
   go:
@@ -123,13 +158,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
         with:
           go: 'true'
           rust: 'true'
+
       - run: bun ci
+
       - run: bun run build
+
       - run: bun run test:go
+
       - run: bun run test:corpus:go
 
   generated:
@@ -137,10 +177,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - uses: ./.github/actions/setup-toolchains
         with:
           go: 'true'
           rust: 'true'
+
       - run: bun ci
+
       - run: cargo fetch --locked
+
       - run: bun run scripts/build.ts --check-generated

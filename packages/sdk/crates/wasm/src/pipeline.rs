@@ -14,6 +14,7 @@ struct Pipeline {
     grammar: Grammar,
     processor: Processor,
 }
+
 thread_local! { static PIPELINE: RefCell<Option<Pipeline>> = const { RefCell::new(None) }; }
 
 #[derive(Serialize)]
@@ -29,12 +30,15 @@ pub extern "C" fn configure_processor() -> u32 {
         let result = (|| {
             let config: ProcessorConfiguration =
                 serde_json::from_str(io.source()?).map_err(Error::request)?;
+
             let grammar = bindings::grammar(&config.preset)
                 .map_err(|error| Error::new(ErrorCode::UnknownPreset, error))?;
+
             let processor = Processor::new(config.options).map_err(Error::processing)?;
             PIPELINE.set(Some(Pipeline { grammar, processor }));
             Ok::<_, Error>(abi::configured())
         })();
+
         io.reply(&result);
         io.output.len() as u32
     })
@@ -45,16 +49,20 @@ pub extern "C" fn process(mode: u32) -> u32 {
     IO.with_borrow_mut(|io| {
         let result = (|| {
             let source = io.source()?;
+
             PIPELINE.with_borrow(|pipeline| {
                 let pipeline = pipeline.as_ref().ok_or_else(Error::not_configured)?;
-                let document = grammar::parse(&pipeline.grammar, source, mode)?;
+                let document = grammar::parse(&pipeline.grammar, source, mode.try_into()?)?;
+
                 let processing = pipeline
                     .processor
                     .process(document.as_view())
                     .map_err(Error::processing)?;
+
                 Ok::<_, Error>((document, processing))
             })
         })();
+
         match result {
             Ok((document, processing)) => {
                 let result = crate::nodes::codec()
@@ -64,12 +72,15 @@ pub extern "C" fn process(mode: u32) -> u32 {
                         document,
                         processing,
                     });
+
                 io.reply(&result);
             }
+
             Err(error) => {
                 io.reply::<()>(&Err(error));
             }
         }
+
         io.output.len() as u32
     })
 }

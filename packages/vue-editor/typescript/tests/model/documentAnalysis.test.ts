@@ -5,7 +5,10 @@ import {
   analyzeEditorDocument,
   analyzeEditorProbe
 } from '../../src/internal/markdown/analysis.js'
-import { createInputEditor, installInputEditorFixture } from './fixture.js'
+import {
+  createInputEditor,
+  installInputEditorFixture
+} from './markdownFixture.js'
 
 installInputEditorFixture()
 

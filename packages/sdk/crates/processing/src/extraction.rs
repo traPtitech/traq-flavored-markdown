@@ -30,6 +30,7 @@ pub struct MessageAnalysis {
     pub message: traq::message::Message,
     pub reference_embedding: traq::embedding::ReferenceEmbeddingPlan,
 }
+
 impl From<MessageAnalysis> for Extraction {
     fn from(analysis: MessageAnalysis) -> Self {
         Self {
@@ -46,6 +47,7 @@ pub struct Extractor {
     message: traq::message::Extractor,
     references: markdown_extractor::Extractor<References>,
 }
+
 impl Extractor {
     pub fn new(options: ExtractorOptions) -> Result<Self> {
         Ok(Self {
@@ -53,6 +55,7 @@ impl Extractor {
             references: markdown_extractor::Extractor::new(&traq::references::preset()?),
         })
     }
+
     pub fn extract<'a>(
         &self,
         document: impl markdown_ast::DocumentInput<'a>,
@@ -60,11 +63,13 @@ impl Extractor {
         let document = document.into_view()?;
         self.analyze(document).map(Into::into)
     }
+
     pub fn analyze<'a>(
         &self,
         document: impl markdown_ast::DocumentInput<'a>,
     ) -> Result<MessageAnalysis> {
         let document = document.into_view()?;
+
         let mut collectors = (
             self.references.collector::<crate::Error>(),
             (
@@ -72,9 +77,11 @@ impl Extractor {
                 traq::embedding::Collector::default(),
             ),
         );
+
         markdown_extractor::collect(document, &mut collectors)?;
         let (references, (message, embedding)) = collectors;
         let source = &document.document().source;
+
         Ok(MessageAnalysis {
             references: references.finish(),
             message: message.finish(source)?,

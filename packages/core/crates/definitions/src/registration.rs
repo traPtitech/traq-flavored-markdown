@@ -16,15 +16,18 @@ impl RegistrationHandle {
             plugin: plugin.clone(),
         }
     }
+
     pub fn plugin(&self) -> &PluginDeclaration {
         &self.plugin
     }
 }
+
 impl PartialEq for RegistrationHandle {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.identity, &other.identity)
     }
 }
+
 impl Eq for RegistrationHandle {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,6 +46,7 @@ pub struct RegistrationError {
     pub payload_type: Option<&'static str>,
     pub scope: Option<String>,
 }
+
 impl RegistrationError {
     pub(crate) fn new(
         kind: RegistrationErrorKind,
@@ -56,6 +60,7 @@ impl RegistrationError {
             scope: None,
         }
     }
+
     pub fn code(&self) -> &'static str {
         match self.kind {
             RegistrationErrorKind::DuplicatePlugin => "duplicate_plugin",
@@ -66,16 +71,21 @@ impl RegistrationError {
         }
     }
 }
+
 impl std::fmt::Display for RegistrationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} in plugin {:?}", self.code(), self.plugin)?;
+
         if let Some(payload) = self.payload_type {
             write!(f, " for {payload}")?;
         }
+
         if let Some(scope) = &self.scope {
             write!(f, " in {scope}")?;
         }
+
         Ok(())
     }
 }
+
 impl std::error::Error for RegistrationError {}

@@ -4,12 +4,14 @@ use std::marker::PhantomData;
 pub struct Extractor<R> {
     preset: ExtractionPreset<R>,
 }
+
 impl<R> Extractor<R> {
     pub fn new(preset: &ExtractionPreset<R>) -> Self {
         Self {
             preset: preset.clone(),
         }
     }
+
     /// Run typed handlers in preorder, reusing checked document inputs.
     pub fn extract<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<R>
     where
@@ -19,6 +21,7 @@ impl<R> Extractor<R> {
         crate::collect(document, &mut collector)?;
         Ok(collector.finish())
     }
+
     /// Compose these handlers with scoped analyses in a single traversal.
     pub fn collector<E: From<Error>>(&self) -> Extraction<'_, R, E>
     where
@@ -37,15 +40,18 @@ pub struct Extraction<'e, R, E> {
     result: R,
     error: PhantomData<fn() -> E>,
 }
+
 impl<R, E> Extraction<'_, R, E> {
     pub fn finish(self) -> R {
         self.result
     }
 }
+
 impl<'a, R, E: From<Error>> Collector<'a> for Extraction<'_, R, E> {
     type Scope = ();
     type Error = E;
     fn initial(&self) {}
+
     fn observe(&mut self, context: AnalysisContext<'a>, _: &()) -> std::result::Result<(), E> {
         if let Some(handler) = self
             .extractor
@@ -55,6 +61,7 @@ impl<'a, R, E: From<Error>> Collector<'a> for Extraction<'_, R, E> {
         {
             handler(context, &mut self.result)?;
         }
+
         Ok(())
     }
 }

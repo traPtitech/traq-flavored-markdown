@@ -94,8 +94,9 @@ export const createInputEventHandlers = (
         const enter = pendingIOSEnter
         pendingIOSEnter = undefined
 
-        if (options.isComposing() || event.isComposing || !event.cancelable)
+        if (options.isComposing() || event.isComposing || !event.cancelable) {
           return false
+        }
 
         options.onBeforeInput(event)
 

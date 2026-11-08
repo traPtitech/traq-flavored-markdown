@@ -3,6 +3,7 @@
     0% {
       transform: rotate#{$axis }(0);
     }
+
     100% {
       transform: rotate#{$axis }(1turn);
     }

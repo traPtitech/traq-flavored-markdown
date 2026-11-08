@@ -14,18 +14,23 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   constructor(definitions: Iterable<NodeDefinition<Variant>> = []) {
     const contracts = new Map<string, NodeDefinition>()
     const structures = new Map<string, NodeStructure>()
+
     for (const input of definitions) {
       const definition = isOwnedDefinition(input)
         ? input
         : defineNode(input.kind, input.validateData, input.structure)
+
       const previous = contracts.get(definition.kind)
-      if (previous && previous !== definition)
+      if (previous && previous !== definition) {
         throw new DocumentValidationError(
           'Duplicate node contract: ' + definition.kind
         )
+      }
+
       contracts.set(definition.kind, definition)
       structures.set(definition.kind, definition.structure)
     }
+
     this.#definitions = contracts
     this.#structures = structures
     Object.freeze(this)
@@ -54,6 +59,7 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
       ...this.#definitions.values(),
       ...definitions
     ] as NodeDefinition<Variant | Additional>[])
+
     extended.#unknown = this.#unknown
     return extended
   }
@@ -68,10 +74,12 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   /** Validate and own external input, or reuse an already owned document. */
   document(
     input: ReadonlyDocument | DocumentContext,
-    options: { limits?: Readonly<DocumentLimits> } = {}
+    options: { limits?: Readonly<DocumentLimits> | undefined } = {}
   ): DocumentContext<Variant> {
-    if (input instanceof DocumentContext && options.limits === undefined)
+    if (input instanceof DocumentContext && options.limits === undefined) {
       return input.withSchema(this)
+    }
+
     return new DocumentContext(
       input instanceof DocumentContext ? input.document : input,
       { ...options, schema: this }
@@ -82,8 +90,11 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
   satisfies(other: DocumentSchema): boolean {
     if (this === other) return true
     if (other.#unknown === 'reject') return false
-    for (const [kind, definition] of other.#definitions)
+
+    for (const [kind, definition] of other.#definitions) {
       if (this.#definitions.get(kind) !== definition) return false
+    }
+
     return true
   }
 
@@ -94,8 +105,9 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
         previous &&
         JSON.stringify(previous.structure) !==
           JSON.stringify(definition.structure)
-      )
+      ) {
         throw new DocumentValidationError('Conflicting node structure: ' + kind)
+      }
     }
   }
 
@@ -104,24 +116,31 @@ export class DocumentSchema<Variant extends NodeVariant = NodeVariant> {
     for (const node of context.walk()) {
       const definition = this.#definitions.get(node.kind)
       const path = context.location(node).path
+
       if (!definition) {
-        if (this.#unknown === 'reject')
+        if (this.#unknown === 'reject') {
           throw new DocumentValidationError('Unknown node kind: ' + node.kind, {
             path
           })
+        }
+
         continue
       }
+
       try {
-        if (!definition.validateData(node.data))
+        if (!definition.validateData(node.data)) {
           throw new DocumentValidationError(
             'Invalid node payload: ' + node.kind,
             {
               path: path + '.data'
             }
           )
+        }
+
         validateStructure(node, this.#structures)
       } catch (cause) {
         if (cause instanceof DocumentValidationError) throw cause
+
         throw new DocumentValidationError(
           cause instanceof Error
             ? cause.message

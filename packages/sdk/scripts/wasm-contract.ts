@@ -12,16 +12,20 @@ export async function readWasmMetadata(
   // The workspace graph generates the ABI and builds core before assembling
   // Wasm. Loading its validators at startup would require core/dist too early.
   const { abiExports } = await import('../typescript/src/generated/abi.ts')
+
   const requiredExports = {
     memory: 'memory',
     ...Object.fromEntries(
       Object.keys(abiExports).map(name => [name, 'function'])
     )
   }
+
   const module = await WebAssembly.compile(new Uint8Array(bytes).buffer)
+
   const exports = new Map(
     WebAssembly.Module.exports(module).map(item => [item.name, item.kind])
   )
+
   for (const [name, kind] of Object.entries(requiredExports)) {
     if (exports.get(name) !== kind) {
       throw new Error(`Wasm is missing the ${name} ${kind} export`)
@@ -34,14 +38,17 @@ export async function readWasmMetadata(
     contract_len: () => number
     memory: WebAssembly.Memory
   }
+
   for (const [name, signature] of Object.entries(abiExports)) {
     const exported = (wasm as unknown as Record<string, unknown>)[name]
     if (
       typeof exported !== 'function' ||
       exported.length !== signature.params.length
-    )
+    ) {
       throw new Error(`Wasm ${name} parameter signature does not match the ABI`)
+    }
   }
+
   const pointer = wasm.contract_ptr()
   const length = wasm.contract_len()
   if (
@@ -66,6 +73,7 @@ export async function readWasmMetadata(
 
 function sorted(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sorted)
+
   if (value && typeof value === 'object') {
     return Object.fromEntries(
       Object.entries(value)
@@ -73,6 +81,7 @@ function sorted(value: unknown): unknown {
         .map(([key, entry]) => [key, sorted(entry)])
     )
   }
+
   return value
 }
 
@@ -85,6 +94,7 @@ export async function assertBundledWasmMatches(
     readWasmMetadata(built),
     readWasmMetadata(bundled)
   ])
+
   if (JSON.stringify(sorted(current)) !== JSON.stringify(sorted(committed))) {
     throw new Error(
       'Bundled Go Wasm contract is out of date; run bun run build'
@@ -108,7 +118,9 @@ export async function writeWasmContract() {
   const bytes = await Bun.file(
     path.join(sdkRoot, 'dist', 'parser.wasm')
   ).bytes()
+
   const metadata = await readWasmMetadata(bytes)
+
   const contract = {
     ...metadata,
     sha256: new Bun.CryptoHasher('sha256').update(bytes).digest('hex'),
@@ -116,10 +128,12 @@ export async function writeWasmContract() {
     gzipBytes: await compress('gzip', bytes),
     brotliBytes: await compress('brotli' as CompressionFormat, bytes)
   }
+
   await Bun.write(
     path.join(sdkRoot, 'dist', 'contract.json'),
     JSON.stringify(contract, null, 2) + '\n'
   )
+
   console.log(
     `Wasm contract ${contract.contractId}: ${contract.bytes} bytes, SHA-256 ${contract.sha256}`
   )

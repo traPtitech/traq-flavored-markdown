@@ -8,6 +8,7 @@ use markdown_ast::{AnyPayload, NodeData};
 use std::sync::Arc;
 
 pub(crate) type TextFactory = Arc<dyn Fn(String) -> AnyPayload + Send + Sync>;
+
 #[derive(Clone, Default)]
 pub(crate) struct Definition {
     pub rules: Vec<Contribution>,
@@ -71,6 +72,7 @@ impl SyntaxPlugin {
                 element: "text provider".into(),
             });
         }
+
         let provider =
             source
                 .definition
@@ -79,6 +81,7 @@ impl SyntaxPlugin {
                 .ok_or_else(|| super::BuildError::Missing {
                     element: "text provider".into(),
                 })?;
+
         Arc::make_mut(&mut self.definition).text = Some(provider);
         Ok(self)
     }
@@ -93,6 +96,7 @@ impl SyntaxPlugin {
                 element: "block sequence policy".into(),
             });
         }
+
         let policy =
             source
                 .definition
@@ -101,6 +105,7 @@ impl SyntaxPlugin {
                 .ok_or_else(|| super::BuildError::Missing {
                     element: "block sequence policy".into(),
                 })?;
+
         Arc::make_mut(&mut self.definition).block_policy = Some(policy);
         Ok(self)
     }
@@ -123,6 +128,7 @@ impl SyntaxPlugin {
     ) -> &mut Self {
         Arc::make_mut(&mut self.definition).text =
             Some(Arc::new(move |value| AnyPayload::new(make(value))));
+
         self
     }
 

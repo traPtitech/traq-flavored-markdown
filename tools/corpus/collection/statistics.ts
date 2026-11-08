@@ -4,6 +4,7 @@ export function observeSource(
   contains: Record<string, number>
 ) {
   const bytes = new TextEncoder().encode(source).byteLength
+
   const bucket =
     bytes < 100
       ? '<100'
@@ -12,7 +13,9 @@ export function observeSource(
         : bytes < 10000
           ? '<10000'
           : '>=10000'
+
   lengths[bucket] = (lengths[bucket] ?? 0) + 1
+
   for (const [name, pattern] of Object.entries({
     json: /!\{/,
     fence: /```|~~~/,
@@ -23,7 +26,9 @@ export function observeSource(
     url: /https?:\/\//,
     quote: /^ {0,3}>/m,
     list: /^\s*(?:[-+*]|\d+[.)]) /m
-  }))
+  })) {
     if (pattern.test(source)) contains[name] = (contains[name] ?? 0) + 1
+  }
+
   return bytes
 }

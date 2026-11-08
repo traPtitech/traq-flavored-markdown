@@ -30,27 +30,34 @@ export interface HtmlRendererOptions {
     validate?(destination: string): boolean
     attributes?: Readonly<Record<string, string>>
   }
+
   images?: {
     validate?(destination: string): boolean
     domains?: readonly string[]
   }
+
   code?: {
     highlight?(code: string, language: string): HighlightResult | undefined
   }
+
   math?: {
     render?(tex: string, displayMode: boolean): string
     renderCondensed?(tex: string): string
   }
+
   references?: { resolve?: ReferenceResolver }
+
   stamps?: {
     resolve?: StampResolver
     validateUrl?(destination: string): boolean
   }
+
   presentation?: {
     breaks?: boolean
     rawHtml?: 'passthrough' | 'escape'
     xhtmlOut?: boolean
   }
+
   /** Additional handlers for nodes outside the built-in plugins. */
   plugins?: readonly RenderPlugin[]
   /** Return customized built-in handlers for the preset. */
@@ -66,10 +73,29 @@ function validateImage(value: string, domains: ReadonlySet<string>) {
   }
 }
 
+function resolveLinkPolicies(options: HtmlRendererOptions['links']) {
+  const validateLink = options?.validate ?? defaultLinkPolicy
+  const hostAttributes: Readonly<Record<string, string>> = {}
+
+  // References and condensed image links use the host's navigation behavior.
+  return {
+    standard: {
+      validateLink,
+      linkAttributes: options?.attributes ?? {
+        target: '_blank',
+        rel: 'nofollow noopener noreferrer'
+      }
+    },
+    reference: { validateLink, linkAttributes: hostAttributes },
+    condensedImage: { validateLink, linkAttributes: hostAttributes }
+  }
+}
+
 /** Resolve display policy once; explicit undefined has the same meaning as omission. */
 export function resolveOptions(options: HtmlRendererOptions = {}) {
   const customMath = options.math?.render
   const domains = new Set(options.images?.domains ?? imageDomains)
+
   return {
     schema: options.schema ?? schema.withUnknownNodes(),
     labels: {
@@ -82,17 +108,13 @@ export function resolveOptions(options: HtmlRendererOptions = {}) {
     rawHtml: options.presentation?.rawHtml ?? 'escape',
     xhtmlOut: options.presentation?.xhtmlOut ?? false,
     highlight: options.code?.highlight,
-    validateLink: options.links?.validate ?? defaultLinkPolicy,
+    links: resolveLinkPolicies(options.links),
     validateImage:
       options.images?.validate ??
       ((value: string) => validateImage(value, domains)),
     validateStampImage: options.stamps?.validateUrl ?? defaultStampPolicy,
     resolveReference: options.references?.resolve,
     resolveStamp: options.stamps?.resolve,
-    linkAttributes: options.links?.attributes ?? {
-      target: '_blank',
-      rel: 'nofollow noopener noreferrer'
-    },
     isBlockSpacing: (node: { kind: string }) => node.kind === names.BlankLine,
     math: customMath,
     condensedMath:

@@ -4,6 +4,7 @@ use markdown_traq_contracts::Spoiler;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = RenderPresetBuilder::new();
+
     for plugin in [
         markdown_commonmark_text::plugin(),
         markdown_commonmark_text::html::plugin(),
@@ -18,6 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ] {
         builder.add(&plugin)?;
     }
+
     let original = Renderer::new(&builder.clone().build()?);
 
     // Customize one type while keeping the original renderer valid.
@@ -32,6 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = parser.parse("**こんにちは** !!秘密!! :stamp:")?;
     let original = original.render(&document).map_err(|error| error.code())?;
     let customized = customized.render(&document).map_err(|error| error.code())?;
+
     assert_eq!(original.trim(), "こんにちは ██ :stamp:");
     assert_eq!(customized.trim(), "こんにちは [非表示] :stamp:");
     println!("{original}{customized}");

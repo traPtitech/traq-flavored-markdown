@@ -7,6 +7,7 @@ use std::sync::LazyLock;
 pub fn plugin() -> RenderPlugin {
     static PLUGIN: LazyLock<RenderPlugin> =
         LazyLock::new(|| build().expect("valid spacing text plugin"));
+
     PLUGIN.clone()
 }
 

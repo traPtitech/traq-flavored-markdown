@@ -11,30 +11,38 @@ const bytes = await file(
 
 test('fused processing returns the same AST, extraction and text as independent consumers', async () => {
   const runtime = await createRuntime(bytes)
+
   try {
     const origin = 'https://q.example.test'
+
     const source =
       '**hello**\n\n' + origin + '/files/00000000-0000-0000-0000-000000000001'
+
     const parser = runtime.createParser(presets.traq.v1)
     const extractor = runtime.createExtractor({ origin })
     const renderer = runtime.createPlainTextRenderer({ origin })
     const processor = runtime.createProcessor(presets.traq.v1, { origin })
+
     for (const inline of [false, true]) {
       const document = inline
         ? parser.parseInline(source)
         : parser.parse(source)
+
       const result = inline
         ? processor.processInline(source)
         : processor.process(source)
+
       expect(result).toEqual({
         document,
         extraction: extractor.extract(document),
         plainText: renderer.render(document)
       })
     }
+
     const preserved = runtime.createProcessor(presets.traq.v1, {
       whitespace: 'preserve'
     })
+
     expect(preserved.process('a\n\nb').plainText).toContain('\n')
     expect(processor.process('a\n\nb').plainText).toBe('a b')
     processor.dispose()
@@ -47,10 +55,13 @@ test('fused processing returns the same AST, extraction and text as independent 
 
 test('plain-text processing preserves authored RGB and RGBA stamp notation', async () => {
   const runtime = await createRuntime(bytes)
+
   try {
     const processor = runtime.createProcessor(presets.traq.v1)
+
     const source =
       ':0xF00: :0xF008.rotate.small: :0xff000080: :0x00000001: :0xFFFFFFFF:'
+
     expect(processor.processInline(source).plainText).toBe(source)
   } finally {
     runtime.dispose()
@@ -59,23 +70,29 @@ test('plain-text processing preserves authored RGB and RGBA stamp notation', asy
 
 test('native Wasm operations follow the shared cross-language structure contract', async () => {
   const runtime = await createRuntime(bytes)
+
   try {
     const extractor = runtime.createExtractor()
     const renderer = runtime.createPlainTextRenderer()
+
     for (const fixture of structureFixtures) {
       const document = fixture.document as ReadonlyDocument
+
       for (const operation of [
         () => extractor.extract(document),
         () => renderer.render(document)
       ]) {
-        if (fixture.valid) expect(operation, fixture.name).not.toThrow()
-        else {
+        if (fixture.valid) {
+          expect(operation, fixture.name).not.toThrow()
+        } else {
           let failure: unknown
+
           try {
             operation()
           } catch (error) {
             failure = error
           }
+
           expect(failure, fixture.name).toMatchObject({
             code: 'invalid_document'
           })
@@ -89,6 +106,7 @@ test('native Wasm operations follow the shared cross-language structure contract
 
 test('native text rendering and extraction resolve omitted options and expose typed failures', async () => {
   const runtime = await createRuntime(bytes)
+
   try {
     const parser = runtime.createParser(presets.traq.v1)
     const extractor = runtime.createExtractor()
@@ -97,12 +115,14 @@ test('native text rendering and extraction resolve omitted options and expose ty
     expect(extractor.extract(document).messageText).toBe('**hello** world')
     expect(renderer.render(document)).toBe('hello world')
     renderer.dispose()
+
     try {
       renderer.render(document)
       throw new Error('Expected disposed error')
     } catch (error) {
       expect(error).toMatchObject({ code: 'disposed', operation: 'render' })
     }
+
     expect(extractor.extract(document).messageText).toBe(document.source.text)
   } finally {
     runtime.dispose()
@@ -111,9 +131,11 @@ test('native text rendering and extraction resolve omitted options and expose ty
 
 test('processing rejects malformed sibling spans without poisoning the extractor', async () => {
   const runtime = await createRuntime(bytes)
+
   try {
     const parser = runtime.createParser(presets.traq.v1)
     const extractor = runtime.createExtractor({ origin: '' })
+
     const reference = (name: string) =>
       '!' +
       JSON.stringify({
@@ -121,9 +143,11 @@ test('processing rejects malformed sibling spans without poisoning the extractor
         id: '00000000-0000-0000-0000-000000000001',
         raw: '@' + name
       })
+
     const document = parser.parseInline(
       reference('alice') + ' ' + reference('bob')
     )
+
     const reordered = document.toMutable()
     reordered.children.reverse()
     const duplicated = document.toMutable()
@@ -131,8 +155,11 @@ test('processing rejects malformed sibling spans without poisoning the extractor
     const crossing = document.toMutable()
     const last = crossing.children.at(-1)!
     last.span.start = crossing.children[0].span.end - 1
-    for (const candidate of [reordered, duplicated, crossing])
+
+    for (const candidate of [reordered, duplicated, crossing]) {
       expect(() => extractor.extract(candidate)).toThrow(/span/)
+    }
+
     expect(extractor.extract(document).messageText).toBe('@alice @bob')
   } finally {
     runtime.dispose()
@@ -142,14 +169,18 @@ test('processing rejects malformed sibling spans without poisoning the extractor
 test('processing consumes the supplied AST and returns metadata without rendering', async () => {
   const runtime = await createRuntime(bytes)
   const parser = runtime.createParser(presets.traq.v1)
+
   const extractor = runtime.createExtractor({
     origin: 'https://q.example.test'
   })
+
   const source =
     '**!{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@alice"}**'
+
   const document = parser.parse(source)
   const original = document.toMutable()
   const output = extractor.extract(document)
+
   expect(Object.keys(output).sort()).toEqual([
     'attachments',
     'citations',
@@ -157,6 +188,7 @@ test('processing consumes the supplied AST and returns metadata without renderin
     'referenceEmbedding',
     'references'
   ])
+
   expect(output.messageText).toBe('**@alice**')
   expect(output.references.mentions.length).toBe(1)
   expect(extractor.extract(document)).toEqual(output)
@@ -171,15 +203,19 @@ test('processing consumes the supplied AST and returns metadata without renderin
 
 test('one extractor accepts ASTs from different grammar versions', async () => {
   const runtime = await createRuntime(bytes)
+
   const parsers = new Map(
     [presets.commonmark, presets.traq.v1].map(version => [
       version,
       runtime.createParser(version)
     ])
   )
+
   const extractor = runtime.createExtractor({ origin: '' })
+
   const source =
     '!{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@alice"}'
+
   for (const version of [
     presets.commonmark,
     presets.traq.v1,
@@ -187,11 +223,14 @@ test('one extractor accepts ASTs from different grammar versions', async () => {
   ]) {
     const parser = parsers.get(version)
     if (!parser) throw new Error(`Missing parser: ${version}`)
+
     const output = extractor.extract(parser.parse(source))
+
     expect(output.references.mentions.length).toBe(
       version === 'commonmark' ? 0 : 1
     )
   }
+
   // @ts-expect-error Exercise the runtime boundary for an unknown JavaScript preset.
   expect(() => runtime.createParser('traq.unknown')).toThrow(
     /unknown grammar version/
@@ -200,10 +239,13 @@ test('one extractor accepts ASTs from different grammar versions', async () => {
 
 test('AST processing configuration and instances have independent lifetimes', async () => {
   const runtime = await createRuntime(bytes)
+
   try {
     const parser = runtime.createParser(presets.traq.v1)
+
     const source =
       'https://q.example.test/files/00000000-0000-0000-0000-000000000001'
+
     const document = parser.parse(`<${source}>`)
     const options = { origin: 'https://q.example.test' }
     const configured = runtime.createExtractor(options)
@@ -211,11 +253,13 @@ test('AST processing configuration and instances have independent lifetimes', as
     const plain = runtime.createExtractor({ origin: '' })
     expect(configured.extract(document).attachments.length).toBe(1)
     expect(plain.extract(document).attachments.length).toBe(0)
+
     for (const options of [{ origin: 'x'.repeat(2049) }, { extra: true }]) {
       expect(() =>
         runtime.createExtractor(options as { origin: string })
       ).toThrow()
     }
+
     const large = parser.parse('x'.repeat(60000))
     expect(plain.extract(large).messageText).toBe(large.source.text)
     configured.dispose()

@@ -9,6 +9,7 @@ type NodeStructure struct {
 	Role     string
 	Children ChildStructure
 }
+
 type ChildStructure struct {
 	Kind     string
 	Roles    []string
@@ -18,72 +19,110 @@ type ChildStructure struct {
 	Rest     string
 	HasArity bool
 }
+
 type StructuredPayload interface {
 	Payload
 	NodeStructure() NodeStructure
 }
 
+type nodeShape struct {
+	kind     string
+	role     string
+	children int
+}
+
+func shapeOf(kind string, payload Payload, childCount int) nodeShape {
+	role := "opaque"
+	if metadata, ok := payload.(StructuredPayload); ok {
+		role = metadata.NodeStructure().Role
+	}
+
+	return nodeShape{kind: kind, role: role, children: childCount}
+}
+
 func validateStructure(node *MutableNode, path string) error {
-	payload, known := node.Data.(StructuredPayload)
+	children := make([]nodeShape, len(node.Children))
+
+	for i, child := range node.Children {
+		children[i] = shapeOf(child.Kind, child.Data, len(child.Children))
+	}
+
+	return validateChildStructure(node.Data, node.Span, children, path)
+}
+
+func validateChildStructure(data Payload, span Span, children []nodeShape, path string) error {
+	payload, known := data.(StructuredPayload)
 	if !known {
 		return nil
 	}
+
 	policy := payload.NodeStructure().Children
+
 	invalidChildren := func() error {
-		return &ValidationError{Path: path + ".children", Span: &node.Span, Message: "children do not match the node structural contract"}
+		return &ValidationError{Path: path + ".children", Span: &span, Message: "children do not match the node structural contract"}
 	}
-	if policy.Nonempty && len(node.Children) == 0 {
+
+	if policy.Nonempty && len(children) == 0 {
 		return invalidChildren()
 	}
+
 	switch policy.Kind {
 	case "any":
 		return nil
+
 	case "leaf":
-		if len(node.Children) != 0 {
+		if len(children) != 0 {
 			return invalidChildren()
 		}
+
 	case "roles":
-		for _, child := range node.Children {
-			role := "opaque"
-			if metadata, known := child.Data.(StructuredPayload); known {
-				role = metadata.NodeStructure().Role
-			}
-			if !slices.Contains(policy.Roles, role) {
+		for _, child := range children {
+			if !slices.Contains(policy.Roles, child.role) {
 				return invalidChildren()
 			}
 		}
+
 	case "types":
-		for _, child := range node.Children {
-			if !slices.Contains(policy.Types, child.Kind) {
+		for _, child := range children {
+			if !slices.Contains(policy.Types, child.kind) {
 				return invalidChildren()
 			}
 		}
+
 	case "sequence":
-		if len(node.Children) < len(policy.Prefix) {
+		if len(children) < len(policy.Prefix) {
 			return invalidChildren()
 		}
+
 		arity := -1
+
 		if policy.HasArity {
-			counter, ok := node.Data.(interface{ ChildArity() int })
+			counter, ok := data.(interface{ ChildArity() int })
 			if !ok {
 				return invalidChildren()
 			}
+
 			arity = counter.ChildArity()
 			if arity <= 0 {
 				return invalidChildren()
 			}
 		}
-		for index, child := range node.Children {
+
+		for index, child := range children {
 			expected := policy.Rest
+
 			if index < len(policy.Prefix) {
 				expected = policy.Prefix[index]
 			}
-			if child.Kind != expected || (policy.HasArity && len(child.Children) != arity) {
+
+			if child.kind != expected || (policy.HasArity && child.children != arity) {
 				return invalidChildren()
 			}
 		}
+
 	default:
 		return invalid(path+".data", "unknown node structural policy")
 	}
+
 	return nil
 }

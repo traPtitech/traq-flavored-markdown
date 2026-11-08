@@ -28,6 +28,7 @@ const { values: v } = parseArgs({
 })
 
 if (!v.corpus) throw new Error('--corpus messages.jsonl is required')
+
 printJson(
   await runComparison({
     corpus: v.corpus,

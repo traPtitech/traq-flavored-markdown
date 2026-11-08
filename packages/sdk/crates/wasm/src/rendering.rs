@@ -15,6 +15,7 @@ pub extern "C" fn configure_renderer() -> u32 {
             RENDERER.set(Some(renderer));
             Ok(abi::configured())
         })();
+
         io.reply(&result);
         io.output.len() as u32
     })
@@ -32,6 +33,7 @@ pub extern "C" fn render() -> u32 {
                     .map_err(Error::processing)
             })
         });
+
         io.reply(&result);
         io.output.len() as u32
     })

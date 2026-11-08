@@ -22,28 +22,37 @@ const runtime = await createRuntime(
     )
   )
 )
+
 afterAll(() => runtime.dispose())
 export const markdownParser = runtime.createParser(presets.traq.v1)
+
 export const analyzeMarkdownSource = (source: string) =>
   describeSource(analyzeForEditing(markdownParser.parseWithSyntax(source)))
+
 const renderer = createHtmlRenderer()
+
 export const renderPreview = vi.fn<MarkdownServices['render']>(
   (document, node) => renderer.createSession(document).render({ roots: [node] })
 )
+
 export const markdownServices: MarkdownServices = {
   analyze: analyzeMarkdownSource,
   render: renderPreview
 }
+
 export const markdownFormats = (source: string) =>
   formats(analyzeMarkdownSource(source))
+
 export const renderMarkdownWidget = (
   format: Extract<MarkdownFormat, { kind: 'rendered-inline' }>
 ) => widget(format, renderPreview)
+
 export const getMarkdownRenderer = () => ({
   render: (source: string) => ({
     renderedText: renderer.render(markdownParser.parse(source))
   })
 })
+
 export const renderInline = (source: string) => ({
   renderedText: renderer.render(markdownParser.parseInline(source))
 })

@@ -18,6 +18,7 @@ pub fn block_rule() -> &'static BlockRule {
                         .is_some_and(|next| cells::alignment(probe.line, next).is_some())
             })
     });
+
     &RULE
 }
 
@@ -27,5 +28,6 @@ pub fn plugin() -> &'static SyntaxPlugin {
         plugin.add(block_rule());
         plugin
     });
+
     &PLUGIN
 }

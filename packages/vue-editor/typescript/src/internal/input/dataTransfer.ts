@@ -4,6 +4,7 @@ import type { EditorProps, EditorView } from '@tiptap/pm/view'
 import { partsToDisplayText } from '../../projection.js'
 import type { InputPart } from '../../types.js'
 import type { PreparePaste, ReferenceInputAdapter } from '../../types.js'
+import { type DocumentRange, documentRange } from './coordinates.js'
 import { contentToParts } from './document.js'
 import { editInput } from './editOperation.js'
 import { currentInputSelection } from './selection.js'
@@ -17,15 +18,15 @@ export const inputDataTransfer = <R>(options: {
   singleLine: () => boolean
   label: (reference: R) => string
   clipboard?: ReferenceInputAdapter<R>['clipboard']
-  insertParts: (
-    parts: InputPart<R>[],
-    range?: { from: number; to: number }
-  ) => void
-  insertText: (text: string, range?: { from: number; to: number }) => void
+
+  insertParts: (parts: InputPart<R>[], range?: DocumentRange) => void
+
+  insertText: (text: string, range?: DocumentRange) => void
   preparePaste?: PreparePaste
 }): NonNullable<EditorProps['handleDOMEvents']> => {
   const read = (data: Pick<DataTransfer, 'getData'>) =>
     options.clipboard?.read(data)
+
   const edit = (operation: () => void) => {
     const current = options.editor()
     if (!current || options.readonly()) return
@@ -40,16 +41,19 @@ export const inputDataTransfer = <R>(options: {
     if (selection.empty) return false
 
     const parts = contentToParts<R>(selection.content().content)
-    if (options.clipboard) options.clipboard.write(event.clipboardData, parts)
-    else
+
+    if (options.clipboard) {
+      options.clipboard.write(event.clipboardData, parts)
+    } else {
       event.clipboardData.setData(
         'text/plain',
         partsToDisplayText(parts, options.label)
       )
+    }
 
     event.preventDefault()
 
-    if (cut && !options.readonly())
+    if (cut && !options.readonly()) {
       edit(() =>
         view.dispatch(
           view.state.tr
@@ -58,6 +62,7 @@ export const inputDataTransfer = <R>(options: {
             .scrollIntoView()
         )
       )
+    }
 
     return true
   }
@@ -73,7 +78,7 @@ export const inputDataTransfer = <R>(options: {
 
       const { doc } = view.state
       const { from, to } = currentInputSelection(view)
-      const range = { from, to }
+      const range = documentRange({ from, to })
 
       const parts =
         read(data) ??
@@ -93,6 +98,7 @@ export const inputDataTransfer = <R>(options: {
       }
 
       const plan = options.preparePaste?.(event)
+
       if (plan) {
         event.preventDefault()
         if (plan.type === 'handled') return true
@@ -101,17 +107,22 @@ export const inputDataTransfer = <R>(options: {
           if (!text) return
 
           const current = options.editor()
+
           if (
             current &&
             !current.isDestroyed &&
             current.view === view &&
             view.state.doc === doc
-          )
+          ) {
             edit(() => options.insertText(text, range))
+          }
         }
 
-        if (typeof plan.text === 'string') insert(plan.text)
-        else void plan.text.then(insert).catch(() => undefined)
+        if (typeof plan.text === 'string') {
+          insert(plan.text)
+        } else {
+          void plan.text.then(insert).catch(() => undefined)
+        }
 
         return true
       }
@@ -128,8 +139,9 @@ export const inputDataTransfer = <R>(options: {
         view.dragging ||
         options.readonly() ||
         !event.dataTransfer?.types.includes('text/plain')
-      )
+      ) {
         return false
+      }
 
       const position = view.posAtCoords({
         left: event.clientX,
@@ -137,13 +149,15 @@ export const inputDataTransfer = <R>(options: {
       })?.pos
 
       if (position === undefined) return false
-      const range = { from: position, to: position }
+
+      const range = documentRange({ from: position, to: position })
       event.preventDefault()
 
       const parts = read(event.dataTransfer)
 
-      if (parts) edit(() => options.insertParts(parts, range))
-      else {
+      if (parts) {
+        edit(() => options.insertParts(parts, range))
+      } else {
         const text = event.dataTransfer.getData('text/plain')
         edit(() => options.insertText(text, range))
       }

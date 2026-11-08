@@ -11,7 +11,11 @@ test('SDK document validation follows the shared cross-language structure contra
       new DocumentContext(fixture.document as ReadonlyDocument, {
         schema: schema.withUnknownNodes()
       })
-    if (fixture.valid) expect(validate, fixture.name).not.toThrow()
-    else expect(validate, fixture.name).toThrow()
+
+    if (fixture.valid) {
+      expect(validate, fixture.name).not.toThrow()
+    } else {
+      expect(validate, fixture.name).toThrow()
+    }
   }
 })

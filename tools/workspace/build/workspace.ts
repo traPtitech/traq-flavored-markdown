@@ -26,15 +26,18 @@ export function workspaceTasks(
   styles: ReadonlySet<PackageName> = new Set(['sdk'])
 ) {
   const tasks = new Map<string, Task>()
+
   for (const name of graph.order) {
     tasks.set(`contracts:${name}`, {
       dependencies: [],
       run: () => actions.contracts(name)
     })
+
     tasks.set(`prepare:${name}`, {
       dependencies: [],
       run: () => actions.prepare(name)
     })
+
     tasks.set(`typescript:${name}`, {
       dependencies: [
         `contracts:${name}`,
@@ -45,6 +48,7 @@ export function workspaceTasks(
       ],
       run: () => actions.typescript(name)
     })
+
     tasks.set(`build:${name}`, {
       dependencies: [
         `typescript:${name}`,
@@ -56,20 +60,25 @@ export function workspaceTasks(
       ],
       run: async () => {}
     })
-    if (styles.has(name))
+
+    if (styles.has(name)) {
       tasks.set(`styles:${name}`, {
         dependencies: [`prepare:${name}`],
         run: () => actions.styles(name)
       })
+    }
   }
+
   tasks.set('wasm:sdk', {
     dependencies: ['contracts:sdk', 'prepare:sdk', 'typescript:core'],
     run: actions.wasm
   })
+
   tasks.set('metadata:sdk', {
     dependencies: ['wasm:sdk'],
     run: actions.metadata
   })
+
   return tasks
 }
 
@@ -78,27 +87,34 @@ export async function buildWorkspace({
   packages
 }: { check?: boolean; packages?: PackageName[] } = {}) {
   const { graph, manifests } = await readNpmPackageGraph()
+
   const styles = new Set(
     graph.order.filter(name => manifests[name].scripts?.['build:styles'])
   )
+
   const tasks = workspaceTasks(
     graph,
     {
       contracts: name =>
         check ? checkGeneratedOwner(name) : generateBindings(name),
+
       prepare: name => cleanBuildOutput(packageRoot(name)),
+
       typescript: async name => {
         const root = packageRoot(name)
+
         await $.cwd(
           root
         )`${Bun.argv[0]} run ${manifests[name].scripts?.['build:ts'] ? 'build:ts' : 'build'}`
       },
+
       styles: name => $.cwd(packageRoot(name))`${Bun.argv[0]} run build:styles`,
       wasm: () => buildSdkWasm({ checkGenerated: check }),
       metadata: writeWasmContract
     },
     styles
   )
+
   await runTasks(
     tasks,
     (packages ?? graph.order).map(name => `build:${name}`)

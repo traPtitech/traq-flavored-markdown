@@ -3,8 +3,10 @@ import { createRuntime, presets } from '@traq-flavored-markdown/sdk'
 const parserWasmUrl = new URL(
   import.meta.resolve('@traq-flavored-markdown/sdk/parser.wasm')
 )
+
 const wasmBytes = await Bun.file(parserWasmUrl).bytes()
 const runtime = await createRuntime(wasmBytes)
+
 try {
   const parser = runtime.createParser(presets.traq.v1)
   console.log(JSON.stringify(parser.parse('**hello** :stamp: $x$'), null, 2))

@@ -15,15 +15,18 @@ export function summarizeClassifications(metadata: ReportMetadata) {
         const counts = Object.fromEntries(
           classificationKeys.map(id => [id, { total: 0, review: 0 }])
         )
+
         for (let i = 0; i < metadata.counts[profile]; i++) {
           const value = classificationAt(metadata.classifications[profile], i)
           const review = needsReview(value)
           const ids = classificationMemberships(value)
+
           for (const id of ids) {
             counts[id].total++
             if (review) counts[id].review++
           }
         }
+
         return [profile, counts]
       })
     )

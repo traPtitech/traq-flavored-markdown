@@ -80,9 +80,11 @@ function RenderCell({ outcome }: { outcome: Outcome }) {
 
 function HtmlPreview({ html }: { html: string }) {
   const ref = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     ref.current?.replaceChildren(createInertPreviewFragment(html))
   }, [html])
+
   return <div className="cell-content markdown-body" ref={ref} />
 }
 
@@ -95,6 +97,7 @@ function RawDiffCells({ row }: { row: DifferenceRow }) {
 
   const renderSide = (isAfter: boolean) => {
     const outcome = isAfter ? row.after : row.before
+
     return (
       <>
         {(outcome.kind === 'error' || row.before.kind !== row.after.kind) && (
@@ -112,6 +115,7 @@ function RawDiffCells({ row }: { row: DifferenceRow }) {
             if (op === (isAfter ? -1 : 1)) return null
 
             if (op === 0) return <span key={i}>{value}</span>
+
             return (
               <mark
                 key={i}

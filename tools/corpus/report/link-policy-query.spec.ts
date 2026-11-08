@@ -17,6 +17,7 @@ import { aggregateDifferences } from './aggregate.ts'
 test('boundary changes and empty nested links compose in indexed queries without hiding wrong URLs', async () => {
   const url = 'https://example.test/a'
   const anchor = (value: string) => `<a href="${value}">${value}</a>`
+
   const row = (
     index: number,
     source: string,
@@ -29,6 +30,7 @@ test('boundary changes and empty nested links compose in indexed queries without
     before: { kind: 'html' as const, value: before },
     after: { kind: 'html' as const, value: after }
   })
+
   const rows = [
     row(0, url + ':', anchor(url + ':'), anchor(url) + ':'),
     row(
@@ -63,29 +65,36 @@ test('boundary changes and empty nested links compose in indexed queries without
       }
     }
   ]
+
   const aggregated = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   expect(aggregated.excluded.render.linkPolicy).toBe(2)
   expect(aggregated.excluded.render.nestedLinks).toBe(1)
   expect(aggregated.excluded.render.linkPolicyAndNestedLinks).toBe(3)
+
   const metadata = {
     ...fixtureMetadata(aggregated.counts, 1, rows.length),
     filters: aggregated.filters
   }
+
   const decoded: string[] = []
+
   const repository = new ReportRepository(
     parseReport(metadata, aggregated.payload),
     async encoded => {
       decoded.push(encoded)
+
       return JSON.parse(
         new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
       )
     }
   )
+
   const query = {
     ...initialViewerState.query,
     ignoreWhitespace: true,
@@ -96,12 +105,15 @@ test('boundary changes and empty nested links compose in indexed queries without
     ignoreLinkPolicy: true,
     ignoreNestedLinks: true
   }
+
   expect((await repository.query(query)).totalHits).toBe(2)
   expect(decoded).toEqual([aggregated.payload.render[2]])
   expect((await repository.query({ ...query, page: 2 })).rows[0].index).toBe(3)
+
   expect(
     (await repository.query({ ...query, search: 'mixed' })).rows[0].index
   ).toBe(2)
+
   expect(
     (await repository.query({ ...query, ignoreLinkPolicy: false })).totalHits
   ).toBe(4)
@@ -109,6 +121,7 @@ test('boundary changes and empty nested links compose in indexed queries without
 
 test('link policy indexes compose with cached queries and keep mixed changes and errors', async () => {
   const url = 'trap.jp'
+
   const rows = [
     {
       ...fixtureRows[0],
@@ -149,32 +162,40 @@ test('link policy indexes compose with cached queries and keep mixed changes and
       after: { kind: 'text' as const, value: 'README.md' }
     }
   ]
+
   const aggregated = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   expect(aggregated.excluded.render.linkPolicy).toBe(1)
   expect(aggregated.excluded.render.caseAndLinkPolicy).toBe(2)
+
   const metadata = {
     ...fixtureMetadata(aggregated.counts, 1, rows.length),
     filters: aggregated.filters
   }
+
   const decoded: string[] = []
+
   const repository = new ReportRepository(
     parseReport(metadata, aggregated.payload),
     async encoded => {
       decoded.push(encoded)
+
       return JSON.parse(
         new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
       )
     }
   )
+
   const query = { ...initialViewerState.query, ignoreLinkPolicy: true }
   expect((await repository.query(query)).rows[0].index).toBe(1)
   expect(decoded).toHaveLength(1)
   expect(decoded).not.toContain(aggregated.payload.render[0])
+
   const combined = {
     ...query,
     ignoreCase: true,
@@ -183,25 +204,32 @@ test('link policy indexes compose with cached queries and keep mixed changes and
     ignoreHtmlSerialization: true,
     ignoreKatexErrors: true
   }
+
   const found = await repository.query(combined)
   expect(found.totalHits).toBe(2)
   expect(found.rows[0].index).toBe(2)
   const reads = decoded.length
+
   expect(
     (await repository.query({ ...combined, page: 2 })).rows[0].after.kind
   ).toBe('error')
+
   expect(decoded.length).toBe(reads + 1)
   await repository.query(combined)
   expect(decoded.length).toBe(reads + 1)
+
   expect(
     (await repository.query({ ...combined, profile: 'plainText' })).totalHits
   ).toBe(0)
+
   expect(
     (await repository.query({ ...combined, search: 'mixed' })).totalHits
   ).toBe(1)
+
   expect(
     (await repository.query({ ...combined, ignoreLinkPolicy: false })).totalHits
   ).toBe(4)
+
   expect(() =>
     parseReport(
       {
@@ -263,30 +291,37 @@ test('HTTPS completion and email additions are indexed without hiding wrong dest
       }
     }
   ]
+
   const aggregated = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   const metadata = {
     ...fixtureMetadata(aggregated.counts, 1, rows.length),
     filters: aggregated.filters
   }
+
   const decoded: string[] = []
+
   const repository = new ReportRepository(
     parseReport(metadata, aggregated.payload),
     async encoded => {
       decoded.push(encoded)
+
       return JSON.parse(
         new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
       )
     }
   )
+
   const result = await repository.query({
     ...initialViewerState.query,
     ignoreLinkPolicy: true
   })
+
   expect(result.totalHits).toBe(1)
   expect(result.rows[0].index).toBe(2)
   expect(decoded).toEqual([aggregated.payload.render[2]])

@@ -27,6 +27,7 @@ export function useReportQuery(
     onlyReview,
     page
   } = query
+
   const request = useMemo(
     () => ({
       profile,
@@ -59,16 +60,20 @@ export function useReportQuery(
       page
     ]
   )
+
   const [state, setState] = useState<{
     repository: ReportRepository
     request: Query
     value: QueryState
   }>()
+
   useEffect(() => {
     const controller = new AbortController()
+
     const publish = (value: QueryState) => {
       if (!controller.signal.aborted) setState({ repository, request, value })
     }
+
     void repository
       .query(request, controller.signal, progress =>
         publish({ status: 'loading', progress })
@@ -80,8 +85,10 @@ export function useReportQuery(
           message: error instanceof Error ? error.message : String(error)
         })
       )
+
     return () => controller.abort()
   }, [repository, request])
+
   return state?.repository === repository && state.request === request
     ? state.value
     : { status: 'loading' }

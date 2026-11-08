@@ -14,19 +14,25 @@ import App from './App.vue'
 async function main() {
   const response = await fetch(wasmUrl)
   if (!response.ok) throw new Error(`Parser load failed: ${response.status}`)
+
   const runtime = await createRuntime(
     new Uint8Array(await response.arrayBuffer())
   )
+
   const parser = runtime.createParser(presets.traq.v1)
   const renderer = createHtmlRenderer()
+
   const markdown: MarkdownServices = {
     analyze: text =>
       describeSource(analyzeForEditing(parser.parseWithSyntax(text))),
+
     render: (document, node) =>
       renderer.createSession(document).render({ roots: [node] })
   }
+
   const app = createApp(App, { markdown })
   app.mount('#app')
+
   window.addEventListener(
     'pagehide',
     () => {
@@ -36,6 +42,7 @@ async function main() {
     { once: true }
   )
 }
+
 main().catch(error => {
   const root = document.getElementById('app')
   if (root) root.textContent = String(error)

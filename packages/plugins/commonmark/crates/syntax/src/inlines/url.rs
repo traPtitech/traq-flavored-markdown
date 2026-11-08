@@ -27,6 +27,7 @@ const ENCODE: &AsciiSet = &NON_ALPHANUMERIC
 
 fn escaped_byte(value: &str, offset: usize) -> Option<u8> {
     let digits = value.get(offset + 1..offset + 3)?;
+
     digits
         .bytes()
         .all(|byte| byte.is_ascii_hexdigit())
@@ -36,11 +37,13 @@ fn escaped_byte(value: &str, offset: usize) -> Option<u8> {
 /// Syntactic URL encoding; whether a destination may be followed belongs to the host.
 pub fn encode(value: &str) -> String {
     let value = host(value, false);
+
     let Some(hostname) =
         hostname_range(&value).filter(|range| value[range.clone()].starts_with('['))
     else {
         return escape(&value);
     };
+
     // Brackets delimit an IP literal in the authority, but are escaped in paths.
     format!(
         "{}{}{}",
@@ -53,6 +56,7 @@ pub fn encode(value: &str) -> String {
 fn escape(value: &str) -> String {
     let mut result = String::new();
     let mut start = 0;
+
     for (offset, _) in value.match_indices('%') {
         if escaped_byte(value, offset).is_some() {
             result.extend(utf8_percent_encode(&value[start..offset], ENCODE));
@@ -60,6 +64,7 @@ fn escape(value: &str) -> String {
             start = offset + 3;
         }
     }
+
     result.extend(utf8_percent_encode(&value[start..], ENCODE));
     result
 }
@@ -69,6 +74,7 @@ pub fn label(value: &str) -> String {
     let value = host(value, true);
     let mut result = String::new();
     let mut start = 0;
+
     for (offset, _) in value.match_indices('%') {
         if escaped_byte(&value, offset).is_some_and(|byte| b";/?:@&=+$,#%".contains(&byte)) {
             result.push_str(&percent_decode_str(&value[start..offset]).decode_utf8_lossy());
@@ -76,6 +82,7 @@ pub fn label(value: &str) -> String {
             start = offset + 3;
         }
     }
+
     result.push_str(&percent_decode_str(&value[start..]).decode_utf8_lossy());
     result
 }
@@ -85,6 +92,7 @@ fn hostname_range(value: &str) -> Option<Range<usize>> {
         rest
     } else {
         let (scheme, rest) = value.split_once(':')?;
+
         if scheme.eq_ignore_ascii_case("mailto") {
             rest.strip_prefix("//").unwrap_or(rest)
         } else {
@@ -110,11 +118,14 @@ fn host(value: &str, decode: bool) -> Cow<'_, str> {
     {
         return value.into();
     }
+
     let Some(range) = hostname_range(value) else {
         return value.into();
     };
+
     let hostname = &value[range.clone()];
     let mut dns_label = true;
+
     let replacement = hostname
         .split(['.', '\u{3002}', '\u{ff0e}', '\u{ff61}'])
         .map(|part| {
@@ -124,6 +135,7 @@ fn host(value: &str, decode: bool) -> Cow<'_, str> {
                 && part.chars().all(|ch| {
                     !ch.is_ascii() || ch.is_ascii_alphanumeric() || matches!(ch, '+' | '-' | '_')
                 });
+
             if !dns_label {
                 part.into()
             } else if decode {
@@ -140,6 +152,7 @@ fn host(value: &str, decode: bool) -> Cow<'_, str> {
         })
         .collect::<Vec<_>>()
         .join(".");
+
     format!(
         "{}{}{}",
         &value[..range.start],
@@ -159,6 +172,7 @@ mod tests {
             encode("/a b/%2f/%2F/%25/%zz/%é/%+A/日本/[x]\\\0"),
             "/a%20b/%2f/%2F/%25/%25zz/%25%C3%A9/%25+A/%E6%97%A5%E6%9C%AC/%5Bx%5D%5C%00"
         );
+
         assert_eq!(encode(";/?:@&=+$,-_.!~*'()#"), ";/?:@&=+$,-_.!~*'()#");
     }
 
@@ -167,11 +181,13 @@ mod tests {
         for byte in 0..=255u8 {
             for escaped in [format!("%{byte:02x}"), format!("%{byte:02X}")] {
                 assert_eq!(encode(&escaped), escaped);
+
                 let expected = if b";/?:@&=+$,#%".contains(&byte) {
                     escaped.clone()
                 } else {
                     String::from_utf8_lossy(&[byte]).into_owned()
                 };
+
                 assert_eq!(label(&escaped), expected, "{escaped}");
             }
         }
@@ -220,6 +236,7 @@ mod tests {
             assert_eq!(encode(input), encoded, "{input}");
             assert_eq!(label(input), decoded, "{input}");
         }
+
         assert_eq!(
             label("https://xn--bcher-kva.example"),
             "https://bücher.example"
@@ -232,6 +249,7 @@ mod tests {
             for padding in ["", " ", "\n\t", "\u{2003}"] {
                 for port in ["", ":80", ":invalid"] {
                     let input = format!("{padding}http://{host}{port}/path?x=1#frag{padding}");
+
                     assert_eq!(label(&input), input.trim(), "{input:?}");
                     assert!(encode(&input).ends_with(&format!("{port}/path?x=1#frag")));
                 }

@@ -13,6 +13,7 @@ import (
 func main() {
 	wasmPath := flag.String("wasm", "", "optional path to a matching Wasm artifact")
 	flag.Parse()
+
 	if err := run(*wasmPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -23,6 +24,7 @@ func run(path string) error {
 	ctx := context.Background()
 	var runtime *markdown.Runtime
 	var err error
+
 	if path == "" {
 		runtime, err = markdown.NewBundledRuntime(ctx)
 	} else {
@@ -31,17 +33,21 @@ func run(path string) error {
 		if err != nil {
 			return err
 		}
+
 		runtime, err = markdown.NewRuntime(ctx, wasm)
 	}
+
 	if err != nil {
 		return err
 	}
+
 	defer runtime.Close(ctx)
 
 	parser, err := runtime.NewParser(ctx, markdown.GrammarTraqV1)
 	if err != nil {
 		return err
 	}
+
 	defer parser.Close(ctx)
 
 	document, err := parser.Parse(ctx, "**hello** :stamp: $x$")
@@ -63,6 +69,7 @@ func run(path string) error {
 	if err != nil {
 		return err
 	}
+
 	defer extractor.Close(ctx)
 
 	result, err := extractor.Extract(ctx, document)
@@ -74,12 +81,14 @@ func run(path string) error {
 	if err != nil {
 		return err
 	}
+
 	fmt.Println(string(raw))
 
 	renderer, err := runtime.NewPlainTextRenderer(ctx, markdown.PlainTextOptions{Origin: "https://q.example.test"})
 	if err != nil {
 		return err
 	}
+
 	defer renderer.Close(ctx)
 
 	text, err := renderer.Render(ctx, document)

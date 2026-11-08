@@ -177,6 +177,7 @@ impl AbiContract {
                 ),
             ]),
         };
+
         for (name, operation) in operations {
             let signature = Signature {
                 params: operation.params.clone(),
@@ -191,6 +192,7 @@ impl AbiContract {
                 return Err(format!("duplicate ABI operation: {name}").into());
             }
         }
+
         Ok(contract)
     }
 }

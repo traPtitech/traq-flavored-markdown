@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { expect, test } from 'bun:test'
 
-import { captureProcess } from './process.ts'
+import { captureProcess, diagnosticTailCharacters } from './process.ts'
 import { withTempDirectory } from './temp-directory.ts'
 
 test('package commands preserve JSON stdout and drain both output pipes', async () => {
@@ -92,6 +92,7 @@ test.skipIf(process.platform !== 'win32')(
 
 test('process environment and progress reporting are explicit inputs', async () => {
   const progress: string[] = []
+
   const output = await captureProcess(
     Bun.argv[0],
     ['-e', 'console.log(process.env.PROCESS_TEST_VALUE)'],
@@ -101,6 +102,28 @@ test('process environment and progress reporting are explicit inputs', async () 
       log: message => progress.push(message)
     }
   )
+
   expect(output.trim()).toBe('injected')
   expect(progress).toHaveLength(2)
+})
+
+test('diagnostic streams retain a bounded tail while stdout remains complete', async () => {
+  const error = await captureProcess(
+    Bun.argv[0],
+    [
+      '-e',
+      'console.error("discarded prefix" + "x".repeat(50000) + "retained tail"); process.exit(1)'
+    ],
+    import.meta.dir
+  ).catch((error: Error) => error)
+
+  expect(error).toBeInstanceOf(Error)
+  const message = (error as Error).message
+  expect(message).toContain('retained tail')
+
+  expect(message.split('\n').slice(1).join('\n')).not.toContain(
+    'discarded prefix'
+  )
+
+  expect(message.length).toBeLessThan(diagnosticTailCharacters + 1000)
 })

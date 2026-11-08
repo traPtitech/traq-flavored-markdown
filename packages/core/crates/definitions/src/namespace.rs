@@ -31,6 +31,7 @@ impl PluginDeclaration {
     pub fn name(&self) -> &str {
         &self.0.name
     }
+
     /// The shared namespace declaration. Names remain display labels only.
     pub fn namespace(&self) -> Option<&PluginGroup> {
         self.0.parent.as_ref()

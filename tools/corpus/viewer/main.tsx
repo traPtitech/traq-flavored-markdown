@@ -9,6 +9,7 @@ import './viewer.css'
 const bootstrap = bootstrapReport(document)
 
 const root = document.getElementById('root')!
+
 createRoot(root).render(
   <React.StrictMode>
     <App bootstrap={bootstrap} />

@@ -23,6 +23,7 @@ pub(super) fn inline_end(source: &str) -> Option<usize> {
 
     INLINE.find(source).map(|matched| matched.end())
 }
+
 pub(super) fn complete_tag(line: &str) -> bool {
     static TAG: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(&format!(r"^{}[ \t]*$", open_close())).unwrap());

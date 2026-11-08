@@ -19,6 +19,8 @@ export default defineConfig({
   ],
   outputDir: '../../test-results',
   fullyParallel: true,
+  // Bound simultaneous Wasm initialization, as in the editor browser suite.
+  workers: 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',

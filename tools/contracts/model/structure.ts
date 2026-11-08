@@ -1,4 +1,5 @@
 export type NodeRole = 'block' | 'inline' | 'structural' | 'opaque'
+
 export type NodeStructure = {
   role: NodeRole
   children:

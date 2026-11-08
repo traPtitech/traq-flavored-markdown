@@ -16,13 +16,17 @@ impl NodeData for Score {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
+
     fn validate_payload(&self, children: &[Node]) -> Result<(), markdown_ast::PayloadError> {
         let valid = children.is_empty();
+
         if valid {
             Ok(())
         } else {
@@ -30,6 +34,7 @@ impl NodeData for Score {
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, WireTypeKey)]
 #[wire_type(key = "test.renamed_score")]
 struct RenamedScore {
@@ -42,8 +47,10 @@ impl NodeData for RenamedScore {
             role: NodeRole::Opaque,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -52,6 +59,7 @@ impl NodeData for RenamedScore {
 #[test]
 fn shared_types_work_across_independent_registration_orders() {
     let mut producer = Codec::default();
+
     let doc = MutableDocument {
         source: "猫".into(),
         children: vec![Node::leaf(Span { start: 0, end: 3 }, Score { value: 1.25 })],
@@ -61,14 +69,17 @@ fn shared_types_work_across_independent_registration_orders() {
     producer.register::<Score>().unwrap();
 
     let bytes = producer.encode(&doc).unwrap();
+
     assert_eq!(producer.decode(&bytes).unwrap(), doc);
 
     let mut consumer = Codec::default();
     consumer.register::<RenamedScore>().unwrap();
+
     assert!(consumer.decode(&bytes).is_err()); // A renamed type is a new wire key.
     consumer.register::<Score>().unwrap();
 
     let restored = consumer.decode(&bytes).unwrap();
+
     assert_eq!(restored, doc);
     assert_eq!(consumer.encode(&restored).unwrap(), bytes);
     assert!(producer.register::<Score>().is_err());
@@ -88,8 +99,10 @@ fn first(codec: &mut Codec) -> MutableDocument {
                 role: NodeRole::Opaque,
                 children: markdown_ast::ChildStructure::Any,
             };
+
             &STRUCTURE
         }
+
         fn payload_bytes(&self) -> usize {
             0
         }
@@ -119,8 +132,10 @@ fn second(codec: &mut Codec) -> markdown_codec::Result<()> {
                 role: NodeRole::Opaque,
                 children: markdown_ast::ChildStructure::Any,
             };
+
             &STRUCTURE
         }
+
         fn payload_bytes(&self) -> usize {
             0
         }

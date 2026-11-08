@@ -6,12 +6,13 @@ const escapes: Record<string, string> = {
 }
 
 export const escapeHtml = (text: string) =>
-  text.replace(/[&<>"]/g, c => escapes[c])
+  text.replace(/[&<>"]/g, c => escapes[c] ?? c)
 
 export function attributes(values: Iterable<readonly [string, string]>) {
   return Array.from(values, ([name, value]) => {
-    if (!/^[a-zA-Z_:][a-zA-Z0-9_.:-]*$/.test(name))
+    if (!/^[a-zA-Z_:][a-zA-Z0-9_.:-]*$/.test(name)) {
       throw new TypeError('Invalid HTML attribute name: ' + name)
+    }
 
     return ' ' + name + '="' + escapeHtml(value) + '"'
   }).join('')
@@ -28,6 +29,7 @@ const linkProtocols = new Set([
   'sms:',
   'geo:'
 ])
+
 const imageProtocols = new Set(['http:', 'https:'])
 
 function protocol(destination: string) {

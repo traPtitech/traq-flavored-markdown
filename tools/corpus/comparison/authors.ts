@@ -12,17 +12,21 @@ export async function writeAuthorIndex(
   plan: ComparisonPlan
 ): Promise<AuthorIndex> {
   const kinds: string[] = []
+
   for await (const line of readLines(plan.corpus)) {
     if (kinds.length >= plan.max) break
+
     parseSource(line)
     kinds.push(sourceAuthorKind(JSON.parse(line)))
   }
+
   const index: AuthorIndex = {
     format: '1',
     runId: plan.runId,
     corpusSha256: plan.corpusSha256,
     kinds: kinds.join('')
   }
+
   await writeJson(path.join(plan.output, authorIndexFile), index)
   return index
 }

@@ -13,23 +13,28 @@ import {
 
 export type NodeVariant =
   commonmark.NodeVariant | extensions.NodeVariant | traq.NodeVariant
+
 export type MutableNode = AstMutableNode<NodeVariant>
 export type MutableDocument = AstMutableDocument<NodeVariant>
 export type ReadonlyNode = AstReadonlyNode<NodeVariant>
 export type ReadonlyDocument = AstReadonlyDocument<NodeVariant>
+
 export const names = Object.freeze({
   ...commonmark.names,
   ...extensions.names,
   ...traq.names
 })
+
 export const definitions = Object.freeze({
   ...commonmark.definitions,
   ...extensions.definitions,
   ...traq.definitions
 })
+
 export const schema = new DocumentSchema<NodeVariant>(
   Object.values(definitions)
 )
+
 export function isKnownNode<T extends { kind: string; data: unknown }>(
   node: T
 ): node is T & DeepReadonly<NodeVariant> {

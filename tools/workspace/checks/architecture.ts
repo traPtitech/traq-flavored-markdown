@@ -29,12 +29,17 @@ type CargoMetadata = {
 const metadata = (
   await $`cargo metadata --locked --no-deps --format-version 1`.quiet()
 ).json() as CargoMetadata
+
 const modules: WorkspaceModule[] = []
+
 for (const crate of metadata.packages) {
   const source = packageOwner(path.dirname(crate.manifest_path))
   if (!source) continue
-  if (!Object.hasOwn(crateRestrictions, crate.name))
+
+  if (!Object.hasOwn(crateRestrictions, crate.name)) {
     throw new Error(crate.name + ': missing capability policy')
+  }
+
   modules.push({
     name: crate.name,
     owner: source,
@@ -43,13 +48,16 @@ for (const crate of metadata.packages) {
       .map(dependency => dependency.name)
   })
 }
+
 validateModules(modules, false)
+
 // Resolve each restricted root separately: workspace feature unification would
 // otherwise combine optional syntax/text capabilities from unrelated consumers.
 for (const name of Object.keys(crateRestrictions)) {
   const tree = (
     await $`cargo tree --locked --package ${name} --edges normal --prefix none --format {p}`.quiet()
   ).text()
+
   validateCapabilities(
     name,
     new Set(
@@ -65,9 +73,12 @@ const go = await readGoPackageGraph()
 validateGoOwnership(go)
 
 const pkg = await Bun.file(path.join(sdkRoot, 'package.json')).json()
-if (Object.keys(pkg.dependencies ?? {}).length !== 0)
+if (Object.keys(pkg.dependencies ?? {}).length !== 0) {
   throw new Error('Runtime dependencies are not allowed')
+}
+
 await import('./typescript-boundaries.ts')
+
 console.log(
   'Dependency direction: Rust crates, Go modules, and processing presets follow ownership boundaries'
 )

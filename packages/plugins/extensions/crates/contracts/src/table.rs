@@ -51,5 +51,6 @@ fn table_structure() -> &'static markdown_ast::NodeStructure {
                 )),
             },
         });
+
     &STRUCTURE
 }

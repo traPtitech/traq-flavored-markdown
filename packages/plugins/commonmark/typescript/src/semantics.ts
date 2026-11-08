@@ -16,12 +16,16 @@ export function imageLabelText(
       .map(node => {
         if (matches(node, definitions.Text)) return node.data.value
         if (matches(node, definitions.HtmlInline)) return node.data.literal
+
         if (
           matches(node, definitions.Softbreak) ||
           matches(node, definitions.Hardbreak)
-        )
+        ) {
           return '\n'
+        }
+
         if (matches(node, definitions.InlineCode)) return node.data.literal
+
         return node.children ? collect(node.children) : sourceSlice(node.span)
       })
       .join('')

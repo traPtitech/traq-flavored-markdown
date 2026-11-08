@@ -31,7 +31,9 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
         until: { type: 'string' }
       }
     })
+
     let config: Record<string, string> = {}
+
     if (values['env-file']) {
       try {
         config = parseEnv(
@@ -41,12 +43,16 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
         throw new Error('Could not read env file')
       }
     }
+
     const baseUrl = values['base-url'] ?? config['TRAQ_API_BASE_URL']
-    if (!baseUrl || !(values['token-file'] || config['BOT_ACCESS_TOKEN']))
+    if (!baseUrl || !(values['token-file'] || config['BOT_ACCESS_TOKEN'])) {
       throw new Error(
         'API base URL and token file, or --env-file with TRAQ_API_BASE_URL/BOT_ACCESS_TOKEN, are required'
       )
+    }
+
     const privateRoot = path.join(repositoryRoot, '.private', 'corpora')
+
     const output = resolveRepositoryPath(
       values.out ??
         path.join(
@@ -54,10 +60,14 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
           new Date().toISOString().replaceAll(/[:.]/g, '-')
         )
     )
+
     const relative = path.relative(privateRoot, output)
-    if (relative.startsWith('..') || path.isAbsolute(relative))
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
       throw new Error('Corpus output must stay inside .private/corpora')
+    }
+
     let token
+
     try {
       token = values['token-file']
         ? (
@@ -67,6 +77,7 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
     } catch {
       throw new Error('Could not read token file')
     }
+
     const report = await collect({
       baseUrl,
       token,
@@ -78,11 +89,13 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
       ...(values.until && { until: values.until }),
       progress: printJson
     })
+
     printJson({ output, ...report })
   } catch (error) {
     process.stderr.write(
       (error instanceof Error ? error.message : String(error)) + '\n'
     )
+
     process.exitCode = 1
   }
 }

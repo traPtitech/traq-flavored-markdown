@@ -116,3 +116,26 @@ belongs in ignored `.private` directories. The [corpus tool](../tools/corpus/REA
 documents collection, comparison, synthetic samples, and its self-contained
 report. Native Rust and Go/Wasm run the frozen plain-text corpus;
 TypeScript/Wasm covers extraction, and TypeScript covers HTML rendering.
+
+## Property and performance checks
+
+The grammar's generated-source tests compare normal parsing with syntax capture
+and check recursive shape and UTF-8 span boundaries. Go document fuzzing checks
+codec round trips and immutable snapshots.
+
+Run performance comparisons on the same machine and toolchain:
+
+```sh
+cargo test -p traq-markdown-wasm --release benchmark_pipeline_stages -- --ignored --nocapture
+cd packages/core/go
+go test ./ast -run '^$' -bench 'Benchmark(DecodeDocument|DocumentTransport)$' -benchmem
+go test ./ast -run '^$' -fuzz '^FuzzDocumentRoundtrip$' -fuzztime=30s
+```
+
+The native benchmark measures parse, syntax capture, codec, and processing stages
+separately. Go benchmarks cover wide/deep documents and repeated transport. These
+are manual comparison baselines; timings depend on the host.
+
+Vue's plain input model fixture and reference codec require only built TypeScript.
+Run `bun run --cwd packages/vue-editor test typescript/tests/model/editor.test.ts`
+for that loop. Markdown fixtures explicitly add the real Wasm parser and renderer.

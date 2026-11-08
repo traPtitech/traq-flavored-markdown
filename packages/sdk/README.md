@@ -257,7 +257,7 @@ Display options are grouped by responsibility:
 
 | Option                                                                 | Purpose                                                |
 | ---------------------------------------------------------------------- | ------------------------------------------------------ |
-| `links.validate`, `links.attributes`                                   | Destination policy and anchor attributes               |
+| `links.validate`, `links.attributes`                                   | Destination policy and ordinary-link anchor attributes |
 | `images.validate`, `images.domains`                                    | Markdown image destination policy                      |
 | `code.highlight`                                                       | Optional trusted code HTML adapter                     |
 | `math.render`, `math.renderCondensed`                                  | Optional trusted math HTML adapter                     |
@@ -301,7 +301,10 @@ The stylesheet shares stamp sizes through `--tfm-stamp-normal-size`,
 stamps and their effects. Animation keyframes use the `tfm-stamp-` prefix. Colors also use CSS properties,
 including `--tfm-link-color`, `--tfm-code-background-color`, and
 `--tfm-spoiler-background-color`. Plugin `index.css` exports provide standalone
-markup behavior; SDK `index.css` composes those bases with the traQ theme.
+markup behavior; SDK `index.css` scopes those rules to `.markdown-body` and
+`.markdown-inline-body`. For standalone stamps or references outside these roots,
+import `@traq-flavored-markdown/traq-plugin/index.css`. Sass consumers can compose
+`styles/mixins` using its `styles` mixin within their own root.
 Sass consumers can load `styles/index` with the Node package importer
 (`sass --pkg-importer=node`) so plugin styles resolve through their package exports.
 

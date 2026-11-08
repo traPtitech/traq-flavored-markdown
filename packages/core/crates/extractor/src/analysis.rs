@@ -10,10 +10,11 @@ pub struct AnalysisContext<'a> {
 /// A scoped analysis. Its returned scope is inherited only by descendants;
 /// siblings retain their parent's scope. Tuples compose independent analyses.
 pub trait Collector<'a> {
-    type Scope: Clone;
+    type Scope;
     type Error;
 
     fn initial(&self) -> Self::Scope;
+
     fn observe(
         &mut self,
         context: AnalysisContext<'a>,
@@ -32,6 +33,7 @@ where
     fn initial(&self) -> Self::Scope {
         (self.0.initial(), self.1.initial())
     }
+
     fn observe(
         &mut self,
         context: AnalysisContext<'a>,
@@ -50,6 +52,7 @@ where
     C::Error: From<ValidationError>,
 {
     let document = document.into_view()?;
+
     document.try_visit(collector.initial(), |visit, scope| {
         collector.observe(
             AnalysisContext {

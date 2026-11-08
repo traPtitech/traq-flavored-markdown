@@ -15,7 +15,9 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
     let mut builder = RenderPresetBuilder::new();
 
     builder.add(&markdown_commonmark_text::plugin()).unwrap();
+
     assert!(builder.add(&markdown_commonmark_text::plugin()).is_err());
+
     // Factory calls require no caller clone and return the same default snapshot.
     builder
         .remove(
@@ -26,6 +28,7 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
         .unwrap();
 
     let default = renderer(&markdown_commonmark_text::plugin());
+
     let configured = renderer(&markdown_commonmark_text::plugin_with_options(
         markdown_commonmark_text::Options {
             explicit_links: markdown_commonmark_text::ExplicitLinkStyle::LabelAndDestination,
@@ -33,6 +36,7 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
     ));
 
     let mut custom = markdown_commonmark_text::plugin();
+
     custom
         .replace::<Link>(|link, _, _, output| output.push(&link.destination))
         .unwrap();
@@ -70,6 +74,7 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
             .unwrap(),
         "label"
     );
+
     assert_eq!(
         configured
             .render(&document)

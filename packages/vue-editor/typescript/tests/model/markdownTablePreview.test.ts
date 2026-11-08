@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 
 import { renderPreview } from '../helpers/markdown.js'
 import { encodeReference } from '../helpers/references.js'
-import { installInputEditorFixture, readSource as source } from './fixture.js'
+import {
+  installInputEditorFixture,
+  readSource as source
+} from './markdownFixture.js'
 import { configure, create } from './previewFixture.js'
 
 installInputEditorFixture()
@@ -12,6 +15,7 @@ describe('Markdown table', () => {
   it('formats table cells while keeping the structural source visible and editable', () => {
     const original =
       '| **bold** | _italic_ | [label](url) |\n| --- | --- | --- |\n| ~~old~~ | ==marked== | `code` |'
+
     const editor = create(original)
     configure(editor, { enabled: true, focused: true })
 
@@ -31,9 +35,11 @@ describe('Markdown table', () => {
     expect(
       editor.view.dom.querySelector('table, details, .markdown-input-hidden')
     ).toBeNull()
+
     expect(
       editor.view.dom.querySelector('.markdown-input-source')
     ).not.toBeNull()
+
     expect(editor.view.dom.textContent).toBe(original)
     expect(source(editor)).toBe(original)
   })
@@ -67,6 +73,7 @@ describe('Markdown table', () => {
     configure(editor, { enabled: true })
 
     expect(editor.state.selection.toJSON()).toEqual(selection)
+
     expect(editor.view.dom.querySelector('.reference-token')?.textContent).toBe(
       '@alice'
     )
@@ -74,6 +81,7 @@ describe('Markdown table', () => {
     undo(editor.state, editor.view.dispatch)
 
     expect(source(editor)).toBe(original)
+
     expect(
       editor.view.dom
         .querySelector('.reference-token')
@@ -89,6 +97,7 @@ describe('Markdown table', () => {
     expect(
       editor.view.dom.querySelector('.markdown-input-code')?.textContent
     ).toBe('**code**')
+
     expect(editor.view.dom.querySelector('.markdown-input-strong')).toBeNull()
     expect(editor.view.dom.querySelector('.katex')).toBeNull()
     expect(source(editor)).toBe(original)
@@ -113,6 +122,7 @@ describe('Markdown table', () => {
     expect(
       editor.view.dom.querySelectorAll('.markdown-input-strong')
     ).toHaveLength(2)
+
     expect(editor.state.selection.toJSON()).toEqual(selection)
     expect(source(editor)).toBe(original.replace('**new', '**new**'))
   })
@@ -134,18 +144,22 @@ describe('Markdown table', () => {
       configure(editor, { composing: true })
 
       expect(editor.view.dom.querySelector('.markdown-input-link')).toBe(link)
+
       expect(editor.view.dom.querySelector('.markdown-input-spoiler')).toBe(
         spoiler
       )
+
       expect(link?.classList.contains('markdown-input-active')).toBe(false)
       expect(spoiler?.classList.contains('markdown-input-active')).toBe(false)
       editor.commands.insertContent('日本語')
       configure(editor, { composing: false })
 
       expect(editor.view.dom.querySelector('.markdown-input-link')).toBe(link)
+
       expect(editor.view.dom.querySelector('.markdown-input-spoiler')).toBe(
         spoiler
       )
+
       expect(link?.classList.contains('markdown-input-active')).toBe(false)
       expect(spoiler?.classList.contains('markdown-input-active')).toBe(false)
       expect(source(editor)).toBe(original.replace('first', 'fi日本語rst'))
@@ -173,6 +187,7 @@ describe('Markdown table', () => {
     prefix => {
       const original =
         prefix + '| :x: | :y: |\n' + prefix.replace('-', ' ') + '| --- | --- |'
+
       const editor = create(original)
       configure(editor, { enabled: true, focused: true })
       editor.commands.setTextSelection(original.indexOf(':x:') + 4)
@@ -190,11 +205,13 @@ describe('Markdown table', () => {
         )
 
         expect(source(editor)).toBe(expected)
+
         expect(
           [...editor.view.dom.querySelectorAll('.markdown-input-hidden')].map(
             node => node.textContent
           )
         ).toEqual([':y:'])
+
         expect(
           editor.view.dom.querySelectorAll('.markdown-input-rendered')
         ).toHaveLength(1)
@@ -229,6 +246,7 @@ describe('Markdown table', () => {
         expect(
           editor.view.posAtDOM(selection.anchorNode, selection.anchorOffset)
         ).toBe(text.length + 1)
+
         expect(source(editor)).toBe(original)
       } finally {
         element.remove()
@@ -245,17 +263,21 @@ describe('Markdown table', () => {
     const changed = original.replace('value', 'new value')
 
     expect(source(editor)).toBe(changed)
+
     expect(
       editor.view.dom.querySelector('.markdown-input-source')?.textContent
     ).toBe(changed)
+
     expect(renderPreview).not.toHaveBeenCalled()
 
     undo(editor.state, editor.view.dispatch)
 
     expect(source(editor)).toBe(original)
+
     expect(
       editor.view.dom.querySelector('.markdown-input-source')?.textContent
     ).toBe(original)
+
     expect(editor.view.dom.querySelector('.ProseMirror-widget')).toBeNull()
   })
 
@@ -274,11 +296,13 @@ describe('Markdown table', () => {
     expect(editor.view.dom.querySelector('.reference-token')?.textContent).toBe(
       '@alice'
     )
+
     expect(
       editor.view.dom.querySelector(
         '.markdown-input-source .reference-token, .reference-token.markdown-input-source'
       )
     ).not.toBeNull()
+
     expect(source(editor)).toBe(original)
     expect(renderPreview).not.toHaveBeenCalled()
     expect(editor.view.dom.querySelector('.ProseMirror-widget')).toBeNull()

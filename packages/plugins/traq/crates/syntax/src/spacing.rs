@@ -10,12 +10,14 @@ pub fn blank_rule() -> &'static BlockRule {
             if !input.current().bytes().all(|b| b == b' ' || b == b'\t') {
                 return Ok(None);
             }
+
             let mut result = input.leaf(input.start + 1, BlankLine {}.into())?;
             result.following = markdown_parser::rules::block::Following::Preserve;
             Ok(Some(result))
         })
         .named("blank")
     });
+
     &RULE
 }
 
@@ -25,5 +27,6 @@ pub fn plugin() -> &'static SyntaxPlugin {
         plugin.add(blank_rule());
         plugin
     });
+
     &PLUGIN
 }

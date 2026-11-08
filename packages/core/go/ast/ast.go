@@ -17,13 +17,16 @@ type Span struct {
 	Start uint32 `json:"start"`
 	End   uint32 `json:"end"`
 }
+
 type Payload interface{ NodePayload() }
+
 type MutableNode struct {
 	Kind     string        `json:"kind"`
 	Span     Span          `json:"span"`
 	Data     Payload       `json:"data"`
 	Children []MutableNode `json:"children,omitempty"`
 }
+
 type MutableDocument struct {
 	Source   string        `json:"source"`
 	Children []MutableNode `json:"children"`

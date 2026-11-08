@@ -17,6 +17,7 @@ pub(super) fn escape(
     match bytes.get((pos + 1).get()).copied() {
         Some(b'\n') => {
             let mut end = pos + 2;
+
             while matches!(bytes.get(end.get()), Some(b' ' | b'\t')) {
                 budget.spend(1)?;
                 end += 1;
@@ -52,9 +53,9 @@ pub(super) fn newline(
     }
 
     Ok(Some(InlineMatch {
-        syntax: None,
         end,
         action: InlineAction::TrimmedNode {
+            syntax: None,
             trim,
             payload: if trim >= 2 {
                 AnyPayload::new(markdown_commonmark_contracts::Hardbreak {})
@@ -102,12 +103,10 @@ pub(super) fn code(
         literal = literal[1..literal.len() - 1].into();
     }
 
-    Ok(Some(
-        InlineMatch::leaf(
-            input.source.offset(end)?,
-            AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
-        )
-        .with_syntax(input.source.syntax(
+    Ok(Some(InlineMatch::leaf_with_syntax(
+        input.source.offset(end)?,
+        AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
+        input.source.syntax(
             &[open_end..input.source.offset(start)?],
             &[
                 (markdown_parser::syntax::MarkerKind::Open, pos..open_end),
@@ -117,8 +116,8 @@ pub(super) fn code(
                 ),
             ],
             budget,
-        )?),
-    ))
+        )?,
+    )))
 }
 
 fn closing_code(

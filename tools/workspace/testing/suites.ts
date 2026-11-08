@@ -29,7 +29,7 @@ export const suites = {
       'packages/sdk/scripts/{contract-identity,generation}.spec.ts',
       'tools/workspace/{build,checks,infrastructure,testing,release}/**/*.spec.ts',
       'tools/workspace/{release,policy,toolchains}.spec.ts',
-      'tools/contracts/tests/{generation,groups,ir,manifest,output-manifest}.spec.ts'
+      'tools/contracts/tests/{generation,groups,ir,manifest,output-manifest,source}.spec.ts'
     ]
   },
   assembly: {
@@ -66,6 +66,7 @@ export const suites = {
     ]
   }
 } as const
+
 export type SuiteName = keyof typeof suites
 
 export type SuitePatterns = {
@@ -81,6 +82,7 @@ export function suiteFor<Name extends string = SuiteName>(
 ): Name {
   const name = file.replaceAll('\\', '/')
   const matches = (pattern: string) => new Bun.Glob(pattern).match(name)
+
   const selected = (Object.entries(definitions) as [Name, SuitePatterns][])
     .filter(
       ([, suite]) =>
@@ -88,9 +90,12 @@ export function suiteFor<Name extends string = SuiteName>(
     )
     .map(([suite]) => suite)
   if (!selected.length) throw new Error(`Test has no resource suite: ${name}`)
-  if (selected.length !== 1)
+
+  if (selected.length !== 1) {
     throw new Error(
       `Test belongs to multiple resource suites: ${name}: ${selected.join(', ')}`
     )
+  }
+
   return selected[0]
 }

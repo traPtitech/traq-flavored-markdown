@@ -14,6 +14,7 @@ fn parser() -> Parser {
 #[test]
 fn scheme_less_domains_and_mentions_remain_text() {
     let parser = parser();
+
     for source in [
         "trap.jp",
         "example.com",
@@ -22,7 +23,9 @@ fn scheme_less_domains_and_mentions_remain_text() {
         "@gmai.com",
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert_eq!(document.children.len(), 1, "{source}");
+
         assert_eq!(
             document.children[0].payload::<Text>().unwrap().value,
             source
@@ -33,6 +36,7 @@ fn scheme_less_domains_and_mentions_remain_text() {
 #[test]
 fn scheme_relative_urls_complete_https_and_keep_the_label_and_range() {
     let parser = parser();
+
     for (source, destination, label) in [
         ("//trap.jp", "https://trap.jp", "//trap.jp"),
         ("//README.md", "https://readme.md", "//README.md"),
@@ -58,9 +62,11 @@ fn scheme_relative_urls_complete_https_and_keep_the_label_and_range() {
         ),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert_eq!(document.children.len(), 1, "{source}");
         let node = &document.children[0];
         let link = node.payload::<Link>().unwrap();
+
         assert_eq!(link.destination, destination, "{source}");
         assert_eq!(link.form, LinkForm::Linkify);
         assert_eq!(node.span.start, 0);
@@ -72,6 +78,7 @@ fn scheme_relative_urls_complete_https_and_keep_the_label_and_range() {
 #[test]
 fn scheme_relative_urls_respect_markdown_and_token_boundaries() {
     let parser = parser();
+
     for (source, destination) in [
         ("(//trap.jp/a_(b)).", "https://trap.jp/a_(b)"),
         (
@@ -83,19 +90,24 @@ fn scheme_relative_urls_respect_markdown_and_token_boundaries() {
         ("[label](//trap.jp/path)", "//trap.jp/path"),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         fn collect<'a>(nodes: &'a [markdown_parser::Node], links: &mut Vec<&'a Link>) {
             for node in nodes {
                 if let Some(link) = node.payload::<Link>() {
                     links.push(link);
                 }
+
                 collect(&node.children, links);
             }
         }
+
         let mut links = Vec::new();
         collect(&document.children, &mut links);
+
         assert_eq!(links.len(), 1, "{source}");
         assert_eq!(links[0].destination, destination, "{source}");
     }
+
     for source in [
         "`//trap.jp`",
         r"\//trap.jp",
@@ -117,6 +129,7 @@ fn scheme_relative_urls_respect_markdown_and_token_boundaries() {
         "//trap.jp:3000abc",
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert!(
             document
                 .children
@@ -137,6 +150,7 @@ fn repeated_slashes_and_comment_like_tokens_remain_text_with_linear_work() {
             })
             .parse_inline(&source)
             .unwrap();
+
         assert!(
             document
                 .children
@@ -149,6 +163,7 @@ fn repeated_slashes_and_comment_like_tokens_remain_text_with_linear_work() {
 #[test]
 fn bare_emails_link_to_mailto_without_a_tld_allowlist() {
     let parser = parser();
+
     for value in [
         "info@trap.jp",
         "contact@midorimu.si",
@@ -156,9 +171,11 @@ fn bare_emails_link_to_mailto_without_a_tld_allowlist() {
         "Info@example.com",
     ] {
         let document = parser.parse_inline(value).unwrap();
+
         assert_eq!(document.children.len(), 1, "{value}");
         let node = &document.children[0];
         let link = node.payload::<Link>().unwrap();
+
         assert_eq!(link.destination, format!("mailto:{value}"));
         assert_eq!(link.form, LinkForm::Linkify);
         assert_eq!(node.children[0].payload::<Text>().unwrap().value, value);
@@ -166,7 +183,9 @@ fn bare_emails_link_to_mailto_without_a_tld_allowlist() {
         assert_eq!(node.span.end, value.len());
         assert_eq!(node.children[0].span, node.span);
     }
+
     let document = parser.parse_inline("mailto:info@trap.jp").unwrap();
+
     assert_eq!(
         document.children[0].payload::<Link>().unwrap().destination,
         "mailto:info@trap.jp"
@@ -176,6 +195,7 @@ fn bare_emails_link_to_mailto_without_a_tld_allowlist() {
 #[test]
 fn email_boundaries_keep_mentions_code_and_explicit_links_intact() {
     let parser = parser();
+
     for source in [
         "@gmai.com",
         "@alice",
@@ -192,6 +212,7 @@ fn email_boundaries_keep_mentions_code_and_explicit_links_intact() {
         "info&#64;trap.jp",
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert!(
             document
                 .children
@@ -200,6 +221,7 @@ fn email_boundaries_keep_mentions_code_and_explicit_links_intact() {
             "{source}"
         );
     }
+
     for source in [
         "(info@trap.jp).",
         "**info@trap.jp**",
@@ -207,27 +229,34 @@ fn email_boundaries_keep_mentions_code_and_explicit_links_intact() {
         "[info@trap.jp](https://trap.jp)",
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         fn count(nodes: &[markdown_parser::Node]) -> usize {
             nodes
                 .iter()
                 .map(|node| usize::from(node.payload::<Link>().is_some()) + count(&node.children))
                 .sum()
         }
+
         assert_eq!(count(&document.children), 1, "{source}");
     }
+
     let source = "https://example.com/@alice?contact=info@trap.jp";
     let document = parser.parse_inline(source).unwrap();
+
     assert_eq!(document.children.len(), 1);
+
     assert_eq!(
         document.children[0].payload::<Link>().unwrap().destination,
         source
     );
+
     assert!(document.children[0].children[0].payload::<Text>().is_some());
 }
 
 #[test]
 fn scheme_urls_are_linkified_with_their_original_source_ranges() {
     let parser = parser();
+
     for (source, destination, label) in [
         (
             "https://trap.jp/path?q=1#part",
@@ -262,9 +291,11 @@ fn scheme_urls_are_linkified_with_their_original_source_ranges() {
         ),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert_eq!(document.children.len(), 1, "{source}");
         let node = &document.children[0];
         let link = node.payload::<Link>().unwrap();
+
         assert_eq!(link.destination, destination, "{source}");
         assert_eq!(link.form, LinkForm::Linkify);
         assert_eq!(node.span.start, 0);
@@ -277,6 +308,7 @@ fn scheme_urls_are_linkified_with_their_original_source_ranges() {
 #[test]
 fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
     let parser = parser();
+
     for (source, destination) in [
         ("(https://trap.jp/a_(b)).", "https://trap.jp/a_(b)"),
         (
@@ -291,24 +323,30 @@ fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
         ),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         fn links<'a>(nodes: &'a [markdown_parser::Node], result: &mut Vec<&'a Link>) {
             for node in nodes {
                 if let Some(link) = node.payload::<Link>() {
                     result.push(link);
+
                     assert!(
                         node.children
                             .iter()
                             .all(|child| child.payload::<Link>().is_none())
                     );
                 }
+
                 links(&node.children, result);
             }
         }
+
         let mut found = Vec::new();
         links(&document.children, &mut found);
+
         assert_eq!(found.len(), 1, "{source}");
         assert_eq!(found[0].destination, destination, "{source}");
     }
+
     for source in [
         "`https://trap.jp`",
         "https\\://trap.jp",
@@ -336,6 +374,7 @@ fn bare_url_boundaries_preserve_punctuation_and_markdown_context() {
 #[test]
 fn bare_url_paths_balance_parentheses_and_preserve_terminal_identifiers() {
     let parser = parser();
+
     for (source, expected) in [
         ("https://trap.jp/a~", "https://trap.jp/a"),
         ("https://trap.jp/a&copy;", "https://trap.jp/a"),
@@ -398,11 +437,13 @@ fn bare_url_paths_balance_parentheses_and_preserve_terminal_identifiers() {
         ("[label](https://trap.jp/a~~)", "https://trap.jp/a~~"),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         let links: Vec<_> = document
             .children
             .iter()
             .filter_map(|node| node.payload::<Link>())
             .collect();
+
         assert_eq!(links.len(), 1, "{source}");
         assert_eq!(links[0].destination, expected, "{source}");
     }
@@ -411,6 +452,7 @@ fn bare_url_paths_balance_parentheses_and_preserve_terminal_identifiers() {
 #[test]
 fn parenthesized_url_ranges_leave_the_surrounding_text_outside_the_link() {
     let parser = parser();
+
     for (source, raw, destination) in [
         (
             "hogehoge(https://trap.jp/a_)fugafuga",
@@ -434,11 +476,14 @@ fn parenthesized_url_ranges_leave_the_surrounding_text_outside_the_link() {
         ),
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         let [before, link, after] = document.children.as_slice() else {
             panic!("expected text, link, text: {source}");
         };
+
         let start = source.find(raw).unwrap();
         let end = start + raw.len();
+
         assert_eq!(link.payload::<Link>().unwrap().destination, destination);
         assert_eq!((link.span.start, link.span.end), (start, end));
         assert_eq!(link.children[0].span, link.span);
@@ -451,6 +496,7 @@ fn parenthesized_url_ranges_leave_the_surrounding_text_outside_the_link() {
 #[test]
 fn angle_domains_complete_only_the_destination_without_a_tld_allowlist() {
     let parser = parser();
+
     for (value, expected) in [
         ("trap.jp", "https://trap.jp"),
         ("README.md", "https://readme.md"),
@@ -471,10 +517,12 @@ fn angle_domains_complete_only_the_destination_without_a_tld_allowlist() {
     ] {
         let source = format!("<{value}>");
         let document = parser.parse_inline(&source).unwrap();
+
         assert_eq!(document.source, source);
         assert_eq!(document.children.len(), 1, "{source}");
         let node = &document.children[0];
         let link = node.payload::<Link>().unwrap();
+
         assert_eq!(link.destination, expected, "{source}");
         assert_eq!(link.form, LinkForm::Autolink);
         assert_eq!(node.span.start, 0);
@@ -488,6 +536,7 @@ fn angle_domains_complete_only_the_destination_without_a_tld_allowlist() {
 #[test]
 fn commonmark_autolinks_keep_their_schemes_and_email_rules() {
     let parser = parser();
+
     for (value, expected) in [
         ("https://trap.jp", "https://trap.jp"),
         ("http://trap.jp", "http://trap.jp"),
@@ -500,6 +549,7 @@ fn commonmark_autolinks_keep_their_schemes_and_email_rules() {
     ] {
         let document = parser.parse_inline(&format!("<{value}>")).unwrap();
         let node = &document.children[0];
+
         assert_eq!(node.payload::<Link>().unwrap().destination, expected);
         assert_eq!(node.children[0].payload::<Text>().unwrap().value, value);
     }
@@ -511,6 +561,7 @@ fn a_long_url_containing_scheme_tokens_stays_one_link_with_linear_work() {
         "[https://trap.jp/?next={}END]",
         "https://trap.jp/".repeat(1_000)
     );
+
     let document = parser()
         .with_limits(markdown_parser::Limits {
             work: source.len() * 32,
@@ -518,11 +569,13 @@ fn a_long_url_containing_scheme_tokens_stays_one_link_with_linear_work() {
         })
         .parse_inline(&source)
         .unwrap();
+
     let links: Vec<_> = document
         .children
         .iter()
         .filter_map(|node| node.payload::<Link>())
         .collect();
+
     assert_eq!(links.len(), 1);
     assert!(links[0].destination.ends_with("END"));
 }
@@ -531,6 +584,7 @@ fn a_long_url_containing_scheme_tokens_stays_one_link_with_linear_work() {
 fn adjacent_parenthesized_urls_require_only_linear_work() {
     for raw in ["https://trap.jp/a_", "https://trap.jp/a_(b(c))"] {
         let source = format!("({raw})").repeat(1_000);
+
         let document = parser()
             .with_limits(markdown_parser::Limits {
                 work: source.len() * 32,
@@ -538,11 +592,13 @@ fn adjacent_parenthesized_urls_require_only_linear_work() {
             })
             .parse_inline(&source)
             .unwrap();
+
         let links: Vec<_> = document
             .children
             .iter()
             .filter_map(|node| node.payload::<Link>())
             .collect();
+
         assert_eq!(links.len(), 1_000);
         assert!(links.iter().all(|link| link.destination == raw));
     }
@@ -555,6 +611,7 @@ fn deep_url_parentheses_are_iterative_and_unclosed_lookahead_spends_work() {
         "(".repeat(2_000),
         ")".repeat(2_000)
     );
+
     let document = parser()
         .with_limits(markdown_parser::Limits {
             work: balanced.len() * 32,
@@ -562,13 +619,16 @@ fn deep_url_parentheses_are_iterative_and_unclosed_lookahead_spends_work() {
         })
         .parse_inline(&balanced)
         .unwrap();
+
     assert_eq!(document.children.len(), 1);
+
     assert_eq!(
         document.children[0].payload::<Link>().unwrap().destination,
         balanced
     );
 
     let unclosed = "https://trap.jp/a(".repeat(1_000);
+
     for source in [&unclosed, &format!("[({unclosed}]")] {
         let error = parser()
             .with_limits(markdown_parser::Limits {
@@ -577,6 +637,7 @@ fn deep_url_parentheses_are_iterative_and_unclosed_lookahead_spends_work() {
             })
             .parse_inline(source)
             .unwrap_err();
+
         assert!(matches!(
             error,
             markdown_parser::ParseError::ResourceLimit { .. }
@@ -587,6 +648,7 @@ fn deep_url_parentheses_are_iterative_and_unclosed_lookahead_spends_work() {
 #[test]
 fn malformed_domains_and_opaque_or_escaped_contexts_do_not_create_links() {
     let parser = parser();
+
     for source in [
         "<span>",
         "<README>",
@@ -604,6 +666,7 @@ fn malformed_domains_and_opaque_or_escaped_contexts_do_not_create_links() {
         "&lt;trap.jp&gt;",
     ] {
         let document = parser.parse_inline(source).unwrap();
+
         assert!(
             document
                 .children
@@ -612,7 +675,9 @@ fn malformed_domains_and_opaque_or_escaped_contexts_do_not_create_links() {
             "{source}"
         );
     }
+
     let source = format!("<{}.jp>", "a".repeat(64));
+
     assert!(
         parser
             .parse_inline(&source)

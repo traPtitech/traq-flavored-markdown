@@ -18,7 +18,9 @@ func EmbedReferences(
 	if err != nil {
 		return "", err
 	}
+
 	candidates := append([]ReferenceEmbeddingCandidate(nil), plan.Candidates...)
+
 	// Validate every candidate before invoking caller code, including candidates
 	// that will be skipped after an overlapping earlier replacement is resolved.
 	for _, candidate := range candidates {
@@ -26,15 +28,19 @@ func EmbedReferences(
 		if err != nil || candidate.End <= candidate.Start || raw != candidate.Raw {
 			return "", fmt.Errorf("embedding plan does not match source")
 		}
+
 		if !utf8.ValidString(candidate.Name) {
 			return "", fmt.Errorf("embedding candidate is not valid UTF-8")
 		}
+
 		if candidate.Kind != ReferenceKindUser && candidate.Kind != ReferenceKindGroup && candidate.Kind != ReferenceKindChannel {
 			return "", fmt.Errorf("invalid embedding lookup kind")
 		}
 	}
+
 	position := uint32(0)
 	edits := make([]ast.SourceEdit, 0, len(candidates))
+
 	for _, candidate := range candidates {
 		if candidate.Start < position {
 			continue
@@ -44,6 +50,7 @@ func EmbedReferences(
 		if !ok || id == "" {
 			continue
 		}
+
 		if !utf8.ValidString(id) {
 			return "", fmt.Errorf("resolved identifier is not valid UTF-8")
 		}
@@ -62,5 +69,6 @@ func EmbedReferences(
 		edits = append(edits, ast.SourceEdit{Span: ast.Span{Start: candidate.Start, End: candidate.End}, Text: "!" + string(encoded)})
 		position = candidate.End
 	}
+
 	return text.Replace(edits)
 }

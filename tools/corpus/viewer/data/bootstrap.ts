@@ -16,19 +16,23 @@ export function bootstrapReport(
   if (
     !document.getElementById('metadata')?.textContent?.trim() ||
     !document.getElementById('payload')?.textContent?.trim()
-  )
+  ) {
     return {
       status: 'failed',
       reason: 'missing-data',
       message: '比較データがありません。生成されたレポートを開いてください。'
     }
-  if (!canDecompress)
+  }
+
+  if (!canDecompress) {
     return {
       status: 'failed',
       reason: 'unsupported-browser',
       message:
         'このブラウザはレポートの展開に対応していません。新しい Chrome / Edge で開いてください。'
     }
+  }
+
   try {
     return {
       status: 'ready',

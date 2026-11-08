@@ -7,6 +7,7 @@ macro_rules! identifier {
         pub struct $name(pub usize);
     };
 }
+
 identifier!(GroupId);
 identifier!(PluginId);
 identifier!(RuleId);

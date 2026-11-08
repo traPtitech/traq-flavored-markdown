@@ -31,45 +31,62 @@ const sourceFacts = captured.syntaxFor(selected.node)
 sourceFacts.children.push(sourceFacts)
 const offset: number = captured.document.source.utf16Offset(0)
 void offset
-for (const node of document.document.children)
+
+for (const node of document.document.children) {
   if (node.kind === names.Reference) {
     const reference: Reference = node.data
     const id: string = reference.id
     void id
   }
+}
+
 declare const unknownNode: UnknownNode
+
 if (isKnownNode(unknownNode) && unknownNode.kind === names.Reference) {
   const id: string = unknownNode.data.id
   void id
 }
+
 declare const storedGrammarVersion: string
-if (isGrammarPresetId(storedGrammarVersion))
+
+if (isGrammarPresetId(storedGrammarVersion)) {
   runtime.createParser(storedGrammarVersion)
+}
+
 // @ts-expect-error Stored strings must be checked against the generated catalog.
 runtime.createParser(storedGrammarVersion)
 const extractor = runtime.createExtractor({ origin: '' })
 const output: Extraction = extractor.extract(document)
 const plainText: string = runtime.createPlainTextRenderer().render(document)
+
 const processed = runtime
   .createProcessor(presets.traq.v1, { whitespace: 'preserve' })
   .process('text')
+
 const processedDocument: ReadonlyDocument = processed.document.document
 const snapshot = new DocumentContext(processedDocument)
 runtime.createPlainTextRenderer().render(snapshot.document)
+
 const customHtml: string = composeHtml({ math: { render: tex => tex } }).render(
   snapshot.document
 )
+
 const snapshotNode = snapshot.document.children[0]
+
 if (isKnownNode(snapshotNode) && snapshotNode.kind === names.Stamp) {
   // @ts-expect-error generated guards preserve snapshot payload ownership
   snapshotNode.data.effects.animations.push('rotate')
 }
+
 runtime.createExtractor({})
 const mentions: string[] = output.references.mentions
 const browserRuntime = await loadRuntime()
 browserRuntime.createParser(presets.traq.v1)
-if (isBrowserPreset(storedGrammarVersion))
+
+if (isBrowserPreset(storedGrammarVersion)) {
   browserRuntime.createParser(storedGrammarVersion)
+}
+
 browserRuntime.createExtractor({ origin: '' })
 browserRuntime.createPlainTextRenderer({})
 void [mentions, plainText, customHtml]

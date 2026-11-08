@@ -42,17 +42,21 @@ pub(crate) struct Collector<'a> {
     plan: ReferenceEmbeddingPlan,
     edits: Vec<(Span, &'a str)>,
 }
+
 impl Collector<'_> {
     pub(crate) fn finish(self, source: &str) -> crate::Result<ReferenceEmbeddingPlan> {
         finish(source, self.plan, self.edits)
     }
 }
+
 impl<'a> markdown_extractor::Collector<'a> for Collector<'a> {
     type Scope = bool;
     type Error = crate::Error;
+
     fn initial(&self) -> bool {
         true
     }
+
     fn observe(
         &mut self,
         context: markdown_extractor::AnalysisContext<'a>,
@@ -110,27 +114,37 @@ fn exclude_url_candidates(source: &str, candidates: &mut Vec<ReferenceEmbeddingC
     if candidates.is_empty() {
         return;
     }
+
     let mut offset = 0;
     let mut urls = Vec::new();
+
     for token in source.split_inclusive(char::is_whitespace) {
         let value = token
             .trim_end_matches(char::is_whitespace)
             .trim_start_matches(['(', '[', '{', '<', '>', '\'', '"', '*', '_', '~', '!', '=']);
+
         if let Some(start) = url_start(value) {
             let base = offset + token.find(value).unwrap();
+
             let end = value[start..]
                 .find(['<', '>'])
                 .map_or(value.len(), |end| start + end);
+
             urls.push(base + start..base + end);
         }
+
         offset += token.len();
     }
+
     let mut urls = urls.into_iter().peekable();
+
     candidates.retain(|candidate| {
         let position = candidate.start as usize;
+
         while urls.peek().is_some_and(|range| range.end <= position) {
             urls.next();
         }
+
         urls.peek().is_none_or(|range| !range.contains(&position))
     });
 }
@@ -149,10 +163,12 @@ fn url_start(value: &str) -> Option<usize> {
             return Some(position);
         }
     }
+
     let value = value.strip_prefix("//").unwrap_or(value);
     let end = value.find(['/', '?', '#'])?;
     let authority = &value[..end];
     let host = authority.split(':').next().unwrap();
+
     (host.contains('.')
         && host.split('.').all(|part| {
             !part.is_empty() && part.chars().all(|ch| ch.is_alphanumeric() || ch == '-')
@@ -230,6 +246,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
         }
 
         let name_end = name_start + name.len();
+
         push(
             source,
             position,
@@ -238,6 +255,7 @@ fn collect(source: &str, start: usize, end: usize, result: &mut Vec<ReferenceEmb
             ReferenceKind::User,
             result,
         );
+
         push(
             source,
             position,

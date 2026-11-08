@@ -48,17 +48,21 @@ pub fn export(
             .cloned()
             .ok_or_else(|| format!("unregistered structural payload: {}", payload.name()))
     };
+
     let children = match &value.children {
         ChildStructure::Any => ChildContract::Any,
         ChildStructure::Leaf => ChildContract::Leaf,
+
         ChildStructure::Roles { roles, nonempty } => ChildContract::Roles {
             roles: roles.iter().copied().map(role).collect(),
             nonempty: *nonempty,
         },
+
         ChildStructure::Types { types, nonempty } => ChildContract::Types {
             types: types.iter().map(name).collect::<Result<_, _>>()?,
             nonempty: *nonempty,
         },
+
         ChildStructure::Sequence {
             prefix,
             rest,
@@ -69,6 +73,7 @@ pub fn export(
             arity_field: child_arity.as_ref().map(|arity| arity.field),
         },
     };
+
     Ok(StructureContract {
         role: role(value.role),
         children,

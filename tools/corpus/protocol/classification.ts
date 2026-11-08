@@ -1,5 +1,6 @@
 /** Append new rules; changing an existing bit or its meaning requires a new version. */
 export const classificationVersion = '1'
+
 export const classificationGroups = {
   image: '画像',
   link: '自動リンク',
@@ -20,6 +21,7 @@ type Rule = {
   decision: 'accepted' | 'review'
   reason: string
 }
+
 export const classificationRules = [
   {
     id: 'image.linked',
@@ -273,18 +275,24 @@ export const classificationRules = [
 
 export type ClassificationId = (typeof classificationRules)[number]['id']
 export type Classification = { tags: ClassificationId[]; complete: boolean }
+
 export type ClassificationSelection =
   | ClassificationId
   | keyof typeof classificationGroups
   | 'all'
   | 'residual'
   | 'unclassified'
+
 export const classificationWidth = 16
 const completeBit = 1n << 63n
-if (classificationRules.length > 63)
+
+if (classificationRules.length > 63) {
   throw new Error('Classification index capacity exceeded')
+}
+
 const allowedBits = (1n << BigInt(classificationRules.length)) - 1n
 const rulesById = new Map(classificationRules.map(rule => [rule.id, rule]))
+
 export const classificationKeys = [
   'all',
   'residual',
@@ -299,18 +307,23 @@ export function classificationMemberships(value: Classification) {
     ...value.tags,
     ...value.tags.map(tag => rulesById.get(tag)!.group)
   ])
+
   if (!value.complete) ids.add('residual')
   if (!value.tags.length) ids.add('unclassified')
+
   return ids
 }
 
 export function encodeClassification(value: Classification) {
   let mask = value.complete ? completeBit : 0n
+
   for (const tag of value.tags) {
     const index = classificationRules.findIndex(rule => rule.id === tag)
     if (index < 0) throw new Error('Unknown classification: ' + tag)
+
     mask |= 1n << BigInt(index)
   }
+
   return mask.toString(16).padStart(classificationWidth, '0')
 }
 
@@ -325,6 +338,7 @@ export function classificationAt(
         (index + 1) * classificationWidth
       )
   )
+
   return {
     tags: classificationRules
       .filter((_, bit) => Boolean(mask & (1n << BigInt(bit))))
@@ -337,8 +351,10 @@ export function validClassifications(encoded: string, count: number) {
   if (
     encoded.length !== count * classificationWidth ||
     !/^[0-9a-f]*$/.test(encoded)
-  )
+  ) {
     return false
+  }
+
   for (let i = 0; i < count; i++) {
     const mask = BigInt(
       '0x' +
@@ -347,9 +363,11 @@ export function validClassifications(encoded: string, count: number) {
     if (
       mask & ~(allowedBits | completeBit) ||
       (mask & completeBit && !(mask & allowedBits))
-    )
+    ) {
       return false
+    }
   }
+
   return true
 }
 
@@ -367,6 +385,7 @@ export function matchesClassification(
   if (selection === 'all') return true
   if (selection === 'residual') return !value.complete
   if (selection === 'unclassified') return value.tags.length === 0
+
   return value.tags.some(
     tag => tag === selection || rulesById.get(tag)!.group === selection
   )

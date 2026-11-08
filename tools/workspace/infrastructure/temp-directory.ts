@@ -7,6 +7,7 @@ export const withTempDirectory = async <T>(
   run: (directory: string) => Promise<T>
 ) => {
   const directory = await mkdtemp(path.join(tmpdir(), prefix))
+
   try {
     return await run(directory)
   } finally {

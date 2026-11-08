@@ -67,6 +67,7 @@ describe('Markdown source decorations', () => {
       renderKey: expect.any(String),
       text
     })
+
     expect(getMarkdownRenderer().render(text).renderedText).not.toContain(
       '<img'
     )
@@ -192,6 +193,7 @@ describe('Markdown source decorations', () => {
       text.indexOf('https://example.com'),
       text.lastIndexOf('https://example.com')
     ])
+
     expect(links.map(format => text.slice(format.from, format.to))).toEqual([
       'https://example.com',
       'https://example.com'
@@ -430,11 +432,13 @@ describe('Markdown source decorations', () => {
       expect(formats.map(format => text.slice(format.from, format.to))).toEqual(
         Array(cell.startsWith(String.raw`\\|`) ? 1 : 2).fill(original)
       )
+
       expect(
         formats.map(format =>
           text.slice(format.content.from, format.content.to)
         )
       ).toEqual(Array(cell.startsWith(String.raw`\\|`) ? 1 : 2).fill(body))
+
       expect(formats.map(format => format.from)).toEqual([
         text.indexOf(original),
         ...(cell.startsWith(String.raw`\\|`)

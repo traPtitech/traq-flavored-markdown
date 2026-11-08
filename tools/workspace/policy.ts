@@ -17,6 +17,7 @@ export function validateModules(
   checkCapabilities = true
 ) {
   const byName = new Map(modules.map(module => [module.name, module]))
+
   const graph = dependencyGraph(
     modules.map(
       module =>
@@ -26,6 +27,7 @@ export function validateModules(
         ] as const
     )
   )
+
   for (const module of modules) {
     for (const name of graph.dependencies.get(module.name) ?? []) {
       const destination = byName.get(name)!
@@ -33,6 +35,7 @@ export function validateModules(
         throw new Error(`${module.name}: disallowed owner dependency ${name}`)
       }
     }
+
     for (const forbidden of checkCapabilities
       ? (crateRestrictions[module.name] ?? [])
       : []) {
@@ -43,6 +46,7 @@ export function validateModules(
       }
     }
   }
+
   return graph
 }
 
@@ -50,7 +54,9 @@ export function validateCapabilities(
   name: string,
   dependencies: ReadonlySet<string>
 ) {
-  for (const forbidden of crateRestrictions[name] ?? [])
-    if (dependencies.has(forbidden))
+  for (const forbidden of crateRestrictions[name] ?? []) {
+    if (dependencies.has(forbidden)) {
       throw new Error(`${name}: disallowed capability dependency ${forbidden}`)
+    }
+  }
 }

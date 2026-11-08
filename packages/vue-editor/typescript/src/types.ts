@@ -8,33 +8,47 @@ import type {
 
 export type SourceRange = EditorRange
 export type MarkdownLineBreakOptions = Pick<LineBreakOptions, 'continueItem'>
+
 export type InputPart<R = unknown> =
   | { type: 'text'; text: string }
   | { type: 'reference'; reference: R; originalSource?: string }
 
+export interface ReferenceReplacement {
+  /** Index of a reference in the supplied parts. */
+  readonly index: number
+  /** Empty text removes the reference. */
+  readonly text: string
+}
+
 export interface ReferenceCodec<R> {
   parse(source: string): InputPart<R>[]
   serialize(parts: readonly InputPart<R>[]): string
-  /** Preserve part order/count; a reference may become literal text. */
+
+  /** Plan literal replacements for references in the supplied snapshot. */
   normalize?(
     parts: readonly InputPart<R>[],
     analysis?: SourceAnalysis
-  ): InputPart<R>[]
+  ): readonly ReferenceReplacement[]
 }
+
 export interface MarkdownServices {
   analyze(source: string): SourceAnalysis
   /** Return trusted HTML for a node belonging to the supplied document. */
   render(document: ParsedDocument, node: ReadonlyNode): string
 }
+
 export type PastePlan =
   { type: 'handled' } | { type: 'text'; text: string | Promise<string> }
+
 export type PreparePaste = (event: ClipboardEvent) => PastePlan | undefined
+
 export interface SuggestionAccessibility {
   popupRole: 'listbox' | 'grid' | 'tree'
   expanded: boolean
   activeId?: string
   announcement?: string
 }
+
 export interface SuggestionController {
   update(): void
   updatePosition(): void
@@ -43,6 +57,7 @@ export interface SuggestionController {
   /** Read reactive state here; activeId must identify an element in the popup. */
   accessibility?(): SuggestionAccessibility
 }
+
 export interface SuggestionContext<R> {
   popupId: string
   /** Advanced integration: Tiptap positions include the paragraph's opening token. */
@@ -52,6 +67,7 @@ export interface SuggestionContext<R> {
   /** Ranges use UTF-16 projected text offsets, with each reference occupying one unit. */
   insertParts(parts: InputPart<R>[], range?: EditorRange, focus?: boolean): void
 }
+
 export interface ReferenceInputAdapter<R> {
   references: ReferenceCodec<R>
   label(reference: R): string
@@ -59,12 +75,15 @@ export interface ReferenceInputAdapter<R> {
   editText?(reference: R): string
   markdown?: MarkdownServices
   suggestions?(context: SuggestionContext<R>): SuggestionController
+
   clipboard?: {
     read(data: Pick<DataTransfer, 'getData'>): InputPart<R>[] | undefined
+
     write(
       data: Pick<DataTransfer, 'setData'>,
       parts: readonly InputPart<R>[]
     ): void
+
     fromText?(
       text: string,
       before: string,
@@ -72,6 +91,7 @@ export interface ReferenceInputAdapter<R> {
     ): InputPart<R>[] | undefined
   }
 }
+
 export interface ReferenceInputHandle {
   readonly element?: HTMLElement
   focus(position?: 'end'): void

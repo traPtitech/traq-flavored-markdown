@@ -19,6 +19,7 @@ function table(node: ReadonlyNode, ctx: RenderContext) {
     ctx.renderChildren(rows => {
       const head = rows.filter(({ node }) => node.kind === names.HeaderRow)
       const body = rows.filter(({ node }) => node.kind === names.Row)
+
       return (
         '<thead>\n' +
         head.map(row => row.html).join('') +
@@ -49,21 +50,26 @@ export function plugin({ math }: HtmlRendererOptions = {}) {
 
   result = result.withHandler(definitions.Table, table)
 
-  for (const definition of [definitions.Row, definitions.HeaderRow])
+  for (const definition of [definitions.Row, definitions.HeaderRow]) {
     result = result.withHandler(
       definition,
       (_node, ctx) => '<tr>\n' + ctx.renderChildren() + '</tr>\n'
     )
+  }
+
   result = result.withHandler(definitions.Cell, (node, ctx) => {
     const row = ctx.parent(definitions.Row) ?? ctx.parent(definitions.HeaderRow)
     const table = ctx.parent(definitions.Table, 2)
     if (!row) throw new TypeError('Expected table row parent')
     if (!table) throw new TypeError('Expected table ancestor')
+
     const tag = row.kind === names.HeaderRow ? 'th' : 'td'
     const alignment = table.data.alignments[ctx.index]
+
     const attrs = alignment
       ? attributes([['style', 'text-align:' + alignment]])
       : ''
+
     return '<' + tag + attrs + '>' + ctx.renderChildren() + '</' + tag + '>\n'
   })
 

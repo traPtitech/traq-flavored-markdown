@@ -12,32 +12,41 @@ use traq_markdown_features::{TextFeature, TextOptions, TextProfile};
 pub fn builder(origin: &str) -> Result<RenderPresetBuilder> {
     let options = TextOptions::default();
     let mut builder = RenderPresetBuilder::new();
+
     for feature in TextProfile::Traq.features() {
         let mut plugin = feature.plugin(options);
+
         match feature {
             TextFeature::Core => {
                 let links = TraqUrlClassifier::new(origin)?;
+
                 plugin.replace::<Link>(move |link, nodes, ctx, output| {
                     if link.form != LinkForm::Explicit
                         && let Some(target) = links.classify(&link.destination)
                     {
                         return output.push(labels::for_target(&target));
                     }
+
                     options.explicit_links.render(link, nodes, ctx, output)
                 })?;
             }
+
             TextFeature::References => {
                 plugin.replace::<Embedding>(|embedding, _, _, output| {
                     if embedding.id.canonical().is_none() {
                         return output.push(&embedding.literal);
                     }
+
                     output.push(labels::for_embedding(embedding.target))
                 })?;
             }
+
             _ => {}
         }
+
         builder.add(&plugin)?;
     }
+
     Ok(builder)
 }
 

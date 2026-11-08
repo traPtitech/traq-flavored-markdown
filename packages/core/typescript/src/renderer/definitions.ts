@@ -1,5 +1,6 @@
 function label(name: string) {
   if (typeof name !== 'string') throw new TypeError('Expected display name')
+
   return name
 }
 
@@ -11,8 +12,9 @@ export class PluginGroup {
   readonly parent: PluginGroup | null
 
   constructor(name: string, parent: PluginGroup | null = null) {
-    if (parent !== null && !(parent instanceof PluginGroup))
+    if (parent !== null && !(parent instanceof PluginGroup)) {
       throw new TypeError('Expected PluginGroup')
+    }
 
     this.name = label(name)
     this.parent = parent
@@ -36,8 +38,9 @@ export class PluginDeclaration {
   readonly namespace: PluginGroup | null
 
   constructor(name: string, namespace: PluginGroup | null = null) {
-    if (namespace !== null && !(namespace instanceof PluginGroup))
+    if (namespace !== null && !(namespace instanceof PluginGroup)) {
       throw new TypeError('Expected PluginGroup')
+    }
 
     this.name = label(name)
     this.namespace = namespace

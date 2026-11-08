@@ -9,18 +9,22 @@ use markdown_parser::rules::inline::InlineRule;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Text(String);
+
 impl NodeData for Text {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         self.0.len()
     }
 }
+
 fn plugin() -> SyntaxPlugin {
     let mut plugin = SyntaxPlugin::new(&Declaration::new("text"));
     plugin.text(Text);
@@ -30,6 +34,7 @@ fn plugin() -> SyntaxPlugin {
 #[test]
 fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     let mut plugin = plugin();
+
     let rule = InlineRule::new(b"x", |input, _| {
         Ok(Some(markdown_parser::rules::inline::InlineMatch::literal(
             input.position + 1,
@@ -44,9 +49,11 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     let original = builder.clone().build().unwrap();
     let mut duplicate = SyntaxPlugin::new(&Declaration::new("duplicate"));
     duplicate.add(&rule);
+
     assert!(builder.add(&duplicate).is_err());
 
     let missing = InlineRule::new(b"x", |_, _| Ok(None));
+
     assert!(builder.before(&rule, &missing).is_err());
 
     assert_eq!(
@@ -64,6 +71,7 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
     assert_eq!(builder.registration(&plugin), Some(registration.clone()));
     let mut removable = builder.clone();
     removable.remove(&registration).unwrap();
+
     assert!(removable.remove(&registration).is_err());
 
     let parser = Parser::new(&builder.build().unwrap());
@@ -80,6 +88,7 @@ fn mutation_and_rejected_changes_preserve_existing_snapshots() {
 fn rule_names_are_checked_per_plugin_and_phase() {
     for (named, expected_error) in [(true, true), (false, false)] {
         let mut plugin = plugin();
+
         for marker in [b"x" as &'static [u8], b"y"] {
             let rule = InlineRule::new(marker, |_, _| Ok(None));
             plugin.add(if named { rule.named("rule") } else { rule });
@@ -141,7 +150,9 @@ fn text_and_block_context_capabilities_can_be_composed_independently() {
         ParseState,
         block::{BlockInput, BlockPolicy, LineIndex},
     };
+
     struct Preserve;
+
     impl BlockPolicy for Preserve {
         fn after_match(
             &self,
@@ -152,6 +163,7 @@ fn text_and_block_context_capabilities_can_be_composed_independently() {
             Ok(end)
         }
     }
+
     let mut source = plugin();
     source.block_policy(Preserve);
     let mut text = SyntaxPlugin::new(&Declaration::new("text-only"));
@@ -160,9 +172,11 @@ fn text_and_block_context_capabilities_can_be_composed_independently() {
     blocks.inherit_block_policy_from(&source).unwrap();
     let mut builder = GrammarBuilder::new();
     builder.add(&text).unwrap().add(&blocks).unwrap();
+
     let document = Parser::new(&builder.build().unwrap())
         .parse_inline("text")
         .unwrap();
+
     assert_eq!(
         document.children[0].payload::<Text>(),
         Some(&Text("text".into()))
@@ -171,6 +185,7 @@ fn text_and_block_context_capabilities_can_be_composed_independently() {
     assert!(text.inherit_text_from(&source).is_err());
     assert!(blocks.inherit_block_policy_from(&source).is_err());
     let empty = SyntaxPlugin::new(&Declaration::new("no-context"));
+
     assert!(blocks.inherit_text_from(&empty).is_err());
     assert!(text.inherit_block_policy_from(&empty).is_err());
 }

@@ -7,6 +7,7 @@ mod cursor;
 mod mapping;
 pub use cursor::{Cursor, SourceOffset, ViewOffset, ViewRange};
 use mapping::SourceMap;
+
 #[cfg(test)]
 mod tests;
 
@@ -45,17 +46,22 @@ impl SourceView {
         budget: &mut Budget,
     ) -> Result<Option<super::syntax::SourceSyntax>, ParseError> {
         use super::syntax::{SourceSyntax, SyntaxMarker};
+
         if !self.captures_syntax() {
             return Ok(None);
         }
+
         let mut facts = SourceSyntax::default();
+
         for range in content {
             facts
                 .content
                 .extend(self.mapped_source_spans(range.clone(), Some(budget))?);
         }
+
         for (kind, range) in markers {
             let spans = self.mapped_source_spans(range.clone(), Some(budget))?;
+
             if !spans.is_empty() {
                 facts.markers.push(SyntaxMarker {
                     kind: *kind,
@@ -65,6 +71,7 @@ impl SourceView {
                 });
             }
         }
+
         Ok(Some(facts))
     }
 
@@ -77,21 +84,25 @@ impl SourceView {
         budget: &mut Budget,
     ) -> Result<Option<super::syntax::SourceSyntax>, ParseError> {
         let mut syntax = self.syntax(content, &[], budget)?;
+
         if let Some(syntax) = &mut syntax {
             for prefix in prefixes {
                 let spans = self.mapped_source_spans(prefix.clone(), Some(budget))?;
+
                 if !spans.is_empty() {
                     syntax.markers.push(super::syntax::SyntaxMarker {
                         kind: super::syntax::MarkerKind::Prefix,
                         spans,
                         columns: Some(prefix.end - prefix.start),
-                        text: Some(self.literal(prefix.clone()).into_owned()),
+                        text: Some(self.literal(prefix.clone())?.into_owned()),
                     });
                 }
             }
         }
+
         Ok(syntax)
     }
+
     pub fn offset(&self, position: usize) -> Result<ViewOffset, ParseError> {
         if self.text().is_char_boundary(position) {
             Ok(ViewOffset(position))
@@ -99,17 +110,21 @@ impl SourceView {
             Err(ParseError::InternalError)
         }
     }
+
     /// Convert checked scanner byte indexes into view coordinates.
     pub fn range(&self, range: Range<usize>) -> Result<ViewRange, ParseError> {
         if range.start > range.end {
             return Err(ParseError::InternalError);
         }
+
         Ok(self.offset(range.start)?..self.offset(range.end)?)
     }
+
     pub fn source_offset(&self, position: ViewOffset) -> Result<SourceOffset, ParseError> {
         self.offset(position.get())?;
         Ok(SourceOffset(self.offsets()[position.get()]))
     }
+
     pub fn cursor<'a, 'b>(
         &'a self,
         position: ViewOffset,
@@ -117,6 +132,7 @@ impl SourceView {
     ) -> Result<Cursor<'a, 'b>, ParseError> {
         Cursor::new(self.text(), position, budget)
     }
+
     pub fn text(&self) -> &str {
         &self.backing.text[self.range.clone()]
     }
@@ -133,6 +149,7 @@ impl SourceView {
         origins: SourceMap,
     ) -> Self {
         let range = 0..text.len();
+
         Self {
             context,
             backing: Arc::new(MappedSource {
@@ -153,6 +170,7 @@ impl SourceView {
         {
             return Err(ParseError::InternalError);
         }
+
         Ok(self.span(range.start, range.end))
     }
 
@@ -173,6 +191,7 @@ impl SourceView {
         budget: Option<&mut Budget>,
     ) -> Result<Vec<Span>, ParseError> {
         self.span_for(range.clone())?;
+
         self.backing.origins.spans(
             self.range.start + range.start.get()..self.range.start + range.end.get(),
             budget,
@@ -197,6 +216,7 @@ impl SourceView {
         for range in ranges {
             self.span_for(range.clone())?;
         }
+
         Ok(self.select(ranges))
     }
 
@@ -219,6 +239,7 @@ impl SourceView {
                     ..self.range.start + ranges.last().unwrap().end.get(),
             };
         }
+
         let mut text = String::new();
         let mut offsets = vec![self.offsets()[0]];
         let mut tabs = vec![];
@@ -227,10 +248,12 @@ impl SourceView {
         for range in ranges {
             let range = &(range.start.get()..range.end.get());
             let start = text.len();
+
             tabs.extend(
                 self.tabs_in(range)
                     .map(|tab| start + tab.start - range.start..start + tab.end - range.start),
             );
+
             *offsets.last_mut().unwrap() = self.offsets()[range.start];
             self.copy_origins(range.clone(), start, &mut origins);
             text.push_str(&self.text()[range.clone()]);
@@ -243,6 +266,7 @@ impl SourceView {
     fn tabs_in(&self, range: &Range<usize>) -> impl Iterator<Item = Range<usize>> + '_ {
         let start = self.range.start + range.start;
         let end = self.range.start + range.end;
+
         self.backing.tabs[self.backing.tabs.partition_point(|tab| tab.start < start)..]
             .iter()
             .take_while(move |tab| tab.end <= end)
@@ -263,10 +287,12 @@ impl SourceView {
             if ch == '\t' {
                 self.copy_origins(copied_from..pos, copied_to, &mut origins);
                 let width = 4 - column % 4;
+
                 origins.append(
                     text.len()..text.len() + width,
                     self.character_origin(pos..pos + 1),
                 );
+
                 tabs.push(text.len()..text.len() + width);
                 text.extend(std::iter::repeat_n(' ', width));
 
@@ -281,17 +307,19 @@ impl SourceView {
                 column = if ch == '\n' { 0 } else { column + 1 };
             }
         }
+
         self.copy_origins(copied_from..self.text().len(), copied_to, &mut origins);
 
         Self::mapped(self.context.clone(), text, offsets, tabs, origins)
     }
 
-    pub fn literal(&self, range: ViewRange) -> Cow<'_, str> {
+    pub fn literal(&self, range: ViewRange) -> Result<Cow<'_, str>, ParseError> {
+        self.range(range.start.get()..range.end.get())?;
         let range = range.start.get()..range.end.get();
         let mut tabs = self.tabs_in(&range).peekable();
 
         if tabs.peek().is_none() {
-            return Cow::Borrowed(&self.text()[range.clone()]);
+            return Ok(Cow::Borrowed(&self.text()[range.clone()]));
         }
 
         let mut text = String::new();
@@ -304,7 +332,7 @@ impl SourceView {
         }
 
         text.push_str(&self.text()[pos..range.end]);
-        Cow::Owned(text)
+        Ok(Cow::Owned(text))
     }
 
     #[must_use]
@@ -322,10 +350,12 @@ impl SourceView {
             self.copy_origins(pos..tab.start, text.len(), &mut origins);
             text.push_str(&self.text()[pos..tab.start]);
             offsets.extend_from_slice(&self.offsets()[pos + 1..=tab.start]);
+
             origins.append(
                 text.len()..text.len() + 1,
                 self.character_origin(tab.clone()),
             );
+
             text.push('\t');
             offsets.push(self.offsets()[tab.end]);
             pos = tab.end;
@@ -346,6 +376,7 @@ impl SourceView {
 
         while let Some((start, ch)) = chars.next() {
             let view_start = text.len();
+
             match ch {
                 '\r' => {
                     let end = if chars.peek().is_some_and(|(_, ch)| *ch == '\n') {
@@ -354,6 +385,7 @@ impl SourceView {
                     } else {
                         start + 1
                     };
+
                     text.push('\n');
                     offsets.push(end);
                     origins.append(view_start..text.len(), Span { start, end });
@@ -362,6 +394,7 @@ impl SourceView {
                 '\0' => {
                     text.push('\u{fffd}');
                     offsets.extend([start, start, start + 1]);
+
                     origins.append(
                         view_start..text.len(),
                         Span {
@@ -374,6 +407,7 @@ impl SourceView {
                 _ => {
                     text.push(ch);
                     offsets.extend(start + 1..=start + ch.len_utf8());
+
                     origins.append(
                         view_start..text.len(),
                         Span {
@@ -404,6 +438,7 @@ impl SourceView {
 
 impl std::ops::Index<ViewRange> for SourceView {
     type Output = str;
+
     fn index(&self, range: ViewRange) -> &Self::Output {
         &self.text()[range.start.get()..range.end.get()]
     }

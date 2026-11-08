@@ -4,6 +4,7 @@
 
 pub mod bindings;
 pub mod presets;
+
 pub mod syntax {
     pub use markdown_commonmark as commonmark;
     pub use markdown_extensions_syntax as extensions;

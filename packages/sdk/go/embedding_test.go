@@ -10,27 +10,33 @@ import (
 func TestEmbeddingFixtures(t *testing.T) {
 	ctx := context.Background()
 	wasm, err := os.ReadFile("../dist/parser.wasm")
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	runtime, err := NewRuntime(ctx, wasm)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer runtime.Close(ctx)
 
 	extractor, err := runtime.NewExtractor(ctx, ExtractorOptions{})
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	raw, err := os.ReadFile("../tests/fixtures/embedding.json")
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var fixtures [][2]string
+
 	if err := json.Unmarshal(raw, &fixtures); err != nil {
 		t.Fatal(err)
 	}
@@ -58,20 +64,26 @@ func TestEmbeddingFixtures(t *testing.T) {
 	}
 
 	parser, err := runtime.NewParser(ctx, GrammarTraqV1)
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, fixture := range fixtures {
 		document, err := parser.Parse(ctx, fixture[0])
+
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		output, err := extractor.Extract(ctx, document)
+
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		actual, err := EmbedReferences(fixture[0], output.ReferenceEmbedding, resolve)
+
 		if err != nil {
 			t.Fatal(err)
 		}

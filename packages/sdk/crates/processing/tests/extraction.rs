@@ -13,14 +13,18 @@ fn extractor_consumes_ast_and_preserves_message_metadata() {
         origin: "https://q.example.test".into(),
     })
     .unwrap();
+
     let id = "00000000-0000-0000-0000-000000000001";
     let user = format!(r#"!{{"type":"user","id":"{id}","raw":"@alice"}}"#);
     let file = format!(r#"!{{"type":"file","id":"{id}"}}"#);
     let citation = format!(r#"!{{"type":"message","id":"{id}"}}"#);
+
     let source =
         format!("**{user}**\n{file} !!{citation}!!\n<https://q.example.test/files/{id}>\n");
+
     let document = parse(&source);
     let result = extractor.extract(&document).unwrap();
+
     assert_eq!(result.references.mentions, [id]);
     assert_eq!(result.attachments, [id, id]);
     assert_eq!(result.citations, [id]);
@@ -34,11 +38,14 @@ fn extractor_consumes_ast_and_preserves_message_metadata() {
 fn extractor_uses_supplied_ast_regardless_of_grammar() {
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
     let source = r#"!{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@alice"}"#;
+
     let common = bindings::parser("commonmark")
         .unwrap()
         .parse(source)
         .unwrap();
+
     let traq = parse(source);
+
     assert!(
         extractor
             .extract(&common)
@@ -47,10 +54,12 @@ fn extractor_uses_supplied_ast_regardless_of_grammar() {
             .mentions
             .is_empty()
     );
+
     assert_eq!(
         extractor.extract(&traq).unwrap().references.mentions.len(),
         1
     );
+
     assert!(
         extractor
             .extract(&common)
@@ -69,10 +78,13 @@ fn invalid_ast_and_oversized_configuration_are_rejected() {
         })
         .is_err()
     );
+
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
     let mut invalid = parse("text").into_mutable();
     invalid.children[0].span.end += 1;
+
     assert!(extractor.extract(&invalid).is_err());
+
     assert_eq!(
         extractor.extract(&parse("**after**")).unwrap().message_text,
         "**after**"
@@ -83,12 +95,15 @@ fn invalid_ast_and_oversized_configuration_are_rejected() {
 fn source_edit_consumers_require_a_canonical_ast() {
     use traq_markdown_processing::presets::traq::{embedding, message};
     let parser = bindings::parser("traq.v1").unwrap();
+
     let user = |name: &str| {
         format!(r#"!{{"type":"user","id":"00000000-0000-0000-0000-000000000001","raw":"@{name}"}}"#)
     };
+
     let original = parser
         .parse_inline(&format!("{} {}", user("alice"), user("bob")))
         .unwrap();
+
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
 
     let mut reordered = original.clone().into_mutable();
@@ -97,11 +112,13 @@ fn source_edit_consumers_require_a_canonical_ast() {
     duplicated.children.extend(original.children.clone());
     let mut crossing = original.clone().into_mutable();
     crossing.children.last_mut().unwrap().span.start = original.children[0].span.end - 1;
+
     for document in [reordered, duplicated, crossing] {
         assert_eq!(
             embedding::plan(&document).unwrap_err().code(),
             "invalid_node"
         );
+
         assert_eq!(
             message::Extractor::new("")
                 .unwrap()
@@ -110,11 +127,13 @@ fn source_edit_consumers_require_a_canonical_ast() {
                 .code(),
             "invalid_node"
         );
+
         assert_eq!(
             extractor.extract(&document).unwrap_err().code(),
             "invalid_node"
         );
     }
+
     assert_eq!(
         extractor.extract(&original).unwrap().message_text,
         "@alice @bob"
@@ -122,39 +141,48 @@ fn source_edit_consumers_require_a_canonical_ast() {
 
     let mentions = parser.parse_inline("@alice **@bob**").unwrap();
     let expected = embedding::plan(&mentions).unwrap();
+
     assert_eq!(embedding::plan(&mentions).unwrap(), expected);
 }
 
 #[test]
 fn aggregate_extraction_validates_each_node_once() {
     use markdown_ast::{Node, NodeData, NodeRole, Span};
+
     use std::sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     };
+
     #[derive(Clone, Debug)]
     struct Counted(Arc<AtomicUsize>);
+
     impl PartialEq for Counted {
         fn eq(&self, other: &Self) -> bool {
             Arc::ptr_eq(&self.0, &other.0)
         }
     }
+
     impl NodeData for Counted {
         fn structure() -> &'static markdown_ast::NodeStructure {
             static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
                 role: NodeRole::Opaque,
                 children: markdown_ast::ChildStructure::Any,
             };
+
             &STRUCTURE
         }
+
         fn payload_bytes(&self) -> usize {
             0
         }
+
         fn validate_payload(&self, _: &[Node]) -> Result<(), markdown_ast::PayloadError> {
             let valid = {
                 self.0.fetch_add(1, Ordering::Relaxed);
                 true
             };
+
             if valid {
                 Ok(())
             } else {
@@ -162,7 +190,9 @@ fn aggregate_extraction_validates_each_node_once() {
             }
         }
     }
+
     let calls = Arc::new(AtomicUsize::new(0));
+
     let mut document = MutableDocument {
         source: String::new(),
         children: vec![Node::leaf(
@@ -170,11 +200,14 @@ fn aggregate_extraction_validates_each_node_once() {
             Counted(calls.clone()),
         )],
     };
+
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
     extractor.extract(&document).unwrap();
+
     assert_eq!(calls.load(Ordering::Relaxed), 1);
     // Validation belongs to each call, never to a mutable AST's identity.
     document.children[0].span.end = 1;
+
     assert!(extractor.extract(&document).is_err());
 }
 
@@ -188,10 +221,12 @@ fn aggregate_analysis_matches_the_standalone_policies() {
     let user = format!(r#"!{{"type":"user","id":"{id}","raw":"@alice"}}"#);
     let file = format!(r#"!{{"type":"file","id":"{id}"}}"#);
     let parser = bindings::parser("traq.v1").unwrap();
+
     let aggregate = Extractor::new(ExtractorOptions {
         origin: origin.into(),
     })
     .unwrap();
+
     let reference = ReferenceExtractor::new(&references::preset().unwrap());
     let message = message::Extractor::new(origin).unwrap();
 
@@ -209,15 +244,19 @@ fn aggregate_analysis_matches_the_standalone_policies() {
             reference.extract(&document).unwrap(),
             "{source}"
         );
+
         assert_eq!(
             result.message_text, standalone_message.source_text,
             "{source}"
         );
+
         assert_eq!(
             result.attachments, standalone_message.attachments,
             "{source}"
         );
+
         assert_eq!(result.citations, standalone_message.citations, "{source}");
+
         assert_eq!(
             result.reference_embedding,
             embedding::plan(&document).unwrap(),
@@ -234,15 +273,19 @@ fn custom_parser_limits_flow_through_validated_consumers() {
     use traq_markdown_processing::rendering::{PlainTextOptions, PlainTextRenderer};
 
     let source = "x".repeat(ValidationLimits::default().source_bytes + 1);
+
     let document_limits = ValidationLimits {
         source_bytes: source.len(),
         ..ValidationLimits::default()
     };
+
     let parser = bindings::parser("traq.v1").unwrap().with_limits(Limits {
         document: document_limits,
         ..Limits::default()
     });
+
     let document = parser.parse(&source).unwrap();
+
     assert!(matches!(
         DocumentView::new(&document),
         Err(ValidationError {
@@ -250,12 +293,15 @@ fn custom_parser_limits_flow_through_validated_consumers() {
             ..
         })
     ));
+
     let validated = DocumentView::with_limits(&document, document_limits).unwrap();
 
     let renderer = PlainTextRenderer::new(PlainTextOptions::default()).unwrap();
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
+
     assert_eq!(renderer.render(validated).unwrap(), source);
     assert_eq!(extractor.extract(validated).unwrap().message_text, source);
+
     assert_eq!(
         message::Extractor::new("")
             .unwrap()
@@ -264,6 +310,7 @@ fn custom_parser_limits_flow_through_validated_consumers() {
             .source_text,
         source
     );
+
     assert_eq!(embedding::plan(validated).unwrap().unembedded_text, source);
 }
 
@@ -286,10 +333,12 @@ fn native_reference_payload_is_bounded_before_extraction() {
     };
 
     let extractor = Extractor::new(ExtractorOptions::default()).unwrap();
+
     assert_eq!(
         extractor.extract(&document).unwrap_err().code(),
         "resource_limit"
     );
+
     assert_eq!(
         message::Extractor::new("")
             .unwrap()
@@ -298,6 +347,7 @@ fn native_reference_payload_is_bounded_before_extraction() {
             .code(),
         "resource_limit"
     );
+
     assert_eq!(
         embedding::plan(&document).unwrap_err().code(),
         "resource_limit"

@@ -38,10 +38,12 @@ impl GrammarBuilder {
                     element: rule.description(),
                 });
             }
+
             pending.push(rule);
         }
 
         let handle = RegistrationHandle::new(&plugin.declaration);
+
         self.registrations.push(RegisteredPlugin {
             handle: handle.clone(),
             implementation: plugin.clone(),
@@ -74,6 +76,7 @@ impl GrammarBuilder {
             .ok_or_else(|| BuildError::Missing {
                 element: handle.plugin().name().into(),
             })?;
+
         let plugin = self.registrations.remove(index).implementation;
         self.rules.retain(|(owner, _)| !owner.same(&plugin));
 
@@ -116,12 +119,14 @@ impl GrammarBuilder {
 
         if from != to {
             let entry = self.rules.remove(from);
+
             self.rules
                 .insert(if from < to { to - 1 } else { to }, entry);
         }
 
         Ok(self)
     }
+
     pub fn plugins(&self) -> impl ExactSizeIterator<Item = &SyntaxPlugin> + Clone {
         self.registrations.iter().map(|entry| &entry.implementation)
     }
@@ -142,7 +147,9 @@ impl GrammarBuilder {
                 element: "complete registered rule order".into(),
             });
         }
+
         let mut indices = Vec::with_capacity(order.len());
+
         for rule in order {
             let index = self
                 .rules
@@ -156,12 +163,15 @@ impl GrammarBuilder {
                     element: rule.description(),
                 });
             }
+
             indices.push(index);
         }
+
         self.rules = indices
             .into_iter()
             .map(|index| self.rules[index].clone())
             .collect();
+
         Ok(self)
     }
 
@@ -170,6 +180,7 @@ impl GrammarBuilder {
 
         for plugin in self.plugins() {
             lines.push(format!("plugin: {}", plugin.description()));
+
             if plugin.has_text_provider() {
                 lines.push(format!("text provider: {}", plugin.description()));
             }
@@ -218,6 +229,7 @@ impl GrammarBuilder {
                 element: "block sequence policy".into(),
             });
         }
+
         Ok(make_text)
     }
 
@@ -228,6 +240,7 @@ impl GrammarBuilder {
             .plugins()
             .find_map(|plugin| plugin.definition.block_policy.as_ref())
             .cloned();
+
         let mut grammar = super::registry::Compilation {
             block_policy,
             definition: self,
@@ -260,6 +273,7 @@ fn compile_rules(grammar: &mut super::registry::Compilation) {
 fn compile_dispatch(grammar: &mut super::registry::Compilation) {
     for (index, rule) in grammar.inline.iter().enumerate() {
         let markers = rule.data.implementation.markers;
+
         for (byte, candidates) in grammar.dispatch.iter_mut().enumerate() {
             if markers.is_empty() || markers.contains(&(byte as u8)) {
                 candidates.push(index);

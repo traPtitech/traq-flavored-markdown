@@ -1,6 +1,8 @@
 {
   "extends": "../../../tsconfig.build.base.json",
   "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "rootDir": "src",
     "outDir": "../dist"
   },

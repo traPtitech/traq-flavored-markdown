@@ -42,33 +42,43 @@ test('indexed KaTeX filtering retains regressions and composes with cached queri
     },
     fixtureRows[2]
   ].map((row, index) => ({ ...row, index, source: `row ${index}` }))
+
   const aggregate = await aggregateDifferences(
     (async function* () {
       yield* rows
     })(),
     1
   )
+
   expect(aggregate.excluded.render.katexErrors).toBe(1)
   expect(aggregate.excluded.render.caseAndKatexErrors).toBe(2)
+
   const metadata = {
     ...fixtureMetadata(aggregate.counts, 1, rows.length),
     filters: aggregate.filters
   }
+
   const data = parseReport(metadata, aggregate.payload)
-  for (const invalid of ['0000'.repeat(5), '80000000'.repeat(5)])
+
+  for (const invalid of ['0000'.repeat(5), '80000000'.repeat(5)]) {
     expect(() =>
       parseReport(
         { ...metadata, filters: { ...metadata.filters, render: invalid } },
         aggregate.payload
       )
     ).toThrow('Invalid report profile')
+  }
+
   let decodes = 0
+
   const repository = new ReportRepository(data, async encoded => {
     decodes++
+
     return JSON.parse(
       new TextDecoder().decode(Bun.gunzipSync(Buffer.from(encoded, 'base64')))
     )
   })
+
   const query = { ...initialViewerState.query, ignoreKatexErrors: true }
   const first = await repository.query(query)
   expect(first.rows[0].index).toBe(1)
@@ -78,17 +88,21 @@ test('indexed KaTeX filtering retains regressions and composes with cached queri
   expect(both.rows[0].index).toBe(2)
   expect(both.totalHits).toBe(3)
   expect(decodes).toBe(2)
+
   expect(
     (await repository.query({ ...query, ignoreCase: true, search: 'row 0' }))
       .totalHits
   ).toBe(0)
+
   expect(
     (await repository.query({ ...query, ignoreCase: true, search: 'row 3' }))
       .rows[0].after.kind
   ).toBe('error')
+
   expect(
     (await repository.query({ ...query, profile: 'plainText' })).totalHits
   ).toBe(1)
+
   expect(
     (await repository.query({ ...query, ignoreKatexErrors: false })).totalHits
   ).toBe(5)

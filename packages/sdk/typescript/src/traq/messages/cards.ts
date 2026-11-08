@@ -11,16 +11,19 @@ function pathAtOrigin(value: string, origin: string) {
 
   const rest = value.slice(base.length)
   if (rest && !['/', '?', '#'].includes(rest[0])) return
+
   return rest
 }
 
 function resourceAtPath(rest: string): TraqLink | undefined {
   const path = rest.split(/[?#]/, 1)[0]
+
   const match =
     /^\/(files|messages)\/([\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12})$/.exec(
       path
     )
   if (!match || match[0] !== path) return
+
   return {
     type: match[1] === 'files' ? 'file' : 'message',
     id: match[2].toLowerCase()
@@ -44,11 +47,13 @@ export function resourceCardFromUrl(
   origin: string
 ): ResourceCard | undefined {
   let url: URL
+
   try {
     url = new URL(value)
   } catch {
     return
   }
+
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return
 
   const rest = pathAtOrigin(value, origin)

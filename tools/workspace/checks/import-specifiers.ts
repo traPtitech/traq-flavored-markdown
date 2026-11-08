@@ -5,31 +5,56 @@ import { parse } from '@vue/compiler-sfc'
 export function importSpecifiers(file: string, source: string): string[] {
   const specifiers: string[] = []
   let scripts = [{ content: source, lang: 'ts' }]
+
   if (file.endsWith('.vue')) {
     const { descriptor, errors } = parse(source, {
       filename: file,
       sourceMap: false
     })
-    if (errors.length)
+    if (errors.length) {
       throw new Error(
         file +
           ': invalid Vue SFC: ' +
           errors.map(error => error.message).join('; ')
       )
+    }
+
     scripts = []
+
     for (const block of [descriptor.script, descriptor.scriptSetup]) {
       if (!block) continue
+
       if (block.src) specifiers.push(block.src)
       scripts.push({ content: block.content, lang: block.lang ?? 'js' })
     }
   }
+
   const visit = (node: ts.Node): void => {
+    if (
+      ts.isImportTypeNode(node) &&
+      ts.isLiteralTypeNode(node.argument) &&
+      ts.isStringLiteral(node.argument.literal)
+    ) {
+      specifiers.push(node.argument.literal.text)
+    }
+
+    if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      node.moduleReference.expression &&
+      ts.isStringLiteral(node.moduleReference.expression)
+    ) {
+      specifiers.push(node.moduleReference.expression.text)
+    }
+
     if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
       node.moduleSpecifier &&
       ts.isStringLiteral(node.moduleSpecifier)
-    )
+    ) {
       specifiers.push(node.moduleSpecifier.text)
+    }
+
     if (
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
@@ -37,11 +62,14 @@ export function importSpecifiers(file: string, source: string): string[] {
           node.expression.text === 'require')) &&
       node.arguments.length === 1 &&
       ts.isStringLiteral(node.arguments[0])
-    )
+    ) {
       specifiers.push(node.arguments[0].text)
+    }
+
     ts.forEachChild(node, visit)
   }
-  for (const script of scripts)
+
+  for (const script of scripts) {
     visit(
       ts.createSourceFile(
         file,
@@ -53,5 +81,7 @@ export function importSpecifiers(file: string, source: string): string[] {
           : ts.ScriptKind.TS
       )
     )
+  }
+
   return specifiers
 }

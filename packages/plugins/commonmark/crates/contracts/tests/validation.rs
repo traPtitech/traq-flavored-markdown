@@ -8,14 +8,17 @@ use markdown_commonmark_contracts::{
 
 #[derive(Clone, Debug, PartialEq)]
 struct ExternalInline;
+
 impl NodeData for ExternalInline {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -23,14 +26,17 @@ impl NodeData for ExternalInline {
 
 #[derive(Clone, Debug, PartialEq)]
 struct ExternalBlock;
+
 impl NodeData for ExternalBlock {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Block,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -47,6 +53,7 @@ fn paragraph() -> Node {
 #[test]
 fn lists_store_one_semantic_kind_and_validate_item_shape() {
     let item = || Node::new(span(), ListItem {}, vec![paragraph()]);
+
     let list = |start, children| MutableDocument {
         source: String::new(),
         children: vec![Node::new(
@@ -61,16 +68,19 @@ fn lists_store_one_semantic_kind_and_validate_item_shape() {
             children,
         )],
     };
+
     assert!(
         list(3, vec![item(), item()])
             .validate(ValidationLimits::default())
             .is_ok()
     );
+
     assert!(
         list(999_999_999, vec![item()])
             .validate(ValidationLimits::default())
             .is_ok()
     );
+
     for document in [
         list(3, vec![]),
         list(3, vec![item(), paragraph()]),
@@ -83,6 +93,7 @@ fn lists_store_one_semantic_kind_and_validate_item_shape() {
             Err(ValidationErrorKind::InvalidNode)
         );
     }
+
     assert!(
         Node::new(
             span(),
@@ -101,11 +112,13 @@ fn known_block_nodes_cannot_be_children_of_inline_containers() {
             .validate()
             .is_err()
     );
+
     assert!(
         Node::new(span(), Heading { level: 1 }, vec![paragraph()],)
             .validate()
             .is_err()
     );
+
     assert!(
         Node::new(
             span(),
@@ -132,6 +145,7 @@ fn parent_contracts_use_external_plugin_roles() {
         .validate()
         .is_ok()
     );
+
     assert!(
         Node::new(
             span(),
@@ -141,6 +155,7 @@ fn parent_contracts_use_external_plugin_roles() {
         .validate()
         .is_err()
     );
+
     assert!(
         Node::new(
             span(),
@@ -150,6 +165,7 @@ fn parent_contracts_use_external_plugin_roles() {
         .validate()
         .is_ok()
     );
+
     assert!(
         Node::new(
             span(),
@@ -159,11 +175,13 @@ fn parent_contracts_use_external_plugin_roles() {
         .validate()
         .is_err()
     );
+
     assert!(
         Node::new(span(), ListItem {}, vec![Node::leaf(span(), ExternalBlock)])
             .validate()
             .is_ok()
     );
+
     assert!(
         Node::new(
             span(),

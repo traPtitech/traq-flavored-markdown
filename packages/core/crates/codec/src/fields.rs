@@ -27,6 +27,7 @@ impl<'de> Deserialize<'de> for Fields<'de> {
                     if fields.contains_key(&key) {
                         return Err(M::Error::custom(format!("duplicate field {key:?}")));
                     }
+
                     fields.insert(key, value);
                 }
 

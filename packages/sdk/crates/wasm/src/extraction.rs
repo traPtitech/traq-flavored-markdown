@@ -15,6 +15,7 @@ pub extern "C" fn configure_extractor() -> u32 {
             EXTRACTOR.set(Some(extractor));
             Ok(abi::configured())
         })();
+
         io.reply(&result);
         io.output.len() as u32
     })
@@ -32,6 +33,7 @@ pub extern "C" fn extract() -> u32 {
                     .map_err(Error::processing)
             })
         });
+
         io.reply(&result);
         io.output.len() as u32
     })

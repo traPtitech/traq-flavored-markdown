@@ -5,16 +5,18 @@ import type { MarkdownLineBreakOptions } from '../../types.js'
 import { toDocumentPosition, toEditorOffset } from '../input/coordinates.js'
 import { editorTextBetween } from '../input/text.js'
 import { analyzeEditorProbe } from './analysis.js'
-import { markdownListInputKey } from './listInput.js'
-import { applyMarkdownEdit } from './operations.js'
+import { markdownListMetadata } from './listInput.js'
+import { createMarkdownTransaction } from './operations.js'
 import { getMarkdownServices } from './services.js'
 
 export type { MarkdownLineBreakOptions } from '../../types.js'
+
 export const markdownLineBreak = (
   state: EditorState,
   options: MarkdownLineBreakOptions = {}
 ) => {
   const source = editorTextBetween(state.doc)
+
   const plan = planLineBreak(
     source,
     {
@@ -23,6 +25,7 @@ export const markdownLineBreak = (
     },
     {
       ...options,
+
       analyze: source =>
         analyzeEditorProbe(
           state.doc,
@@ -31,12 +34,16 @@ export const markdownLineBreak = (
         )
     }
   )
-  const transaction = applyMarkdownEdit(state, plan)
-  if (plan.completion)
-    transaction.setMeta(markdownListInputKey, {
+
+  const transaction = createMarkdownTransaction(state, plan)
+
+  if (plan.completion) {
+    markdownListMetadata.set(transaction, {
       ...plan.completion,
       from: toDocumentPosition(plan.completion.from),
       to: toDocumentPosition(plan.completion.to)
     })
+  }
+
   return transaction
 }

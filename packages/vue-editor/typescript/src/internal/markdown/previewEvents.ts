@@ -8,7 +8,11 @@ import {
   syncInputSelection
 } from '../input/selection.js'
 import { deleteMarkdownSource, enterMarkdownSource } from './editing.js'
-import { type PreviewState, markdownPreviewKey } from './previewState.js'
+import {
+  type PreviewState,
+  markdownPreviewKey,
+  markdownPreviewMetadata
+} from './previewState.js'
 
 const acceptsPreviewPointer = (view: EditorView, event: MouseEvent) => {
   const preview = markdownPreviewKey.getState(view.state)
@@ -70,7 +74,9 @@ export const markdownPreviewEvents: EditorProps = {
       const box = (
         widget.querySelector('img') ?? widget
       ).getBoundingClientRect()
+
       const { direction, lineHeight } = getComputedStyle(widget)
+
       const padding = Math.max(
         0,
         ((Number.parseFloat(lineHeight) || 0) - box.height) / 2
@@ -79,15 +85,17 @@ export const markdownPreviewEvents: EditorProps = {
       if (
         event.clientY < Math.floor(box.top - padding) ||
         event.clientY > Math.ceil(box.bottom + padding)
-      )
+      ) {
         continue
+      }
 
       if (
         direction === 'rtl'
           ? event.clientX > box.left
           : event.clientX < box.right
-      )
+      ) {
         continue
+      }
 
       caret = toDocumentPosition(format.to)
     }
@@ -97,6 +105,7 @@ export const markdownPreviewEvents: EditorProps = {
     view.dispatch(
       view.state.tr.setSelection(TextSelection.create(view.state.doc, caret))
     )
+
     view.focus()
     return true
   },
@@ -111,8 +120,9 @@ export const markdownPreviewEvents: EditorProps = {
       event.ctrlKey ||
       event.metaKey ||
       event.altKey
-    )
+    ) {
       return false
+    }
 
     const result =
       event.key === 'ArrowLeft' || event.key === 'ArrowRight'
@@ -133,7 +143,7 @@ export const markdownPreviewEvents: EditorProps = {
 
     if (!result) return false
 
-    return applyMarkdownEdit(view, event, result)
+    return dispatchMarkdownEdit(view, event, result)
   },
 
   handleDOMEvents: {
@@ -150,6 +160,7 @@ export const markdownPreviewEvents: EditorProps = {
 
       const position = view.posAtDOM(widget, 0)
       const preview = markdownPreviewKey.getState(view.state)
+
       const format = preview?.formats.find(
         format =>
           format.kind === 'rendered-inline' &&
@@ -165,12 +176,14 @@ export const markdownPreviewEvents: EditorProps = {
       const caret = toDocumentPosition(after ? format.to : format.from)
 
       view.dispatch(
-        view.state.tr
-          .setSelection(TextSelection.create(view.state.doc, caret))
-          .setMeta(markdownPreviewKey, {
-            revealed: [{ from: format.from, to: format.to }]
-          })
+        markdownPreviewMetadata.set(
+          view.state.tr.setSelection(
+            TextSelection.create(view.state.doc, caret)
+          ),
+          { revealed: [{ from: format.from, to: format.to }] }
+        )
       )
+
       view.focus()
       event.preventDefault()
 
@@ -185,8 +198,9 @@ export const markdownPreviewEvents: EditorProps = {
         !view.editable ||
         isComposingInput(view, event, () => preview.composing) ||
         !event.cancelable
-      )
+      ) {
         return false
+      }
 
       if (
         event.inputType === 'insertText' &&
@@ -221,8 +235,9 @@ export const markdownPreviewEvents: EditorProps = {
       if (
         event.inputType !== 'deleteContentBackward' &&
         event.inputType !== 'deleteContentForward'
-      )
+      ) {
         return false
+      }
 
       const result = deleteAtInputSelection(
         view,
@@ -232,20 +247,21 @@ export const markdownPreviewEvents: EditorProps = {
 
       if (!result) return false
 
-      return applyMarkdownEdit(view, event, result)
+      return dispatchMarkdownEdit(view, event, result)
     }
   }
 }
 
-const applyMarkdownEdit = (
+const dispatchMarkdownEdit = (
   view: EditorView,
   event: Event,
   result: NonNullable<ReturnType<typeof deleteMarkdownSource>>
 ) => {
-  if (result.revealed)
-    result.transaction.setMeta(markdownPreviewKey, {
+  if (result.revealed) {
+    markdownPreviewMetadata.set(result.transaction, {
       revealed: result.revealed
     })
+  }
 
   view.dispatch(result.transaction)
   event.preventDefault()

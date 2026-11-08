@@ -16,6 +16,7 @@ const recommendedTypescriptRules = tseslint.configs[
 export default [
   {
     ignores: [
+      '**/.private',
       '**/coverage',
       '**/dist',
       '**/node_modules',
@@ -61,6 +62,7 @@ export default [
       'no-throw-literal': 'error',
       'no-empty': ['error', { allowEmptyCatch: true }],
       eqeqeq: 'error',
+      curly: ['error', 'multi-line'],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@stylistic/ts/member-delimiter-style': [
         'error',

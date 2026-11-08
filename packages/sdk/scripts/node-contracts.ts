@@ -12,6 +12,7 @@ import { semanticContractId } from './contract-identity.ts'
 export { semanticContractId } from './contract-identity.ts'
 
 export const sdkTargetDirectory = cargoTargetDirectory
+
 export const nodeContractsDirectory = () =>
   path.join(sdkTargetDirectory(), 'node-contracts')
 
@@ -37,9 +38,11 @@ async function wasmRustFlags() {
   const configFile = Bun.file(
     path.join(repositoryRoot, '.cargo', 'config.toml')
   )
+
   const config = (
     (await configFile.exists()) ? Bun.TOML.parse(await configFile.text()) : {}
   ) as { target?: Record<string, { rustflags?: unknown }> }
+
   const targetFlags = config.target?.['wasm32-unknown-unknown']?.rustflags ?? []
   if (
     !Array.isArray(targetFlags) ||
@@ -51,6 +54,7 @@ async function wasmRustFlags() {
   // Rust embeds file!() paths in panic locations. Remap both separator forms:
   // rustc treats each --remap-path-prefix as a literal string replacement.
   const home = os.homedir()
+
   const roots = [
     [home, '/home'],
     [path.resolve(Bun.env.CARGO_HOME ?? path.join(home, '.cargo')), '/cargo'],
@@ -60,6 +64,7 @@ async function wasmRustFlags() {
     ],
     [repositoryRoot, '/workspace']
   ] as const
+
   const remaps = roots.flatMap(([source, destination]) =>
     [...new Set([source, source.replaceAll('\\', '/')])].map(
       prefix => `--remap-path-prefix=${prefix}=${destination}`
@@ -97,18 +102,22 @@ export async function buildWasm() {
   if (
     typeof manifest.contractId !== 'string' ||
     manifest.contractId !== semanticContractId(manifest)
-  )
+  ) {
     throw new Error('Export current node contracts before building Wasm')
+  }
+
   await cargo({
     CARGO_ENCODED_RUSTFLAGS: await wasmRustFlags(),
     MARKDOWN_CONTRACT_ID: manifest.contractId
   })`cargo build --locked --release --target wasm32-unknown-unknown -p traq-markdown-wasm`
+
   const wasm = path.join(
     sdkTargetDirectory(),
     'wasm32-unknown-unknown',
     'release',
     'traq_markdown_wasm.wasm'
   )
+
   assertNoHostPaths(await Bun.file(wasm).bytes())
   const { readWasmMetadata } = await import('./wasm-contract.ts')
   const metadata = await readWasmMetadata(await Bun.file(wasm).bytes())
@@ -116,10 +125,12 @@ export async function buildWasm() {
     metadata.contractId !== manifest.contractId ||
     metadata.provenance.sourceFingerprint !==
       manifest.provenance?.sourceFingerprint
-  )
+  ) {
     throw new Error(
       'Rust sources changed since contract export; regenerate bindings before assembling Wasm'
     )
+  }
+
   return wasm
 }
 

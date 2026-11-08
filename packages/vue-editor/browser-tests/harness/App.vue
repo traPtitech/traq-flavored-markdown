@@ -17,6 +17,7 @@
     <output data-testid="parent-actions">{{ parentActions }}</output>
   </main>
 </template>
+
 <script setup lang="ts">
 import {
   type MarkdownServices,
@@ -35,18 +36,22 @@ const markdownEnabled = ref(false)
 const readonly = ref(false)
 const documentKey = ref<string>()
 const parentActions = ref(0)
+
 const onKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
     parentActions.value++
   }
 }
+
 const adapter: ReferenceInputAdapter<Task> = {
   references: taskCodec,
   label: task => task.title,
   markdown: props.markdown
 }
+
 window.editorHarness = {
   ready: nextTick(),
+
   async load(draft: Draft) {
     text.value = draft.text
     singleLine.value = draft.singleLine ?? false
@@ -58,23 +63,28 @@ window.editorHarness = {
   }
 }
 </script>
+
 <style>
 body {
   margin: 0;
+
   font:
     16px/1.5 system-ui,
     sans-serif;
 }
+
 main {
   max-width: 760px;
   margin: 24px;
   padding: 16px;
 }
+
 .reference-input {
   min-height: 80px;
   border: 1px solid #aaa;
   padding: 12px;
 }
+
 pre {
   white-space: pre-wrap;
 }

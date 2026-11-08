@@ -8,14 +8,18 @@ use std::sync::LazyLock;
 
 #[cfg(feature = "syntax")]
 mod linkify;
+
 mod profiles;
 mod table;
+
 #[cfg(feature = "syntax")]
 pub use linkify::syntax as traq_linkify_syntax;
 pub use profiles::{GrammarProfile, GrammarProfileDefinition, TextProfile};
 pub use table::{FeatureId, all};
+
 #[cfg(feature = "text")]
 mod text;
+
 #[cfg(feature = "text")]
 pub use text::TextFeature;
 
@@ -49,6 +53,7 @@ pub fn grammar_features(
 pub fn commonmark_syntax() -> &'static markdown_commonmark::Syntax {
     static SYNTAX: LazyLock<markdown_commonmark::Syntax> =
         LazyLock::new(markdown_commonmark::Syntax::default);
+
     &SYNTAX
 }
 
@@ -58,6 +63,7 @@ pub struct TextOptions {
     pub explicit_links: markdown_commonmark_text::ExplicitLinkStyle,
     pub math: markdown_extensions_text::math::Style,
 }
+
 #[cfg(feature = "text")]
 impl Default for TextOptions {
     fn default() -> Self {
@@ -71,6 +77,7 @@ impl Default for TextOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use std::{
         any::TypeId,
         collections::{HashMap, HashSet},
@@ -79,20 +86,24 @@ mod tests {
     #[test]
     fn every_registered_payload_belongs_to_exactly_one_feature() {
         let mut expected = HashMap::new();
+
         macro_rules! register {
             ($group:literal; $($ty:ty => $kind:literal),+ $(,)?) => {
                 $(assert!(expected.insert(TypeId::of::<$ty>(), $kind).is_none());)+
             };
         }
+
         markdown_commonmark_contracts::node_catalog!(register);
         markdown_extensions_contracts::node_catalog!(register);
         markdown_traq_contracts::node_catalog!(register);
         let mut actual = HashMap::new();
         let mut exports = HashSet::new();
         let mut ids = HashSet::new();
+
         for feature in all() {
             assert!(ids.insert(feature.id));
             assert!(exports.insert((feature.export.group, feature.export.member)));
+
             for payload in &feature.contract.payloads {
                 assert!(
                     actual
@@ -103,6 +114,7 @@ mod tests {
                 );
             }
         }
+
         assert_eq!(actual, expected);
     }
 
@@ -112,15 +124,18 @@ mod tests {
             let ids: Vec<_> = grammar_features(profile)
                 .map(|feature| feature.id)
                 .collect();
+
             assert_eq!(ids.len(), ids.iter().collect::<HashSet<_>>().len());
             assert_eq!(ids, profile.definition().features);
         }
+
         assert_eq!(
             grammar_features(GrammarProfile::Commonmark)
                 .map(|f| f.id)
                 .collect::<Vec<_>>(),
             [FeatureId::Core, FeatureId::Html]
         );
+
         assert!(!grammar_features(GrammarProfile::TraqV1).any(|f| f.id == FeatureId::Html));
     }
 
@@ -129,9 +144,11 @@ mod tests {
     fn syntax_implementations_share_declared_namespaces_and_commonmark_identity() {
         for feature in all() {
             let plugin = (feature.syntax)();
+
             assert_eq!(plugin.name(), feature.contract.declaration.name());
             assert_eq!(plugin.namespace(), feature.contract.declaration.namespace());
         }
+
         assert!(std::ptr::eq(
             (FeatureId::Core.definition().syntax)(),
             &commonmark_syntax().plugin
@@ -142,11 +159,13 @@ mod tests {
     #[test]
     fn selected_text_features_have_nonconflicting_implementations() {
         let mut builder = markdown_renderer::RenderPresetBuilder::new();
+
         for feature in TextProfile::Traq.features() {
             builder
                 .add(&feature.plugin(TextOptions::default()))
                 .unwrap();
         }
+
         builder.build().unwrap();
     }
 }

@@ -42,11 +42,13 @@ fn table(rows: Vec<Node>) -> MutableDocument {
 fn tables_have_one_header_and_columns_are_defined_once() {
     let header = || row(true, vec![cell(), cell()]);
     let body = || row(false, vec![cell(), cell()]);
+
     assert!(
         table(vec![header(), body()])
             .validate(ValidationLimits::default())
             .is_ok()
     );
+
     for rows in [
         vec![],
         vec![body()],
@@ -67,23 +69,28 @@ fn tables_have_one_header_and_columns_are_defined_once() {
             Err(ValidationErrorKind::InvalidNode)
         );
     }
+
     let mut empty_columns = table(vec![header()]);
+
     empty_columns.children[0]
         .payload_mut::<Table>()
         .unwrap()
         .alignments
         .clear();
+
     assert!(empty_columns.validate(ValidationLimits::default()).is_err());
 }
 
 #[test]
 fn math_nodes_are_leaves() {
     let child = cell();
+
     assert!(
         Node::new(span(), InlineMath { tex: "x".into() }, vec![child.clone()],)
             .validate()
             .is_err()
     );
+
     assert!(
         Node::new(span(), BlockMath { tex: "x".into() }, vec![child],)
             .validate()
@@ -93,14 +100,17 @@ fn math_nodes_are_leaves() {
 
 #[derive(Clone, Debug, PartialEq)]
 struct ExternalInline;
+
 impl NodeData for ExternalInline {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Inline,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -108,14 +118,17 @@ impl NodeData for ExternalInline {
 
 #[derive(Clone, Debug, PartialEq)]
 struct ExternalBlock;
+
 impl NodeData for ExternalBlock {
     fn structure() -> &'static markdown_ast::NodeStructure {
         static STRUCTURE: markdown_ast::NodeStructure = markdown_ast::NodeStructure {
             role: NodeRole::Block,
             children: markdown_ast::ChildStructure::Any,
         };
+
         &STRUCTURE
     }
+
     fn payload_bytes(&self) -> usize {
         0
     }
@@ -128,6 +141,7 @@ fn table_cells_accept_external_inline_nodes_only() {
             .validate()
             .is_ok()
     );
+
     assert!(
         Node::new(span(), Cell {}, vec![Node::leaf(span(), ExternalBlock)])
             .validate()

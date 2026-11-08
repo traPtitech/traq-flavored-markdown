@@ -61,6 +61,7 @@ function SpeedTable({ metadata }: { metadata: ReportMetadata }) {
       <tbody>
         {profilesFor(metadata.run).map(profile => {
           const data = metadata.results[profile]!
+
           return (
             <tr key={profile}>
               <td>{profileLabels[profile]}</td>

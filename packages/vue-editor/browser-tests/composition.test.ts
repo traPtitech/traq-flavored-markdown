@@ -43,17 +43,19 @@ for (const context of [
 
               const node = element.querySelector('p')?.firstChild
 
-              if (!(node instanceof Text))
+              if (!(node instanceof Text)) {
                 throw new Error('Missing composition text')
+              }
 
               node.data = text
               getSelection()?.collapse(node, text.length)
 
               // Some engines deliver compositionend before MutationObserver flushes.
-              if (finish)
+              if (finish) {
                 element.dispatchEvent(
                   new CompositionEvent('compositionend', { bubbles: true })
                 )
+              }
             },
             { text: prefix + next, finish: selection === 'pending-end' }
           )
@@ -62,6 +64,7 @@ for (const context of [
             'textContent',
             prefix + next
           )
+
           await expect
             .poll(() => caret(input))
             .toEqual({
@@ -70,6 +73,7 @@ for (const context of [
               composing: selection !== 'pending-end',
               focused: true
             })
+
           await expect(page.getByTestId('parent-actions')).toHaveText('0')
 
           if (selection !== 'pending-end') {
@@ -86,6 +90,7 @@ for (const context of [
             'textContent',
             prefix + next.slice(0, -1)
           )
+
           await expect(input).toBeFocused()
         }
       )
@@ -115,7 +120,9 @@ test(
       'textContent',
       source + sample
     )
+
     await expect(input.locator('.markdown-input-strong')).toHaveText('bold')
+
     await expect
       .poll(() => caret(input))
       .toMatchObject({
@@ -140,6 +147,7 @@ test(
       'textContent',
       source
     )
+
     await expect
       .poll(() => caret(input))
       .toEqual({
@@ -216,6 +224,7 @@ test.describe('Chromium CDP composition', () => {
               'textContent',
               prefix + text
             )
+
             await expect
               .poll(() => caret(input))
               .toEqual({
@@ -224,6 +233,7 @@ test.describe('Chromium CDP composition', () => {
                 composing: true,
                 focused: true
               })
+
             await expect(input).toHaveAttribute('data-composition-ends', '0')
           }
 
@@ -233,6 +243,7 @@ test.describe('Chromium CDP composition', () => {
             'textContent',
             prefix + text
           )
+
           await expect
             .poll(() => caret(input))
             .toEqual({
@@ -241,6 +252,7 @@ test.describe('Chromium CDP composition', () => {
               composing: false,
               focused: true
             })
+
           await expect(input).toHaveAttribute('data-trusted', 'true')
           await expect(input).toHaveAttribute('data-composition-ends', '1')
           await input.press('Backspace')
@@ -249,6 +261,7 @@ test.describe('Chromium CDP composition', () => {
             'textContent',
             prefix + text.slice(0, -1)
           )
+
           await expect(page.getByTestId('parent-actions')).toHaveText('0')
         }
       )

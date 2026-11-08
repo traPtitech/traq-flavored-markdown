@@ -12,6 +12,7 @@
     }}</span>
   </div>
 </template>
+
 <script setup lang="ts" generic="R">
 import { EditorContent } from '@tiptap/vue-3'
 import { computed, proxyRefs, useId } from 'vue'
@@ -46,7 +47,9 @@ const props = withDefaults(
     markdown: false
   }
 )
+
 const model = defineModel<string>({ default: '' })
+
 const emit = defineEmits<{
   keydown: [event: KeyboardEvent]
   keyup: [event: KeyboardEvent]
@@ -55,15 +58,19 @@ const emit = defineEmits<{
   blur: []
   layoutChange: []
 }>()
+
 const popupId = useId()
+
 const { editor, suggestions, focus, insertText, insertLineBreak, element } =
   useReferenceEditor({
     model,
     props,
     adapter: props.adapter,
     popupId,
+
     attributes: controller => {
       const popup = controller.accessibility?.()
+
       return {
         role: props.role,
         tabindex: '0',
@@ -90,6 +97,7 @@ const { editor, suggestions, focus, insertText, insertLineBreak, element } =
         ...(props.testId ? { 'data-testid': props.testId } : {})
       }
     },
+
     onKeyDown: event => emit('keydown', event),
     onKeyUp: event => emit('keyup', event),
     onBeforeInput: event => emit('beforeInput', event),
@@ -97,7 +105,9 @@ const { editor, suggestions, focus, insertText, insertLineBreak, element } =
     onBlur: () => emit('blur'),
     onLayoutChange: () => emit('layoutChange')
   })
+
 const accessibility = computed(() => suggestions.accessibility?.())
+
 defineExpose(
   proxyRefs({
     focus,

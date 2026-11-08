@@ -14,7 +14,7 @@ export type MutableNode<
     kind: string
     data: unknown
   }
-> = Kind & { span: Span; children?: MutableNode<Kind>[] }
+> = Kind & { span: Span; children?: MutableNode<Kind>[] | undefined }
 
 export interface MutableDocument<
   Kind extends { kind: string; data: unknown } = {
@@ -40,8 +40,9 @@ export type ReadonlyNode<
   }
 > = DeepReadonly<Kind> & {
   readonly span: Readonly<Span>
-  readonly children?: readonly ReadonlyNode<Kind>[]
+  readonly children?: readonly ReadonlyNode<Kind>[] | undefined
 }
+
 export interface ReadonlyDocument<
   Kind extends { kind: string; data: unknown } = {
     kind: string

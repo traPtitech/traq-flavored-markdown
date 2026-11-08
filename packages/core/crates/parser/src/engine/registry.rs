@@ -47,9 +47,11 @@ impl std::fmt::Display for BuildError {
         match self {
             Self::Duplicate { element } => write!(f, "duplicate registration: {element}"),
             Self::Missing { element } => write!(f, "missing registration: {element}"),
+
             Self::DuplicateName { scope, name } => {
                 write!(f, "duplicate name {name:?} in {scope}")
             }
+
             Self::InvalidDefinition { reason } => write!(f, "invalid grammar definition: {reason}"),
         }
     }

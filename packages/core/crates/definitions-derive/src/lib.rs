@@ -11,6 +11,7 @@ mod payload;
 pub fn node(arguments: TokenStream, input: TokenStream) -> TokenStream {
     let options = parse_macro_input!(arguments as payload::NodeOptions);
     let input = parse_macro_input!(input as DeriveInput);
+
     payload::expand(input, Some(options))
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
@@ -24,7 +25,9 @@ pub fn payload(arguments: TokenStream, input: TokenStream) -> TokenStream {
             .into_compile_error()
             .into();
     }
+
     let input = parse_macro_input!(input as DeriveInput);
+
     payload::expand(input, None)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
@@ -42,39 +45,48 @@ pub fn wire_type(input: TokenStream) -> TokenStream {
 fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let path = match crate_name("markdown-definitions") {
         Ok(FoundCrate::Itself) => quote!(::markdown_definitions),
+
         Ok(FoundCrate::Name(name)) => {
             let name = syn::Ident::new(&name, proc_macro2::Span::call_site());
             quote!(::#name)
         }
+
         Err(error) => return Err(syn::Error::new_spanned(&input.ident, error)),
     };
 
     let name = &input.ident;
     let mut key: Option<LitStr> = None;
+
     for attribute in &input.attrs {
         if !attribute.path().is_ident("wire_type") {
             continue;
         }
+
         attribute.parse_nested_meta(|meta| {
             if !meta.path.is_ident("key") {
                 return Err(meta.error("expected wire_type(key = \"stable.kind\")"));
             }
+
             let value: LitStr = meta.value()?.parse()?;
             if value.value().is_empty() {
                 return Err(meta.error("node type key cannot be empty"));
             }
+
             if key.replace(value).is_some() {
                 return Err(meta.error("duplicate node type key"));
             }
+
             Ok(())
         })?;
     }
+
     let key = key.ok_or_else(|| {
         syn::Error::new_spanned(
             name,
             "WireTypeKey requires #[wire_type(key = \"stable.kind\")]",
         )
     })?;
+
     let base = quote!(#key);
 
     let arguments: Vec<_> = input
@@ -104,11 +116,13 @@ fn expand(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     };
 
     let mut generics = input.generics.clone();
+
     for parameter in generics.type_params_mut() {
         parameter.bounds.push(parse_quote!(#path::WireTypeKey));
     }
 
     let (implementation, arguments_type, clause) = generics.split_for_impl();
+
     Ok(quote! {
         impl #implementation #path::WireTypeKey for #name #arguments_type #clause {
             fn wire_key() -> ::std::string::String { #body }
@@ -128,6 +142,7 @@ fn generic_argument(
 
         GenericParam::Const(parameter) => {
             let value = &parameter.ident;
+
             Some(quote!(::std::string::ToString::to_string(&#value)
                 .chars().flat_map(::core::primitive::char::escape_default).collect::<::std::string::String>()))
         }

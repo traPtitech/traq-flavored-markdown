@@ -15,11 +15,14 @@ pub(super) fn next_nonblank(
     while index < input.lines.end() {
         let range = &input.lines[index];
         budget.spend(range.end - range.start)?;
+
         if !blank(input.line(index)) {
             return Ok(Some(index));
         }
+
         index += 1;
     }
+
     Ok(None)
 }
 
@@ -117,6 +120,7 @@ pub(super) fn item(line: &str) -> Option<Marker> {
     let line = &line[indent..];
     let bytes = line.as_bytes();
     let count = bytes.iter().take_while(|b| b.is_ascii_digit()).count();
+
     let (end, ordered, start) =
         if count > 0 && count <= 9 && matches!(bytes.get(count), Some(b'.' | b')')) {
             (count + 1, true, line[..count].parse().ok()?)

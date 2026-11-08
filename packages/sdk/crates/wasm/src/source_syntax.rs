@@ -60,6 +60,7 @@ fn integer(value: usize) -> Result<u32, Error> {
         )
     })
 }
+
 fn spans(values: Vec<markdown_parser::Span>) -> Result<Vec<SyntaxSpan>, Error> {
     values
         .into_iter()
@@ -71,6 +72,7 @@ fn spans(values: Vec<markdown_parser::Span>) -> Result<Vec<SyntaxSpan>, Error> {
         })
         .collect()
 }
+
 fn marker(value: native::SyntaxMarker) -> Result<SyntaxMarker, Error> {
     let kind = match value.kind {
         native::MarkerKind::Open => SyntaxMarkerKind::Open,
@@ -80,6 +82,7 @@ fn marker(value: native::SyntaxMarker) -> Result<SyntaxMarker, Error> {
         native::MarkerKind::Separator => SyntaxMarkerKind::Separator,
         native::MarkerKind::Definition => SyntaxMarkerKind::Definition,
     };
+
     Ok(SyntaxMarker {
         kind,
         spans: spans(value.spans)?,
@@ -87,6 +90,7 @@ fn marker(value: native::SyntaxMarker) -> Result<SyntaxMarker, Error> {
         text: value.text,
     })
 }
+
 fn facts(value: Option<native::SourceSyntax>) -> Result<Option<SourceSyntax>, Error> {
     value
         .map(|source| {
@@ -101,15 +105,19 @@ fn facts(value: Option<native::SourceSyntax>) -> Result<Option<SourceSyntax>, Er
         })
         .transpose()
 }
+
 impl TryFrom<native::SyntaxTree> for SyntaxRecords {
     type Error = Error;
+
     fn try_from(value: native::SyntaxTree) -> Result<Self, Error> {
         let mut nodes = vec![];
         let mut pending: Vec<_> = value.children.into_iter().rev().collect();
+
         while let Some(node) = pending.pop() {
             nodes.push(facts(node.source)?);
             pending.extend(node.children.into_iter().rev());
         }
+
         Ok(Self {
             nodes,
             detached: value

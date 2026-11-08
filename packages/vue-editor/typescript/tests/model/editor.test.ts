@@ -27,6 +27,7 @@ const embedded = encodeReference({
 
 const createEditor = (source: string) =>
   createInputEditor(source, { label: reference => '@renamed-' + reference.key })
+
 const press = pressKey
 
 describe('plain Markdown editor with atomic references', () => {
@@ -67,8 +68,9 @@ describe('plain Markdown editor with atomic references', () => {
         for (const count of [4, 3, 0]) {
           const text = dom.querySelector('p')?.lastChild
 
-          if (!(text instanceof Text))
+          if (!(text instanceof Text)) {
             throw new Error('Missing composition text')
+          }
 
           text.data = `${prefix ? ' ' : ''}${'あ'.repeat(count)}`
           document.getSelection()?.collapse(text, text.length)
@@ -79,6 +81,7 @@ describe('plain Markdown editor with atomic references', () => {
 
           expect(editor.view.composing).toBe(true)
           expect(editor.state.selection.empty).toBe(true)
+
           expect(editor.state.selection.head).toBe(
             editor.state.doc.content.size - 1
           )
@@ -104,8 +107,11 @@ describe('plain Markdown editor with atomic references', () => {
     selection => {
       const editor = createEditor(`before ${embedded} after`)
 
-      if (selection === 'cursor') editor.commands.setTextSelection(9)
-      else editor.commands.setNodeSelection(8)
+      if (selection === 'cursor') {
+        editor.commands.setTextSelection(9)
+      } else {
+        editor.commands.setNodeSelection(8)
+      }
 
       press(editor, 'Backspace')
       const text = '@renamed-id-before-rename'
@@ -168,7 +174,7 @@ describe('plain Markdown editor with atomic references', () => {
   it('round trips blank lines, tabs, trailing spaces and final newlines', () => {
     const text = `  **literal markdown**\n\n\t${embedded}  \n\n`
 
-    expect(source(createEditor(text))).toBe(text.replace(embedded, '@alice'))
+    expect(source(createEditor(text))).toBe(text)
   })
 
   it('renders a current label without changing the persisted reference', () => {
@@ -192,22 +198,6 @@ describe('plain Markdown editor with atomic references', () => {
     expect(source(editor)).toBe(`before ${embedded} after`)
     expect(redo(editor.state, editor.view.dispatch)).toBe(true)
     expect(source(editor)).toBe('before  after')
-  })
-
-  it('converts a reference surrounded by code to text in the same undo step', () => {
-    const editor = createEditor(embedded)
-    const tr = editor.state.tr.insertText('`', 2).insertText('`', 1)
-    editor.view.dispatch(tr)
-
-    expect(source(editor)).toBe('`@alice`')
-
-    undo(editor.state, editor.view.dispatch)
-
-    expect(source(editor)).toBe(embedded)
-
-    redo(editor.state, editor.view.dispatch)
-
-    expect(source(editor)).toBe('`@alice`')
   })
 
   it('preserves references in a copied partial selection', () => {

@@ -10,6 +10,7 @@ use markdown_parser::rules::inline::InlineRule;
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> =
         std::sync::LazyLock::new(|| InlineRule::new(b"$", inline::parse).named("math"));
+
     &RULE
 }
 
@@ -19,6 +20,7 @@ pub fn block_rule() -> &'static BlockRule {
             .named("math")
             .interrupts(|probe| block::opening(probe.line).is_some())
     });
+
     &RULE
 }
 
@@ -29,5 +31,6 @@ pub fn plugin() -> &'static SyntaxPlugin {
         plugin.add(block_rule());
         plugin
     });
+
     &PLUGIN
 }

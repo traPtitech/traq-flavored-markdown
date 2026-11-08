@@ -7,8 +7,9 @@ export const restoreMarkdownSourceCaret = (view: EditorView) => {
     !view.hasFocus() ||
     !(view.state.selection instanceof TextSelection) ||
     !view.state.selection.empty
-  )
+  ) {
     return
+  }
 
   const selection = view.dom.ownerDocument.getSelection()
 

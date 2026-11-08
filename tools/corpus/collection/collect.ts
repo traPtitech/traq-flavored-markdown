@@ -12,6 +12,7 @@ export type CollectionProgress = {
   messages: number
   requests: number
 }
+
 export type CollectionManifest = SampleProgress & {
   format: 1
   status: 'running' | 'complete' | 'failed'
@@ -54,20 +55,29 @@ export async function collect({
   fetchImpl?: Fetch
   progress?: (value: CollectionProgress) => void
 }): Promise<CollectionManifest> {
-  for (const count of [maxMessages, maxChannels, perChannel])
-    if (!Number.isSafeInteger(count) || count <= 0)
+  for (const count of [maxMessages, maxChannels, perChannel]) {
+    if (!Number.isSafeInteger(count) || count <= 0) {
       throw new Error('Sampling bounds must be positive integers')
-  if (!Number.isSafeInteger(channelOffset) || channelOffset < 0)
+    }
+  }
+
+  if (!Number.isSafeInteger(channelOffset) || channelOffset < 0) {
     throw new Error('Invalid channel offset')
+  }
+
   if (
     !Number.isFinite(delayMs) ||
     delayMs < 0 ||
     !Number.isFinite(Date.parse(until))
-  )
+  ) {
     throw new Error('Invalid delay or date')
+  }
+
   const salt = crypto.getRandomValues(new Uint8Array(32))
+
   const anonymous = (id: string) =>
     new Bun.CryptoHasher('sha256', salt).update(id).digest('hex').slice(0, 24)
+
   const report: CollectionManifest = {
     format: 1,
     status: 'running',
@@ -87,6 +97,7 @@ export async function collect({
     channelOffset,
     availableChannels: 0
   }
+
   const client = createApiClient({
     baseUrl,
     token,
@@ -94,16 +105,20 @@ export async function collect({
     fetchImpl,
     requested: () => report.requests++
   })
+
   await mkdir(output, { recursive: true })
   const manifestPath = path.join(output, 'manifest.json')
+
   await writeFile(manifestPath, JSON.stringify(report, null, 2) + '\n', {
     mode: 0o600,
     flag: 'wx'
   })
+
   try {
     await using sink = await createJsonlSink(
       path.join(output, 'messages.jsonl')
     )
+
     for await (const message of sampleMessages(
       createMessageGateway(client),
       { maxMessages, maxChannels, channelOffset, perChannel, until },
@@ -111,12 +126,14 @@ export async function collect({
         report.availableChannels = state.availableChannels
         report.sampledChannels = state.sampledChannels
         report.inaccessibleChannels = state.inaccessibleChannels
-        if (state.sampledChannels > 0 && state.sampledChannels % 10 === 0)
+
+        if (state.sampledChannels > 0 && state.sampledChannels % 10 === 0) {
           progress({
             channels: report.sampledChannels,
             messages: report.messages,
             requests: report.requests
           })
+        }
       }
     )) {
       await sink.write({
@@ -126,13 +143,16 @@ export async function collect({
         ...(message.isBot === undefined ? {} : { isBot: message.isBot }),
         syntaxVersion: 1
       })
+
       report.messages++
+
       report.bytes += observeSource(
         message.source,
         report.lengths,
         report.contains
       )
     }
+
     await sink.close()
     report.status = 'complete'
     return report

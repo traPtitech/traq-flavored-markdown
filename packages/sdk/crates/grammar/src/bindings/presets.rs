@@ -31,18 +31,23 @@ impl Preset {
 /// Numeric leaves retain the existing metadata format, not runtime lookup IDs.
 pub fn preset_exports() -> super::ExportTree<super::PresetId> {
     let mut exports = super::ExportTree::new();
+
     for (index, preset) in PRESETS.iter().enumerate() {
         let (leaf, path) = preset.path.split_last().expect("preset export path");
         let mut group = &mut exports;
+
         for part in path {
             let entry = group
                 .entry((*part).into())
                 .or_insert_with(|| super::ExportEntry::Group(super::ExportTree::new()));
+
             let super::ExportEntry::Group(nested) = entry else {
                 panic!("conflicting preset export path")
             };
+
             group = nested;
         }
+
         assert!(
             group
                 .insert(
@@ -53,5 +58,6 @@ pub fn preset_exports() -> super::ExportTree<super::PresetId> {
             "duplicate preset export"
         );
     }
+
     exports
 }

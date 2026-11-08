@@ -27,29 +27,36 @@ export interface Parser {
   parseInlineWithSyntax(source: string): ParsedSyntax
   dispose(): void
 }
+
 export interface Extractor {
   extract(document: DocumentInput): Extraction
   dispose(): void
 }
+
 export interface PlainTextRenderer {
   render(document: DocumentInput): string
   dispose(): void
 }
+
 export interface ProcessedDocument extends ProcessingResult {
   document: ParsedDocument
 }
+
 export interface Processor {
   process(source: string): ProcessedDocument
   processInline(source: string): ProcessedDocument
   dispose(): void
 }
+
 export interface Runtime {
   createParser(preset: GrammarPresetId): Parser
   createExtractor(options?: ExtractorOptions): Extractor
   createPlainTextRenderer(options?: PlainTextOptions): PlainTextRenderer
+
   createProcessor(
     preset: GrammarPresetId,
     options?: ProcessorOptions
   ): Processor
+
   dispose(): void
 }

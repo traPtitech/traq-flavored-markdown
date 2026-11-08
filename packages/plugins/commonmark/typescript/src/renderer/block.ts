@@ -44,6 +44,7 @@ export function registerBlockHandlers(
   result = result.withHandler(definitions.List, (n, ctx) => {
     const kind = n.data.kind
     const tag = kind.type === 'ordered' ? 'ol' : 'ul'
+
     const attrs =
       kind.type === 'ordered' && kind.start !== 1
         ? attributes([['start', String(kind.start)]])
@@ -54,11 +55,13 @@ export function registerBlockHandlers(
 
   result = result.withHandler(definitions.ListItem, (n, ctx) => {
     const tight = ctx.parent(definitions.List)?.data.tight
+
     const content = ctx.renderChildren(children => {
       const lead =
         children.length && !(tight && children[0].node.kind === names.Paragraph)
           ? '\n'
           : ''
+
       return (
         lead +
         children
@@ -72,16 +75,19 @@ export function registerBlockHandlers(
               !isBlockSpacing(node)
                 ? '\n'
                 : ''
+
             return separator + html
           })
           .join('')
       )
     })
+
     return '<li>' + content + '</li>\n'
   })
 
   result = result.withHandler(definitions.CodeBlock, n => {
     const language = n.data.fenced ? codeLanguage(n.data.info) : ''
+
     const highlighted = n.data.fenced
       ? highlight?.(n.data.literal, language)
       : undefined
@@ -90,14 +96,16 @@ export function registerBlockHandlers(
       (!highlighted ||
         typeof highlighted.html !== 'string' ||
         (highlighted.kind !== 'content' && highlighted.kind !== 'block'))
-    )
+    ) {
       throw new TypeError('Invalid highlight result')
+    }
 
     if (highlighted?.kind === 'block') return highlighted.html + '\n'
 
     const attrs = language
       ? attributes([['class', 'language-' + language]])
       : ''
+
     const content = highlighted?.html ?? escapeHtml(n.data.literal)
     return '<pre><code' + attrs + '>' + content + '</code></pre>\n'
   })

@@ -9,23 +9,27 @@ fn print_text(nodes: &[Node]) {
         if let Some(text) = node.payload::<Text>() {
             println!("{}..{}: {}", node.span.start, node.span.end, text.value);
         }
+
         print_text(&node.children);
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parser = presets::traq::v1::parser();
+
     for source in ["**hello** :stamp:", "another message"] {
         let document = parser.parse(source)?;
         print_text(&document.children);
     }
 
     let mut builder = presets::traq::v1::builder();
+
     builder.remove(
         &builder
             .registration(extensions::math::plugin())
             .expect("registered preset feature"),
     )?;
+
     let customized = Parser::new(&builder.build()?);
     let document = customized.parse_inline("$literal without math$")?;
     print_text(&document.children);

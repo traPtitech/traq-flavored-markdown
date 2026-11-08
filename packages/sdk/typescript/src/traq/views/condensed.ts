@@ -2,16 +2,17 @@ import { definitions } from '@traq-flavored-markdown/commonmark-plugin/nodes'
 import { attributes, escapeHtml } from '@traq-flavored-markdown/core/html'
 import type { RenderPlugin } from '@traq-flavored-markdown/core/renderer'
 import { definitions as extensionDefinitions } from '@traq-flavored-markdown/extensions-plugin/nodes'
-import { definitions as trapDefinitions } from '@traq-flavored-markdown/traq-plugin/nodes'
+import { definitions as traqDefinitions } from '@traq-flavored-markdown/traq-plugin/nodes'
 
 import type { ResolvedOptions } from '../profile/options.js'
 
 function configureCommonCondensed(
   common: RenderPlugin,
-  options: Pick<ResolvedOptions, 'validateLink'>
+  options: Pick<ResolvedOptions, 'links'>
 ) {
-  for (const definition of [definitions.Softbreak, definitions.Hardbreak])
+  for (const definition of [definitions.Softbreak, definitions.Hardbreak]) {
     common = common.withReplacedHandler(definition, () => ' ')
+  }
 
   common = common.withReplacedHandler(definitions.Paragraph, (n, ctx) =>
     ctx.renderChildren()
@@ -34,12 +35,15 @@ function configureCommonCondensed(
   common = common.withReplacedHandler(definitions.ListItem, (n, ctx) => {
     const list = ctx.parent(definitions.List)
     if (!list) throw new TypeError('Expected list parent')
+
     const kind = list.data.kind
+
     const marker =
       kind.type === 'ordered'
         ? String(kind.start + ctx.index) +
           (kind.delimiter === 'period' ? '.' : ')')
         : kind.marker
+
     return marker + ' ' + ctx.renderChildren(' ')
   })
 
@@ -61,15 +65,18 @@ function configureCommonCondensed(
     if (
       ctx.insideLink ||
       !n.data.destination ||
-      !options.validateLink(n.data.destination)
-    )
+      !options.links.condensedImage.validateLink(n.data.destination)
+    ) {
       return ctx.renderChildren()
+    }
+
     const label = ctx.renderChildren('', { insideLink: true })
 
     return (
       '<a' +
       attributes([
         ['href', n.data.destination],
+        ...Object.entries(options.links.condensedImage.linkAttributes),
         ...(n.data.title === null
           ? []
           : [['title', n.data.title] as [string, string]])
@@ -88,14 +95,17 @@ function configureExtensionsCondensed(extensions: RenderPlugin) {
     extensionDefinitions.Table,
     (_n, ctx) => ctx.renderChildren(' ')
   )
+
   for (const definition of [
     extensionDefinitions.Row,
     extensionDefinitions.HeaderRow
-  ])
+  ]) {
     extensions = extensions.withReplacedHandler(
       definition,
       (_n, ctx) => ctx.renderChildren(' ') + ' |'
     )
+  }
+
   extensions = extensions.withReplacedHandler(
     extensionDefinitions.Cell,
     (_n, ctx) => '| ' + ctx.renderChildren()
@@ -104,22 +114,22 @@ function configureExtensionsCondensed(extensions: RenderPlugin) {
   return extensions
 }
 
-function configureTrapCondensed(trap: RenderPlugin) {
-  trap = trap.withReplacedHandler(trapDefinitions.BlankLine, () => ' ')
+function configureTraqCondensed(traq: RenderPlugin) {
+  traq = traq.withReplacedHandler(traqDefinitions.BlankLine, () => ' ')
 
-  return trap
+  return traq
 }
 
 /** A condensed traQ message is a flattened document, not inline-only parsing. */
 export function configureCondensed(
   common: RenderPlugin,
   extensions: RenderPlugin,
-  trap: RenderPlugin,
-  options: Pick<ResolvedOptions, 'validateLink'>
+  traq: RenderPlugin,
+  options: Pick<ResolvedOptions, 'links'>
 ) {
   return {
     common: configureCommonCondensed(common, options),
     extensions: configureExtensionsCondensed(extensions),
-    traq: configureTrapCondensed(trap)
+    traq: configureTraqCondensed(traq)
   }
 }

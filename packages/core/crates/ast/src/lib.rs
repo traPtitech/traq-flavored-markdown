@@ -15,10 +15,12 @@ mod walk;
 
 pub use data::{AnyPayload, NodeData, NodeRole, PayloadError};
 pub use node::Node;
+
 pub use validation::{
     Document, DocumentInput, DocumentView, ValidationError, ValidationErrorKind, ValidationLimits,
     ValidationStats,
 };
+
 pub use walk::{Visit, Walk};
 
 /// A half-open UTF-8 byte range in the original source.

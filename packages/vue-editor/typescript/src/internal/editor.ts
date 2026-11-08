@@ -1,17 +1,17 @@
 import { Extension, Node, extensions } from '@tiptap/core'
-import type { SourceAnalysis } from '@traq-flavored-markdown/sdk/editor'
 
-import type { InputPart, MarkdownServices } from '../types.js'
+import type { InputPart, MarkdownServices, ReferenceCodec } from '../types.js'
 import { compositionSafeShortcuts } from './input/composition.js'
 import { inputHistoryExtension } from './input/history.js'
 import { inputLifecycleExtension } from './input/lifecycle.js'
 import { referenceNode } from './input/referenceNode.js'
+import { referenceNormalizationExtension } from './input/referenceNormalization.js'
 import { markdownExtension } from './markdown/extension.js'
 import { markdownServicesPlugin } from './markdown/services.js'
-import { messageExtension } from './messageExtension.js'
 
 export type { ReferenceInputHandle } from '../types.js'
 export { partsToContent, contentToParts } from './input/document.js'
+
 export const inputExtensions = <R>({
   label,
   editText,
@@ -25,10 +25,8 @@ export const inputExtensions = <R>({
   singleLine?: boolean
   isComposing?: () => boolean
   markdown?: MarkdownServices
-  normalize?: (
-    parts: readonly InputPart<R>[],
-    analysis?: SourceAnalysis
-  ) => InputPart<R>[]
+
+  normalize?: ReferenceCodec<R>['normalize']
 }) => [
   extensions.Keymap.extend({
     addKeyboardShortcuts() {
@@ -61,7 +59,7 @@ export const inputExtensions = <R>({
   ...(!singleLine && markdown ? [markdownExtension] : []),
   ...(normalize
     ? [
-        messageExtension.configure({
+        referenceNormalizationExtension.configure({
           normalize: (parts, analysis) =>
             normalize(parts as InputPart<R>[], analysis)
         })

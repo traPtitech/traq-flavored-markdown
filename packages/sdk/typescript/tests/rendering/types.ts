@@ -20,37 +20,46 @@ const parser = runtime.createParser(presets.traq.v1)
 const view = createRenderer(rendering.createHtmlPreset())
 const directView = rendering.createHtmlRenderer()
 const result: string = view.render(parser.parse('text'))
+
 const messageView = rendering.messageRenderers({
   origin: 'https://q.example.test'
 })
+
 const messageHtml: string = messageView.standard.render(
   parser.parse('text')
 ).html
+
 const condensedHtml: string = messageView.condensed.render(
   parser.parse('text')
 ).html
 
 const openDocument = {} as ReadonlyDocument
 const openResult: string = view.render(openDocument)
+
 const custom = plugin().withReplacedHandler(names.Link, (node, context) => {
   if (isKnownNode(node) && node.kind === names.Link) {
     const destination: string = node.data.destination
     return context.escape(destination) + context.renderChildren()
   }
+
   return context.fallback(node)
 })
+
 const builder = new PresetBuilder().add(custom)
 const declaration = Declaration.group('custom').plugin('annotation')
+
 builder.add(
   new RenderPlugin(declaration).withHandler(
     'custom::annotation',
     (node, context) => context.renderChildren()
   )
 )
+
 const resolve: ReferenceResolver = ({ id }) => ({
   href: '#' + id,
   highlight: id === 'me'
 })
+
 createRenderer(
   rendering.createHtmlPreset({
     references: { resolve },
@@ -67,6 +76,7 @@ createRenderer({})
 new RenderPlugin('name')
 declare const context: RenderContext
 const renderedChildren: string = context.renderChildren()
+
 void [
   result,
   messageHtml,

@@ -32,6 +32,7 @@ impl TraqUrlClassifier {
     pub fn new(origin: &str) -> crate::Result<Self> {
         validate_origin(origin)?;
         let origin = origin.trim_end_matches('/');
+
         Ok(Self {
             origin: (!origin.is_empty()).then(|| origin.into()),
         })
@@ -40,6 +41,7 @@ impl TraqUrlClassifier {
     pub fn classify(&self, url: &str) -> Option<Target> {
         let origin = self.origin.as_deref()?;
         let path = url.strip_prefix(origin)?.split(['?', '#']).next()?;
+
         if let Some(id) = path
             .strip_prefix("/files/")
             .filter(|id| ReferenceId::is_hyphenated(id))
@@ -51,6 +53,7 @@ impl TraqUrlClassifier {
             let id = path
                 .strip_prefix("/messages/")
                 .filter(|id| ReferenceId::is_hyphenated(id))?;
+
             Some(Target::Message {
                 id: id.to_ascii_lowercase(),
             })
@@ -71,8 +74,10 @@ mod tests {
             url: String,
             target: serde_json::Value,
         }
+
         let fixtures: Vec<Fixture> =
             serde_json::from_str(include_str!("../../../tests/fixtures/traq-links.json")).unwrap();
+
         for fixture in fixtures {
             let target = match TraqUrlClassifier::new(&fixture.origin)
                 .unwrap()
@@ -82,6 +87,7 @@ mod tests {
                 Some(Target::Message { id }) => serde_json::json!({"type": "message", "id": id}),
                 None => serde_json::Value::Null,
             };
+
             assert_eq!(target, fixture.target, "{}", fixture.name);
         }
     }

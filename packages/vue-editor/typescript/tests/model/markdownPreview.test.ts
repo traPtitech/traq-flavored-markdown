@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 
 import { markdownPreviewKey } from '../../src/internal/markdown/preview.js'
 import { encodeReference } from '../helpers/references.js'
-import { installInputEditorFixture, readSource as source } from './fixture.js'
+import {
+  installInputEditorFixture,
+  readSource as source
+} from './markdownFixture.js'
 import { configure, create } from './previewFixture.js'
 
 installInputEditorFixture()
@@ -31,6 +34,7 @@ describe('Markdown lifecycle', () => {
     expect(markdownPreviewKey.getState(editor.state)?.formats).not.toBe(
       initial?.formats
     )
+
     expect(
       editor.view.dom.querySelector('.markdown-input-strong')?.textContent
     ).toBe('bold')
@@ -45,8 +49,10 @@ describe('Markdown lifecycle', () => {
     expect(
       editor.view.dom.querySelector('.markdown-input-link')?.textContent
     ).toBe('https://example.com')
+
     expect(editor.view.dom.querySelector('a')).toBeNull()
     expect(source(editor)).toBe('URL: https://example.com')
+
     expect(editor.state.selection.head).toBe(
       'URL: https://example.com'.length + 1
     )
@@ -64,6 +70,7 @@ describe('Markdown lifecycle', () => {
     undo(editor.state, editor.view.dispatch)
 
     expect(source(editor)).toBe('URL: https://example.com')
+
     expect(
       editor.view.dom.querySelector('.markdown-input-link')?.textContent
     ).toBe('https://example.com')
@@ -91,6 +98,7 @@ describe('Markdown lifecycle', () => {
     expect(
       editor.view.dom.querySelector('.markdown-input-link')?.textContent
     ).toBe('https://example.com')
+
     expect(editor.state.selection.toJSON()).toEqual(selection)
     expect(source(editor)).toBe('https://example.com')
   })
@@ -227,6 +235,7 @@ describe('Markdown lifecycle', () => {
       configure(editor, { composing: false })
 
       expect(editor.state.selection.head).toBe(position + 3)
+
       expect(
         editor.view.dom.querySelector('.markdown-input-link')?.textContent
       ).toBe('second')
@@ -303,14 +312,17 @@ describe('Markdown lifecycle', () => {
     const editor = create(':traq:')
     configure(editor, { enabled: true, focused: false })
     editor.commands.setTextSelection(1)
+
     expect(
       editor.view.dom.querySelector('.markdown-input-rendered')
     ).not.toBeNull()
+
     editor.view.dispatch(
       editor.state.tr.setMeta(markdownPreviewKey, {
         revealed: [{ from: 0, to: 6 }]
       })
     )
+
     configure(editor, { focused: true })
     expect(editor.view.dom.querySelector('.markdown-input-rendered')).toBeNull()
     expect(source(editor)).toBe(':traq:')

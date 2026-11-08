@@ -10,6 +10,7 @@ pub struct InlineDefinition {
     pub(crate) markers: &'static [u8],
     pub(crate) parse: Arc<ParseRule>,
 }
+
 pub type InlineRule = Rule<InlineDefinition>;
 
 impl InlineRule {

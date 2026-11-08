@@ -8,6 +8,7 @@ pub struct RenderLimits {
     /// Includes writes into temporary captures as well as final output.
     pub work_bytes: usize,
 }
+
 impl Default for RenderLimits {
     fn default() -> Self {
         Self {
@@ -21,6 +22,7 @@ pub struct Renderer {
     preset: RenderPreset,
     limits: RenderLimits,
 }
+
 impl Renderer {
     pub fn new(preset: &RenderPreset) -> Self {
         Self {
@@ -28,14 +30,17 @@ impl Renderer {
             limits: RenderLimits::default(),
         }
     }
+
     #[must_use]
     pub fn with_limits(mut self, limits: RenderLimits) -> Self {
         self.limits = limits;
         self
     }
+
     /// Validation and handler support cover even descendants hidden by a handler.
     pub fn render<'a>(&self, document: impl markdown_ast::DocumentInput<'a>) -> Result<String> {
         let document = document.into_view()?;
+
         for visit in document.walk() {
             if !self
                 .preset
@@ -47,10 +52,12 @@ impl Renderer {
                 });
             }
         }
+
         let context = Context {
             renderer: self,
             work: Cell::new(0),
         };
+
         let mut output = context.output();
         context.children(&document.document().children, &mut output)?;
         Ok(output.text)
@@ -61,6 +68,7 @@ pub struct Context<'a> {
     renderer: &'a Renderer,
     work: Cell<usize>,
 }
+
 impl Context<'_> {
     fn output(&self) -> Output<'_> {
         Output {
@@ -69,6 +77,7 @@ impl Context<'_> {
             work: &self.work,
         }
     }
+
     pub fn node(&self, node: &Node, output: &mut Output<'_>) -> Result<()> {
         let handler = self
             .renderer
@@ -78,14 +87,18 @@ impl Context<'_> {
             .ok_or(Error::UnsupportedNode {
                 payload_type: node.payload_type_name(),
             })?;
+
         handler(node, self, output)
     }
+
     pub fn children(&self, nodes: &[Node], output: &mut Output<'_>) -> Result<()> {
         for node in nodes {
             self.node(node, output)?;
         }
+
         Ok(())
     }
+
     /// Use only when a handler transforms rendered children (for example spoiler
     /// masking or list trimming). The capture shares the total work budget.
     pub fn capture_children(&self, nodes: &[Node]) -> Result<String> {
@@ -102,6 +115,7 @@ pub struct Output<'a> {
     limits: RenderLimits,
     work: &'a Cell<usize>,
 }
+
 impl Output<'_> {
     pub fn push(&mut self, value: &str) -> Result<()> {
         if value.len() > self.limits.output_bytes.saturating_sub(self.text.len()) {
@@ -110,6 +124,7 @@ impl Output<'_> {
                 limit: self.limits.output_bytes,
             });
         }
+
         let work = self
             .work
             .get()
@@ -119,6 +134,7 @@ impl Output<'_> {
                 resource: "work_bytes",
                 limit: self.limits.work_bytes,
             })?;
+
         self.work.set(work);
         self.text.push_str(value);
         Ok(())

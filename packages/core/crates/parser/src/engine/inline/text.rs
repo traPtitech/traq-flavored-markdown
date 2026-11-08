@@ -71,6 +71,7 @@ fn process_rule(
             result.push(token);
             continue;
         };
+
         budget.spend(value.len())?;
 
         let input = TextInput {
@@ -80,8 +81,10 @@ fn process_rule(
         };
 
         let position = source.source_offset(input.range.start)?.get();
+
         let matches = (entry.data.implementation.parse)(&input, budget)
             .map_err(|error| error.at_rule(ParsePhase::Text, entry.name(), position))?;
+
         let mut begin = token.start;
 
         for found in matches {
@@ -106,6 +109,7 @@ fn process_rule(
 
             if start > begin {
                 budget.token()?;
+
                 result.push(Token {
                     start: begin,
                     end: start,

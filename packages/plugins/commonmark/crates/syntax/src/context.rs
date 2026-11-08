@@ -18,6 +18,7 @@ pub(super) fn is_lazy(view: &SourceView, line: ViewRange) -> Result<bool, ParseE
     let Some(lines) = view.context::<LazyLines>() else {
         return Ok(false);
     };
+
     Ok(lines.0.contains(&content_start(view, line)?))
 }
 
@@ -31,12 +32,14 @@ pub(super) fn mark_lazy(
     }
 
     budget.spend(lines.len())?;
+
     let mut state = if let Some(inherited) = view.context::<LazyLines>() {
         budget.spend(inherited.0.len())?;
         inherited.clone()
     } else {
         LazyLines(HashSet::with_capacity(lines.len()))
     };
+
     state.0.extend(lines);
 
     view.set_context(state);

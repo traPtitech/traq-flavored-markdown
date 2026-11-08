@@ -4,11 +4,13 @@ import {
   outputIndex,
   readOutputIndex
 } from '../../contracts/io/output-manifest.ts'
+import { captureProcess } from '../infrastructure/process.ts'
 import { readGoPackageGraph, readNpmPackageGraph } from '../package-graph.ts'
 import { type PackageName, packageRoot, repositoryRoot } from '../paths.ts'
 import { type Version, goVersion } from './version.ts'
 
 export type ReleasePlan = {
+  sourceRevision: string
   version: Version
   packages: { owner: PackageName; name: string; directory: string }[]
   moduleTags: string[]
@@ -20,12 +22,15 @@ export function releasePlan(
   version: Version,
   packages: ReleasePlan['packages'],
   modules: { directory: string; published: boolean }[],
-  generated: string[]
+  generated: string[],
+  sourceRevision: string
 ): ReleasePlan {
   const moduleTags = modules
     .filter(module => module.published)
     .map(module => `${module.directory}/${version.tag}`)
+
   return {
+    sourceRevision,
     version,
     packages,
     moduleTags,
@@ -48,13 +53,19 @@ export function releasePlan(
   }
 }
 
-export async function loadReleasePlan(label: string, root = repositoryRoot) {
+export async function loadReleasePlan(
+  label: string,
+  root = repositoryRoot,
+  sourceRevision?: string
+) {
   const version = goVersion(label)
+
   const [{ manifests, graph }, go, generated] = await Promise.all([
     readNpmPackageGraph(root),
     readGoPackageGraph(root),
     readOutputIndex(root)
   ])
+
   return releasePlan(
     version,
     graph.order.map(owner => ({
@@ -68,17 +79,21 @@ export async function loadReleasePlan(label: string, root = repositoryRoot) {
       ...module,
       published: go.published.includes(module)
     })),
-    generated.outputs.map(output => output.path)
+    generated.outputs.map(output => output.path),
+    sourceRevision ??
+      (await captureProcess('git', ['rev-parse', 'HEAD'], root)).trim()
   )
 }
 
 export type ReleaseAction =
   { kind: 'npm'; name: string } | { kind: 'tag'; name: string }
+
 export type ReleaseState = {
   revision: string
   completed: ReleaseAction[]
   pending: ReleaseAction[]
 }
+
 export type ReleasePorts = {
   npmVersion(name: string, version: string): Promise<boolean>
   tagRevision(tag: string): Promise<string | undefined>
@@ -92,6 +107,7 @@ export async function inspectRelease(
   ports: Pick<ReleasePorts, 'npmVersion' | 'tagRevision'>
 ): Promise<ReleaseState> {
   const state: ReleaseState = { revision, completed: [], pending: [] }
+
   for (const item of plan.packages) {
     const action: ReleaseAction = { kind: 'npm', name: item.name }
     ;((await ports.npmVersion(item.name, plan.version.npm))
@@ -99,17 +115,21 @@ export async function inspectRelease(
       : state.pending
     ).push(action)
   }
+
   for (const tag of [plan.version.tag, ...plan.moduleTags]) {
     const current = await ports.tagRevision(tag)
-    if (current !== undefined && current !== revision)
+    if (current !== undefined && current !== revision) {
       throw new Error(
         `Published tag ${tag} points to ${current}, expected ${revision}`
       )
+    }
+
     ;(current ? state.completed : state.pending).push({
       kind: 'tag',
       name: tag
     })
   }
+
   return state
 }
 
@@ -121,10 +141,12 @@ export async function resumeRelease(
   npmOnly = false
 ) {
   const state = await inspectRelease(plan, revision, ports)
+
   for (const action of state.pending) {
-    if (action.kind === 'npm')
+    if (action.kind === 'npm') {
       await ports.publishPackage(action.name, plan.version)
-    else if (!npmOnly) await ports.publishTag(action.name, revision)
+    } else if (!npmOnly) await ports.publishTag(action.name, revision)
   }
+
   return state
 }

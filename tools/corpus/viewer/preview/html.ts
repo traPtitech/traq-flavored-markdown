@@ -3,6 +3,7 @@ const allowed = new Set(
     ' '
   )
 )
+
 const styleNames = [
   'height',
   'width',
@@ -24,22 +25,28 @@ export function createInertPreviewFragment(
   template.innerHTML = html
 
   const copy = (node: Node): Node => {
-    if (node.nodeType === Node.TEXT_NODE)
+    if (node.nodeType === Node.TEXT_NODE) {
       return document.createTextNode(node.textContent ?? '')
+    }
+
     if (node.nodeType !== Node.ELEMENT_NODE) return document.createTextNode('')
+
     const element = node as Element
 
     if (element.localName === 'img') {
       const span = document.createElement('span')
       span.className = 'r-image'
+
       span.textContent =
         '[画像: ' + (element.getAttribute('alt') || '外部画像') + ']'
+
       return span
     }
 
     if (!allowed.has(element.localName)) return document.createTextNode('')
 
     const name = element.localName === 'a' ? 'span' : element.localName
+
     const value = ['svg', 'path', 'line'].includes(name)
       ? document.createElementNS('http://www.w3.org/2000/svg', name)
       : document.createElement(name)
@@ -63,10 +70,12 @@ export function createInertPreviewFragment(
         value.setAttribute(attr, element.getAttribute(attr)!)
       }
     }
+
     for (const name of element.classList) value.classList.add(`preview-${name}`)
 
     for (const key of styleNames) {
       const text = (element as HTMLElement).style?.getPropertyValue(key)
+
       if (text && !/url|var\(|attr\(/i.test(text)) {
         ;(value as HTMLElement).style?.setProperty(key, text)
       }
@@ -80,12 +89,15 @@ export function createInertPreviewFragment(
     for (const child of Array.from(element.childNodes)) {
       value.appendChild(copy(child))
     }
+
     return value
   }
 
   const result = document.createDocumentFragment()
+
   for (const child of Array.from(template.content.childNodes)) {
     result.appendChild(copy(child))
   }
+
   return result
 }

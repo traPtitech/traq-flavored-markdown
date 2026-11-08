@@ -15,6 +15,7 @@ pub struct DocumentLimits {
     pub nodes: usize,
     pub depth: usize,
 }
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArtifactLimits {
@@ -27,6 +28,7 @@ pub struct ArtifactLimits {
 /// Both the native exporter and running module derive limits from their owners.
 pub fn metadata() -> ArtifactLimits {
     let document = markdown_ast::ValidationLimits::default();
+
     ArtifactLimits {
         input_bytes: MAX_INPUT,
         output_bytes: MAX_OUTPUT,

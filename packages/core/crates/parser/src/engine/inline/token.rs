@@ -10,6 +10,7 @@ pub struct DelimiterPolicy {
     pub single: fn() -> AnyPayload,
     pub combined: Option<fn() -> AnyPayload>,
 }
+
 impl DelimiterPolicy {
     pub const fn simple(single: fn() -> AnyPayload) -> Self {
         Self {
@@ -20,6 +21,7 @@ impl DelimiterPolicy {
         }
     }
 }
+
 #[derive(Clone, Copy)]
 pub struct DelimiterRun {
     pub length: usize,
@@ -41,7 +43,6 @@ pub struct Pairing {
 pub struct InlineMatch {
     pub end: ViewOffset,
     pub action: InlineAction,
-    pub syntax: Option<crate::syntax::SourceSyntax>,
 }
 
 pub enum InlineAction {
@@ -55,12 +56,14 @@ pub enum InlineAction {
         payload: AnyPayload,
         children: Vec<Node>,
         inhibit_brackets: bool,
+        syntax: Option<crate::syntax::SourceSyntax>,
     },
 
     /// Remove trailing literal bytes before emitting a node, e.g. a hard break.
     TrimmedNode {
         trim: usize,
         payload: AnyPayload,
+        syntax: Option<crate::syntax::SourceSyntax>,
     },
 
     Delimiter(Pairing),
@@ -73,33 +76,36 @@ pub enum InlineAction {
     CloseBracket {
         payload: AnyPayload,
         inhibit_brackets: bool,
+        syntax: Option<crate::syntax::SourceSyntax>,
     },
 
     DiscardBracket,
 }
 
 impl InlineMatch {
-    #[must_use]
-    pub fn with_syntax(mut self, syntax: Option<crate::syntax::SourceSyntax>) -> Self {
-        self.syntax = syntax;
-        self
-    }
     pub fn text(end: ViewOffset, value: String) -> Self {
         Self {
             end,
             action: InlineAction::Text(value),
-            syntax: None,
         }
     }
 
     pub fn leaf(end: ViewOffset, payload: AnyPayload) -> Self {
+        Self::leaf_with_syntax(end, payload, None)
+    }
+
+    pub fn leaf_with_syntax(
+        end: ViewOffset,
+        payload: AnyPayload,
+        syntax: Option<crate::syntax::SourceSyntax>,
+    ) -> Self {
         Self {
             end,
-            syntax: None,
             action: InlineAction::Node {
                 payload,
                 children: vec![],
                 inhibit_brackets: false,
+                syntax,
             },
         }
     }
@@ -108,7 +114,6 @@ impl InlineMatch {
         Self {
             end,
             action: InlineAction::Literal,
-            syntax: None,
         }
     }
 }

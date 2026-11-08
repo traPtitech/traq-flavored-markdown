@@ -23,6 +23,7 @@ function document() {
     ]
   })
 }
+
 function records() {
   return {
     nodes: [
@@ -45,6 +46,7 @@ test('source facts are immutable and belong to exactly one document snapshot', (
   input.nodes[1]!.content[0].end = 9
   expect(parsed.syntaxFor(node).source!.content[0].end).toBe(8)
   expect(Object.isFrozen(parsed.syntaxFor(node).source!.content)).toBe(true)
+
   expect(() => parsed.syntaxFor(document().document.children[0])).toThrow(
     /does not belong/
   )
@@ -79,8 +81,9 @@ test('malformed records and source boundaries are rejected before binding', () =
       ],
       detached: []
     }
-  ])
+  ]) {
     expect(() => bindSyntax(document(), input)).toThrow()
+  }
 })
 
 test('flat records bind deeply nested ASTs without a recursive wire schema', () => {
@@ -96,18 +99,24 @@ test('flat records bind deeply nested ASTs without a recursive wire schema', () 
       }
     ]
   } as MutableNode
-  for (let index = 0; index < 60; index++)
+
+  for (let index = 0; index < 60; index++) {
     root = {
       kind: 'commonmark.blockquote',
       span: { start: 0, end: 1 },
       data: {},
       children: [root]
     }
+  }
+
   const context = schema.document({ source: 'x', children: [root] })
+
   const parsed = bindSyntax(context, {
     nodes: Array(62).fill(null),
     detached: []
   })
-  for (const node of context.walk())
+
+  for (const node of context.walk()) {
     expect(parsed.syntaxFor(node).source).toBeNull()
+  }
 })

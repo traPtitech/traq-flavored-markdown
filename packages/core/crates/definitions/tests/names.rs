@@ -49,6 +49,7 @@ fn scope_uses_parent_identity_not_a_joined_display_path() {
 
     // Distinct group instances with equal names collide when both are selected.
     let unrelated = PluginDeclaration::group("generic").plugin("other");
+
     assert_eq!(
         validate_names([&left, &unrelated]),
         Err(NameCollision {

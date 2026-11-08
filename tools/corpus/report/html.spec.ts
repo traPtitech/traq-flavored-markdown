@@ -68,8 +68,9 @@ test('malformed HTML, duplicate attributes and parser-inserted elements remain u
     '<a href="/outer"><a href="/inner">x</a></a>',
     '<div/>',
     '<table><tr><td>x</td></tr></table>'
-  ])
+  ]) {
     expect(normalize(source)).toBeUndefined()
+  }
 })
 
 test('HTML spelling treats an HTTPS prefix on scheme-relative hrefs as equivalent', () => {
@@ -84,6 +85,7 @@ test('HTML spelling treats an HTTPS prefix on scheme-relative hrefs as equivalen
       expect(normalize(before)).toBe(normalize(after))
     }
   }
+
   expect(normalize('<a href="&#47;&#47;trap.jp">資料</a>')).toBe(
     normalize('<a href="https://trap.jp">資料</a>')
   )

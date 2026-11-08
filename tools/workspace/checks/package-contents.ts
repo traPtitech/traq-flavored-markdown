@@ -5,24 +5,31 @@ import { captureProcess } from '../infrastructure/process.ts'
 import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot, sdkRoot } from '../paths.ts'
+import { checkIsolatedPackages } from './isolated-packages.ts'
 import { readNpmPack } from './npm-pack.ts'
 
 const capture = (command: string, args: string[], cwd: string) =>
   captureProcess(command, args, cwd, {
     log: message => console.log(`[check:package] ${message}`)
   })
+
 const bun = Bun.argv[0]
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+
 const archiveName = (archive: string) =>
   archive.slice(
     Math.max(archive.lastIndexOf('/'), archive.lastIndexOf('\\')) + 1
   )
+
 const { graph, manifests } = await readNpmPackageGraph()
 const packageNames = graph.order
+
 await withTempDirectory('markdown-packages-', async temporaryDirectory => {
   const archives: string[] = []
+
   for (const repo of packageNames) {
     const cwd = packageRoot(repo)
+
     const packed = readNpmPack(
       await capture(
         npm,
@@ -37,10 +44,12 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       ),
       manifests[repo].name
     )
+
     const archive = path.join(temporaryDirectory, packed.filename)
     archives.push(archive)
     const files = new Set(packed.files.map(file => file.path))
     const manifest = await Bun.file(path.join(cwd, 'package.json')).json()
+
     const exported = (value: unknown): string[] =>
       typeof value === 'string'
         ? value.includes('*')
@@ -49,6 +58,7 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
         : value && typeof value === 'object'
           ? Object.values(value).flatMap(exported)
           : []
+
     for (const name of [
       'LICENSE',
       ...exported(manifest.exports),
@@ -56,9 +66,11 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       ...(repo === 'vue-editor'
         ? []
         : ['dist/renderer/index.js', 'dist/renderer/index.d.ts'])
-    ])
+    ]) {
       if (!files.has(name)) throw Error(repo + ': missing ' + name)
-    if (repo === 'sdk')
+    }
+
+    if (repo === 'sdk') {
       for (const directory of [
         'traq/messages',
         'traq/profile',
@@ -75,23 +87,40 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
             file =>
               file.startsWith(`dist/${directory}/`) && file.endsWith('.d.ts')
           )
-        )
+        ) {
           throw Error(
             `sdk: missing implementation/declarations in ${directory}`
           )
+        }
       }
-    for (const name of files)
-      if (/^(?:typescript|crates|go|tests|node_modules)\//.test(name))
+    }
+
+    for (const name of files) {
+      if (/^(?:typescript|crates|go|tests|node_modules)\//.test(name)) {
         throw Error(repo + ': shipped source ' + name)
-    if (repo !== 'sdk' && [...files].some(n => n.endsWith('.wasm')))
+      }
+    }
+
+    if (repo !== 'sdk' && [...files].some(n => n.endsWith('.wasm'))) {
       throw Error('Unexpected Wasm in ' + repo)
+    }
   }
+
+  await checkIsolatedPackages(
+    packageNames.map((owner, index) => ({
+      name: manifests[owner].name,
+      archive: archives[index],
+      root: packageRoot(owner)
+    }))
+  )
+
   const packageDependencies = Object.fromEntries(
     packageNames.map((name, index) => [
       manifests[name].name,
       `file:./${archiveName(archives[index])}`
     ])
   )
+
   await Bun.write(
     `${temporaryDirectory}/package.json`,
     JSON.stringify({
@@ -101,6 +130,7 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       overrides: packageDependencies
     })
   )
+
   await capture(
     npm,
     [
@@ -113,6 +143,7 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
     ],
     temporaryDirectory
   )
+
   // Resolve the public SCSS using only the installed package tree.
   const sass = path.join(
     path.dirname(
@@ -122,25 +153,33 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
     ),
     'sass.js'
   )
+
   await Bun.write(
     `${temporaryDirectory}/theme.scss`,
     '@use "pkg:@traq-flavored-markdown/sdk/styles/index";\n'
   )
+
   await capture(
     bun,
     [sass, '--pkg-importer=node', '--no-source-map', 'theme.scss', 'theme.css'],
     temporaryDirectory
   )
+
   const theme = await Bun.file(`${temporaryDirectory}/theme.css`).text()
-  for (const selector of ['.markdown-body', '.spoiler', '.katex-block'])
-    if (!theme.includes(selector))
+
+  for (const selector of ['.markdown-body', '.spoiler', '.katex-block']) {
+    if (!theme.includes(selector)) {
       throw Error('Packed SCSS missing ' + selector)
+    }
+  }
+
   const tsc = path.join(
     path.dirname(
       Bun.fileURLToPath(import.meta.resolve('@typescript/native/package.json'))
     ),
     'bin/tsc'
   )
+
   for (const [source, name] of [
     ['typescript/tests/package-consumer', 'sdk'],
     ['typescript/tests/rendering', 'renderer']
@@ -163,10 +202,12 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
         temporaryDirectory
       )
     }
+
     await Bun.write(
       `${temporaryDirectory}/${name}.ts`,
       Bun.file(path.join(sdkRoot, source, 'types.ts'))
     )
+
     await capture(
       bun,
       [
@@ -183,6 +224,7 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       ],
       temporaryDirectory
     )
+
     await Bun.write(
       `${temporaryDirectory}/${name}.ts`,
       Bun.file(
@@ -193,20 +235,25 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
         )
       )
     )
+
     const contract = await Bun.file(
       path.join(sdkRoot, 'dist', 'contract.json')
     ).json()
+
     await Bun.stdout.write(
       await capture(bun, [name + '.ts', contract.sha256], temporaryDirectory)
     )
+
     await Bun.stdout.write(
       await capture('node', [name + '.ts', contract.sha256], temporaryDirectory)
     )
   }
+
   await Bun.write(
     `${temporaryDirectory}/vue-editor.ts`,
     Bun.file(path.join(packageRoot('vue-editor'), 'scripts', 'consumer.ts'))
   )
+
   await capture(
     bun,
     [
@@ -223,8 +270,10 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
     ],
     temporaryDirectory
   )
+
   await capture(bun, ['vue-editor.ts'], temporaryDirectory)
   await capture('node', ['vue-editor.ts'], temporaryDirectory)
+
   console.log(
     `${packageNames.length} packed packages: SDK, renderer, declarations, CSS and Wasm integration passed`
   )

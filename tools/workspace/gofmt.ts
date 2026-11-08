@@ -16,6 +16,7 @@ const goFilePaths = [
 ].filter(
   file => !/(?:^|\/)(?:\.git|\.private|node_modules|target)\//.test(file)
 )
+
 const result = await $`gofmt ${check ? '-l' : '-w'} ${goFilePaths}`
   .cwd(repositoryRoot)
   .nothrow()
@@ -25,6 +26,7 @@ if (result.exitCode !== 0) {
 }
 
 const output = result.text()
+
 if (check && output.trim()) {
   console.error(output.trim())
   console.error('Run bun run format:go to fix these files.')

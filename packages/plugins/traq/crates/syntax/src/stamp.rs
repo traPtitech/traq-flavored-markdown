@@ -10,6 +10,7 @@ use std::sync::LazyLock;
 pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> =
         std::sync::LazyLock::new(|| InlineRule::new(b":", parse).named("stamp"));
+
     &RULE
 }
 
@@ -20,6 +21,7 @@ fn parse(
     let tail = input.tail();
     let limit = tail[1..].find(':').map_or(tail.len(), |n| n + 2);
     budget.spend(limit)?;
+
     if !tail[..limit].ends_with(':') {
         return Ok(None);
     }
@@ -44,9 +46,11 @@ fn parse_stamp(literal: &str) -> Option<Stamp> {
             )
             .expect("valid HSL stamp pattern")
         });
+
         let end = inner.find(')')? + 1;
         let name = &inner[..end];
         let captures = HSL.captures(name)?;
+
         (
             StampKind::HslColor {
                 hue: captures["hue"].bytes().fold(0u16, |value, digit| {
@@ -61,6 +65,7 @@ fn parse_stamp(literal: &str) -> Option<Stamp> {
         let split = inner.find('.').unwrap_or(inner.len());
         let name = &inner[..split];
         let suffix = &inner[split..];
+
         let kind = if let Some(user) = name.strip_prefix('@') {
             let bare = user.strip_prefix("Webhook#").unwrap_or(user);
             if bare.is_empty()
@@ -70,6 +75,7 @@ fn parse_stamp(literal: &str) -> Option<Stamp> {
             {
                 return None;
             }
+
             StampKind::User { name: user.into() }
         } else if let Some(color) = hex_color(name) {
             color
@@ -82,6 +88,7 @@ fn parse_stamp(literal: &str) -> Option<Stamp> {
         } else {
             return None;
         };
+
         (kind, suffix)
     };
 
@@ -97,7 +104,9 @@ fn hex_color(name: &str) -> Option<StampKind> {
     if !matches!(digits.len(), 3 | 4 | 6 | 8) || !digits.bytes().all(|c| c.is_ascii_hexdigit()) {
         return None;
     }
+
     let value = u32::from_str_radix(digits, 16).ok()?;
+
     let value = if digits.len() <= 4 {
         (0..digits.len()).rev().fold(0, |expanded, offset| {
             (expanded << 8) | (((value >> (offset * 4)) & 0xf) * 0x11)
@@ -105,6 +114,7 @@ fn hex_color(name: &str) -> Option<StampKind> {
     } else {
         value
     };
+
     Some(if matches!(digits.len(), 3 | 6) {
         StampKind::HexColor { rgb: value }
     } else {
@@ -120,6 +130,7 @@ fn percentage(decimal: &str) -> f64 {
 
 fn parse_effects(suffix: &str) -> Option<StampEffects> {
     let mut effects = StampEffects::default();
+
     if suffix.is_empty() {
         return Some(effects);
     }
@@ -129,21 +140,25 @@ fn parse_effects(suffix: &str) -> Option<StampEffects> {
             "ex-large" => effects.size = StampSize::ExLarge,
             "large" => effects.size = StampSize::Large,
             "small" => effects.size = StampSize::Small,
+
             animation => {
                 let canonical = match animation {
                     "marquee" => "conga",
                     "marquee-inv" => "conga-inv",
                     name => name,
                 };
+
                 effects
                     .animations
                     .push(StampAnimation::from_name(canonical)?);
             }
         }
-        if effects.animations.len() > 5 {
+
+        if effects.animations.len() > markdown_traq_contracts::MAX_STAMP_ANIMATIONS {
             return None;
         }
     }
+
     Some(effects)
 }
 
@@ -153,6 +168,7 @@ pub fn plugin() -> &'static SyntaxPlugin {
         plugin.add(inline_rule());
         plugin
     });
+
     &PLUGIN
 }
 
@@ -177,11 +193,13 @@ mod tests {
         ] {
             let literal = format!(":0x{digits}.rotate.small:");
             let stamp = parse_stamp(&literal).unwrap();
+
             assert_eq!(stamp.kind, expected, "{literal}");
             assert_eq!(stamp.literal, literal);
             assert_eq!(stamp.effects.animations, vec![StampAnimation::Rotate]);
             assert_eq!(stamp.effects.size, StampSize::Small);
         }
+
         for name in [
             "0x",
             "0xf",
@@ -194,6 +212,7 @@ mod tests {
             "foo0xf00",
         ] {
             let stamp = parse_stamp(&format!(":{name}:")).unwrap();
+
             assert_eq!(stamp.kind, StampKind::Normal { name: name.into() });
         }
     }
@@ -206,22 +225,26 @@ mod tests {
                 name: "wave".into()
             }
         );
+
         assert_eq!(
             parse_stamp(":@Webhook#alice:").unwrap().kind,
             StampKind::User {
                 name: "Webhook#alice".into()
             }
         );
+
         assert_eq!(
             parse_stamp(":0x123456:").unwrap().kind,
             StampKind::HexColor { rgb: 0x123456 }
         );
+
         for name in ["foo0x123456", "0x1234567"] {
             assert_eq!(
                 parse_stamp(&format!(":{name}:")).unwrap().kind,
                 StampKind::Normal { name: name.into() }
             );
         }
+
         assert_eq!(
             parse_stamp(":hsl(0, 20.5%, 30%):").unwrap().kind,
             StampKind::HslColor {
@@ -230,6 +253,7 @@ mod tests {
                 lightness: 30.0
             }
         );
+
         assert!(parse_stamp(":foohsl(0, 20%, 30%):").is_none());
         assert!(parse_stamp(":hsl(0, 20%, 30%)junk:").is_none());
     }
@@ -237,6 +261,7 @@ mod tests {
     #[test]
     fn parses_and_normalizes_effects_before_rendering() {
         let stamp = parse_stamp(":wave.marquee.large.rotate.small:").unwrap();
+
         assert_eq!(
             stamp.effects,
             StampEffects {
@@ -244,6 +269,7 @@ mod tests {
                 size: StampSize::Small
             }
         );
+
         assert_eq!(
             parse_stamp(":hsl(0, 20%, 30%).rotate-inv:")
                 .unwrap()
@@ -251,6 +277,7 @@ mod tests {
                 .animations,
             vec![StampAnimation::RotateInv]
         );
+
         for invalid in [
             ":wave.unknown:",
             ":wave..rotate:",
@@ -265,7 +292,9 @@ mod tests {
     fn color_values_are_canonical_but_authored_notation_is_retained() {
         let literal = ":hsl(0000720, 200.5%, 030.25%).rotate:";
         let stamp = parse_stamp(literal).unwrap();
+
         assert_eq!(stamp.literal, literal);
+
         assert_eq!(
             stamp.kind,
             StampKind::HslColor {
@@ -274,8 +303,10 @@ mod tests {
                 lightness: 30.25
             }
         );
+
         let huge = format!(":hsl({}, {}%, 0%):", "9".repeat(1000), "9".repeat(1000));
         let stamp = parse_stamp(&huge).unwrap();
+
         assert_eq!(
             stamp.kind,
             StampKind::HslColor {

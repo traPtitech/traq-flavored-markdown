@@ -10,18 +10,23 @@ import { compareSources } from './runner.ts'
 test('TypeScript follows the language-independent measurement fixture', async () => {
   const order: string[] = [],
     differences: DifferenceRow[] = []
+
   const result = await compareSources({
     runId: 'shared-fixture',
     warmups: fixture.warmups,
     max: fixture.max,
+
     input: async function* () {
       for (const source of fixture.sources) yield { source }
     },
+
     profiles: [
       {
         id: 'plainText',
+
         before: source => {
           order.push('before:' + source)
+
           return {
             outcome: {
               kind: 'text',
@@ -29,10 +34,14 @@ test('TypeScript follows the language-independent measurement fixture', async ()
             }
           }
         },
+
         after: source => {
           order.push('after:' + source)
-          if (fixture.errors.includes(source))
+
+          if (fixture.errors.includes(source)) {
             throw new Error(fixture.after[source as keyof typeof fixture.after])
+          }
+
           return {
             outcome: {
               kind: 'text',
@@ -42,10 +51,12 @@ test('TypeScript follows the language-independent measurement fixture', async ()
         }
       }
     ],
+
     difference: row => {
       differences.push(row)
     }
   })
+
   expect(order).toEqual(fixture.order)
   expect(differences).toEqual(fixture.differences.map(parseDifferenceRow))
   expect(result.messages).toBe(3)

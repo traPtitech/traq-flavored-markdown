@@ -16,20 +16,25 @@ pub(super) fn cells(raw: &str, origin: usize) -> Vec<Range<usize>> {
     }
 
     cells.push(origin + begin..origin + end);
+
     if cells.first().is_some_and(Range::is_empty) {
         cells.remove(0);
     }
+
     if cells.last().is_some_and(Range::is_empty) {
         cells.pop();
     }
+
     cells
 }
 
 pub(super) fn escaped_pipe(raw: &str, pos: usize) -> bool {
     let mut backslashes = 0;
+
     while pos > backslashes && raw.as_bytes()[pos - backslashes - 1] == b'\\' {
         backslashes += 1;
     }
+
     backslashes % 2 != 0
 }
 

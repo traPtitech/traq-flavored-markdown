@@ -37,6 +37,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
     ] {
         for id in &forms {
             let position = document.children.len();
+
             document.children.push(Node::leaf(
                 Span {
                     start: position,
@@ -52,6 +53,7 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
     }
 
     let result = extractor.extract(&document).unwrap();
+
     assert_eq!(result.mentions, vec![id; 7]);
     assert_eq!(result.group_mentions, vec![id; 7]);
     assert_eq!(result.channel_links, vec![id; 7]);
@@ -67,5 +69,6 @@ fn normalized_references_preserve_order_duplicates_and_categories() {
     );
 
     document.children.clear();
+
     assert_eq!(extractor.extract(&document).unwrap(), References::default());
 }

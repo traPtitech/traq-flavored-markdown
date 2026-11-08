@@ -14,9 +14,11 @@ export type AdapterOutput = {
   outcome: Exclude<Outcome, { kind: 'error' }>
   embeddings?: unknown
 }
+
 export type Adapter = (source: string) => AdapterOutput | Promise<AdapterOutput>
 export type Profile = { id: ProfileId; before: Adapter; after: Adapter }
 type Measured = { outcome: Outcome; embeddings?: unknown; ms: number }
+
 export type EmbeddingDifference = {
   runId: string
   index: number
@@ -25,6 +27,7 @@ export type EmbeddingDifference = {
   before: unknown
   after: unknown
 }
+
 type Measurement = Omit<
   ProfileResult,
   'messages' | 'initialization' | 'actualWarmups'
@@ -33,8 +36,10 @@ type Measurement = Omit<
 export function summarize(values: readonly number[]): Timing {
   const sorted = [...values].sort((a, b) => a - b)
   const totalMs = sorted.reduce((sum, value) => sum + value, 0)
+
   const percentile = (p: number) =>
     (sorted[Math.floor((sorted.length - 1) * p)] ?? 0) * 1000
+
   return {
     calls: sorted.length,
     totalMs,
@@ -51,6 +56,7 @@ async function measure(
   now: () => number
 ): Promise<Measured> {
   const start = now()
+
   try {
     const output = adapter(source)
     const value = output instanceof Promise ? await output : output
@@ -92,14 +98,18 @@ export async function compareSources({
     !runId ||
     !profiles.length ||
     new Set(profiles.map(profile => profile.id)).size !== profiles.length
-  )
+  ) {
     throw new Error('Comparison requires a run ID and unique profiles')
+  }
+
   if (
     (max !== Infinity && (!Number.isSafeInteger(max) || max <= 0)) ||
     !Number.isSafeInteger(warmups) ||
     warmups < 0
-  )
+  ) {
     throw new Error('Invalid measurement bounds')
+  }
+
   const stats = new Map(
     profiles.map(profile => [
       profile.id,
@@ -113,21 +123,29 @@ export async function compareSources({
       }
     ])
   )
+
   let actualWarmups = 0
-  if (warmups > 0)
+
+  if (warmups > 0) {
     for await (const { source } of input()) {
       for (const profile of profiles) {
         await measure(profile.before, source, now)
         await measure(profile.after, source, now)
       }
+
       if (++actualWarmups >= warmups) break
     }
+  }
+
   const start = now()
   let messages = 0
+
   for await (const { source } of input()) {
     if (messages >= max) break
+
     for (const profile of profiles) {
       let before: Measured, after: Measured
+
       if (messages % 2 === 0) {
         before = await measure(profile.before, source, now)
         after = await measure(profile.after, source, now)
@@ -135,17 +153,20 @@ export async function compareSources({
         after = await measure(profile.after, source, now)
         before = await measure(profile.before, source, now)
       }
+
       const current = stats.get(profile.id)!
       current.before.push(before.ms)
       current.after.push(after.ms)
       current.beforeErrors += Number(isFailure(before.outcome))
       current.afterErrors += Number(isFailure(after.outcome))
+
       if (
         !isFailure(before.outcome) &&
         !isFailure(after.outcome) &&
         JSON.stringify(before.embeddings) !== JSON.stringify(after.embeddings)
       ) {
         current.embeddingDifferences++
+
         await embeddingDifference({
           runId,
           index: messages,
@@ -155,8 +176,10 @@ export async function compareSources({
           after: after.embeddings
         })
       }
+
       if (!outcomesEqual(before.outcome, after.outcome)) {
         current.differences++
+
         await difference({
           runId,
           index: messages,
@@ -167,10 +190,12 @@ export async function compareSources({
         })
       }
     }
+
     messages++
     progress(messages)
     if (messages >= max) break
   }
+
   const results: Partial<Record<ProfileId, Measurement>> = Object.fromEntries(
     [...stats].map(([profile, value]) => [
       profile,
@@ -181,6 +206,7 @@ export async function compareSources({
       }
     ])
   )
+
   return {
     messages,
     actualWarmups,

@@ -33,6 +33,7 @@ test('empty quote presentation still honors a node-bound child replacement', () 
     span: { start: 0, end: 1 },
     children: []
   }
+
   expect(
     createHtmlRenderer().render(
       { source: '>', children: [quote] },
@@ -46,11 +47,14 @@ test('SDK composes returned built-in values with third-party plugins', () => {
     'annotation',
     () => '<mark>original</mark>'
   )
+
   const updated = original.withReplacedHandler(
     'annotation',
     () => '<mark>updated</mark>'
   )
+
   const source = '*'
+
   const document: ReadonlyDocument = {
     source,
     children: [
@@ -61,8 +65,10 @@ test('SDK composes returned built-in values with third-party plugins', () => {
       }
     ]
   }
+
   const customized = createHtmlRenderer({
     plugins: [updated],
+
     configurePlugins(plugins) {
       return {
         ...plugins,
@@ -75,9 +81,11 @@ test('SDK composes returned built-in values with third-party plugins', () => {
   })
 
   expect(customized.render(document)).toBe('<mark>updated</mark>')
+
   expect(createHtmlRenderer({ plugins: [original] }).render(document)).toBe(
     '<mark>original</mark>'
   )
+
   expect(
     customized.render({
       source: 'x',
@@ -93,9 +101,11 @@ test('message preparation includes custom inline roles before validating builtin
     role: 'inline',
     children: { kind: 'leaf' }
   })
+
   const plugin = new RenderPlugin(
     new Declaration('inline-annotation')
   ).withHandler(annotation, () => '<mark>custom</mark>')
+
   const input = {
     source: '',
     children: [
@@ -109,11 +119,13 @@ test('message preparation includes custom inline roles before validating builtin
       }
     ]
   }
+
   const rendered = messageRenderers({
     origin,
     plugins: [plugin],
     schema: schema.extend([annotation])
   }).render(input)
+
   expect(rendered.standard.html).toBe('<p><mark>custom</mark></p>\n')
   expect(rendered.condensed.html).toBe('<mark>custom</mark>')
 })
@@ -143,6 +155,7 @@ function link(
 test('resource identity includes its kind when file and message UUIDs coincide', () => {
   const message = `${origin}/messages/${id}`
   const source = `${file}\n${message}`
+
   const document = messageContext({
     source,
     children: [
@@ -162,6 +175,7 @@ test('resource identity includes its kind when file and message UUIDs coincide',
       }
     ]
   })
+
   expect(analyzeMessage(document, origin).cards).toEqual([
     { type: 'file', id },
     { type: 'message', id }
@@ -170,6 +184,7 @@ test('resource identity includes its kind when file and message UUIDs coincide',
 
 test('message analysis suppresses trailing cards without changing the AST', () => {
   const source = `body\n${file}`
+
   const paragraph: ReadonlyNode = {
     kind: names.Paragraph,
     data: {},
@@ -180,6 +195,7 @@ test('message analysis suppresses trailing cards without changing the AST', () =
       link('linkify', file, 5)
     ]
   }
+
   const document: ReadonlyDocument = { source, children: [paragraph] }
   const original = structuredClone(document)
 
@@ -194,6 +210,7 @@ test('message analysis suppresses trailing cards without changing the AST', () =
 
 test('rejected links remain visible and do not produce cards', () => {
   const source = `body\n${file}`
+
   const document: ReadonlyDocument = {
     source,
     children: [
@@ -209,7 +226,9 @@ test('rejected links remain visible and do not produce cards', () => {
       }
     ]
   }
+
   const original = structuredClone(document)
+
   const rejected = messageRenderers({
     origin,
     links: { validate: () => false }
@@ -220,12 +239,14 @@ test('rejected links remain visible and do not produce cards', () => {
     expect(result.html).toContain(file)
     expect(result.cards).toEqual([])
   }
+
   expect(endsWithResourceCard(document, origin, () => false)).toBe(false)
   expect(document).toEqual(original)
 })
 
 test('condensed labels come from an overlay while explicit links retain markup', () => {
   const source = `[file](${file})`
+
   const document: ReadonlyDocument = {
     source,
     children: [
@@ -237,6 +258,7 @@ test('condensed labels come from an overlay while explicit links retain markup',
       }
     ]
   }
+
   const standard = views.standard.render(document).html
   const condensed = views.condensed.render(document).html
   expect(standard).toContain('>file</a>')
@@ -245,10 +267,12 @@ test('condensed labels come from an overlay while explicit links retain markup',
 
   const context = messageContext(document)
   const analysis = messageRenderPlan(analyzeMessage(context, origin))
+
   analysis.childText.set(
     context.node(document.children[0].children![0]),
     '<img src=x>'
   )
+
   expect(
     createHtmlRenderer().createSession(context).render(analysis)
   ).toContain('>&lt;img src=x&gt;</a>')
@@ -257,21 +281,26 @@ test('condensed labels come from an overlay while explicit links retain markup',
 test('both message views share an owned preparation and reject invalid trees before analysis', () => {
   const node = text('before', 0)
   const document = { source: 'before', children: [node] }
+
   const prepared = views.prepare(document)
   ;(node.data as { value: string }).value = 'after'
   expect(prepared.standard().html).toBe('before')
   expect(prepared.condensed().html).toBe('before')
+
   expect(views.render(document)).toEqual({
     standard: views.standard.render(document),
     condensed: views.condensed.render(document)
   })
+
   const cycle: MutableNode = {
     kind: 'custom',
     data: {},
     span: { start: 0, end: 0 },
     children: []
   }
+
   cycle.children!.push(cycle)
+
   expect(() =>
     views.standard.render({ source: '', children: [cycle] })
   ).toThrow(/tree/)

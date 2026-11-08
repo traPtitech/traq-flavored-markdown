@@ -1,6 +1,44 @@
 import { expect, test } from 'bun:test'
 
 import { importSpecifiers } from './import-specifiers.ts'
+import { validateTypescriptDependency } from './typescript-dependencies.ts'
+
+test('public imports must satisfy both ownership and direct runtime declarations', () => {
+  const check = (specifier: string, peers: Record<string, string> = {}) =>
+    validateTypescriptDependency({
+      owner: 'commonmark-plugin',
+      root: '/workspace/commonmark',
+      file: '/workspace/commonmark/typescript/src/index.ts',
+      specifier,
+      manifest: {
+        name: '@traq-flavored-markdown/commonmark-plugin',
+        peerDependencies: peers
+      },
+      owners: new Map([
+        ['@traq-flavored-markdown/core', 'core'],
+        ['@traq-flavored-markdown/sdk', 'sdk']
+      ])
+    })
+
+  expect(() => check('@traq-flavored-markdown/core')).toThrow('undeclared')
+
+  expect(() =>
+    check('@traq-flavored-markdown/core', {
+      '@traq-flavored-markdown/core': '0.3.0'
+    })
+  ).not.toThrow()
+
+  expect(() =>
+    check('@traq-flavored-markdown/sdk', {
+      '@traq-flavored-markdown/sdk': '0.3.0'
+    })
+  ).toThrow('upward')
+
+  expect(() => check('highlight.js/lib/core')).toThrow('undeclared')
+  expect(() => check('vue', { vue: '*' })).toThrow('UI dependency')
+  expect(() => check('node:fs')).toThrow('host runtime')
+  expect(() => check('../../../sdk/index.js')).toThrow('escapes')
+})
 
 test('keeps authored imports, re-exports and literal module loads', () => {
   expect(
@@ -11,12 +49,22 @@ test('keeps authored imports, re-exports and literal module loads', () => {
        export { value } from 'exports'
        const lazy = import('lazy')
        const legacy = require('legacy')
+       type Inline = import('inline-types').Node
+       import Equals = require('equals')
        const computed = import(name)
        const text = "import 'not-a-module'"
        // import 'comment-only'
       `
     )
-  ).toEqual(['types', 'side-effect', 'exports', 'lazy', 'legacy'])
+  ).toEqual([
+    'types',
+    'side-effect',
+    'exports',
+    'lazy',
+    'legacy',
+    'inline-types',
+    'equals'
+  ])
 })
 
 test.each(['</script>', '</script >', '</script\t>', '</script\n>'])(

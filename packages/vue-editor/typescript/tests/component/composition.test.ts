@@ -8,7 +8,7 @@ import {
   lastValue,
   makeInput,
   press
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installReferenceInputFixture()
 
@@ -54,15 +54,18 @@ describe('reference input composition deletions', () => {
         if (!(text instanceof Text)) throw new Error('Missing composition text')
 
         press(wrapper, 'Backspace', { isComposing: true })
+
         const next =
           prefix + (clause ? composition.slice(1) : composition.slice(0, -1))
+
         text.data = next
         document.getSelection()?.collapse(text, text.length)
 
-        if (finish)
+        if (finish) {
           element.dispatchEvent(
             new CompositionEvent('compositionend', { bubbles: true })
           )
+        }
 
         await vi.waitFor(() => {
           expect(lastValue(wrapper)).toBe(next)

@@ -1,7 +1,10 @@
 # Core crates
 
-These independently published Cargo packages provide the grammar-independent
-layers of the engine.
+These workspace Cargo packages provide the grammar-independent layers of the
+engine. They use Rust edition 2024 and the repository's pinned Rust toolchain.
+The workspace currently sets `publish = false`; Rust crates are consumed from
+this repository and share its workspace version. npm and Go releases follow
+the package release plan maintained by the workspace tooling.
 
 | Directory                            | Package                       | Purpose                                       |
 | ------------------------------------ | ----------------------------- | --------------------------------------------- |
@@ -15,4 +18,5 @@ layers of the engine.
 
 The AST can be used without a parser, renderer, codec, or serde. Parsers,
 renderers, and extractors share native ASTs without depending on the codec.
-CommonMark and traP packages depend on this layer but are versioned separately.
+CommonMark and traP packages depend on this layer and share the Rust workspace
+version.

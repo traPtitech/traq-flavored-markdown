@@ -61,13 +61,17 @@ export class PresetBuilder {
 
     for (const [handle, existing] of this.#plugins) {
       if (handle === replaced) continue
-      const current = implementation(existing)
-      if (current.declaration === state.declaration)
-        throw new Error('Duplicate plugin')
 
-      for (const kind of state.handlers.keys())
-        if (current.handlers.has(kind))
+      const current = implementation(existing)
+      if (current.declaration === state.declaration) {
+        throw new Error('Duplicate plugin')
+      }
+
+      for (const kind of state.handlers.keys()) {
+        if (current.handlers.has(kind)) {
           throw new Error('Duplicate handler: ' + kind)
+        }
+      }
     }
   }
 
@@ -85,19 +89,24 @@ export class PresetBuilder {
 
   remove(handle: RegistrationHandle) {
     if (!this.#plugins.delete(handle)) throw new Error('Missing registration')
+
     return this
   }
 
   replace(handle: RegistrationHandle, plugin: RenderPlugin) {
     if (!this.#plugins.has(handle)) throw new Error('Missing registration')
+
     this.#validate(plugin, handle)
     this.#plugins.set(handle, plugin)
     return this
   }
 
-  build({ fallback = defaultFallback }: { fallback?: Fallback } = {}) {
-    if (typeof fallback !== 'function')
+  build({
+    fallback = defaultFallback
+  }: { fallback?: Fallback | undefined } = {}) {
+    if (typeof fallback !== 'function') {
       throw new TypeError('Expected render fallback')
+    }
 
     const plugins = [...this.#plugins.values()].map(implementation)
     validateNames(plugins)
@@ -117,6 +126,7 @@ export class PresetBuilder {
 }
 
 declare const registration: unique symbol
+
 /** A durable registration in one builder, independent of plugin revisions. */
 export interface RegistrationHandle {
   readonly [registration]: 'renderer-registration'

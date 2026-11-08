@@ -18,6 +18,7 @@ export type WireError = {
   rule?: string | null
   span?: ErrorSpan | null
 }
+
 export type ErrorCode =
   | 'invalid_utf8'
   | 'invalid_request'
@@ -27,10 +28,12 @@ export type ErrorCode =
   | 'not_configured'
   | 'resource_limit'
   | 'internal_error'
+
 export type ErrorSpan = {
   end: number
   start: number
 }
+
 export type ParsePhase = 'block' | 'inline' | 'text'
 
 function validateWireError(value: unknown): boolean {
@@ -55,6 +58,7 @@ function validateWireError(value: unknown): boolean {
       }
     ))(value)
 }
+
 function validateErrorCode(value: unknown): boolean {
   return oneOf(
     'invalid_utf8',
@@ -67,6 +71,7 @@ function validateErrorCode(value: unknown): boolean {
     'internal_error'
   )(value)
 }
+
 function validateErrorSpan(value: unknown): boolean {
   return ((value: unknown) =>
     fields(
@@ -86,12 +91,14 @@ function validateErrorSpan(value: unknown): boolean {
       {}
     ))(value)
 }
+
 function validateParsePhase(value: unknown): boolean {
   return oneOf('block', 'inline', 'text')(value)
 }
 
 export const isWireError = (value: unknown): value is WireError =>
   validateWireError(value)
+
 export const operations = Object.freeze({
   configure: {
     export: 'configure',
@@ -163,6 +170,7 @@ export const operations = Object.freeze({
     configuration: false
   }
 } as const)
+
 export const abiExports = Object.freeze({
   configure: { params: [], results: ['i32'] },
   configure_extractor: { params: [], results: ['i32'] },

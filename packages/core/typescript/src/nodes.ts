@@ -3,8 +3,10 @@ import type { DeepReadonly, ReadonlyNode as Node, NodeVariant } from './ast.js'
 export type { NodeVariant } from './ast.js'
 
 export type NodeRole = 'block' | 'inline' | 'structural' | 'opaque'
+
 export interface NodeStructure {
   readonly role: NodeRole
+
   readonly children:
     | { readonly kind: 'leaf' | 'any' }
     | {
@@ -21,7 +23,7 @@ export interface NodeStructure {
         readonly kind: 'sequence'
         readonly prefix: readonly string[]
         readonly rest: string
-        readonly arityField?: string
+        readonly arityField?: string | undefined
       }
 }
 
@@ -36,11 +38,16 @@ export function isOwnedDefinition(value: NodeDefinition): boolean {
 /** Copy declaration metadata so later mutations cannot change a validation contract. */
 function snapshotStructure(value: NodeStructure): NodeStructure {
   if (!value) throw new TypeError('Invalid node structure')
+
   const { role, children } = value
-  if (!roles.has(role) || !children)
+
+  if (!roles.has(role) || !children) {
     throw new TypeError('Invalid node structure')
+  }
+
   const kind = children.kind
   let copy: NodeStructure['children']
+
   switch (kind) {
     case 'leaf':
     case 'any':
@@ -53,13 +60,16 @@ function snapshotStructure(value: NodeStructure): NodeStructure {
         !values ||
         values.some(role => !roles.has(role)) ||
         typeof nonempty !== 'boolean'
-      )
+      ) {
         throw new TypeError('Invalid node role constraint')
+      }
+
       copy = {
         kind: 'roles',
         roles: Object.freeze([...new Set(values)].sort()),
         nonempty
       }
+
       break
     }
     case 'types': {
@@ -69,13 +79,16 @@ function snapshotStructure(value: NodeStructure): NodeStructure {
         !values ||
         values.some(type => typeof type !== 'string') ||
         typeof nonempty !== 'boolean'
-      )
+      ) {
         throw new TypeError('Invalid node type constraint')
+      }
+
       copy = {
         kind: 'types',
         types: Object.freeze([...new Set(values)].sort()),
         nonempty
       }
+
       break
     }
     case 'sequence': {
@@ -86,19 +99,23 @@ function snapshotStructure(value: NodeStructure): NodeStructure {
         values.some(type => typeof type !== 'string') ||
         typeof rest !== 'string' ||
         (arityField !== undefined && typeof arityField !== 'string')
-      )
+      ) {
         throw new TypeError('Invalid child sequence constraint')
+      }
+
       copy = {
         kind: 'sequence',
         prefix: Object.freeze(values),
         rest,
         ...(arityField === undefined ? {} : { arityField })
       }
+
       break
     }
     default:
       throw new TypeError('Invalid node child constraint')
   }
+
   return Object.freeze({ role, children: Object.freeze(copy) })
 }
 
@@ -115,16 +132,20 @@ export function defineNode<K extends NodeVariant>(
   validateData: (data: unknown) => boolean,
   structure: NodeStructure = { role: 'opaque', children: { kind: 'any' } }
 ): NodeDefinition<K> {
-  if (typeof kind !== 'string' || typeof validateData !== 'function')
+  if (typeof kind !== 'string' || typeof validateData !== 'function') {
     throw new TypeError('Expected node kind and payload validator')
+  }
+
   const definition = Object.freeze({
     kind,
     validateData,
     structure: snapshotStructure(structure),
+
     is<T extends NodeVariant>(node: T): node is T & DeepReadonly<K> {
       return node.kind === kind && validateData(node.data)
     }
   })
+
   ownedDefinitions.add(definition)
   return definition
 }
@@ -139,8 +160,10 @@ export function validateStructure(
 ): void {
   const rule = structures.get(node.kind)?.children
   if (!rule || rule.kind === 'any') return
+
   const children = node.children ?? []
   let valid: boolean
+
   switch (rule.kind) {
     case 'leaf':
       valid = children.length === 0
@@ -151,18 +174,22 @@ export function validateStructure(
         children.every(child =>
           rule.roles.includes(structures.get(child.kind)?.role ?? 'opaque')
         )
+
       break
     case 'types':
       valid =
         (!rule.nonempty || children.length > 0) &&
         children.every(child => rule.types.includes(child.kind))
+
       break
     case 'sequence': {
       const data = node.data
+
       const arity =
         typeof data === 'object' && data !== null && !Array.isArray(data)
           ? (data as Record<string, unknown>)[rule.arityField ?? '']
           : undefined
+
       valid =
         (rule.arityField === undefined ||
           (Array.isArray(arity) && arity.length > 0)) &&
@@ -173,8 +200,10 @@ export function validateStructure(
             (rule.arityField === undefined ||
               (child.children?.length ?? 0) === (arity as unknown[]).length)
         )
+
       break
     }
   }
+
   if (!valid) throw new TypeError('Invalid node children: ' + node.kind)
 }

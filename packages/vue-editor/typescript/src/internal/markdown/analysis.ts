@@ -15,10 +15,12 @@ const analyzers = new WeakMap<Analyzer, WeakMap<Node, DocumentAnalysis>>()
 
 const documentAnalysis = (doc: Node, analyze: Analyzer) => {
   let documents = analyzers.get(analyze)
+
   if (!documents) {
     documents = new WeakMap()
     analyzers.set(analyze, documents)
   }
+
   let cached = documents.get(doc)
 
   if (!cached) {

@@ -11,6 +11,7 @@ describe('Markdown image widgets with the message renderer', () => {
     const image = markdownFormats(source).find(
       format => format.kind === 'rendered-inline'
     )
+
     expect(image).toBeDefined()
     if (!image || image.kind !== 'rendered-inline') throw new Error('No image')
 
@@ -41,6 +42,7 @@ describe('Markdown image widgets with the message renderer', () => {
       expect(first.querySelector('a')?.href).toBe(
         'https://example.com/first.png'
       )
+
       expect(next.innerHTML).toContain('href="https://example.com/next.png"')
     })
   })
@@ -48,9 +50,11 @@ describe('Markdown image widgets with the message renderer', () => {
   it('preserves the ordinary image policy', async () => {
     const source = '![x](https://example.com/image.png)'
     const widget = render(source)
+
     await vi.waitFor(() =>
       expect(widget.innerHTML).toBe(renderInline(source).renderedText)
     )
+
     expect(widget.querySelector('img')).toBeNull()
   })
 

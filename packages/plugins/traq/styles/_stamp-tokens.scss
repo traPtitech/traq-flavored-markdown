@@ -8,6 +8,7 @@ $sizes: (
 
 @mixin size {
   font-size: var(--tfm-stamp-normal-size, 24px);
+
   @each $name, $value in $sizes {
     @if $name != normal {
       &.#{$name} {

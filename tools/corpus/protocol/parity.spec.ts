@@ -12,6 +12,7 @@ test('TypeScript validates the same cross-language protocol fixtures as Go', () 
         protocolSchemas[item.schema as keyof typeof protocolSchemas],
         JSON.parse(item.json)
       )
+
     if (item.valid) expect(decode).not.toThrow()
     else expect(decode).toThrow()
   }

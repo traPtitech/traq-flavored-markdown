@@ -16,18 +16,23 @@ type Span = ast.Span
 type Payload = ast.Payload
 
 func DecodeDocument(raw []byte) (*Document, error) { return ast.DecodeDocument(raw, newPayload) }
+
 func NewDocument(document *MutableDocument) (*Document, error) {
 	return ast.NewDocument(document, newPayload)
 }
+
 func newPayload(kind string) ast.Payload {
 	if value := commonmark.NewPayload(kind); value != nil {
 		return value
 	}
+
 	if value := extensions.NewPayload(kind); value != nil {
 		return value
 	}
+
 	if value := traq.NewPayload(kind); value != nil {
 		return value
 	}
+
 	return nil
 }

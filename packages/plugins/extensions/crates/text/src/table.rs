@@ -11,14 +11,17 @@ fn row<T>(_: &T, nodes: &[Node], ctx: &Context<'_>, output: &mut Output<'_>) -> 
         if index > 0 {
             output.push(" | ")?;
         }
+
         ctx.node(node, output)?;
     }
+
     output.push("\n")
 }
 
 pub fn plugin() -> RenderPlugin {
     static PLUGIN: LazyLock<RenderPlugin> =
         LazyLock::new(|| build().expect("valid table text plugin"));
+
     PLUGIN.clone()
 }
 

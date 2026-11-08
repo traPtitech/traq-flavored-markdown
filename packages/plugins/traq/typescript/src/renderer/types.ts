@@ -19,6 +19,7 @@ export interface ResolvedStamp {
 }
 
 export type NamedStamp = Extract<StampKind, { type: 'normal' | 'user' }>
+
 export type StampResolver = (
   stamp: Readonly<NamedStamp>
 ) => Readonly<ResolvedStamp> | undefined
@@ -28,6 +29,7 @@ export interface HtmlRendererOptions {
   resolveReference?: ReferenceResolver
   resolveStamp?: StampResolver
   validateLink?(destination: string): boolean
+  linkAttributes?: Readonly<Record<string, string>>
   validateStampImage?(destination: string): boolean
   xhtmlOut?: boolean
 }

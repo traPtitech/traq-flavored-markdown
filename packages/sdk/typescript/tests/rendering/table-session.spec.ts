@@ -18,6 +18,7 @@ test('table rows and cells participate in ancestry, handler replacement and rend
   const body = table.children![1]
   const cell = header.children![0]
   const ancestry: string[][] = []
+
   const view = createHtmlRenderer({
     configurePlugins: plugins => ({
       ...plugins,
@@ -34,13 +35,17 @@ test('table rows and cells participate in ancestry, handler replacement and rend
       )
     })
   })
+
   expect(view.render(document)).toContain('<tr class="custom">')
   expect(ancestry[0]).toEqual([names.Table, header.kind, names.Cell])
+
   expect(
     view.render(document, { omittedNodes: new Set([body]) })
   ).not.toContain('>body<')
+
   expect(
     view.render(document, { childText: new Map([[cell, '<replacement>']]) })
   ).toContain('<th>&lt;replacement&gt;</th>')
+
   expect(cell.children![0].kind).toBe(commonNames.Text)
 })

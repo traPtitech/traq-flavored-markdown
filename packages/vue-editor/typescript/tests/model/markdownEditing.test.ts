@@ -8,7 +8,7 @@ import {
   installInputEditorFixture,
   pressKey,
   readSource as source
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installInputEditorFixture()
 
@@ -47,9 +47,11 @@ describe('editing rendered Markdown as source text', () => {
         view.focus()
         const from = view.domAtPos(anchor)
         const to = view.domAtPos(head)
+
         document
           .getSelection()
           ?.setBaseAndExtent(from.node, from.offset, to.node, to.offset)
+
         expect(editor.state.selection.head).toBe(original.length + 1)
 
         const event = new InputEvent('beforeinput', {
@@ -58,10 +60,13 @@ describe('editing rendered Markdown as source text', () => {
           bubbles: true,
           cancelable: true
         })
+
         const range = document.getSelection()?.getRangeAt(0)
+
         Object.defineProperty(event, 'getTargetRanges', {
           value: () => (targetRanges ? [range] : [])
         })
+
         view.dom.dispatchEvent(event)
 
         expect(event.defaultPrevented).toBe(true)
@@ -88,12 +93,14 @@ describe('editing rendered Markdown as source text', () => {
     const from = view.domAtPos(3)
     const to = view.domAtPos(8)
     document.getSelection()?.collapse(to.node, to.offset)
+
     const event = new InputEvent('beforeinput', {
       inputType: 'insertText',
       data: 'world',
       bubbles: true,
       cancelable: true
     })
+
     Object.defineProperty(event, 'getTargetRanges', {
       value: () => [
         {
@@ -104,11 +111,13 @@ describe('editing rendered Markdown as source text', () => {
         }
       ]
     })
+
     view.dom.dispatchEvent(event)
 
     expect(source(editor)).toBe('**world** and $x$')
     expect(undo(editor.state, view.dispatch)).toBe(true)
     expect(source(editor)).toBe(original)
+
     expect(editor.state.selection.toJSON()).toMatchObject({
       anchor: 8,
       head: 8
@@ -228,6 +237,7 @@ describe('editing rendered Markdown as source text', () => {
     'Backspace immediately deletes the closing colon of rendered %s',
     before => {
       const editor = create(before)
+
       expect(
         editor.view.dom.querySelector('.markdown-input-rendered')
       ).not.toBeNull()
@@ -235,6 +245,7 @@ describe('editing rendered Markdown as source text', () => {
       expect(key(editor, 'Backspace').defaultPrevented).toBe(true)
       expect(source(editor)).toBe(before.slice(0, -1))
       expect(editor.state.selection.head).toBe(before.length)
+
       expect(
         editor.view.dom.querySelector('.markdown-input-rendered')
       ).toBeNull()
@@ -242,6 +253,7 @@ describe('editing rendered Markdown as source text', () => {
       expect(undo(editor.state, editor.view.dispatch)).toBe(true)
       expect(source(editor)).toBe(before)
       expect(editor.state.selection.head).toBe(before.length + 1)
+
       expect(
         editor.view.dom.querySelector('.markdown-input-rendered')
       ).not.toBeNull()
@@ -261,6 +273,7 @@ describe('editing rendered Markdown as source text', () => {
 
     expect(source(editor)).toBe(':x::y')
     expect(editor.state.selection.head).toBe(6)
+
     expect(
       editor.view.dom.querySelectorAll('.markdown-input-rendered')
     ).toHaveLength(1)
@@ -286,6 +299,7 @@ describe('editing rendered Markdown as source text', () => {
               bubbles: true,
               cancelable: true
             })
+
       if (eventType === 'beforeinput') view.dom.dispatchEvent(event)
 
       expect(event.defaultPrevented).toBe(true)
