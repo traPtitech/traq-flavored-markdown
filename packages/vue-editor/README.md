@@ -123,10 +123,9 @@ and an optional `fromText` conversion. Server identity, schema validation and
 cross-application clipboard compatibility belong to that host codec.
 
 Import `/style.css`. Theme through CSS custom properties such as
-`--reference-input-accent`, `--reference-input-reference-background`,
-`--reference-input-muted`, `--reference-input-focus`,
-`--reference-input-border` and `--reference-input-spoiler-background`.
-SDK renderer styles can be imported separately when rendering its HTML.
+`--tfm-editor-placeholder-color`, `--tfm-editor-placeholder-opacity`, `--tfm-editor-accent`, `--tfm-editor-reference-background`, `--tfm-editor-focus`, `--tfm-editor-muted`, `--tfm-editor-spoiler-background`, `--tfm-editor-border`, `--tfm-editor-mark-color`, `--tfm-editor-mark-background`, `--tfm-editor-code-background`.
+The previous `--reference-input-*`, `--input-placeholder-*`, and `--markdown-*`
+variables remain fallbacks for existing themes.
 
 ## Development
 

@@ -21,15 +21,24 @@
 .reference-input-content .tiptap[data-is-empty='true']::before {
   content: attr(data-placeholder);
   position: absolute;
-  color: var(--input-placeholder-color, inherit);
-  opacity: var(--input-placeholder-opacity, 0.5);
+  color: var(
+    --tfm-editor-placeholder-color,
+    var(--input-placeholder-color, inherit)
+  );
+  opacity: var(
+    --tfm-editor-placeholder-opacity,
+    var(--input-placeholder-opacity, 0.5)
+  );
   pointer-events: none;
 }
 
 .reference-input-content .reference-token {
   word-break: break-all;
-  color: var(--reference-input-accent, #0066cc);
-  background: var(--reference-input-reference-background, #eef2f6);
+  color: var(--tfm-editor-accent, var(--reference-input-accent, #0066cc));
+  background: var(
+    --tfm-editor-reference-background,
+    var(--reference-input-reference-background, #eef2f6)
+  );
   font-weight: bold;
   border-radius: 3px;
   padding: 0 2px;
@@ -37,7 +46,8 @@
 }
 
 .reference-input-content .ProseMirror-selectednode {
-  outline: 2px solid var(--reference-input-focus, #0066cc);
+  outline: 2px solid
+    var(--tfm-editor-focus, var(--reference-input-focus, #0066cc));
 }
 
 .reference-input-content .ProseMirror-hideselection *::selection {
@@ -45,7 +55,7 @@
 }
 
 .reference-input-content .markdown-input-source {
-  color: var(--reference-input-muted, #666);
+  color: var(--tfm-editor-muted, var(--reference-input-muted, #666));
 }
 
 .reference-input-content .markdown-input-syntax {
@@ -65,14 +75,20 @@
 }
 
 .reference-input-content .markdown-input-highlight {
-  color: var(--markdown-mark-text, currentColor);
-  background: var(--markdown-mark-background, #fff0a8);
+  color: var(--tfm-editor-mark-color, var(--markdown-mark-text, currentColor));
+  background: var(
+    --tfm-editor-mark-background,
+    var(--markdown-mark-background, #fff0a8)
+  );
   border-radius: 2px;
 }
 
 .reference-input-content .markdown-input-spoiler {
   border-radius: 3px;
-  background: var(--reference-input-spoiler-background, #8882);
+  background: var(
+    --tfm-editor-spoiler-background,
+    var(--reference-input-spoiler-background, #8882)
+  );
 }
 
 .reference-input-content .markdown-input-rendered img {
@@ -83,14 +99,17 @@
 }
 
 .reference-input-content .markdown-input-link {
-  color: var(--reference-input-accent, #0066cc);
+  color: var(--tfm-editor-accent, var(--reference-input-accent, #0066cc));
   text-decoration: underline;
 }
 
 .reference-input-content .markdown-input-code,
 .reference-input-content .markdown-input-code-block {
   font-family: monospace;
-  background: var(--markdown-code-background, #eff2f6);
+  background: var(
+    --tfm-editor-code-background,
+    var(--markdown-code-background, #eff2f6)
+  );
   border-radius: 3px;
   box-decoration-break: clone;
 }
@@ -102,10 +121,16 @@
 .reference-input-content .markdown-input-code.markdown-input-spoiler {
   background:
     linear-gradient(
-      var(--reference-input-spoiler-background, #8882),
-      var(--reference-input-spoiler-background, #8882)
+      var(
+        --tfm-editor-spoiler-background,
+        var(--reference-input-spoiler-background, #8882)
+      ),
+      var(
+        --tfm-editor-spoiler-background,
+        var(--reference-input-spoiler-background, #8882)
+      )
     ),
-    var(--markdown-code-background, #eff2f6);
+    var(--tfm-editor-code-background, var(--markdown-code-background, #eff2f6));
 }
 
 .reference-input-content .markdown-input-code-block {
@@ -113,7 +138,7 @@
 }
 
 .reference-input-content .markdown-input-quote {
-  color: var(--reference-input-muted, #666);
+  color: var(--tfm-editor-muted, var(--reference-input-muted, #666));
 }
 
 .reference-input-content .markdown-input-container-guide {
@@ -124,7 +149,8 @@
 }
 
 .reference-input-content .markdown-input-quote-bar {
-  border-left: 3px solid var(--reference-input-border, #ccd2d8);
+  border-left: 3px solid
+    var(--tfm-editor-border, var(--reference-input-border, #ccd2d8));
   margin-right: 0.4em;
 }
 
@@ -151,13 +177,14 @@
 }
 
 .reference-input-content .markdown-input-bullet {
-  color: var(--reference-input-muted, #666);
+  color: var(--tfm-editor-muted, var(--reference-input-muted, #666));
 }
 
 .reference-input-content .markdown-input-rule {
   display: inline-block;
   width: 100%;
-  border-bottom: 1px solid var(--reference-input-border, #ccd2d8);
+  border-bottom: 1px solid
+    var(--tfm-editor-border, var(--reference-input-border, #ccd2d8));
   vertical-align: middle;
 }
 

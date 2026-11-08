@@ -5,6 +5,30 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#status')).toHaveText('Ready')
 })
 
+test('SDK styles stay within the Markdown roots', async ({ page }) => {
+  await page.locator('#host-content').evaluate(element => {
+    ;(element as HTMLElement).style.setProperty(
+      '--tfm-mark-background-color',
+      'red'
+    )
+  })
+
+  await expect(page.locator('#host-content mark')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 0)'
+  )
+
+  await expect(page.locator('#host-content .emoji')).toHaveCSS(
+    'display',
+    'inline'
+  )
+
+  await expect(page.locator('#host-content .spoiler strong')).toHaveCSS(
+    'visibility',
+    'visible'
+  )
+})
+
 test('real browser applies plugin layout, spoiler and stamp styles', async ({
   page
 }) => {
