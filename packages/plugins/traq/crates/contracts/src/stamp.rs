@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const MAX_STAMP_ANIMATIONS: usize = 5;
+
 #[markdown_definitions::node(role = Inline)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
@@ -44,7 +46,7 @@ pub enum StampKind {
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StampEffects {
-    #[constraint(length(max = 5))]
+    #[constraint(length(max = MAX_STAMP_ANIMATIONS))]
     pub animations: Vec<StampAnimation>,
     pub size: StampSize,
 }

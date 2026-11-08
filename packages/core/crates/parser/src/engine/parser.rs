@@ -72,9 +72,11 @@ impl Parser {
             block::parse(&view, grammar, &mut budget, &mut state)?
         };
 
+        let (nodes, syntax) = children.into_parts(capture)?;
+
         let document = MutableDocument {
             source: source.into(),
-            children: children.nodes,
+            children: nodes,
         };
 
         let remaining_work = budget.remaining_work();
@@ -105,7 +107,7 @@ impl Parser {
         budget.spend(document.as_view().node_count())?;
 
         let syntax = crate::syntax::SyntaxTree {
-            children: children.syntax.unwrap_or_default(),
+            children: syntax,
             detached: std::mem::take(&mut budget.detached_syntax),
         };
 

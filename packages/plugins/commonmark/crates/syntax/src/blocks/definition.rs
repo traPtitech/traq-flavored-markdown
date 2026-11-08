@@ -102,7 +102,7 @@ fn find_definition(
 
     // Restore authored tabs only within the accepted prefix, never by copying
     // an ever-growing candidate or the remainder of the document.
-    let literal = input.source.literal(start..input.lines[end - 1].end);
+    let literal = input.source.literal(start..input.lines[end - 1].end)?;
 
     if let std::borrow::Cow::Owned(literal) = literal {
         let Some(restored) = references::definition(&literal, budget)? else {

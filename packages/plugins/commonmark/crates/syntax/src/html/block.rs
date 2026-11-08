@@ -98,7 +98,7 @@ pub(super) fn parse(
 
     let end = block_end(input, kind, budget)?;
     let range = input.lines[input.start].start..input.lines[end - 1].end;
-    let literal = input.source.literal(range.clone()).into_owned();
+    let literal = input.source.literal(range.clone())?.into_owned();
     let span = input.source.span_for(range.start..range.end)?;
 
     Ok(Some(BlockMatch::node(

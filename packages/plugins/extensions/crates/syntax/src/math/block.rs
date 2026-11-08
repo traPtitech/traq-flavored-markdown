@@ -46,10 +46,10 @@ pub(super) fn parse(
 
         (
             first + 1,
-            source.literal(start..start + inner.len()).into_owned(),
+            source.literal(start..start + inner.len())?.into_owned(),
         )
     } else {
-        multiline_tex(input, rest, offset, &mut body, &mut markers)
+        multiline_tex(input, rest, offset, &mut body, &mut markers)?
     };
 
     let mut matched = input.leaf(end, markdown_parser::AnyPayload::new(BlockMath { tex }))?;
@@ -66,13 +66,15 @@ fn multiline_tex(
         markdown_parser::syntax::MarkerKind,
         markdown_parser::source::ViewRange,
     )>,
-) -> (LineIndex, String) {
+) -> Result<(LineIndex, String), ParseError> {
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
     let start = lines[first].start + offset;
     let mut end = first + 1;
-    let mut tex = source.literal(start..start + first_line.len()).into_owned();
+    let mut tex = source
+        .literal(start..start + first_line.len())?
+        .into_owned();
 
     if source.captures_syntax() {
         body.push(start..lines[first].end);
@@ -95,11 +97,11 @@ fn multiline_tex(
                 ));
             }
 
-            tex.push_str(&source.literal(start..start + inner.len()));
+            tex.push_str(&source.literal(start..start + inner.len())?);
             break;
         }
 
-        tex.push_str(&source.literal(start..start + next.len()));
+        tex.push_str(&source.literal(start..start + next.len())?);
 
         if source.captures_syntax() {
             body.push(start..lines[end - 1].end);
@@ -108,5 +110,5 @@ fn multiline_tex(
         tex.push('\n');
     }
 
-    (end, tex)
+    Ok((end, tex))
 }

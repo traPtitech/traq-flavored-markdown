@@ -108,7 +108,6 @@ pub fn paired(
     };
 
     Ok(Some(InlineMatch {
-        syntax: None,
         end: pos + length / width.get() * width.get(),
         action: InlineAction::Delimiter(pairing),
     }))

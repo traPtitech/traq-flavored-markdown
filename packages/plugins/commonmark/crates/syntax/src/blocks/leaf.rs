@@ -23,14 +23,15 @@ pub(super) fn fenced(
 
     let info_end = lines[first].start + input.current().trim_end_matches([' ', '\t']).len();
 
-    let info =
-        super::super::inlines::entities::unescape(&source.literal(info_end - info.len()..info_end));
+    let info = super::super::inlines::entities::unescape(
+        &source.literal(info_end - info.len()..info_end)?,
+    );
 
     let indent = input.current().len() - input.current().trim_start_matches(' ').len();
 
     let mut end = closing_fence(input, marker, count);
     let closing = end;
-    let literal = fenced_literal(input, end, indent);
+    let literal = fenced_literal(input, end, indent)?;
 
     let body: Vec<_> = if source.captures_syntax() {
         lines[first + 1..closing]
@@ -88,7 +89,11 @@ fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> LineIndex 
     end
 }
 
-fn fenced_literal(input: &BlockInput<'_>, end: LineIndex, indent: usize) -> String {
+fn fenced_literal(
+    input: &BlockInput<'_>,
+    end: LineIndex,
+    indent: usize,
+) -> Result<String, ParseError> {
     let source = input.source;
 
     input.lines[input.start + 1..end]
@@ -167,7 +172,7 @@ fn indented_content(
                     budget.spend(line.end - line.start)?;
                     let raw = &source[line.clone()];
                     let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());
-                    literal.push_str(&source.literal(line.start + remove..line.end));
+                    literal.push_str(&source.literal(line.start + remove..line.end)?);
                 }
 
                 end = next;
@@ -178,7 +183,7 @@ fn indented_content(
         }
 
         if raw.starts_with("    ") {
-            literal.push_str(&source.literal(lines[end].start + 4..lines[end].end));
+            literal.push_str(&source.literal(lines[end].start + 4..lines[end].end)?);
             end += 1;
         } else {
             break;

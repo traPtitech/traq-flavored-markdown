@@ -51,7 +51,7 @@ pub(super) fn build(
                     None => source.syntax(&[source.range(token.start..token.end)?], &[], budget)?,
                 };
 
-                children.push(source.span(token.start, token.end), kind, nested, syntax);
+                children.push(source.span(token.start, token.end), kind, nested, syntax)?;
             }
 
             TokenKind::Open(make) => {
@@ -80,7 +80,7 @@ pub(super) fn build(
                     budget,
                 )?;
 
-                children.push(source.span(start, token.end), make(), nested, syntax);
+                children.push(source.span(start, token.end), make(), nested, syntax)?;
             }
 
             _ => unreachable!("text and empty tokens handled above"),
@@ -111,7 +111,7 @@ fn flush(
             make_text(value),
             ParsedNodes::new(source.captures_syntax()),
             source.syntax(&[source.range(start..end)?], &[], budget)?,
-        );
+        )?;
     }
 
     Ok(())

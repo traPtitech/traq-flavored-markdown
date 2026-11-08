@@ -11,6 +11,29 @@ struct ParentState(&'static str);
 struct OtherExtension(u32);
 
 #[test]
+fn literal_checks_ranges_against_its_own_view() {
+    let source = SourceView::new("日\t本");
+    let ascii = SourceView::new("0123456789");
+
+    for (start, end) in [(0, 1), (0, 9), (3, 2)] {
+        let range = start..end;
+        let range = super::ViewOffset(range.start)..super::ViewOffset(range.end);
+        assert!(source.literal(range).is_err());
+    }
+
+    assert!(source.literal(ascii.range(0..1).unwrap()).is_err());
+    assert_eq!(source.literal(source.range(0..3).unwrap()).unwrap(), "日");
+
+    let expanded = source.expand_tabs();
+    assert_eq!(
+        expanded
+            .literal(expanded.range(0..expanded.text().len()).unwrap())
+            .unwrap(),
+        "日\t本"
+    );
+}
+
+#[test]
 fn context_is_inherited_across_views_without_changing_parent_or_siblings() {
     let mut source = SourceView::new("a\tb\r\n");
     source.set_context(ParentState("outer"));

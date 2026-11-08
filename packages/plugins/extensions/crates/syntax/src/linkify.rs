@@ -34,9 +34,9 @@ fn inline_rule() -> InlineRule {
             let span = input.source.span_for(range.clone())?;
 
             return Ok(Some(InlineMatch {
-                syntax: None,
                 end: range.end,
                 action: InlineAction::Node {
+                    syntax: None,
                     payload: AnyPayload::new(Link {
                         destination: found.destination,
                         title: None,
@@ -73,19 +73,19 @@ fn inline_rule() -> InlineRule {
         };
 
         Ok(Some(InlineMatch {
-            syntax: input.source.syntax(
-                &[start..end],
-                &[
-                    (
-                        markdown_parser::syntax::MarkerKind::Open,
-                        input.position..start,
-                    ),
-                    (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
-                ],
-                budget,
-            )?,
             end: end + 1,
             action: InlineAction::Node {
+                syntax: input.source.syntax(
+                    &[start..end],
+                    &[
+                        (
+                            markdown_parser::syntax::MarkerKind::Open,
+                            input.position..start,
+                        ),
+                        (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
+                    ],
+                    budget,
+                )?,
                 payload: AnyPayload::new(Link {
                     destination,
                     title: None,

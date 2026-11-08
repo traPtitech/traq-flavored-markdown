@@ -154,7 +154,7 @@ fn parse_effects(suffix: &str) -> Option<StampEffects> {
             }
         }
 
-        if effects.animations.len() > 5 {
+        if effects.animations.len() > markdown_traq_contracts::MAX_STAMP_ANIMATIONS {
             return None;
         }
     }

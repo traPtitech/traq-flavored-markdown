@@ -37,18 +37,18 @@ pub(super) fn parse(
                 tex: input.source[pos + 1..end].into(),
             };
 
-            return Ok(Some(
-                InlineMatch::leaf(end + 1, markdown_parser::AnyPayload::new(data)).with_syntax(
-                    input.source.syntax(
-                        &[pos + 1..end],
-                        &[
-                            (markdown_parser::syntax::MarkerKind::Open, pos..pos + 1),
-                            (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
-                        ],
-                        budget,
-                    )?,
-                ),
-            ));
+            return Ok(Some(InlineMatch::leaf_with_syntax(
+                end + 1,
+                markdown_parser::AnyPayload::new(data),
+                input.source.syntax(
+                    &[pos + 1..end],
+                    &[
+                        (markdown_parser::syntax::MarkerKind::Open, pos..pos + 1),
+                        (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
+                    ],
+                    budget,
+                )?,
+            )));
         }
 
         slashes = if byte == b'\\' { slashes + 1 } else { 0 };

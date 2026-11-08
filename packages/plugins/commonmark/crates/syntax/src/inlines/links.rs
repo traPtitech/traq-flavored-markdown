@@ -23,7 +23,6 @@ pub fn link(
 
     if source.as_bytes()[pos.get()] == b'[' || image {
         return Ok(Some(InlineMatch {
-            syntax: None,
             end: pos + if image { 2 } else { 1 },
             action: InlineAction::OpenBracket {
                 tag: if image { "image" } else { "link" },
@@ -38,7 +37,6 @@ pub fn link(
 
     let discard = || {
         Some(InlineMatch {
-            syntax: None,
             end: pos + 1,
             action: InlineAction::DiscardBracket,
         })
@@ -77,9 +75,9 @@ pub fn link(
     };
 
     Ok(Some(InlineMatch {
-        syntax: None,
         end: input.source.offset(end)?,
         action: InlineAction::CloseBracket {
+            syntax: None,
             payload,
             inhibit_brackets: !image,
         },
@@ -161,16 +159,16 @@ pub fn autolink(
     )];
 
     Ok(Some(InlineMatch {
-        syntax: input.source.syntax(
-            &[pos + 1..end],
-            &[
-                (markdown_parser::syntax::MarkerKind::Open, pos..pos + 1),
-                (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
-            ],
-            budget,
-        )?,
         end: end + 1,
         action: InlineAction::Node {
+            syntax: input.source.syntax(
+                &[pos + 1..end],
+                &[
+                    (markdown_parser::syntax::MarkerKind::Open, pos..pos + 1),
+                    (markdown_parser::syntax::MarkerKind::Close, end..end + 1),
+                ],
+                budget,
+            )?,
             payload: AnyPayload::new(markdown_commonmark_contracts::Link {
                 destination,
                 title: None,

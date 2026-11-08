@@ -173,16 +173,14 @@ fn invalid_external_source_facts_fail_without_changing_normal_parsing() {
     let mut plugin = SyntaxPlugin::new(&PluginDeclaration::new("invalid-source"));
 
     plugin.add(InlineRule::new(b"^", |input, _| {
-        Ok(Some(
-            InlineMatch::leaf(
-                input.position + 1,
-                markdown_commonmark_contracts::Text { value: "^".into() }.into(),
-            )
-            .with_syntax(Some(SourceSyntax {
+        Ok(Some(InlineMatch::leaf_with_syntax(
+            input.position + 1,
+            markdown_commonmark_contracts::Text { value: "^".into() }.into(),
+            Some(SourceSyntax {
                 content: vec![Span { start: 0, end: 100 }],
                 markers: vec![],
-            })),
-        ))
+            }),
+        )))
     }));
 
     let mut builder = presets::traq::v1::builder();

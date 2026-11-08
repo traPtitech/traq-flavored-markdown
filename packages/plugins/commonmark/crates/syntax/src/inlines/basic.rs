@@ -53,9 +53,9 @@ pub(super) fn newline(
     }
 
     Ok(Some(InlineMatch {
-        syntax: None,
         end,
         action: InlineAction::TrimmedNode {
+            syntax: None,
             trim,
             payload: if trim >= 2 {
                 AnyPayload::new(markdown_commonmark_contracts::Hardbreak {})
@@ -103,12 +103,10 @@ pub(super) fn code(
         literal = literal[1..literal.len() - 1].into();
     }
 
-    Ok(Some(
-        InlineMatch::leaf(
-            input.source.offset(end)?,
-            AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
-        )
-        .with_syntax(input.source.syntax(
+    Ok(Some(InlineMatch::leaf_with_syntax(
+        input.source.offset(end)?,
+        AnyPayload::new(markdown_commonmark_contracts::InlineCode { literal }),
+        input.source.syntax(
             &[open_end..input.source.offset(start)?],
             &[
                 (markdown_parser::syntax::MarkerKind::Open, pos..open_end),
@@ -118,8 +116,8 @@ pub(super) fn code(
                 ),
             ],
             budget,
-        )?),
-    ))
+        )?,
+    )))
 }
 
 fn closing_code(

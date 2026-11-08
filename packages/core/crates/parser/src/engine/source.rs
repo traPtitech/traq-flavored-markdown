@@ -94,7 +94,7 @@ impl SourceView {
                         kind: super::syntax::MarkerKind::Prefix,
                         spans,
                         columns: Some(prefix.end - prefix.start),
-                        text: Some(self.literal(prefix.clone()).into_owned()),
+                        text: Some(self.literal(prefix.clone())?.into_owned()),
                     });
                 }
             }
@@ -313,12 +313,13 @@ impl SourceView {
         Self::mapped(self.context.clone(), text, offsets, tabs, origins)
     }
 
-    pub fn literal(&self, range: ViewRange) -> Cow<'_, str> {
+    pub fn literal(&self, range: ViewRange) -> Result<Cow<'_, str>, ParseError> {
+        self.range(range.start.get()..range.end.get())?;
         let range = range.start.get()..range.end.get();
         let mut tabs = self.tabs_in(&range).peekable();
 
         if tabs.peek().is_none() {
-            return Cow::Borrowed(&self.text()[range.clone()]);
+            return Ok(Cow::Borrowed(&self.text()[range.clone()]));
         }
 
         let mut text = String::new();
@@ -331,7 +332,7 @@ impl SourceView {
         }
 
         text.push_str(&self.text()[pos..range.end]);
-        Cow::Owned(text)
+        Ok(Cow::Owned(text))
     }
 
     #[must_use]

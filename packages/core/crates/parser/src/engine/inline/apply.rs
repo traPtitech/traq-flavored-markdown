@@ -24,17 +24,6 @@ pub(super) fn matched(
     let start = state.position;
     let end = found.end.get();
 
-    if found.syntax.is_some()
-        && !matches!(
-            found.action,
-            InlineAction::Node { .. }
-                | InlineAction::TrimmedNode { .. }
-                | InlineAction::CloseBracket { .. }
-        )
-    {
-        return Err(ParseError::InternalError);
-    }
-
     match found.action {
         InlineAction::Literal => state.literal(end)?,
         InlineAction::Text(value) => state.push(start, end, TokenKind::Decoded(value))?,
@@ -43,28 +32,25 @@ pub(super) fn matched(
             payload,
             children,
             inhibit_brackets,
+            syntax,
         } => {
-            apply_node(state, start, end, payload, children, inhibit_brackets)?;
-
-            if let Some(Token {
-                kind: TokenKind::Atom(_, _, syntax),
-                ..
-            }) = state.tokens.last_mut()
-            {
-                *syntax = found.syntax;
-            }
+            apply_node(
+                state,
+                start,
+                end,
+                payload,
+                children,
+                inhibit_brackets,
+                syntax,
+            )?;
         }
 
-        InlineAction::TrimmedNode { trim, payload } => {
-            apply_trimmed_node(state, start, end, trim, payload)?;
-
-            if let Some(Token {
-                kind: TokenKind::Atom(_, _, syntax),
-                ..
-            }) = state.tokens.last_mut()
-            {
-                *syntax = found.syntax;
-            }
+        InlineAction::TrimmedNode {
+            trim,
+            payload,
+            syntax,
+        } => {
+            apply_trimmed_node(state, start, end, trim, payload, syntax)?;
         }
 
         InlineAction::Delimiter(pairing) => apply_delimiter(state, key, start, end, pairing)?,
@@ -77,7 +63,8 @@ pub(super) fn matched(
         InlineAction::CloseBracket {
             payload,
             inhibit_brackets,
-        } => brackets::close(state, end, payload, inhibit_brackets, found.syntax)?,
+            syntax,
+        } => brackets::close(state, end, payload, inhibit_brackets, syntax)?,
 
         InlineAction::DiscardBracket => {
             state.brackets.pop();
@@ -102,6 +89,7 @@ fn apply_node(
     payload: AnyPayload,
     children: Vec<Node>,
     inhibit_brackets: bool,
+    syntax: Option<crate::syntax::SourceSyntax>,
 ) -> Result<(), ParseError> {
     children_budget(&children, state.budget)?;
 
@@ -111,7 +99,7 @@ fn apply_node(
         state.budget,
     )?;
 
-    state.push(start, end, TokenKind::Atom(payload, children, None))?;
+    state.push(start, end, TokenKind::Atom(payload, children, syntax))?;
 
     if inhibit_brackets {
         brackets::inhibit(state);
@@ -126,6 +114,7 @@ fn apply_trimmed_node(
     end: usize,
     trim: usize,
     payload: AnyPayload,
+    syntax: Option<crate::syntax::SourceSyntax>,
 ) -> Result<(), ParseError> {
     let mut node_start = start;
 
@@ -154,7 +143,7 @@ fn apply_trimmed_node(
         TokenKind::Atom(
             payload,
             crate::engine::syntax::ParsedNodes::new(state.source.captures_syntax()),
-            None,
+            syntax,
         ),
     )
 }

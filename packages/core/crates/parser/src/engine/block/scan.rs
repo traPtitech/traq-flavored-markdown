@@ -237,7 +237,7 @@ fn resolve_inlines(
         };
 
         budget.node()?;
-        nodes.push(draft.span, draft.payload, children, draft.syntax);
+        nodes.push(draft.span, draft.payload, children, draft.syntax)?;
     }
 
     Ok(nodes)
