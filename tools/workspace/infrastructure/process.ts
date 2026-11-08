@@ -1,21 +1,16 @@
 export type ProcessOptions = {
   env?: NodeJS.ProcessEnv
   timeoutMs?: number
-  output?: 'capture' | 'inherit'
   log?: (message: string) => void
 }
 
 /** Drain both pipes, preserve stdout as data, and bound the complete process tree. */
-export async function captureProcess(
+async function executeProcess(
   command: string,
   args: string[],
   cwd: string,
-  {
-    env,
-    timeoutMs = 120_000,
-    output: outputMode = 'capture',
-    log
-  }: ProcessOptions = {}
+  outputMode: 'capture' | 'inherit',
+  { env, timeoutMs = 120_000, log }: ProcessOptions = {}
 ) {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     throw new Error('Process timeout must be a positive number')
@@ -46,7 +41,13 @@ export async function captureProcess(
       const { done, value } = await readers[index].read()
       if (done) break
 
-      output[index] += decoder.decode(value, { stream: true })
+      const text = decoder.decode(value, { stream: true })
+      const combined = output[index] + text
+
+      output[index] =
+        outputMode === 'capture' && index === 0
+          ? combined
+          : combined.slice(-diagnosticTailCharacters)
 
       if (outputMode === 'inherit') {
         await (index === 0 ? Bun.stdout : Bun.stderr).write(value)
@@ -115,11 +116,22 @@ export async function captureProcess(
   }
 }
 
+export const diagnosticTailCharacters = 16_384
+
+export function captureProcess(
+  command: string,
+  args: string[],
+  cwd: string,
+  options: ProcessOptions = {}
+) {
+  return executeProcess(command, args, cwd, 'capture', options)
+}
+
 export async function runProcess(
   command: string,
   args: string[],
   cwd: string,
-  options: Omit<ProcessOptions, 'output'> = {}
+  options: ProcessOptions = {}
 ) {
-  await captureProcess(command, args, cwd, { ...options, output: 'inherit' })
+  await executeProcess(command, args, cwd, 'inherit', options)
 }
