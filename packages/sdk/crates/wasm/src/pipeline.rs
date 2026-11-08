@@ -52,7 +52,7 @@ pub extern "C" fn process(mode: u32) -> u32 {
 
             PIPELINE.with_borrow(|pipeline| {
                 let pipeline = pipeline.as_ref().ok_or_else(Error::not_configured)?;
-                let document = grammar::parse(&pipeline.grammar, source, mode)?;
+                let document = grammar::parse(&pipeline.grammar, source, mode.try_into()?)?;
 
                 let processing = pipeline
                     .processor

@@ -1,6 +1,27 @@
 //! Distribution-owned operation and error contract. Hosts generate descriptors here.
 use serde::Serialize;
 
+#[derive(Clone, Copy)]
+pub enum ParseMode {
+    Document,
+    Inline,
+}
+
+impl TryFrom<u32> for ParseMode {
+    type Error = Error;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Document),
+            1 => Ok(Self::Inline),
+            _ => Err(Error::new(
+                ErrorCode::InvalidMode,
+                "parse mode must be 0 or 1",
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize)]
 #[cfg_attr(feature = "contracts", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
