@@ -6,14 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
 	"sync/atomic"
 	"unicode/utf8"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
-	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast"
 )
 
 type Operation struct {
@@ -38,26 +36,6 @@ type Artifact struct {
 	DecodeError func(json.RawMessage) (*Error, error)
 }
 
-// Error is shared by domain failures and host transport/lifecycle failures.
-type Error struct {
-	Code        string    `json:"code"`
-	Message     string    `json:"message"`
-	Resource    string    `json:"resource,omitempty"`
-	Path        string    `json:"path,omitempty"`
-	Offset      *uint32   `json:"offset,omitempty"`
-	Span        *ast.Span `json:"span,omitempty"`
-	Phase       string    `json:"phase,omitempty"`
-	Rule        string    `json:"rule,omitempty"`
-	PayloadType string    `json:"payload_type,omitempty"`
-}
-
-func (e *Error) Error() string            { return e.Code + ": " + e.Message }
-func failure(code, message string) *Error { return &Error{Code: code, Message: message} }
-
-func resource(name string) *Error {
-	return &Error{Code: "resource_limit", Message: name + " limit exceeded", Resource: name}
-}
-
 type Runtime struct {
 	runtime  wazero.Runtime
 	compiled wazero.CompiledModule
@@ -72,7 +50,13 @@ type Instance struct {
 	gate     chan struct{}
 }
 
-func NewRuntime(ctx context.Context, wasm []byte, artifact Artifact) (*Runtime, error) {
+func NewRuntime(ctx context.Context, wasm []byte, artifact Artifact) (result *Runtime, err error) {
+	defer func() { err = WithOperation(err, "compile") }()
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	if artifact.ContractID == "" || artifact.InputBytes <= 0 || artifact.OutputBytes <= 0 || artifact.MemoryPages == 0 || len(artifact.Exports) == 0 {
 		return nil, failure("contract_mismatch", "incomplete artifact descriptor")
 	}
@@ -81,7 +65,7 @@ func NewRuntime(ctx context.Context, wasm []byte, artifact Artifact) (*Runtime, 
 	compiled, err := rt.CompileModule(ctx, wasm)
 	if err != nil {
 		rt.Close(context.Background())
-		return nil, failure("transport_error", err.Error())
+		return nil, causedFailure("transport_error", err)
 	}
 
 	if err := validateExports(compiled, artifact.Exports); err != nil {
@@ -123,7 +107,9 @@ func matches(actual []api.ValueType, expected []string) bool {
 
 func (r *Runtime) Close(ctx context.Context) error { r.closed.Store(true); return r.runtime.Close(ctx) }
 
-func (r *Runtime) NewInstance(ctx context.Context, operation Operation, config string) (*Instance, error) {
+func (r *Runtime) NewInstance(ctx context.Context, operation Operation, config string) (result *Instance, err error) {
+	defer func() { err = WithOperation(err, operation.Export) }()
+
 	if r.closed.Load() {
 		return nil, failure("disposed", "Wasm runtime is closed")
 	}
@@ -138,7 +124,7 @@ func (r *Runtime) NewInstance(ctx context.Context, operation Operation, config s
 
 	module, err := r.runtime.InstantiateModule(ctx, r.compiled, wazero.NewModuleConfig().WithName(""))
 	if err != nil {
-		return nil, failure("transport_error", err.Error())
+		return nil, causedFailure("transport_error", err)
 	}
 
 	p := &Instance{artifact: r.artifact, module: module, gate: make(chan struct{}, 1)}
@@ -152,7 +138,9 @@ func (r *Runtime) NewInstance(ctx context.Context, operation Operation, config s
 
 func (p *Instance) Close(ctx context.Context) error { return p.module.Close(ctx) }
 
-func (p *Instance) Call(ctx context.Context, operation Operation, input string, args ...uint64) (json.RawMessage, error) {
+func (p *Instance) Call(ctx context.Context, operation Operation, input string, args ...uint64) (result json.RawMessage, err error) {
+	defer func() { err = WithOperation(err, operation.Export) }()
+
 	select {
 	case p.gate <- struct{}{}:
 		defer func() { <-p.gate }()
@@ -180,7 +168,7 @@ func (p *Instance) poison(err error) error {
 		return err
 	}
 
-	return failure("transport_error", err.Error())
+	return causedFailure("transport_error", err)
 }
 
 func (p *Instance) call(ctx context.Context, operation Operation, input string, args ...uint64) (json.RawMessage, error) {
@@ -328,20 +316,4 @@ func decodeReply(output []byte, operation Operation, contractID string, decodeEr
 	}
 
 	return raw, nil
-}
-
-// DocumentError preserves structured validation diagnostics in the ABI error family.
-func DocumentError(err error) error {
-	var validation *ast.ValidationError
-	if errors.As(err, &validation) {
-		code := "invalid_document"
-
-		if validation.Resource != "" {
-			code = "resource_limit"
-		}
-
-		return &Error{Code: code, Message: validation.Message, Path: validation.Path, Resource: validation.Resource, Span: validation.Span}
-	}
-
-	return failure("invalid_document", fmt.Sprint(err))
 }

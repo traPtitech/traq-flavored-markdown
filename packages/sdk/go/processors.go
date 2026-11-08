@@ -9,7 +9,9 @@ import (
 )
 
 // Configuration validation and transport ownership are shared by processor facades.
-func (r *Runtime) configure(ctx context.Context, operation binding.Operation, options any, origin string) (*binding.Instance, error) {
+func (r *Runtime) configure(ctx context.Context, operation binding.Operation, options any, origin string) (result *binding.Instance, err error) {
+	defer func() { err = binding.WithOperation(err, operation.Export) }()
+
 	if len(origin) > inputBytes {
 		return nil, &Error{Code: "resource_limit", Resource: "input_bytes", Message: "input_bytes limit exceeded"}
 	}
@@ -20,7 +22,7 @@ func (r *Runtime) configure(ctx context.Context, operation binding.Operation, op
 
 	config, err := json.Marshal(options)
 	if err != nil {
-		return nil, err
+		return nil, &Error{Code: "invalid_request", Message: "Invalid configuration input", Cause: err}
 	}
 
 	return r.runtime.NewInstance(ctx, operation, string(config))
@@ -41,7 +43,7 @@ func callDecoded[T any](ctx context.Context, instance *binding.Instance, operati
 	result, err = decode(raw)
 	if err != nil {
 		instance.Close(context.Background())
-		return result, &Error{Code: "transport_error", Message: "Wasm returned an invalid " + operation.Result + ": " + err.Error()}
+		return result, &Error{Code: "transport_error", Message: "Wasm returned an invalid " + operation.Result + ": " + err.Error(), Operation: operation.Export, Cause: err}
 	}
 
 	return result, nil
