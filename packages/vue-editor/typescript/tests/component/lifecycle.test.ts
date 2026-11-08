@@ -10,7 +10,7 @@ import {
   lastValue,
   makeInput,
   press
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installReferenceInputFixture()
 

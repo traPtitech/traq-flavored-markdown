@@ -1,12 +1,15 @@
 import type { StateField } from '@tiptap/pm/state'
 import { DecorationSet } from '@tiptap/pm/view'
 
-import { inputLifecycleKey } from '../input/lifecycle.js'
+import {
+  inputLifecycleKey,
+  inputLifecycleMetadata
+} from '../input/lifecycle.js'
 import { analyzeEditorDocument } from './analysis.js'
 import { buildMarkdownDecorations, mergeSyntaxRanges } from './decorations.js'
 import { markdownSourceRangesAt, retainMarkdownSource } from './editing.js'
 import { markdownFormats } from './formats.js'
-import { type PreviewState, markdownPreviewKey } from './previewState.js'
+import { type PreviewState, markdownPreviewMetadata } from './previewState.js'
 import { getMarkdownServices } from './services.js'
 
 export const markdownPreviewState: StateField<PreviewState> = {
@@ -23,8 +26,7 @@ export const markdownPreviewState: StateField<PreviewState> = {
   }),
 
   apply: (transaction, previous, oldState, newState) => {
-    const options = transaction.getMeta(markdownPreviewKey) as
-      Partial<Pick<PreviewState, 'revealed'>> | undefined
+    const options = markdownPreviewMetadata.get(transaction)
 
     const lifecycle = inputLifecycleKey.getState(newState)
 
@@ -63,7 +65,7 @@ export const markdownPreviewState: StateField<PreviewState> = {
 
     if (
       !next.enabled ||
-      transaction.getMeta(inputLifecycleKey)?.focused === false
+      inputLifecycleMetadata.get(transaction)?.focused === false
     ) {
       next.revealed = []
     }

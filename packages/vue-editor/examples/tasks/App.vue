@@ -105,7 +105,25 @@ const adapter: ReferenceInputAdapter<Task> = {
   references: {
     ...taskCodec,
     parse: source => normalize(taskCodec.parse(source)),
-    normalize
+    normalize: (parts, analysis) => {
+      const literals = (
+        analysis ?? props.markdown.analyze(partsToProjectedText(parts))
+      ).nodes.filter(isLiteralSource)
+
+      let offset = 0
+
+      return parts.flatMap((part, index) => {
+        const literal = literals.some(
+          node => node.from <= offset && offset < node.to
+        )
+
+        offset += part.type === 'text' ? part.text.length : 1
+
+        return part.type === 'reference' && literal
+          ? [{ index, text: taskCodec.serialize([part]) }]
+          : []
+      })
+    }
   },
   label: task => `#${task.number} ${task.title}`,
   editText: task => `@${task.number}`,

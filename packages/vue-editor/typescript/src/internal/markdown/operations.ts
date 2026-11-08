@@ -4,7 +4,7 @@ import type { EditPlan } from '@traq-flavored-markdown/sdk/editor'
 
 import { toDocumentPosition } from '../input/coordinates.js'
 
-export const applyMarkdownEdit = (
+export const createMarkdownTransaction = (
   state: EditorState,
   plan: EditPlan,
   preserveSelection = false

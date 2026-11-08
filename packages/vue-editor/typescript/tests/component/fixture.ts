@@ -8,7 +8,6 @@ import type {
   ReferenceInputAdapter,
   ReferenceInputHandle
 } from '../../src/types.js'
-import { markdownServices } from '../helpers/markdown.js'
 import {
   type TestReference,
   encodeReference,
@@ -38,7 +37,6 @@ export const makeInput = async ({
       adapter: {
         label: reference => reference.label,
         references: referenceCodec,
-        markdown: markdownServices,
         ...adapter
       },
 

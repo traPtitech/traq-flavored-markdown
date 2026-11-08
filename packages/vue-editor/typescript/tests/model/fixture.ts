@@ -6,23 +6,22 @@ import {
   readInputDocument,
   sourceToContent
 } from '../../src/internal/input/document.js'
-import { markdownServices } from '../helpers/markdown.js'
 import { type TestReference, referenceCodec } from '../helpers/references.js'
 
 const editors: Editor[] = []
 
 export const createInputEditor = (
   source: string,
-  options: Partial<Parameters<typeof inputExtensions<TestReference>>[0]> = {}
+  options: Partial<Parameters<typeof inputExtensions<TestReference>>[0]> = {},
+  codec = referenceCodec
 ) => {
   const editor = new Editor({
     extensions: inputExtensions({
       label: reference => reference.label,
-      markdown: markdownServices,
-      normalize: referenceCodec.normalize,
+      normalize: codec.normalize,
       ...options
     }),
-    content: sourceToContent(source, referenceCodec),
+    content: sourceToContent(source, codec),
     enableCoreExtensions: { keymap: false },
     enableInputRules: false,
     enablePasteRules: false,

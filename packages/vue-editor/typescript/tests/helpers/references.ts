@@ -1,8 +1,4 @@
-import { isLiteralSource } from '@traq-flavored-markdown/sdk/editor'
-
-import { partsToProjectedText } from '../../src/projection.js'
 import type { InputPart, ReferenceCodec } from '../../src/types.js'
-import { analyzeMarkdownSource } from './markdown.js'
 
 // A test-host format deliberately independent of traQ's reference JSON.
 export type TestReference = Readonly<{ key: string; label: string }>
@@ -64,38 +60,7 @@ export const partsToDisplayText = (
     .map(part => (part.type === 'text' ? part.text : label(part.reference)))
     .join('')
 
-export const normalize = (
-  parts: readonly InputPart<TestReference>[],
-  analysis?: ReturnType<typeof analyzeMarkdownSource>
-): InputPart<TestReference>[] => {
-  if (!parts.some(part => part.type === 'reference')) return [...parts]
-
-  const source = partsToProjectedText(parts)
-
-  const literals = (
-    analysis?.source === source ? analysis : analyzeMarkdownSource(source)
-  ).nodes.filter(isLiteralSource)
-
-  let offset = 0
-
-  return parts.map(part => {
-    const literal = literals.some(
-      node => node.from <= offset && offset < node.to
-    )
-
-    offset += part.type === 'text' ? part.text.length : 1
-
-    return literal && part.type === 'reference'
-      ? { type: 'text', text: part.reference.label }
-      : part
-  })
-}
-
-export const normalizeSource = (source: string) =>
-  serializeInput(normalize(parseInput(source)))
-
 export const referenceCodec: ReferenceCodec<TestReference> = {
-  parse: source => normalize(parseInput(source)),
-  serialize: serializeInput,
-  normalize
+  parse: parseInput,
+  serialize: serializeInput
 }

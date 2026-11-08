@@ -12,7 +12,7 @@ import {
   createInputEditor,
   installInputEditorFixture,
   readSource as source
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installInputEditorFixture()
 

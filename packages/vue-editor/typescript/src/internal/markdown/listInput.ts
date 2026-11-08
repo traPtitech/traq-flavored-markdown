@@ -7,12 +7,15 @@ import {
 } from '@tiptap/pm/state'
 
 import { isComposingInput } from '../input/composition.js'
-import { inputLifecycleKey } from '../input/lifecycle.js'
+import type { DocumentRange } from '../input/coordinates.js'
+import {
+  inputLifecycleKey,
+  inputLifecycleMetadata
+} from '../input/lifecycle.js'
+import { transactionMetadata } from '../input/metadata.js'
 import { markdownIndent } from './indent.js'
 
-export type MarkdownListCompletion = {
-  from: number
-  to: number
+export type MarkdownListCompletion = DocumentRange & {
   text: string
   continuation: string
   child: string
@@ -21,6 +24,9 @@ export type MarkdownListCompletion = {
 export const markdownListInputKey = new PluginKey<
   MarkdownListCompletion | undefined
 >('markdownListInput')
+
+export const markdownListMetadata =
+  transactionMetadata<MarkdownListCompletion | null>(markdownListInputKey)
 
 export const changeMarkdownListCompletion = (
   state: EditorState,
@@ -50,7 +56,7 @@ export const changeMarkdownListCompletion = (
     TextSelection.create(transaction.doc, completion.from + text.length)
   )
 
-  return transaction.setMeta(markdownListInputKey, null).scrollIntoView()
+  return markdownListMetadata.set(transaction, null).scrollIntoView()
 }
 
 /** 空の項目の補完操作と、Markdown 入力欄の Tab 編集を扱う。 */
@@ -62,13 +68,10 @@ export const markdownListInput = () =>
       init: () => undefined,
 
       apply: (transaction, previous, oldState) => {
-        const completion = transaction.getMeta(markdownListInputKey) as
-          MarkdownListCompletion | null | undefined
+        const completion = markdownListMetadata.get(transaction)
         if (completion !== undefined) return completion ?? undefined
 
-        const preview = transaction.getMeta(inputLifecycleKey) as
-          | { markdown?: boolean; focused?: boolean; composing?: boolean }
-          | undefined
+        const preview = inputLifecycleMetadata.get(transaction)
 
         if (
           transaction.docChanged ||

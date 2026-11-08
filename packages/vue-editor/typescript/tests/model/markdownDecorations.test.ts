@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { encodeReference } from '../helpers/references.js'
-import { installInputEditorFixture, readSource as source } from './fixture.js'
+import {
+  installInputEditorFixture,
+  readSource as source
+} from './markdownFixture.js'
 import { configure, create } from './previewFixture.js'
 
 installInputEditorFixture()

@@ -13,15 +13,22 @@ export type InputPart<R = unknown> =
   | { type: 'text'; text: string }
   | { type: 'reference'; reference: R; originalSource?: string }
 
+export interface ReferenceReplacement {
+  /** Index of a reference in the supplied parts. */
+  readonly index: number
+  /** Empty text removes the reference. */
+  readonly text: string
+}
+
 export interface ReferenceCodec<R> {
   parse(source: string): InputPart<R>[]
   serialize(parts: readonly InputPart<R>[]): string
 
-  /** Preserve part order/count; a reference may become literal text. */
+  /** Plan literal replacements for references in the supplied snapshot. */
   normalize?(
     parts: readonly InputPart<R>[],
     analysis?: SourceAnalysis
-  ): InputPart<R>[]
+  ): readonly ReferenceReplacement[]
 }
 
 export interface MarkdownServices {

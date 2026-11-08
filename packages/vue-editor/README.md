@@ -58,9 +58,11 @@ form. A reference payload has no required ID, type discriminator or raw text.
 Treat payloads as immutable values so history retains their identity. Reactive
 labels can resolve changing display data from host state without rewriting atoms.
 
-The optional `references.normalize` callback preserves part order and count,
-and may replace a reference with literal text. It receives Markdown analysis of
-the projected editor text when available. Hosts decide which notation to restore
+The optional `references.normalize` callback returns a replacement plan:
+`{ index, text }[]`, where each index identifies a reference in the supplied
+parts snapshot. Empty text deletes that reference. Duplicate indices and indices
+pointing to text are rejected. It receives Markdown analysis of the projected
+editor text when available. Hosts decide which notation to restore
 inside code/math and apply the same policy in `parse`. `examples/tasks` shows
 this policy for task notation; S-UI supplies its own message policy.
 
@@ -135,7 +137,7 @@ The implementation in `typescript/src/internal` is grouped by responsibility:
 - `markdown/` contains SDK analysis caching, edit-plan integration, decorations
   and preview state/events. These modules build on the input primitives.
 - `editor.ts` and `useReferenceEditor.ts` assemble the extensions and Vue
-  lifecycle. `messageExtension.ts` connects host reference normalization with
+  lifecycle. `input/referenceNormalization.ts` connects host reference normalization with
   input state and optional Markdown analysis.
 
 Build the SDK and this package first with `bun run build` at the repository root.

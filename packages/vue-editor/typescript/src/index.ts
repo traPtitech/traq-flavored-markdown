@@ -4,6 +4,7 @@ export { default as ReferenceInput } from './ReferenceInput.vue'
 export type {
   InputPart,
   ReferenceCodec,
+  ReferenceReplacement,
   ReferenceInputAdapter,
   ReferenceInputHandle,
   MarkdownServices,

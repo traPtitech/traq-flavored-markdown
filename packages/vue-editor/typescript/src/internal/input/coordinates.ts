@@ -13,7 +13,24 @@ export const toDocumentPosition = (offset: number): DocumentPosition =>
 
 export const toEditorOffset = (position: number) => position - 1
 
-export const toDocumentRange = (range: SourceRange): DocumentRange => ({
-  from: toDocumentPosition(range.from),
-  to: toDocumentPosition(range.to)
-})
+export const documentRange = (range: SourceRange): DocumentRange => {
+  if (
+    !Number.isSafeInteger(range.from) ||
+    !Number.isSafeInteger(range.to) ||
+    range.from < 1 ||
+    range.to < range.from
+  ) {
+    throw new RangeError('Invalid input document range')
+  }
+
+  return {
+    from: range.from as DocumentPosition,
+    to: range.to as DocumentPosition
+  }
+}
+
+export const toDocumentRange = (range: SourceRange): DocumentRange =>
+  documentRange({
+    from: toDocumentPosition(range.from),
+    to: toDocumentPosition(range.to)
+  })

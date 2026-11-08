@@ -10,6 +10,7 @@ import { partsToProjectedText } from '../src/projection.js'
 import type {
   InputPart,
   ReferenceInputAdapter,
+  ReferenceInputHandle,
   SuggestionContext
 } from '../src/types.js'
 
@@ -169,4 +170,96 @@ describe('arbitrary reference payloads', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['hello'])
     expect(editor.view.dom.getAttribute('aria-multiline')).toBe('false')
   })
+
+  it.each(['text', 'completion', 'plain paste', 'structured paste', 'drop'])(
+    'applies single-line normalization to %s insertion',
+    async route => {
+      let context: SuggestionContext<Task> | undefined
+      const parts: InputPart<Task>[] = [{ type: 'text', text: 'a\r\nb\nc' }]
+
+      const { editor, wrapper } = await make(
+        '',
+        {
+          suggestions: current => {
+            context = current
+
+            return {
+              update: vi.fn(),
+              updatePosition: vi.fn(),
+              hide: vi.fn(),
+              onKeyDown: () => false
+            }
+          },
+          clipboard: {
+            read: () =>
+              route === 'structured paste' || route === 'drop'
+                ? parts
+                : undefined,
+            write: vi.fn()
+          }
+        },
+        true
+      )
+
+      if (route === 'text') {
+        ;(wrapper.vm as unknown as ReferenceInputHandle).insertText(
+          'a\r\nb\nc',
+          { focus: false }
+        )
+      } else if (route === 'completion') {
+        context!.insertParts(parts, undefined, false)
+      } else {
+        const event = new Event(route === 'drop' ? 'drop' : 'paste', {
+          bubbles: true,
+          cancelable: true
+        })
+
+        const data = {
+          getData: () => 'a\r\nb\nc',
+          types: ['text/plain'],
+          files: []
+        }
+
+        Object.defineProperty(
+          event,
+          route === 'drop' ? 'dataTransfer' : 'clipboardData',
+          { value: data }
+        )
+
+        if (route === 'drop') {
+          vi.spyOn(editor.view, 'posAtCoords').mockReturnValue({
+            pos: 1,
+            inside: -1
+          })
+        }
+
+        editor.view.dom.dispatchEvent(event)
+      }
+
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['a b c'])
+    }
+  )
+
+  it.each(['', 'literal'])(
+    'normalizes a reference to %j with a reversible transaction',
+    async text => {
+      const { editor, wrapper } = await make('[[task:17]]', {
+        references: {
+          ...taskCodec,
+          normalize: parts =>
+            parts.some(part => part.type === 'text' && part.text.includes('!'))
+              ? parts.flatMap((part, index) =>
+                  part.type === 'reference' ? [{ index, text }] : []
+                )
+              : []
+        }
+      })
+
+      editor.commands.insertContentAt(2, '!')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([text + '!'])
+      expect(editor.view.dom.querySelector('.reference-token')).toBeNull()
+      expect(undo(editor.state, editor.view.dispatch)).toBe(true)
+      expect(editor.view.dom.textContent).toBe('Task 17')
+    }
+  )
 })

@@ -2,7 +2,7 @@ import type { Editor } from '@tiptap/core'
 
 import { inputLifecycleKey } from '../../src/internal/input/lifecycle.js'
 import type { TestReference } from '../helpers/references.js'
-import { createInputEditor } from './fixture.js'
+import { createInputEditor } from './markdownFixture.js'
 
 export const create = (
   source: string,

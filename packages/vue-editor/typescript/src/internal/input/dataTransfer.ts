@@ -4,6 +4,7 @@ import type { EditorProps, EditorView } from '@tiptap/pm/view'
 import { partsToDisplayText } from '../../projection.js'
 import type { InputPart } from '../../types.js'
 import type { PreparePaste, ReferenceInputAdapter } from '../../types.js'
+import { type DocumentRange, documentRange } from './coordinates.js'
 import { contentToParts } from './document.js'
 import { editInput } from './editOperation.js'
 import { currentInputSelection } from './selection.js'
@@ -18,12 +19,9 @@ export const inputDataTransfer = <R>(options: {
   label: (reference: R) => string
   clipboard?: ReferenceInputAdapter<R>['clipboard']
 
-  insertParts: (
-    parts: InputPart<R>[],
-    range?: { from: number; to: number }
-  ) => void
+  insertParts: (parts: InputPart<R>[], range?: DocumentRange) => void
 
-  insertText: (text: string, range?: { from: number; to: number }) => void
+  insertText: (text: string, range?: DocumentRange) => void
   preparePaste?: PreparePaste
 }): NonNullable<EditorProps['handleDOMEvents']> => {
   const read = (data: Pick<DataTransfer, 'getData'>) =>
@@ -80,7 +78,7 @@ export const inputDataTransfer = <R>(options: {
 
       const { doc } = view.state
       const { from, to } = currentInputSelection(view)
-      const range = { from, to }
+      const range = documentRange({ from, to })
 
       const parts =
         read(data) ??
@@ -152,7 +150,7 @@ export const inputDataTransfer = <R>(options: {
 
       if (position === undefined) return false
 
-      const range = { from: position, to: position }
+      const range = documentRange({ from: position, to: position })
       event.preventDefault()
 
       const parts = read(event.dataTransfer)

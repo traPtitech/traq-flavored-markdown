@@ -8,7 +8,11 @@ import {
   syncInputSelection
 } from '../input/selection.js'
 import { deleteMarkdownSource, enterMarkdownSource } from './editing.js'
-import { type PreviewState, markdownPreviewKey } from './previewState.js'
+import {
+  type PreviewState,
+  markdownPreviewKey,
+  markdownPreviewMetadata
+} from './previewState.js'
 
 const acceptsPreviewPointer = (view: EditorView, event: MouseEvent) => {
   const preview = markdownPreviewKey.getState(view.state)
@@ -139,7 +143,7 @@ export const markdownPreviewEvents: EditorProps = {
 
     if (!result) return false
 
-    return applyMarkdownEdit(view, event, result)
+    return dispatchMarkdownEdit(view, event, result)
   },
 
   handleDOMEvents: {
@@ -172,11 +176,12 @@ export const markdownPreviewEvents: EditorProps = {
       const caret = toDocumentPosition(after ? format.to : format.from)
 
       view.dispatch(
-        view.state.tr
-          .setSelection(TextSelection.create(view.state.doc, caret))
-          .setMeta(markdownPreviewKey, {
-            revealed: [{ from: format.from, to: format.to }]
-          })
+        markdownPreviewMetadata.set(
+          view.state.tr.setSelection(
+            TextSelection.create(view.state.doc, caret)
+          ),
+          { revealed: [{ from: format.from, to: format.to }] }
+        )
       )
 
       view.focus()
@@ -242,18 +247,18 @@ export const markdownPreviewEvents: EditorProps = {
 
       if (!result) return false
 
-      return applyMarkdownEdit(view, event, result)
+      return dispatchMarkdownEdit(view, event, result)
     }
   }
 }
 
-const applyMarkdownEdit = (
+const dispatchMarkdownEdit = (
   view: EditorView,
   event: Event,
   result: NonNullable<ReturnType<typeof deleteMarkdownSource>>
 ) => {
   if (result.revealed) {
-    result.transaction.setMeta(markdownPreviewKey, {
+    markdownPreviewMetadata.set(result.transaction, {
       revealed: result.revealed
     })
   }

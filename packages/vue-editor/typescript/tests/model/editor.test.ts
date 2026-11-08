@@ -174,7 +174,7 @@ describe('plain Markdown editor with atomic references', () => {
   it('round trips blank lines, tabs, trailing spaces and final newlines', () => {
     const text = `  **literal markdown**\n\n\t${embedded}  \n\n`
 
-    expect(source(createEditor(text))).toBe(text.replace(embedded, '@alice'))
+    expect(source(createEditor(text))).toBe(text)
   })
 
   it('renders a current label without changing the persisted reference', () => {
@@ -198,22 +198,6 @@ describe('plain Markdown editor with atomic references', () => {
     expect(source(editor)).toBe(`before ${embedded} after`)
     expect(redo(editor.state, editor.view.dispatch)).toBe(true)
     expect(source(editor)).toBe('before  after')
-  })
-
-  it('converts a reference surrounded by code to text in the same undo step', () => {
-    const editor = createEditor(embedded)
-    const tr = editor.state.tr.insertText('`', 2).insertText('`', 1)
-    editor.view.dispatch(tr)
-
-    expect(source(editor)).toBe('`@alice`')
-
-    undo(editor.state, editor.view.dispatch)
-
-    expect(source(editor)).toBe(embedded)
-
-    redo(editor.state, editor.view.dispatch)
-
-    expect(source(editor)).toBe('`@alice`')
   })
 
   it('preserves references in a copied partial selection', () => {

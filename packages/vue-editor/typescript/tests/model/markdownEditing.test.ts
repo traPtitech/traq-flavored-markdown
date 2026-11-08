@@ -8,7 +8,7 @@ import {
   installInputEditorFixture,
   pressKey,
   readSource as source
-} from './fixture.js'
+} from './markdownFixture.js'
 
 installInputEditorFixture()
 
