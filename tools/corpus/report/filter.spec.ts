@@ -136,7 +136,7 @@ test('all 31 filter combinations ignore exactly their selected differences', () 
   for (let required = 1; required < 32; required++) {
     let label = required & 2 ? "BADGE'S" : "badge's"
     if (required & 1) label = label.slice(0, 2) + ' ' + label.slice(2)
-    if (required & 8) label = label.replace("'", '&#039;')
+    if (required & 8) label = label.replaceAll("'", '&#039;')
 
     const opening =
       required & 8
@@ -213,7 +213,7 @@ test('adding HTML or image filtering cannot reveal an already excluded differenc
     before: fixtureLinkedImage.before,
     after: {
       kind: 'html',
-      value: fixtureLinkedImage.before.value.replace('[', '&#91;')
+      value: fixtureLinkedImage.before.value.replaceAll('[', '&#91;')
     }
   })
 
