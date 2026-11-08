@@ -33,7 +33,7 @@ impl<'a> DocumentView<'a> {
 
     /// Traverse with a value inherited by descendants. Sibling state is isolated,
     /// so independent collectors can compose their scopes as a tuple.
-    pub fn try_visit<S: Clone, E>(
+    pub fn try_visit<S, E>(
         self,
         initial: S,
         mut visitor: impl FnMut(Visit<'a>, &S) -> Result<S, E>,

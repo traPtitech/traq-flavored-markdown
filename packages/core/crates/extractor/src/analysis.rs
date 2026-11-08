@@ -10,7 +10,7 @@ pub struct AnalysisContext<'a> {
 /// A scoped analysis. Its returned scope is inherited only by descendants;
 /// siblings retain their parent's scope. Tuples compose independent analyses.
 pub trait Collector<'a> {
-    type Scope: Clone;
+    type Scope;
     type Error;
 
     fn initial(&self) -> Self::Scope;
