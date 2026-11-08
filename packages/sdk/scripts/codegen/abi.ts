@@ -1,6 +1,8 @@
 import {
   emitGoDeclarations,
-  goFile
+  goFile,
+  goFragment,
+  mergeGo
 } from '../../../../tools/contracts/emitters/go.ts'
 import {
   block,
@@ -100,7 +102,10 @@ export function abiFiles(manifest: ArtifactManifest) {
     'go/generated_errors.go',
     goFile(
       'markdown',
-      sections(emitGoDeclarations(contracts), wireErrorDecoder())
+      mergeGo(
+        emitGoDeclarations(contracts),
+        goFragment(wireErrorDecoder(), ['json', 'binding', 'ast'])
+      )
     )
   )
 

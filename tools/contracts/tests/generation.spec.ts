@@ -42,7 +42,7 @@ test('Rust-exported schemas generate shared host contracts', () => {
       [key, schema],
       ['another::BadgeData', schema]
     ])
-  ).toThrow(/Duplicate generated payload type/)
+  ).toThrow('Conflicting Go identifier BadgeDataName')
 })
 
 test('enum values and collection limits are generated from contracts for host editors', () => {

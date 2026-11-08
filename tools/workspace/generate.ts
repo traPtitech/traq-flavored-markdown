@@ -1,11 +1,14 @@
 import path from 'node:path'
 
-import { generateSdk } from '../../packages/sdk/scripts/generate-bindings.ts'
-import { OutputManifest } from '../contracts/io/output-manifest.ts'
+import { planSdkBindings } from '../../packages/sdk/scripts/generate-bindings.ts'
+import {
+  OutputManifest,
+  applyOutputManifest
+} from '../contracts/io/output-manifest.ts'
 import { type ContractPackage, nodeGroups } from '../contracts/model/groups.ts'
 import {
-  generateContracts,
-  generateCoreContracts
+  planCoreContracts,
+  planPluginContracts
 } from './generation/contracts.ts'
 import { readNpmPackageGraph } from './package-graph.ts'
 import { type PackageName, packageNames, repositoryRoot } from './paths.ts'
@@ -15,21 +18,17 @@ const contractPackages = new Set<string>(
 )
 
 /** Each target owns a complete output set; orchestration never belongs to the compiler. */
-export async function generateBindings(
-  packageName?: PackageName,
-  input?: string,
-  outputRoot = repositoryRoot
-) {
-  if (packageName === 'core') return generateCoreContracts(outputRoot)
+export async function planBindings(packageName?: PackageName, input?: string) {
+  if (packageName === 'core') return planCoreContracts()
 
   if (packageName === 'vue-editor') return new OutputManifest()
 
   if (packageName === 'sdk') {
-    return generateSdk(input ? path.resolve(input) : undefined, outputRoot)
+    return planSdkBindings(input ? path.resolve(input) : undefined)
   }
 
   if (packageName && contractPackages.has(packageName)) {
-    return generateContracts(packageName as ContractPackage, outputRoot)
+    return planPluginContracts(packageName as ContractPackage)
   }
 
   if (packageName) throw new Error('Unknown generation target: ' + packageName)
@@ -38,9 +37,19 @@ export async function generateBindings(
   const { graph } = await readNpmPackageGraph()
 
   for (const owner of graph.order) {
-    plan.merge(await generateBindings(owner, undefined, outputRoot))
+    plan.merge(await planBindings(owner))
   }
 
+  return plan
+}
+
+export async function generateBindings(
+  packageName?: PackageName,
+  input?: string,
+  outputRoot = repositoryRoot
+) {
+  const plan = await planBindings(packageName, input)
+  await applyOutputManifest(outputRoot, plan)
   return plan
 }
 

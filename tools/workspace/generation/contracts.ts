@@ -4,10 +4,7 @@ import { goNodes as contractGoNodes } from '../../contracts/emitters/go.ts'
 import { nodeFiles } from '../../contracts/emitters/nodes.ts'
 import { block, lines, sourceFile } from '../../contracts/emitters/source.ts'
 import { readManifest, runCommand } from '../../contracts/io/io.ts'
-import {
-  OutputManifest,
-  applyOutputManifest
-} from '../../contracts/io/output-manifest.ts'
+import { OutputManifest } from '../../contracts/io/output-manifest.ts'
 import {
   type ContractPackage,
   assertNodeGroup,
@@ -32,7 +29,7 @@ const runCargo = (command: string[], cwd = repositoryRoot) =>
     CARGO_TARGET_DIR: cargoTargetDirectory()
   })
 
-export async function generateCoreContracts(outputRoot = repositoryRoot) {
+export async function planCoreContracts() {
   const input = path.join(cargoTargetDirectory(), 'core-contracts')
 
   await runCargo([
@@ -82,7 +79,6 @@ export async function generateCoreContracts(outputRoot = repositoryRoot) {
     )
   )
 
-  await applyOutputManifest(outputRoot, plan)
   return plan
 }
 
@@ -160,10 +156,7 @@ async function generateContractGroup(
   return plan
 }
 
-export async function generateContracts(
-  packageName: ContractPackage,
-  outputRoot = repositoryRoot
-) {
+export async function planPluginContracts(packageName: ContractPackage) {
   const plan = new OutputManifest()
 
   for (const [group, metadata] of Object.entries(nodeGroups)) {
@@ -172,6 +165,5 @@ export async function generateContracts(
     }
   }
 
-  await applyOutputManifest(outputRoot, plan)
   return plan
 }

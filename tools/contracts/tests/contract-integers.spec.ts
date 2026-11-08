@@ -67,7 +67,7 @@ test('generated numeric payload validators retain Rust integer bounds', async ()
       expect(validate({})).toBe(false)
       expect(validate({ value: 1, extra: 1 })).toBe(false)
 
-      expect(goPayload('example::Numeric', schema)).toMatch(
+      expect(goPayload('example::Numeric', schema).source).toMatch(
         new RegExp('Value ' + format)
       )
 

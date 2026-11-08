@@ -7,48 +7,14 @@ import {
 } from '../model/ir.ts'
 import { type RawSchema, quoted as q } from '../model/schema.ts'
 import type { NodeStructure } from '../model/structure.ts'
+import { GoNames, enumName, fieldName, goIdentifier } from './go-names.ts'
 import { type Source, block, lines, sections, sourceFile } from './source.ts'
 
 type Definitions = ContractModule['definitions']
 
-const typeName = (name: string) => name
+const typeName = goIdentifier
 
-const fieldName = (name: string) =>
-  name
-    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-    .split('_')
-    .map(part => {
-      const initialism = (
-        {
-          id: 'ID',
-          url: 'URL',
-          urls: 'URLs',
-          html: 'HTML',
-          json: 'JSON',
-          utf8: 'UTF8'
-        } as Record<string, string>
-      )[part.toLowerCase()]
-
-      return initialism ?? part[0].toUpperCase() + part.slice(1)
-    })
-    .join('')
-
-const enumName = (value: string) =>
-  (({
-    '*': 'Asterisk',
-    '-': 'Dash',
-    '+': 'Plus',
-    '.': 'Period',
-    ')': 'Parenthesis'
-  })[value] ??
-    value
-      .split(/[^A-Za-z0-9]+/)
-      .filter(Boolean)
-      .map(part => part[0].toUpperCase() + part.slice(1))
-      .join('')) ||
-  'Empty'
-
-function goType(shape: ContractShape, definitions: Definitions): string {
+function goType(shape: ContractShape, context: GoContext): string {
   switch (shape.kind) {
     case 'reference':
       return typeName(shape.name)
@@ -68,13 +34,13 @@ function goType(shape: ContractShape, definitions: Definitions): string {
       return 'float64'
 
     case 'nullable':
-      return '*' + goType(shape.inner, definitions)
+      return '*' + goType(shape.inner, context)
 
     case 'array':
-      return '[]' + goType(shape.items, definitions)
+      return '[]' + goType(shape.items, context)
 
     case 'object':
-      return block('struct {', fields(shape.fields, definitions))
+      return block('struct {', fields(shape.fields, context))
 
     case 'union':
       throw new Error('Go unions must be named contracts')
@@ -84,18 +50,18 @@ function goType(shape: ContractShape, definitions: Definitions): string {
 const optional = (field: ContractField) =>
   !field.required && !Object.hasOwn(field, 'default')
 
-const fieldType = (field: ContractField, definitions: Definitions) =>
-  (optional(field) ? '*' : '') + goType(field.shape, definitions)
+const fieldType = (field: ContractField, context: GoContext) =>
+  (optional(field) ? '*' : '') + goType(field.shape, context)
 
 function excludesEmptyString(
   shape: ContractShape,
-  definitions: Definitions
+  context: GoContext
 ): boolean {
   if (shape.kind === 'reference') {
-    const definition = definitions.get(shape.name)
+    const definition = context.definitions.get(shape.name)
     if (!definition) throw new Error('Unresolved Go contract: ' + shape.name)
 
-    return excludesEmptyString(definition.shape, definitions)
+    return excludesEmptyString(definition.shape, context)
   }
 
   return shape.kind === 'enum'
@@ -105,7 +71,7 @@ function excludesEmptyString(
 
 // A nonzero default must not hide a valid explicit zero value. String enums
 // that exclude the Go zero value can safely reserve it for an omitted default.
-const canOmit = (field: ContractField, definitions: Definitions) =>
+const canOmit = (field: ContractField, context: GoContext) =>
   !field.required &&
   (!Object.hasOwn(field, 'default') ||
     field.default === null ||
@@ -113,15 +79,19 @@ const canOmit = (field: ContractField, definitions: Definitions) =>
     field.default === false ||
     field.default === 0 ||
     (Array.isArray(field.default) && field.default.length === 0) ||
-    excludesEmptyString(field.shape, definitions))
+    excludesEmptyString(field.shape, context))
 
-const fields = (value: readonly ContractField[], definitions: Definitions) =>
-  lines(
+const fields = (value: readonly ContractField[], context: GoContext) => {
+  const names = new GoNames('struct fields')
+  for (const field of value) names.add(fieldName(field.name))
+
+  return lines(
     value.map(
       field =>
-        `${fieldName(field.name)} ${fieldType(field, definitions)} \`json:${q(field.name + (canOmit(field, definitions) ? ',omitempty' : ''))}\``
+        `${fieldName(field.name)} ${fieldType(field, context)} \`json:${q(field.name + (canOmit(field, context) ? ',omitempty' : ''))}\``
     )
   )
+}
 
 const checked = (expression: string, failure = 'return err') =>
   `if err := ${expression}; err != nil { ${failure} }`
@@ -136,14 +106,17 @@ const decoderFunction = (type: string, ...body: Source[]) =>
   goFunction(`func(raw json.RawMessage, value *${type}) error`, body)
 
 /** A decoder builds each value once; named references invoke their own decoder. */
-function decoder(shape: ContractShape, definitions: Definitions): string {
-  const type = goType(shape, definitions)
+function decoder(shape: ContractShape, context: GoContext): string {
+  const type = goType(shape, context)
+  useImports(context, 'contract')
 
   switch (shape.kind) {
     case 'string': {
       if (shape.minLength === undefined && shape.maxLength === undefined) {
         return 'contract.Decode[string]'
       }
+
+      useImports(context, 'json', 'fmt', 'utf8')
 
       const bounds: string[] = []
 
@@ -170,6 +143,8 @@ function decoder(shape: ContractShape, definitions: Definitions): string {
 
     case 'integer':
     case 'number':
+      useImports(context, 'json', 'fmt')
+
       return decoderFunction(
         type,
         checked('contract.Decode(raw, value)'),
@@ -178,17 +153,23 @@ function decoder(shape: ContractShape, definitions: Definitions): string {
       )
 
     case 'nullable':
+      useImports(context, 'json')
+
       return inlineFunction(
         `func(raw json.RawMessage, value *${type}) error`,
-        `contract.Nullable(raw, value, ${decoder(shape.inner, definitions)})`
+        `contract.Nullable(raw, value, ${decoder(shape.inner, context)})`
       )
 
     case 'array':
+      useImports(context, 'json')
+
+      if (shape.minItems !== undefined || shape.maxItems !== undefined) {
+        useImports(context, 'fmt')
+      }
+
       return decoderFunction(
         type,
-        checked(
-          `contract.Array(raw, value, ${decoder(shape.items, definitions)})`
-        ),
+        checked(`contract.Array(raw, value, ${decoder(shape.items, context)})`),
         shape.minItems !== undefined &&
           `if len(*value) < ${shape.minItems} { return fmt.Errorf("array shorter than schema bound") }`,
         shape.maxItems !== undefined &&
@@ -198,6 +179,7 @@ function decoder(shape: ContractShape, definitions: Definitions): string {
 
     case 'enum':
     case 'literal': {
+      useImports(context, 'json')
       const choices = shape.kind === 'literal' ? [shape.value] : shape.values
 
       return decoderFunction(
@@ -208,13 +190,15 @@ function decoder(shape: ContractShape, definitions: Definitions): string {
     }
 
     case 'object':
+      useImports(context, 'json')
+
       return decoderFunction(
         type,
         lines(
           'object, err := contract.Object(raw)',
           'if err != nil { return err }'
         ),
-        decodeFields(shape.fields, definitions, '*value', true),
+        decodeFields(shape.fields, context, '*value', true),
         'return nil'
       )
 
@@ -225,11 +209,14 @@ function decoder(shape: ContractShape, definitions: Definitions): string {
 
 function decodeFields(
   value: readonly ContractField[],
-  definitions: Definitions,
+  context: GoContext,
   destination: string,
   parenthesize = false,
   extraAllowed: string[] = []
 ) {
+  useImports(context, 'contract')
+  if (value.length > 0) useImports(context, 'fmt')
+
   const target = parenthesize ? `(${destination})` : destination
 
   const allowed = [...extraAllowed, ...value.map(field => field.name)].map(
@@ -245,14 +232,14 @@ function decodeFields(
 
       const decodeValue = (destination: string) =>
         checked(
-          `(${decoder(field.shape, definitions)})(raw, &${destination})`,
+          `(${decoder(field.shape, context)})(raw, &${destination})`,
           `return fmt.Errorf("field %q: %w", ${q(field.name)}, err)`
         )
 
       const decode = optional(field)
         ? sections(
             lines(
-              `var present ${goType(field.shape, definitions)}`,
+              `var present ${goType(field.shape, context)}`,
               decodeValue('present')
             ),
             `${member} = &present`
@@ -263,7 +250,7 @@ function decodeFields(
         ? `return fmt.Errorf("missing required field %q", ${q(field.name)})`
         : Object.hasOwn(field, 'default')
           ? checked(
-              `(${decoder(field.shape, definitions)})(json.RawMessage(${q(JSON.stringify(field.default))}), &${member})`
+              `(${decoder(field.shape, context)})(json.RawMessage(${q(JSON.stringify(field.default))}), &${member})`
             )
           : ''
 
@@ -279,10 +266,10 @@ function decodeFields(
 function objectDeclaration(
   name: string,
   value: Extract<ContractShape, { kind: 'object' }>,
-  definitions: Definitions
+  context: GoContext
 ) {
   return sections(
-    block(`type ${name} struct {`, fields(value.fields, definitions)),
+    block(`type ${name} struct {`, fields(value.fields, context)),
     goFunction(
       `func (value *${name}) UnmarshalJSON(raw []byte) error`,
       lines(
@@ -290,17 +277,18 @@ function objectDeclaration(
         'if err != nil { return err }'
       ),
       lines(`type wire ${name}`, 'var decoded wire'),
-      decodeFields(value.fields, definitions, 'decoded'),
+      decodeFields(value.fields, context, 'decoded'),
       lines(`*value = ${name}(decoded)`, 'return nil')
     )
   )
 }
 
-function enumDeclaration(name: string, values: string[]) {
-  const constants = values.map(value => name + enumName(value))
-  if (new Set(constants).size !== constants.length) {
-    throw new Error('Conflicting Go enum members: ' + name)
-  }
+function enumDeclaration(name: string, values: string[], context: GoContext) {
+  useImports(context, 'json', 'contract')
+
+  const constants = values.map(value =>
+    context.names.add(name + enumName(value))
+  )
 
   const choices = values.map(value => q(value)).join(', ')
 
@@ -332,8 +320,10 @@ function enumDeclaration(name: string, values: string[]) {
 function unionDeclaration(
   name: string,
   shape: Extract<ContractShape, { kind: 'union' }>,
-  definitions: Definitions
+  context: GoContext
 ) {
+  useImports(context, 'json', 'fmt', 'contract')
+
   if (!shape.discriminator) {
     throw new Error('Go unions require a string type tag: ' + name)
   }
@@ -354,10 +344,12 @@ function unionDeclaration(
       fields: variant.fields.filter(field => field !== tag)
     }
   })
-  if (
-    new Set(variants.map(variant => variant.member)).size !== variants.length
-  ) {
-    throw new Error('Conflicting Go union variants: ' + name)
+
+  const members = new GoNames(name)
+
+  for (const variant of variants) {
+    members.add(variant.member)
+    context.names.add(name + variant.member)
   }
 
   const unmarshal = goFunction(
@@ -378,7 +370,7 @@ function unionDeclaration(
             `case ${q(variant.tag)}:`,
             sections(
               `var decoded ${name}${variant.member}`,
-              decodeFields(variant.fields, definitions, 'decoded', false, [
+              decodeFields(variant.fields, context, 'decoded', false, [
                 shape.discriminator!
               ]),
               lines(
@@ -422,7 +414,7 @@ function unionDeclaration(
     variants.map(variant =>
       block(
         `type ${name}${variant.member} struct {`,
-        fields(variant.fields, definitions)
+        fields(variant.fields, context)
       )
     ),
     unmarshal,
@@ -430,50 +422,82 @@ function unionDeclaration(
   )
 }
 
-export function goFile(packageName: string, source: string) {
-  // Ignore generated string literals, including struct tags, when selecting imports.
-  const code = source.replace(/"(?:\\.|[^"\\])*"|`[^`]*`/g, '')
+export type GoFragment = { source: string; imports: ReadonlySet<GoImport> }
 
-  const imports = Object.entries({
-    json: 'encoding/json',
-    fmt: 'fmt',
-    utf8: 'unicode/utf8',
-    contract:
-      'github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract',
-    ast: 'github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast',
-    binding:
-      'github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding'
-  }).filter(([name]) => new RegExp('\\b' + name + '\\.').test(code))
+const importPaths = {
+  json: 'encoding/json',
+  fmt: 'fmt',
+  utf8: 'unicode/utf8',
+  contract:
+    'github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract',
+  ast: 'github.com/traPtitech/traq-flavored-markdown/packages/core/go/ast',
+  binding:
+    'github.com/traPtitech/traq-flavored-markdown/packages/core/go/binding'
+} as const
+
+type GoImport = keyof typeof importPaths
+
+type GoContext = {
+  definitions: Definitions
+  imports: Set<GoImport>
+  names: GoNames
+}
+
+const useImports = (context: GoContext, ...imports: GoImport[]) => {
+  for (const name of imports) context.imports.add(name)
+}
+
+export const goFragment = (
+  source: string,
+  imports: readonly GoImport[] = []
+): GoFragment => ({ source, imports: new Set(imports) })
+
+export const mergeGo = (...fragments: GoFragment[]): GoFragment => ({
+  source: sections(fragments.map(fragment => fragment.source)),
+  imports: new Set(fragments.flatMap(fragment => [...fragment.imports]))
+})
+
+export function goFile(packageName: string, fragment: GoFragment) {
+  goIdentifier(packageName)
+
+  const imports = Object.entries(importPaths).filter(([name]) =>
+    fragment.imports.has(name as GoImport)
+  )
 
   return sourceFile(
     lines(
       '// Code generated from Rust contracts. DO NOT EDIT.',
-      `package ${packageName}`
+      'package ' + packageName
     ),
     imports.length > 0 &&
       block('import (', lines(imports.map(([, path]) => q(path))), ')'),
-    source
+    fragment.source
   )
 }
 
-function emitGoDefinition(
-  definition: ContractDefinition,
-  definitions: Definitions
-) {
+function emitGoDefinition(definition: ContractDefinition, context: GoContext) {
   const name = typeName(definition.name)
   const value = definition.shape
-  if (value.kind === 'enum') return enumDeclaration(name, value.values)
+  if (value.kind === 'object') {
+    const names = new GoNames(name)
+    names.add('UnmarshalJSON')
+    for (const field of value.fields) names.add(fieldName(field.name))
+  }
 
-  if (value.kind === 'union') return unionDeclaration(name, value, definitions)
+  if (value.kind === 'enum') return enumDeclaration(name, value.values, context)
+
+  if (value.kind === 'union') return unionDeclaration(name, value, context)
 
   if (value.kind === 'object') {
-    return objectDeclaration(name, value, definitions)
+    return objectDeclaration(name, value, context)
   }
 
   if (
     ['string', 'boolean', 'integer', 'number', 'literal'].includes(value.kind)
   ) {
-    const type = goType(value, definitions)
+    const type = goType(value, context)
+    useImports(context, 'json')
+    if (type === 'string') useImports(context, 'fmt', 'utf8')
 
     return sections(
       `type ${name} ${type}`,
@@ -481,7 +505,7 @@ function emitGoDefinition(
         `func (value *${name}) UnmarshalJSON(raw []byte) error`,
         lines(
           `var decoded ${type}`,
-          checked(`(${decoder(value, definitions)})(raw, &decoded)`)
+          checked(`(${decoder(value, context)})(raw, &decoded)`)
         ),
         lines(`*value = ${name}(decoded)`, 'return nil')
       ),
@@ -505,19 +529,51 @@ function emitGoDefinition(
   throw new Error(`Unsupported named Go contract: ${name} (${value.kind})`)
 }
 
-export function emitGoDeclarations(module: ContractModule) {
-  return sourceFile(
-    [...module.definitions.values()].map(definition =>
-      emitGoDefinition(definition, module.definitions)
-    )
+function emitFragment(
+  module: ContractModule,
+  emit: (context: GoContext) => string,
+  extraNames: readonly string[] = []
+): GoFragment {
+  const names = new GoNames('declarations')
+
+  for (const definition of module.definitions.values()) {
+    names.add(typeName(definition.name))
+  }
+
+  for (const name of extraNames) names.add(name)
+
+  const context: GoContext = {
+    definitions: module.definitions,
+    imports: new Set(),
+    names
+  }
+
+  return { source: emit(context), imports: context.imports }
+}
+
+export function emitGoDeclarations(
+  module: ContractModule,
+  extraNames: readonly string[] = []
+) {
+  return emitFragment(
+    module,
+    context =>
+      sourceFile(
+        [...module.definitions.values()].map(definition =>
+          emitGoDefinition(definition, context)
+        )
+      ),
+    extraNames
   )
 }
 
 export function goContract(schema: RawSchema, root = schema) {
   const module = normalizeContracts([schema], {}, root)
 
-  return sourceFile(
-    emitGoDefinition(module.definitions.get(schema.title!)!, module.definitions)
+  return emitFragment(module, context =>
+    sourceFile(
+      emitGoDefinition(module.definitions.get(schema.title!)!, context)
+    )
   )
 }
 
@@ -527,13 +583,14 @@ export function goPayload(wireName: string, schema: RawSchema) {
   if (definition.shape.kind !== 'object') {
     throw new Error('Payload must be object')
   }
-
   const name = typeName(definition.name)
 
-  return sourceFile(
-    `const ${name}Name = ${q(wireName)}`,
-    emitGoDefinition(definition, module.definitions),
-    `func (*${name}) NodePayload() {}`
+  return emitFragment(module, context =>
+    sourceFile(
+      'const ' + name + 'Name = ' + q(wireName),
+      emitGoDefinition(definition, context),
+      'func (*' + name + ') NodePayload() {}'
+    )
   )
 }
 
@@ -542,37 +599,40 @@ export function goNodes(
   packageName = 'nodes',
   structures: Readonly<Record<string, NodeStructure | undefined>> = {}
 ) {
-  const names = entries.map(([, schema]) => typeName(schema.title!))
-  if (new Set(names).size !== names.length) {
-    throw new Error('Duplicate generated payload type')
-  }
-
   const module = normalizeContracts(entries.map(([, schema]) => schema))
 
   return goFile(
     packageName,
-    sections(
-      emitGoDeclarations(module),
-      entries.map(([key, schema]) =>
+    mergeGo(
+      emitGoDeclarations(module, [
+        'NewPayload',
+        ...entries.map(([, schema]) => typeName(schema.title!) + 'Name')
+      ]),
+      goFragment(
         sections(
-          `const ${typeName(schema.title!)}Name = ${q(key)}`,
-          `func (*${typeName(schema.title!)}) NodePayload() {}`,
-          structures[key] &&
-            goStructure(typeName(schema.title!), structures[key]!)
-        )
-      ),
-      goFunction(
-        'func NewPayload(kind string) ast.Payload',
-        block(
-          'switch kind {',
-          lines(
-            entries.map(
-              ([, schema]) =>
-                `case ${typeName(schema.title!)}Name: return &${typeName(schema.title!)}{}`
+          entries.map(([key, schema]) =>
+            sections(
+              `const ${typeName(schema.title!)}Name = ${q(key)}`,
+              `func (*${typeName(schema.title!)}) NodePayload() {}`,
+              structures[key] &&
+                goStructure(typeName(schema.title!), structures[key]!)
             )
+          ),
+          goFunction(
+            'func NewPayload(kind string) ast.Payload',
+            block(
+              'switch kind {',
+              lines(
+                entries.map(
+                  ([, schema]) =>
+                    `case ${typeName(schema.title!)}Name: return &${typeName(schema.title!)}{}`
+                )
+              )
+            ),
+            'return nil'
           )
         ),
-        'return nil'
+        ['ast']
       )
     )
   )

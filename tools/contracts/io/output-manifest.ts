@@ -2,32 +2,75 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { withTempDirectory } from '../../workspace/infrastructure/temp-directory.ts'
-import { type PackageName, repositoryRoot } from '../../workspace/paths.ts'
+import {
+  type PackageName,
+  packageNames,
+  repositoryRoot
+} from '../../workspace/paths.ts'
 
 export const outputIndex = '.generated-outputs.json'
-export type Output = { owner: PackageName; path: string; source: string }
+
+export type Output = Readonly<{
+  owner: PackageName
+  path: string
+  source: string
+}>
+
 type OutputIndex = { version: 1; outputs: Omit<Output, 'source'>[] }
+
+function outputPath(relative: string): string {
+  const normalized = relative.replaceAll('\\', '/')
+  if (
+    path.isAbsolute(normalized) ||
+    /[:\0]/.test(normalized) ||
+    normalized.split('/').some(part => part === '..' || part === '.' || !part)
+  ) {
+    throw new Error('Invalid generated output path: ' + relative)
+  }
+
+  return normalized
+}
 
 /** A complete, deterministic set of generated sources for the selected owners. */
 export class OutputManifest {
-  readonly outputs = new Map<string, Output>()
-  readonly owners = new Set<PackageName>()
+  readonly #outputs = new Map<string, Output>()
+  readonly #owners = new Set<PackageName>()
 
-  add(owner: PackageName, relative: string, source: string) {
-    const normalized = relative.replaceAll('\\', '/')
-    if (
-      path.isAbsolute(normalized) ||
-      normalized.split('/').some(part => part === '..' || !part)
-    ) {
-      throw new Error('Invalid generated output path: ' + relative)
+  get outputs(): ReadonlyMap<string, Output> {
+    return new Map(this.#outputs)
+  }
+
+  get owners(): ReadonlySet<PackageName> {
+    return new Set(this.#owners)
+  }
+
+  own(owner: PackageName) {
+    if (!packageNames.includes(owner)) {
+      throw new Error('Unknown output owner: ' + owner)
     }
 
-    if (this.outputs.has(normalized)) {
+    this.#owners.add(owner)
+    return this
+  }
+
+  add(owner: PackageName, relative: string, source: string) {
+    const normalized = outputPath(relative)
+
+    if (
+      [...this.#outputs.keys()].some(
+        existing => existing.toLowerCase() === normalized.toLowerCase()
+      )
+    ) {
       throw new Error('Duplicate generated output: ' + normalized)
     }
 
-    this.outputs.set(normalized, { owner, path: normalized, source })
-    this.owners.add(owner)
+    this.own(owner)
+
+    this.#outputs.set(
+      normalized,
+      Object.freeze({ owner, path: normalized, source })
+    )
+
     return this
   }
 
@@ -36,7 +79,7 @@ export class OutputManifest {
       this.add(output.owner, output.path, output.source)
     }
 
-    for (const owner of other.owners) this.owners.add(owner)
+    for (const owner of other.owners) this.own(owner)
     return this
   }
 }
@@ -48,6 +91,25 @@ export async function readOutputIndex(root: string): Promise<OutputIndex> {
     ) as OutputIndex
     if (index.version !== 1 || !Array.isArray(index.outputs)) {
       throw new Error('Invalid generated output index')
+    }
+
+    const paths = new Set<string>()
+
+    for (const output of index.outputs) {
+      if (
+        !output ||
+        !packageNames.includes(output.owner) ||
+        typeof output.path !== 'string'
+      ) {
+        throw new Error('Invalid generated output owner or path')
+      }
+
+      const normalized = outputPath(output.path)
+      if (normalized !== output.path || paths.has(normalized.toLowerCase())) {
+        throw new Error('Duplicate or noncanonical generated output path')
+      }
+
+      paths.add(normalized.toLowerCase())
     }
 
     return index
@@ -75,10 +137,26 @@ export async function applyOutputManifest(
   manifest: OutputManifest
 ) {
   const previous = await readOutputIndex(root)
+  const owned = manifest.owners
+  const planned = manifest.outputs
 
-  const outputs = [...manifest.outputs.values()].sort((a, b) =>
+  const outputs = [...planned.values()].sort((a, b) =>
     a.path.localeCompare(b.path, 'en')
   )
+
+  const previousOwners = new Map(
+    previous.outputs.map(output => [output.path.toLowerCase(), output])
+  )
+
+  for (const output of outputs) {
+    const previous = previousOwners.get(output.path.toLowerCase())
+    if (
+      previous &&
+      (previous.owner !== output.owner || previous.path !== output.path)
+    ) {
+      throw new Error('Generated output ownership conflict: ' + output.path)
+    }
+  }
 
   const prettier = await import('prettier')
 
@@ -133,17 +211,12 @@ export async function applyOutputManifest(
   })
 
   for (const output of previous.outputs) {
-    if (
-      manifest.owners.has(output.owner) &&
-      !manifest.outputs.has(output.path)
-    ) {
+    if (owned.has(output.owner) && !planned.has(output.path)) {
       await rm(destination(root, output.path), { force: true })
     }
   }
 
-  const retained = previous.outputs.filter(
-    output => !manifest.owners.has(output.owner)
-  )
+  const retained = previous.outputs.filter(output => !owned.has(output.owner))
 
   const index: OutputIndex = {
     version: 1,

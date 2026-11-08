@@ -50,11 +50,10 @@ export function sdkOutputManifest(manifest: ArtifactManifest) {
   return plan
 }
 
-export async function generateSdk(input?: string, outputRoot = repositoryRoot) {
+export async function planSdkBindings(input?: string) {
   const contracts = input ?? (await exportNodeContracts())
   const manifest = await readManifest(contracts, parseArtifactManifest)
   const plan = sdkOutputManifest(manifest)
-  await applyOutputManifest(outputRoot, plan)
 
   console.log(
     `Generated ${plan.outputs.size} binding files from ${Object.keys(manifest.nodes).length} Rust payloads`
@@ -72,5 +71,8 @@ if (Bun.main === Bun.fileURLToPath(import.meta.url)) {
     )
   }
 
-  await generateSdk(input ? path.resolve(input) : undefined)
+  await applyOutputManifest(
+    repositoryRoot,
+    await planSdkBindings(input ? path.resolve(input) : undefined)
+  )
 }

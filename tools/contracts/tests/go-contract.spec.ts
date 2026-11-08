@@ -9,7 +9,8 @@ import {
   emitGoDeclarations,
   goContract,
   goFile,
-  goNodes
+  goNodes,
+  mergeGo
 } from '../emitters/go.ts'
 import { runCommand } from '../io/io.ts'
 import { normalizeContracts } from '../model/ir.ts'
@@ -87,7 +88,7 @@ test('string enums retain their values in named Go types', () => {
       title: 'LookupKind',
       type: 'string',
       enum: ['user', 'group']
-    })
+    }).source
   ).toContain('type LookupKind string')
 
   expect(
@@ -95,7 +96,7 @@ test('string enums retain their values in named Go types', () => {
       title: 'LookupKind',
       type: 'string',
       enum: ['user', 'group']
-    })
+    }).source
   ).toContain('LookupKindGroup LookupKind = "group"')
 
   expect(
@@ -103,8 +104,37 @@ test('string enums retain their values in named Go types', () => {
       title: 'StampAnimation',
       type: 'string',
       enum: ['rotate', 'rotate-inv']
-    })
+    }).source
   ).toContain('StampAnimationRotateInv StampAnimation = "rotate-inv"')
+})
+
+test('Go emission carries imports and rejects colliding generated names', () => {
+  const definition = goContract({
+    title: 'Mode',
+    type: 'string',
+    enum: ['fmt.Error', 'ast.Node']
+  })
+
+  expect([...definition.imports].sort()).toEqual(['contract', 'json'])
+  expect(goFile('contract', definition)).not.toContain('"fmt"')
+
+  expect(() =>
+    goContract({
+      title: 'Collision',
+      type: 'object',
+      additionalProperties: false,
+      properties: { url: { type: 'string' }, URL: { type: 'string' } }
+    })
+  ).toThrow('Conflicting Go identifier URL')
+
+  expect(() =>
+    emitGoDeclarations(
+      normalizeContracts([
+        { title: 'Mode', type: 'string', enum: ['value'] },
+        { title: 'ModeValue', type: 'string' }
+      ])
+    )
+  ).toThrow('Conflicting Go identifier ModeValue')
 })
 
 test('generated Go contracts enforce object and enum schemas while decoding', async () => {
@@ -137,13 +167,11 @@ test('generated Go contracts enforce object and enum schemas while decoding', as
     }
   }
 
-  const definitions = Object.entries(schema.$defs ?? {})
-    .map(([name, definition]) =>
-      goContract({ ...definition, title: name }, schema)
-    )
-    .join('\n')
+  const definitions = Object.entries(schema.$defs ?? {}).map(
+    ([name, definition]) => goContract({ ...definition, title: name }, schema)
+  )
 
-  const source = goFile('contract', definitions + goContract(schema))
+  const source = goFile('contract', mergeGo(...definitions, goContract(schema)))
 
   const cases = [
     ['{"kind":"user","nested":{"count":255},"entries":[]}', true],
@@ -229,8 +257,10 @@ test('tagged Rust unions generate typed Go variants and strict round trips', asy
 
   const source = goFile(
     'contract',
-    goContract({ ...schema.$defs!.StampKind, title: 'StampKind' }, schema) +
+    mergeGo(
+      goContract({ ...schema.$defs!.StampKind, title: 'StampKind' }, schema),
       goContract(schema)
+    )
   )
 
   expect(goNodes([['example::StampData', schema]], 'traq')).toContain(
