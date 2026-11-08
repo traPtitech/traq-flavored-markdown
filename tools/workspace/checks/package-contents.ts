@@ -5,6 +5,7 @@ import { captureProcess } from '../infrastructure/process.ts'
 import { withTempDirectory } from '../infrastructure/temp-directory.ts'
 import { readNpmPackageGraph } from '../package-graph.ts'
 import { packageRoot, sdkRoot } from '../paths.ts'
+import { checkIsolatedPackages } from './isolated-packages.ts'
 import { readNpmPack } from './npm-pack.ts'
 
 const capture = (command: string, args: string[], cwd: string) =>
@@ -104,6 +105,14 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       throw Error('Unexpected Wasm in ' + repo)
     }
   }
+
+  await checkIsolatedPackages(
+    packageNames.map((owner, index) => ({
+      name: manifests[owner].name,
+      archive: archives[index],
+      root: packageRoot(owner)
+    }))
+  )
 
   const packageDependencies = Object.fromEntries(
     packageNames.map((name, index) => [
