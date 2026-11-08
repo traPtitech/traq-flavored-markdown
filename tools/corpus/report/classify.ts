@@ -7,6 +7,12 @@ import type {
   ClassificationId
 } from '../protocol/classification.ts'
 import type { DifferenceRow } from '../protocol/comparison.ts'
+import {
+  filterCombinations,
+  filterResultBit,
+  selectedFilters
+} from '../protocol/filters.ts'
+import { type HtmlEdit, applyHtmlEdits } from './edits.ts'
 import { differenceFilterMask, normalizeLinkedImages } from './filter.ts'
 import { normalizeHtmlSerialization } from './html.ts'
 import { normalizeKatexErrors } from './katex.ts'
@@ -49,7 +55,7 @@ function rewriteElements(
   if (invalid) return undefined
 
   const pending: DefaultTreeAdapterTypes.Node[] = [...fragment.childNodes]
-  const edits: { start: number; end: number; value: string }[] = []
+  const edits: HtmlEdit[] = []
 
   while (pending.length) {
     const node = pending.pop()!
@@ -89,19 +95,7 @@ function rewriteElements(
     if ('childNodes' in node) pending.push(...node.childNodes)
   }
 
-  edits.sort((a, b) => a.start - b.start)
-
-  let result = '',
-    end = 0
-
-  for (const edit of edits) {
-    if (edit.start < end) return undefined
-
-    result += source.slice(end, edit.start) + edit.value
-    end = edit.end
-  }
-
-  return result + source.slice(end)
+  return applyHtmlEdits(source, edits)
 }
 
 function colorSpelling(source: string, hsl: boolean) {
@@ -213,7 +207,7 @@ function rewritePlainText(
   if (invalid) return undefined
 
   const pending: DefaultTreeAdapterTypes.Node[] = [...fragment.childNodes]
-  const edits: { start: number; end: number; value: string }[] = []
+  const edits: HtmlEdit[] = []
 
   while (pending.length) {
     const node = pending.pop()!
@@ -233,34 +227,11 @@ function rewritePlainText(
     if ('childNodes' in node) pending.push(...node.childNodes)
   }
 
-  let result = '',
-    end = 0
-
-  for (const edit of edits.sort((a, b) => a.start - b.start)) {
-    if (edit.start < end) return undefined
-
-    result += source.slice(end, edit.start) + edit.value
-    end = edit.end
-  }
-
-  return result + source.slice(end)
+  return applyHtmlEdits(source, edits)
 }
 
-const filterTags: ClassificationId[] = [
-  'text.whitespace',
-  'text.case',
-  'image.linked',
-  'html.serialization',
-  'math.diagnostic',
-  'link.policy',
-  'reference.nested'
-]
-
-const combinations = Array.from({ length: 127 }, (_, i) => i + 1).sort(
-  (a, b) => {
-    const size = (n: number) => n.toString(2).replaceAll('0', '').length
-    return size(a) - size(b) || b - a
-  }
+const combinations = [...filterCombinations].sort(
+  (a, b) => selectedFilters(a).length - selectedFilters(b).length || b - a
 )
 
 /** Classify saved before/after bytes. No current renderer or message IDs are used. */
@@ -359,15 +330,14 @@ export function classifyDifference(
       const nested = normalizeNestedLinks(currentRow())
       if (nested) apply('reference.nested', nested.before, nested.after)
 
-      const changes = new Set<ClassificationId>()
-      const links = normalizeLinkPolicy(currentRow(), origin, changes)
+      const links = normalizeLinkPolicy(currentRow(), origin)
 
       if (links) {
         apply('link.policy', links.before, links.after)
 
-        if (tags.has('link.policy') && changes.size) {
+        if (tags.has('link.policy') && links.changes.length) {
           tags.delete('link.policy')
-          for (const tag of changes) tags.add(tag)
+          for (const tag of links.changes) tags.add(tag)
         }
       }
 
@@ -432,11 +402,11 @@ export function classifyDifference(
   const mask = knownMask ?? differenceFilterMask(row, origin)
 
   const combination = combinations.find(value =>
-    Boolean(mask & (1n << BigInt(value - 1)))
+    Boolean(mask & filterResultBit(value))
   )
   if (combination) {
     return {
-      tags: filterTags.filter((_, bit) => combination & (1 << bit)),
+      tags: selectedFilters(combination).map(filter => filter.classification),
       complete: true
     }
   }

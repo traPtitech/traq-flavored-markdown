@@ -12,6 +12,7 @@ import {
   profilesFor,
   runSummarySchema
 } from './comparison.ts'
+import { filterMaskWidth } from './filters.ts'
 import {
   type Infer,
   array,
@@ -23,6 +24,8 @@ import {
   string
 } from './schema.ts'
 
+export { differenceFilters, filterMaskWidth } from './filters.ts'
+
 export { byProfile, profileIds, profilesFor, parseDifferenceRow }
 
 export type {
@@ -33,65 +36,6 @@ export type {
 } from './comparison.ts'
 
 export const pageSize = 50
-
-const outputDifferenceFilters = {
-  whitespace: 1,
-  case: 2,
-  whitespaceAndCase: 4,
-  linkedImages: 8,
-  whitespaceAndLinkedImages: 16,
-  caseAndLinkedImages: 32,
-  whitespaceAndCaseAndLinkedImages: 64,
-  htmlSerialization: 128,
-  whitespaceAndHtmlSerialization: 256,
-  caseAndHtmlSerialization: 512,
-  whitespaceAndCaseAndHtmlSerialization: 1024,
-  linkedImagesAndHtmlSerialization: 2048,
-  whitespaceAndLinkedImagesAndHtmlSerialization: 4096,
-  caseAndLinkedImagesAndHtmlSerialization: 8192,
-  whitespaceAndCaseAndLinkedImagesAndHtmlSerialization: 16384
-} as const
-
-const existingDifferenceFilters = {
-  ...(Object.fromEntries(
-    Object.entries(outputDifferenceFilters).map(([name, mask]) => [
-      name,
-      BigInt(mask)
-    ])
-  ) as Record<keyof typeof outputDifferenceFilters, bigint>),
-  katexErrors: 1n << 15n,
-  ...(Object.fromEntries(
-    Object.entries(outputDifferenceFilters).map(([name, mask]) => [
-      `${name}AndKatexErrors`,
-      BigInt(mask) << 16n
-    ])
-  ) as Record<`${keyof typeof outputDifferenceFilters}AndKatexErrors`, bigint>)
-}
-
-const linkDifferenceFilters = {
-  ...existingDifferenceFilters,
-  linkPolicy: 1n << 31n,
-  ...(Object.fromEntries(
-    Object.entries(existingDifferenceFilters).map(([name, mask]) => [
-      `${name}AndLinkPolicy`,
-      mask << 32n
-    ])
-  ) as Record<`${keyof typeof existingDifferenceFilters}AndLinkPolicy`, bigint>)
-}
-
-export const differenceFilters = {
-  ...linkDifferenceFilters,
-  nestedLinks: 1n << 63n,
-  ...(Object.fromEntries(
-    Object.entries(linkDifferenceFilters).map(([name, mask]) => [
-      `${name}AndNestedLinks`,
-      mask << 64n
-    ])
-  ) as Record<`${keyof typeof linkDifferenceFilters}AndNestedLinks`, bigint>)
-}
-
-/** Thirty-two hex digits record equality for all 127 filter combinations. */
-export const filterMaskWidth = 32
 
 export const encodeFilterMasks = (masks: readonly bigint[]) =>
   masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')

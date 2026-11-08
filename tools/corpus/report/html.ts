@@ -1,7 +1,8 @@
 import { decodeHTML, escapeAttribute, escapeText } from 'entities'
 import { type DefaultTreeAdapterTypes, parseFragment } from 'parse5'
 
-type Edit = { start: number; end: number; value: string }
+import { type HtmlEdit, applyHtmlEdits } from './edits.ts'
+
 const htmlNamespace = 'http://www.w3.org/1999/xhtml'
 
 const voidElements = new Set(
@@ -38,7 +39,7 @@ export function normalizeHtmlSerialization(source: string): string | undefined {
 
   if (invalid) return undefined
 
-  const edits: Edit[] = []
+  const edits: HtmlEdit[] = []
   const pending: DefaultTreeAdapterTypes.Node[] = [...fragment.childNodes]
 
   while (pending.length) {
@@ -120,18 +121,5 @@ export function normalizeHtmlSerialization(source: string): string | undefined {
     }
   }
 
-  edits.sort((a, b) => a.start - b.start)
-  const result: string[] = []
-  let end = 0
-
-  for (const edit of edits) {
-    // Foster parenting or merged, non-contiguous text must not erase tags.
-    if (edit.start < end) return undefined
-
-    result.push(source.slice(end, edit.start), edit.value)
-    end = edit.end
-  }
-
-  result.push(source.slice(end))
-  return result.join('')
+  return applyHtmlEdits(source, edits)
 }

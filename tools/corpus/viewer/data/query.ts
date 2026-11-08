@@ -2,18 +2,12 @@ import type {
   Classification,
   ClassificationSelection
 } from '../../protocol/classification.ts'
+import type { FilterQuery } from '../../protocol/filters.ts'
 import type { DifferenceRow, ProfileId } from '../../protocol/report.ts'
 
-export type Query = {
+export type Query = FilterQuery & {
   profile: ProfileId
   search: string
-  ignoreWhitespace: boolean
-  ignoreCase: boolean
-  ignoreLinkedImages: boolean
-  ignoreHtmlSerialization: boolean
-  ignoreKatexErrors: boolean
-  ignoreLinkPolicy: boolean
-  ignoreNestedLinks: boolean
   excludeBots: boolean
   page: number
   category?: ClassificationSelection

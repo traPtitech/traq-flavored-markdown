@@ -6,6 +6,7 @@ import {
   matchesClassification,
   needsReview
 } from '../../protocol/classification.ts'
+import { filterQueryMask } from '../../protocol/filters.ts'
 import {
   type DifferenceRow,
   type ProfileId,
@@ -141,21 +142,12 @@ export class ReportRepository {
     const search = query.search.trim().toLowerCase()
 
     // Bits enumerate nonempty combinations of the seven normalization options.
-    const combination =
-      Number(query.ignoreWhitespace) |
-      (Number(query.ignoreCase) << 1) |
-      (Number(query.ignoreLinkedImages) << 2) |
-      (Number(query.ignoreHtmlSerialization) << 3) |
-      (Number(query.ignoreKatexErrors) << 4) |
-      (Number(query.ignoreLinkPolicy) << 5) |
-      (Number(query.ignoreNestedLinks) << 6)
-
-    const mask = combination ? 1n << BigInt(combination - 1) : 0n
+    const mask = filterQueryMask(query)
 
     const key = JSON.stringify([
       query.profile,
       search,
-      combination,
+      mask.toString(),
       query.excludeBots,
       query.category ?? 'all',
       Boolean(query.onlyReview)

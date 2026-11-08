@@ -1,7 +1,8 @@
 import { escapeAttribute } from 'entities'
 import { type DefaultTreeAdapterTypes, parseFragment } from 'parse5'
 
-type ErrorEdit = { start: number; end: number; value: string }
+import { type HtmlEdit, applyHtmlEdits } from './edits.ts'
+
 const htmlNamespace = 'http://www.w3.org/1999/xhtml'
 
 const literalContexts = new Set([
@@ -37,7 +38,7 @@ export function normalizeKatexErrors(source: string) {
   if (invalid) return undefined
 
   const pending: DefaultTreeAdapterTypes.Node[] = [...fragment.childNodes]
-  const edits: ErrorEdit[] = []
+  const edits: HtmlEdit[] = []
 
   while (pending.length) {
     const node = pending.pop()!
@@ -96,17 +97,6 @@ export function normalizeKatexErrors(source: string) {
     }
   }
 
-  edits.sort((a, b) => a.start - b.start)
-  const parts: string[] = []
-  let end = 0
-
-  for (const edit of edits) {
-    if (edit.start < end) return undefined
-
-    parts.push(source.slice(end, edit.start), edit.value)
-    end = edit.end
-  }
-
-  parts.push(source.slice(end))
-  return { value: parts.join(''), errors: edits.length }
+  const value = applyHtmlEdits(source, edits)
+  return value === undefined ? undefined : { value, errors: edits.length }
 }

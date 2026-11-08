@@ -1,6 +1,8 @@
 import { escapeText } from 'entities'
 import { type DefaultTreeAdapterTypes, parseFragment } from 'parse5'
 
+import { type HtmlEdit, applyHtmlEdits } from './edits.ts'
+
 export const bareUrl = (value: string) =>
   /^(?:(?:https?|ftp):\/\/|\/\/)/i.test(value)
 
@@ -198,7 +200,7 @@ export function normalizeUrlFormatting(
     if (invalid) return html
 
     const pending: DefaultTreeAdapterTypes.Node[] = [...fragment.childNodes]
-    const edits: { start: number; end: number; value: string }[] = []
+    const edits: HtmlEdit[] = []
 
     while (pending.length) {
       const node = pending.pop()!
@@ -231,14 +233,13 @@ export function normalizeUrlFormatting(
       if ('childNodes' in node) pending.push(...node.childNodes)
     }
 
-    edits.sort((left, right) => right.start - left.start)
-
-    for (const edit of edits) {
-      html = html.slice(0, edit.start) + edit.value + html.slice(edit.end)
-    }
-
-    return html
+    return applyHtmlEdits(html, edits)
   }
 
-  return { before: rewrite(before), after: rewrite(after) }
+  const left = rewrite(before)
+  const right = rewrite(after)
+
+  return left === undefined || right === undefined
+    ? undefined
+    : { before: left, after: right }
 }

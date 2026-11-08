@@ -2,8 +2,7 @@ import { decodeHTML } from 'entities'
 import { type Token, Tokenizer } from 'parse5'
 
 import type { DifferenceRow } from '../protocol/comparison.ts'
-
-type Edit = { start: number; end: number; value: string }
+import { type HtmlEdit, applyHtmlEdits } from './edits.ts'
 
 type Anchor = {
   opening: Token.TagToken
@@ -112,22 +111,6 @@ function anchors(html: string): Anchor[] | undefined {
   return invalid || stack.length ? undefined : result
 }
 
-function applyEdits(html: string, edits: Edit[]) {
-  edits.sort((left, right) => left.start - right.start)
-  const parts: string[] = []
-  let end = 0
-
-  for (const edit of edits) {
-    if (edit.start < end) return undefined
-
-    parts.push(html.slice(end, edit.start), edit.value)
-    end = edit.end
-  }
-
-  parts.push(html.slice(end))
-  return parts.join('')
-}
-
 /** Keep the outer destination and the exact rich label; remove inner anchors. */
 export function normalizeNestedLinks(
   row: Pick<DifferenceRow, 'before' | 'after'> &
@@ -157,7 +140,7 @@ export function normalizeNestedLinks(
   }[] = []
 
   const result = sides.map((html, index) => {
-    const edits: Edit[] = []
+    const edits: HtmlEdit[] = []
 
     for (const anchor of parsed[index]!) {
       if (!anchor.outer) continue
@@ -217,12 +200,12 @@ export function normalizeNestedLinks(
       }
     }
 
-    return applyEdits(html, edits)
+    return applyHtmlEdits(html, edits)
   })
   if (result.some(value => value === undefined)) return undefined
 
   const projected = result.map(html => {
-    const edits: Edit[] = []
+    const edits: HtmlEdit[] = []
     const occurrences = new Map<string, number>()
 
     for (const anchor of outerAnchors(anchors(html!) ?? [])) {
@@ -250,7 +233,7 @@ export function normalizeNestedLinks(
       }
     }
 
-    return applyEdits(html!, edits)
+    return applyHtmlEdits(html!, edits)
   })
 
   return projected[0] === undefined || projected[1] === undefined

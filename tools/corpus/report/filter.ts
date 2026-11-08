@@ -1,14 +1,19 @@
 import { type DifferenceRow, isFailure } from '../protocol/comparison.ts'
+import {
+  type FilterId,
+  differenceFilters,
+  filterSelectionBit
+} from '../protocol/filters.ts'
 import { normalizeHtmlSerialization } from './html.ts'
 import { normalizeKatexErrors } from './katex.ts'
 import { normalizeLinkPolicy } from './link-policy.ts'
 import { normalizeNestedLinks } from './nested-links.ts'
 
 const textFilters = {
-  whitespace: 1,
-  case: 2,
-  whitespaceAndCase: 4,
-  linkedImages: 8
+  whitespace: Number(differenceFilters.whitespace),
+  case: Number(differenceFilters.case),
+  whitespaceAndCase: Number(differenceFilters.whitespaceAndCase),
+  linkedImages: Number(differenceFilters.linkedImages)
 }
 
 const withoutWhitespace = (value: string) => value.replace(/[ \t\r\n\f]/g, '')
@@ -47,7 +52,10 @@ function htmlFilterMask(before: string | undefined, after: string | undefined) {
   return (before === after ? 1 : 0) | (textFilterMask(before, after) << 1)
 }
 
-function includeFilterSupersets(mask: number, combinations = 16) {
+function includeFilterSupersets(
+  mask: number,
+  combinations = filterSelectionBit('katexErrors')
+) {
   // Adding a checkbox must not reveal rows excluded by an existing option,
   // even when the conservative HTML normalizer declines malformed input.
   for (let selected = 1; selected < combinations; selected++) {
@@ -118,86 +126,99 @@ function outputFilterMask({
   return includeFilterSupersets(
     mask |
       (imageBefore === imageAfter ? textFilters.linkedImages : 0) |
-      (imageTextMask << 4) |
-      (spellingMask << 7) |
-      (imageSpellingMask << 11)
+      (imageTextMask << filterSelectionBit('linkedImages')) |
+      (spellingMask << (filterSelectionBit('htmlSerialization') - 1)) |
+      (imageSpellingMask <<
+        (filterSelectionBit('htmlSerialization') +
+          filterSelectionBit('linkedImages') -
+          1))
   )
 }
 
-function existingFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
-  const mask = outputFilterMask(row)
+/** Extend the result table while preserving exclusions for every superset. */
+function extendFilterMask(
+  base: bigint,
+  filter: FilterId,
+  normalized?: { mask: bigint; equal: boolean }
+) {
+  const size = BigInt(filterSelectionBit(filter))
+  let result = base | (base << size)
+
+  if (normalized) {
+    const additional = normalized.equal
+      ? (1n << size) - 1n
+      : normalized.mask << 1n
+
+    result |= additional << (size - 1n)
+  }
+
+  return result
+}
+
+function diagnosticFilterMask(row: Pick<DifferenceRow, 'before' | 'after'>) {
+  const base = BigInt(outputFilterMask(row))
   const { before, after } = row
   if (before.kind !== 'html' || after.kind !== 'html') {
-    return includeFilterSupersets(mask, 32)
+    return extendFilterMask(base, 'katexErrors')
   }
 
   const left = normalizeKatexErrors(before.value)
   const right = normalizeKatexErrors(after.value)
-  let katexMask = 0
 
-  if (left && right && left.errors > 0 && left.errors === right.errors) {
-    katexMask =
-      (left.value === right.value ? 1 : 0) |
-      (outputFilterMask({
-        before: { kind: 'html', value: left.value },
-        after: { kind: 'html', value: right.value }
-      }) <<
-        1)
-  }
+  const normalized =
+    left && right && left.errors > 0 && left.errors === right.errors
+      ? {
+          equal: left.value === right.value,
+          mask: BigInt(
+            outputFilterMask({
+              before: { kind: 'html', value: left.value },
+              after: { kind: 'html', value: right.value }
+            })
+          )
+        }
+      : undefined
 
-  return includeFilterSupersets(mask | (katexMask << 15), 32)
+  return extendFilterMask(base, 'katexErrors', normalized)
 }
 
 type FilterRow = Pick<DifferenceRow, 'before' | 'after'> &
   Partial<Pick<DifferenceRow, 'source' | 'profile'>>
 
 function linkFilterMask(row: FilterRow, origin?: string) {
-  const existing = BigInt(existingFilterMask(row))
-  // Existing exclusions also apply when the new checkbox is selected.
-  let mask = existing | (existing << 32n)
-  const normalized = normalizeLinkPolicy(row, origin)
+  const base = diagnosticFilterMask(row)
+  const pair = normalizeLinkPolicy(row, origin)
 
-  if (
-    normalized &&
-    (normalized.before !== row.before.value ||
-      normalized.after !== row.after.value)
-  ) {
-    const linkMask =
-      normalized.before === normalized.after
-        ? 0xffffffffn
-        : BigInt(
-            existingFilterMask({
-              before: { kind: row.before.kind, value: normalized.before },
-              after: { kind: row.after.kind, value: normalized.after }
-            })
-          ) << 1n
+  const normalized =
+    pair && (pair.before !== row.before.value || pair.after !== row.after.value)
+      ? {
+          equal: pair.before === pair.after,
+          mask: diagnosticFilterMask({
+            before: { kind: row.before.kind, value: pair.before },
+            after: { kind: row.after.kind, value: pair.after }
+          })
+        }
+      : undefined
 
-    mask |= linkMask << 31n
-  }
-
-  return mask
+  return extendFilterMask(base, 'linkPolicy', normalized)
 }
 
 export function differenceFilterMask(row: FilterRow, origin?: string) {
-  const existing = linkFilterMask(row, origin)
-  let mask = existing | (existing << 64n)
-  const normalized = normalizeNestedLinks(row)
+  const base = linkFilterMask(row, origin)
+  const pair = normalizeNestedLinks(row)
 
-  if (normalized) {
-    const nestedMask =
-      normalized.before === normalized.after
-        ? (1n << 64n) - 1n
-        : linkFilterMask(
-            {
-              ...row,
-              before: { kind: 'html', value: normalized.before },
-              after: { kind: 'html', value: normalized.after }
-            },
-            origin
-          ) << 1n
+  const normalized = pair
+    ? {
+        equal: pair.before === pair.after,
+        mask: linkFilterMask(
+          {
+            ...row,
+            before: { kind: 'html', value: pair.before },
+            after: { kind: 'html', value: pair.after }
+          },
+          origin
+        )
+      }
+    : undefined
 
-    mask |= nestedMask << 63n
-  }
-
-  return mask
+  return extendFilterMask(base, 'nestedLinks', normalized)
 }
