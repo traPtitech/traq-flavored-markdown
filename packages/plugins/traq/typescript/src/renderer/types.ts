@@ -29,6 +29,7 @@ export interface HtmlRendererOptions {
   resolveReference?: ReferenceResolver
   resolveStamp?: StampResolver
   validateLink?(destination: string): boolean
+  linkAttributes?: Readonly<Record<string, string>>
   validateStampImage?(destination: string): boolean
   xhtmlOut?: boolean
 }

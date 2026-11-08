@@ -7,7 +7,8 @@ import type { HtmlRendererOptions } from './types.js'
 export function renderReference(
   node: ReadonlyNode & { data: Reference },
   resolve: HtmlRendererOptions['resolveReference'],
-  validateLink: (destination: string) => boolean
+  validateLink: (destination: string) => boolean,
+  linkAttributes: Readonly<Record<string, string>>
 ) {
   const { type } = node.data
   const resolved = resolve?.(node.data)
@@ -22,7 +23,8 @@ export function renderReference(
     '<a' +
     attributes([
       ['href', href],
-      ['class', resolved?.highlight ? `${cls}-highlight ${cls}` : cls]
+      ['class', resolved?.highlight ? `${cls}-highlight ${cls}` : cls],
+      ...Object.entries(linkAttributes)
     ]) +
     '>' +
     escapeHtml(label) +

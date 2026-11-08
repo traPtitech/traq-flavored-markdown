@@ -24,7 +24,8 @@ export function plugin({
   resolveStamp,
   validateStampImage,
   xhtmlOut = false,
-  validateLink = defaultPolicy
+  validateLink = defaultPolicy,
+  linkAttributes = {}
 }: HtmlRendererOptions = {}) {
   let result = new RenderPlugin(declaration)
 
@@ -32,7 +33,8 @@ export function plugin({
     renderReference(
       node,
       resolveReference,
-      ctx.insideLink ? () => false : validateLink
+      ctx.insideLink ? () => false : validateLink,
+      linkAttributes
     )
   )
 

@@ -257,7 +257,7 @@ Display options are grouped by responsibility:
 
 | Option                                                                 | Purpose                                                |
 | ---------------------------------------------------------------------- | ------------------------------------------------------ |
-| `links.validate`, `links.attributes`                                   | Destination policy and anchor attributes               |
+| `links.validate`, `links.attributes`                                   | Destination policy and ordinary-link anchor attributes |
 | `images.validate`, `images.domains`                                    | Markdown image destination policy                      |
 | `code.highlight`                                                       | Optional trusted code HTML adapter                     |
 | `math.render`, `math.renderCondensed`                                  | Optional trusted math HTML adapter                     |

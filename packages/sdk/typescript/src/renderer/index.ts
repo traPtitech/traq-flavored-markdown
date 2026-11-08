@@ -4,7 +4,7 @@ import { PresetBuilder } from '@traq-flavored-markdown/core/renderer'
 import type { ReadonlyDocument } from '@traq-flavored-markdown/core/renderer'
 import { createRenderer } from '@traq-flavored-markdown/core/renderer'
 import { plugin as extensions } from '@traq-flavored-markdown/extensions-plugin/renderer'
-import { plugin as trap } from '@traq-flavored-markdown/traq-plugin/renderer'
+import { plugin as traq } from '@traq-flavored-markdown/traq-plugin/renderer'
 
 import { analyzeMessage, messageContext } from '../traq/messages/analysis.js'
 import { normalizeTraqOrigin } from '../traq/messages/cards.js'
@@ -33,20 +33,23 @@ function buildPreset(
   { plugins = [], configurePlugins, ...options }: ResolvedOptions,
   condensed = false
 ) {
-  const commonPlugin = configureSpacing(common(options), options.xhtmlOut)
+  const commonPlugin = configureSpacing(
+    common({ ...options, ...options.links.standard }),
+    options.xhtmlOut
+  )
 
   const extensionsPlugin = extensions({
     math: condensed ? options.condensedMath : options.math
   })
 
-  const trapPlugin = trap(options)
+  const traqPlugin = traq({ ...options, ...options.links.reference })
 
   const defaults = condensed
-    ? configureCondensed(commonPlugin, extensionsPlugin, trapPlugin, options)
+    ? configureCondensed(commonPlugin, extensionsPlugin, traqPlugin, options)
     : {
         common: commonPlugin,
         extensions: extensionsPlugin,
-        traq: trapPlugin
+        traq: traqPlugin
       }
 
   const selected = configurePlugins?.(defaults) ?? defaults
@@ -101,7 +104,7 @@ export function messageRenderers({
     const analysis = analyzeMessage(
       context,
       cardOrigin,
-      resolvedOptions.validateLink
+      resolvedOptions.links.standard.validateLink
     )
 
     const plan = messageRenderPlan(analysis, resolvedOptions.labels)
