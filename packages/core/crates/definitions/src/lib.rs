@@ -15,7 +15,34 @@ pub mod handlers;
 
 pub use features::{FeatureContract, PayloadContract};
 pub use markdown_definitions_derive::WireTypeKey;
+
+/// Derive structural node metadata and payload constraints.
+///
+/// ```compile_fail
+/// #[markdown_definitions::node(role = Inline, child_type = Text, children = Inline)]
+/// #[derive(Debug, Clone, PartialEq)]
+/// struct Invalid {}
+/// ```
+///
+/// ```compile_fail
+/// #[markdown_definitions::node(role = Inline)]
+/// #[derive(Debug, Clone, PartialEq)]
+/// struct Invalid {
+///     #[constraint(range(min = 0, min = 1))]
+///     value: u8,
+/// }
+/// ```
+///
+/// ```compile_fail
+/// #[markdown_definitions::node(role = Inline)]
+/// #[derive(Debug, Clone, PartialEq)]
+/// struct Invalid {
+///     #[constraint(length())]
+///     value: String,
+/// }
+/// ```
 pub use markdown_definitions_derive::node;
+
 pub use markdown_definitions_derive::payload;
 pub use names::{NameCollision, validate_names};
 pub use namespace::{PluginDeclaration, PluginGroup};
