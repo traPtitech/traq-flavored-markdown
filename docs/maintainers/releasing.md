@@ -45,7 +45,9 @@ version beyond v1 until those paths are migrated.
 ## Prepare and validate
 
 All phases consume the same release plan: npm packages in dependency order,
-Go module tags, generated output paths, changed release files, and artifacts.
+Go module tags, generated output paths, changed release files, artifacts, and the
+source revision. In the workflow, `RELEASE_SOURCE_SHA` keeps that revision stable
+through the release metadata commit.
 The plan is derived from the workspace descriptor, manifests, and managed output
 index. The version parser is shared by npm, Go, and external consumer checks;
 stable releases use the `latest` dist-tag and prereleases use `next`.
@@ -75,11 +77,12 @@ From the Actions page, run `Release npm and Go packages` on the default branch.
 Select whether to increment `patch`, `minor`, or `major`, then turn off `dry_run`.
 Do not run a local build, dry run, `--prepare`, or create a tag.
 
-CI runs the full checks on pull requests and default-branch pushes. Run the
-release after CI has passed for the source commit; the release workflow does
-not repeat tests, lint, browser installation, or the full `bun run check`.
+CI runs the full checks on pull requests and default-branch pushes. The release
+workflow pins the triggering SHA and requires its latest default-branch push CI
+run to have completed successfully. The verified SHA and CI URL appear in the
+workflow summary.
 
-The workflow checks out the current default branch, calculates the next stable
+The workflow checks out that pinned source revision, calculates the next stable
 SemVer version from its root `package.json`, synchronizes and validates npm and
 Go release metadata, and runs `bun run build` to produce the npm distributions
 and bundled Go Wasm. It commits the synchronized manifests,

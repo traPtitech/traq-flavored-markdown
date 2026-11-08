@@ -16,7 +16,8 @@ test('release resume checks remote state and only completes missing actions', as
       { owner: 'sdk', name: 'sdk', directory: 'packages/sdk' }
     ],
     [{ directory: 'packages/core/go', published: true }],
-    ['generated.ts']
+    ['generated.ts'],
+    'abc'
   )
 
   const events: string[] = []
@@ -36,6 +37,7 @@ test('release resume checks remote state and only completes missing actions', as
 
   await resumeRelease(plan, 'abc', ports)
   expect(events).toEqual(['npm:sdk', 'tag:packages/core/go/v1.2.3-rc.1'])
+  expect(plan.sourceRevision).toBe('abc')
   expect(plan.changedFiles).toContain('generated.ts')
 
   await expect(inspectRelease(plan, 'wrong', ports)).rejects.toThrow(

@@ -4,11 +4,13 @@ import {
   outputIndex,
   readOutputIndex
 } from '../../contracts/io/output-manifest.ts'
+import { captureProcess } from '../infrastructure/process.ts'
 import { readGoPackageGraph, readNpmPackageGraph } from '../package-graph.ts'
 import { type PackageName, packageRoot, repositoryRoot } from '../paths.ts'
 import { type Version, goVersion } from './version.ts'
 
 export type ReleasePlan = {
+  sourceRevision: string
   version: Version
   packages: { owner: PackageName; name: string; directory: string }[]
   moduleTags: string[]
@@ -20,13 +22,15 @@ export function releasePlan(
   version: Version,
   packages: ReleasePlan['packages'],
   modules: { directory: string; published: boolean }[],
-  generated: string[]
+  generated: string[],
+  sourceRevision: string
 ): ReleasePlan {
   const moduleTags = modules
     .filter(module => module.published)
     .map(module => `${module.directory}/${version.tag}`)
 
   return {
+    sourceRevision,
     version,
     packages,
     moduleTags,
@@ -49,7 +53,11 @@ export function releasePlan(
   }
 }
 
-export async function loadReleasePlan(label: string, root = repositoryRoot) {
+export async function loadReleasePlan(
+  label: string,
+  root = repositoryRoot,
+  sourceRevision?: string
+) {
   const version = goVersion(label)
 
   const [{ manifests, graph }, go, generated] = await Promise.all([
@@ -71,7 +79,9 @@ export async function loadReleasePlan(label: string, root = repositoryRoot) {
       ...module,
       published: go.published.includes(module)
     })),
-    generated.outputs.map(output => output.path)
+    generated.outputs.map(output => output.path),
+    sourceRevision ??
+      (await captureProcess('git', ['rev-parse', 'HEAD'], root)).trim()
   )
 }
 

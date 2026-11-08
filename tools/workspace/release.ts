@@ -237,7 +237,12 @@ const releasePorts: ReleasePorts = {
 
 export const runRelease = async (args: string[]) => {
   const release = parseRelease(args)
-  const plan = await loadReleasePlan(`v${release.version}`)
+
+  const plan = await loadReleasePlan(
+    `v${release.version}`,
+    repositoryRoot,
+    process.env.RELEASE_SOURCE_SHA
+  )
 
   if (
     ['plan', 'files', 'inspect', 'resume', 'publish'].includes(release.mode)
