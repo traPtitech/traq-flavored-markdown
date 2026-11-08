@@ -7,8 +7,8 @@ import (
 	"github.com/traPtitech/traq-flavored-markdown/packages/core/go/contract"
 )
 
-// decodeMutableDocument validates the wire tree before exposing it to callers.
-func decodeMutableDocument(raw []byte, factory func(string) Payload) (*MutableDocument, error) {
+// decodeOwnedDocument validates payloads while constructing their immutable wire views.
+func decodeOwnedDocument(raw []byte, factory func(string) Payload) (*Document, error) {
 	if len(raw) > maxJSONBytes {
 		return nil, limit("$", "json_bytes")
 	}
@@ -39,7 +39,12 @@ func decodeMutableDocument(raw []byte, factory func(string) Payload) (*MutableDo
 		return nil, err
 	}
 
-	return &MutableDocument{Source: *wire.Source, Children: children}, nil
+	return &Document{source: *wire.Source, children: children.nodes, json: string(raw), factory: factory}, nil
+}
+
+type decodedNodes struct {
+	nodes  []Node
+	shapes []nodeShape
 }
 
 type decoder struct {
@@ -70,17 +75,17 @@ func (s *decoder) span(span, parent Span, end uint32, path string) error {
 	return nil
 }
 
-func (s *decoder) decodeNodes(raw json.RawMessage, parent Span, depth int, path string) ([]MutableNode, error) {
+func (s *decoder) decodeNodes(raw json.RawMessage, parent Span, depth int, path string) (decodedNodes, error) {
 	var items []json.RawMessage
 	if err := json.Unmarshal(raw, &items); err != nil {
-		return nil, invalid(path, err.Error())
+		return decodedNodes{}, invalid(path, err.Error())
 	}
 
 	if err := s.count(len(items), depth, path); err != nil {
-		return nil, err
+		return decodedNodes{}, err
 	}
 
-	nodes := make([]MutableNode, len(items))
+	nodes := decodedNodes{nodes: make([]Node, len(items)), shapes: make([]nodeShape, len(items))}
 	end := parent.Start
 
 	for i, raw := range items {
@@ -96,53 +101,53 @@ func (s *decoder) decodeNodes(raw json.RawMessage, parent Span, depth int, path 
 			Children json.RawMessage `json:"children"`
 		}
 		if err := strict(raw, &wire); err != nil {
-			return nil, invalid(at, err.Error())
+			return decodedNodes{}, invalid(at, err.Error())
 		}
 
 		if wire.Kind == nil || wire.Span == nil || wire.Span.Start == nil || wire.Span.End == nil || len(wire.Data) == 0 || bytes.Equal(wire.Data, []byte("null")) {
-			return nil, invalid(at, "kind, span.start, span.end and data are required")
+			return decodedNodes{}, invalid(at, "kind, span.start, span.end and data are required")
 		}
 
 		span := Span{Start: *wire.Span.Start, End: *wire.Span.End}
 		if err := s.span(span, parent, end, at); err != nil {
-			return nil, err
+			return decodedNodes{}, err
 		}
 
 		end = span.End
 
 		if s.factory == nil {
-			return nil, invalid(at+".kind", "node factory is required")
+			return decodedNodes{}, invalid(at+".kind", "node factory is required")
 		}
 
 		payload := s.factory(*wire.Kind)
 		if payload == nil {
-			return nil, invalid(at+".kind", "unsupported node: "+*wire.Kind)
+			return decodedNodes{}, invalid(at+".kind", "unsupported node: "+*wire.Kind)
 		}
 
-		if err := json.Unmarshal(wire.Data, payload); err != nil {
-			return nil, invalid(at+".data", err.Error())
+		if err := json.Unmarshal(bytes.Clone(wire.Data), payload); err != nil {
+			return decodedNodes{}, invalid(at+".data", err.Error())
 		}
 
-		children := []MutableNode(nil)
+		children := decodedNodes{}
 
 		if len(wire.Children) > 0 {
 			if bytes.Equal(wire.Children, []byte("null")) {
-				return nil, invalid(at+".children", "children must be an array")
+				return decodedNodes{}, invalid(at+".children", "children must be an array")
 			}
 
 			var err error
 			children, err = s.decodeNodes(wire.Children, span, depth+1, at+".children")
 			if err != nil {
-				return nil, err
+				return decodedNodes{}, err
 			}
 		}
 
-		node := MutableNode{Kind: *wire.Kind, Span: span, Data: payload, Children: children}
-		if err := validateStructure(&node, at); err != nil {
-			return nil, err
+		if err := validateChildStructure(payload, span, children.shapes, at); err != nil {
+			return decodedNodes{}, err
 		}
 
-		nodes[i] = node
+		nodes.nodes[i] = Node{kind: *wire.Kind, span: span, data: wire.Data, children: children.nodes}
+		nodes.shapes[i] = shapeOf(*wire.Kind, payload, len(children.nodes))
 	}
 
 	return nodes, nil

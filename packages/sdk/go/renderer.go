@@ -20,10 +20,10 @@ func (r *Runtime) NewPlainTextRenderer(ctx context.Context, options PlainTextOpt
 
 func (r *PlainTextRenderer) Render(ctx context.Context, document *Document) (string, error) {
 	if !document.IsValid() {
-		return "", &Error{Code: "invalid_document", Message: "document is required"}
+		return "", &Error{Code: "invalid_document", Message: "document is required", Operation: operationRender.Export}
 	}
 
-	return callDecoded(ctx, r.instance, operationRender, string(document.JSON()), decodeJSON[string])
+	return callDecoded(ctx, r.instance, operationRender, document.JSONText(), decodeJSON[string])
 }
 
 func (r *PlainTextRenderer) Close(ctx context.Context) error {

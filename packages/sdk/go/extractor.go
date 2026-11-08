@@ -24,8 +24,8 @@ func (r *Runtime) NewExtractor(
 
 func (p *Extractor) Extract(ctx context.Context, document *Document) (*Extraction, error) {
 	if !document.IsValid() {
-		return nil, &Error{Code: "invalid_document", Message: "document is required"}
+		return nil, &Error{Code: "invalid_document", Message: "document is required", Operation: operationExtract.Export}
 	}
 
-	return callDecoded(ctx, p.instance, operationExtract, string(document.JSON()), decodeJSON[*Extraction])
+	return callDecoded(ctx, p.instance, operationExtract, document.JSONText(), decodeJSON[*Extraction])
 }

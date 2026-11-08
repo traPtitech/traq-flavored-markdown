@@ -1,9 +1,85 @@
 package ast
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 )
+
+type mutatingPayload struct{}
+
+func (*mutatingPayload) NodePayload() {}
+
+func (*mutatingPayload) UnmarshalJSON(raw []byte) error {
+	raw[0] = '!'
+	return nil
+}
+
+func (*mutatingPayload) MarshalJSON() ([]byte, error) { return []byte(`{"changed":true}`), nil }
+
+func TestPayloadCodecsCannotRewriteOwnedWireData(t *testing.T) {
+	raw := []byte(`{"source":"","children":[{"kind":"custom","span":{"start":0,"end":0},"data":{}}]}`)
+	original := bytes.Clone(raw)
+	document, err := DecodeDocument(raw, func(string) Payload { return &mutatingPayload{} })
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	raw[0] = '!'
+
+	if _, err := document.ToMutable(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := document.Children()[0].DecodePayload(&mutatingPayload{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if document.JSONText() != string(original) || string(document.Children()[0].PayloadJSON()) != "{}" {
+		t.Fatal("payload codec changed the owned wire snapshot")
+	}
+}
+
+func FuzzDocumentRoundtrip(f *testing.F) {
+	for _, raw := range []string{
+		`{"source":"","children":[]}`,
+		`{"source":"日😀","children":[{"kind":"custom","span":{"start":0,"end":7},"data":{"values":["日😀"]}}]}`,
+		`{"source":"x","children":[{"kind":"custom","span":{"start":0,"end":9},"data":{}}]}`,
+	} {
+		f.Add([]byte(raw))
+	}
+
+	f.Fuzz(func(t *testing.T, raw []byte) {
+		if len(raw) > 4096 {
+			return
+		}
+
+		factory := func(string) Payload { return &nestedPayload{} }
+		document, err := DecodeDocument(raw, factory)
+		if err != nil {
+			return
+		}
+
+		if document.JSONText() != string(raw) {
+			t.Fatal("wire spelling changed")
+		}
+
+		copy, err := DecodeDocument(document.JSON(), factory)
+		if err != nil || copy.JSONText() != document.JSONText() {
+			t.Fatalf("roundtrip: %v", err)
+		}
+
+		draft, err := document.ToMutable()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		draft.Source = "changed"
+		if document.Source() != copy.Source() {
+			t.Fatal("draft changed snapshot")
+		}
+	})
+}
 
 type nestedPayload struct {
 	Values []string `json:"values"`
