@@ -35,7 +35,7 @@ reasoned `allow` when a shared file legitimately differs across build targets.
 | Parser compatibility       | Fixture tests and, where appropriate, corpus comparison              |
 | HTML, CSS, or viewer state | `bun run test:browser` after building all packages                   |
 
-`check:package` packs all five public packages into a temporary consumer and
+`check:package` packs all six public packages into a temporary consumer and
 verifies public declarations, AST parsing, HTML, CSS, and the Wasm digest. It
 removes temporary files and archives after the run.
 
@@ -66,16 +66,22 @@ unclassified or overlapping files fail before any test runs. Place new tests in
 the appropriate resource directory or update that declaration when introducing
 a new compiler or workspace test.
 
-| Command                  | Required resources                                                              |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `bun run test:unit`      | Built TypeScript and local fixtures; no Wasm or Go compiler                     |
-| `bun run test:assembly`  | Exported contracts, built packages, and Sass                                    |
-| `bun run test:codegen`   | Go compiler for temporary generated modules                                     |
-| `bun run test:workspace` | Go module commands and temporary workspaces                                     |
-| `bun run test:wasm`      | Fresh SDK Wasm and built SDK                                                    |
-| `bun run test:corpus`    | Synthetic streams and injected adapters; no credentials or application checkout |
-| `bun run test:corpus:go` | Independent Go worker plus synthetic SDK comparison after building Wasm         |
-| `bun run test:browser`   | Built packages and Chromium; DOM, CSS, adapter and viewer interactions          |
+The Vue editor's `.test.ts` files run separately in Vitest for SFC compilation
+and jsdom. Its browser suite uses the public package exports, while model and
+component unit tests can import private modules directly without publishing them.
+
+| Command                    | Required resources                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------- |
+| `bun run test:unit`        | Built TypeScript and local fixtures; no Wasm or Go compiler                                       |
+| `bun run test:assembly`    | Exported contracts, built packages, and Sass                                                      |
+| `bun run test:codegen`     | Go compiler for temporary generated modules                                                       |
+| `bun run test:workspace`   | Go module commands and temporary workspaces                                                       |
+| `bun run test:wasm`        | Fresh SDK Wasm and built SDK                                                                      |
+| `bun run test:corpus`      | Synthetic streams and injected adapters; no credentials or application checkout                   |
+| `bun run test:corpus:go`   | Independent Go worker plus synthetic SDK comparison after building Wasm                           |
+| `bun run test:browser`     | Built packages and Chromium; DOM, CSS, adapter and viewer interactions                            |
+| `bun run test:vue`         | Built SDK Wasm; editor model and Vue contracts in jsdom; part of `test:typescript`                |
+| `bun run test:vue:browser` | Built packages; task demo and editor selection/Undo/IME in three browsers and two mobile profiles |
 
 For the shortest independent loop, run `bun run build:typescript` and then
 `bun run test:unit`. CI runs that loop in a separate job that does not install
@@ -88,7 +94,10 @@ CI installs Playwright's Chromium on Ubuntu. Browser fixtures use local syntheti
 data and the built package modules; retained failure traces and screenshots live
 in the ignored `test-results/` directory. The gallery checks plugin layout,
 spoiler visibility, images, stamps, math/highlighting adapters, safe rendering,
-and independent editing drafts. The corpus tests exercise query controls,
+and independent editing drafts. Install all three engines with
+`bunx playwright install chromium firefox webkit` for `test:vue:browser`.
+That suite uses port 4181 and generic host fixtures; application-specific
+references, completion, paste and posting remain covered in S-UI. The corpus tests exercise query controls,
 bootstrap failures, and resource-isolated preview behavior in a real DOM.
 
 ## Fixtures and corpus

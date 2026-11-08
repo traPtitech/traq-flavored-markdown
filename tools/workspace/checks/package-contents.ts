@@ -53,8 +53,9 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       'LICENSE',
       ...exported(manifest.exports),
       ...(repo === 'sdk' ? ['dist/browser.js', 'dist/browser.d.ts'] : []),
-      'dist/renderer/index.js',
-      'dist/renderer/index.d.ts'
+      ...(repo === 'vue-editor'
+        ? []
+        : ['dist/renderer/index.js', 'dist/renderer/index.d.ts'])
     ])
       if (!files.has(name)) throw Error(repo + ': missing ' + name)
     if (repo === 'sdk')
@@ -202,6 +203,28 @@ await withTempDirectory('markdown-packages-', async temporaryDirectory => {
       await capture('node', [name + '.ts', contract.sha256], temporaryDirectory)
     )
   }
+  await Bun.write(
+    `${temporaryDirectory}/vue-editor.ts`,
+    Bun.file(path.join(packageRoot('vue-editor'), 'scripts', 'consumer.ts'))
+  )
+  await capture(
+    bun,
+    [
+      tsc,
+      '--noEmit',
+      '--strict',
+      '--target',
+      'ES2022',
+      '--module',
+      'NodeNext',
+      '--moduleResolution',
+      'NodeNext',
+      'vue-editor.ts'
+    ],
+    temporaryDirectory
+  )
+  await capture(bun, ['vue-editor.ts'], temporaryDirectory)
+  await capture('node', ['vue-editor.ts'], temporaryDirectory)
   console.log(
     `${packageNames.length} packed packages: SDK, renderer, declarations, CSS and Wasm integration passed`
   )

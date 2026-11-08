@@ -30,6 +30,11 @@ references, stamps, and animation styles. CSS custom properties control colors
 and stamp sizes. `/nodes` exports `schema`; pass it to
 `createRenderer(preset, { schema })` when rendering raw documents.
 
+`/nodes` also exports immutable `contractValues` and `arrayLimits` metadata from
+the Rust contracts. Editors can use `contractValues.StampAnimation`,
+`contractValues.StampSize`, and `arrayLimits.StampEffects.animations.maxItems`
+to offer valid effects without maintaining another list of names or bounds.
+
 Spoilers render as `.spoiler` elements, concealed until the host adds the `shown`
 attribute. Hosts own pointer and keyboard activation, focus, and matching
 accessibility state for interactive spoilers. Reference classes use

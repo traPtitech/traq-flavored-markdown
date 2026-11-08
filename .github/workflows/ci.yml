@@ -98,9 +98,11 @@ jobs:
       - run: bun run check:package
         timeout-minutes: 5
       - run: bun run check:go-consumer
-      - run: bunx playwright install --with-deps chromium
+      - run: bunx playwright install --with-deps chromium firefox webkit
         if: runner.os == 'Linux'
       - run: bun run test:browser
+        if: runner.os == 'Linux'
+      - run: bun run test:vue:browser
         if: runner.os == 'Linux'
 
   rust:

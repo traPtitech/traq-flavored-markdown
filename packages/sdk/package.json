@@ -1,6 +1,6 @@
 {
   "name": "@traq-flavored-markdown/sdk",
-  "version": "0.1.7",
+  "version": "0.3.0",
   "description": "traQ Markdown presets and processing, distributed as Rust, Wasm, Go and TypeScript.",
   "homepage": "https://github.com/traPtitech/traq-flavored-markdown#readme",
   "bugs": {
@@ -85,16 +85,16 @@
   "devDependencies": {
     "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
     "@traq-flavored-markdown/core": "workspace:*",
+    "@traq-flavored-markdown/extensions-plugin": "workspace:*",
     "@traq-flavored-markdown/traq-plugin": "workspace:*",
     "markdown-it": "15.0.3",
-    "sass": "1.106.1",
-    "@traq-flavored-markdown/extensions-plugin": "workspace:*"
+    "sass": "1.106.1"
   },
   "peerDependencies": {
-    "@traq-flavored-markdown/commonmark-plugin": "0.1.7",
-    "@traq-flavored-markdown/core": "0.1.7",
-    "@traq-flavored-markdown/traq-plugin": "0.1.7",
-    "@traq-flavored-markdown/extensions-plugin": "0.1.7"
+    "@traq-flavored-markdown/commonmark-plugin": "0.3.0",
+    "@traq-flavored-markdown/core": "0.3.0",
+    "@traq-flavored-markdown/extensions-plugin": "0.3.0",
+    "@traq-flavored-markdown/traq-plugin": "0.3.0"
   },
   "engines": {
     "node": ">=24"

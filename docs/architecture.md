@@ -22,6 +22,7 @@ one shared version.
 | `packages/plugins/*/styles`                              | CSS required by each plugin's markup                                             |
 | `packages/sdk/styles`                                    | traQ presentation CSS                                                            |
 | `packages/sdk/scripts`                                   | SDK artifact build and distribution-specific generation                          |
+| `packages/vue-editor`                                    | Vue reference input, ProseMirror integration, composition and selection handling |
 | `tools/contracts`                                        | Typed Rust contract exports, shared Go/TypeScript generators, and tests          |
 | `tools/workspace`                                        | Build graph, dependency policy, checks, release, and process infrastructure      |
 | `scripts`                                                | Thin developer command entrypoints                                               |

@@ -1,0 +1,73 @@
+{
+  "name": "@traq-flavored-markdown/vue-editor",
+  "version": "0.3.0",
+  "description": "Vue reference input with host-owned references, completion and Markdown services.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traPtitech/traq-flavored-markdown.git",
+    "directory": "packages/vue-editor"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "sideEffects": [
+    "./dist/style.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./prosemirror": {
+      "types": "./dist/prosemirror.d.ts",
+      "import": "./dist/prosemirror.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "vite build && vue-tsc --project typescript/tsconfig.build.json && bun run scripts/declarations.ts",
+    "build:ts": "vite build && vue-tsc --project typescript/tsconfig.build.json && bun run scripts/declarations.ts",
+    "typecheck": "vue-tsc --noEmit --project typescript/tsconfig.json",
+    "test": "vitest run",
+    "dev": "vite --config examples/tasks/vite.config.ts",
+    "test:browser": "playwright test --config playwright.config.ts"
+  },
+  "peerDependencies": {
+    "@tiptap/core": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/vue-3": "3.32.0",
+    "@traq-flavored-markdown/commonmark-plugin": "0.3.0",
+    "@traq-flavored-markdown/core": "0.3.0",
+    "@traq-flavored-markdown/extensions-plugin": "0.3.0",
+    "@traq-flavored-markdown/sdk": "0.3.0",
+    "@traq-flavored-markdown/traq-plugin": "0.3.0",
+    "@vueuse/core": "15.0.0",
+    "vue": "^3.5.44"
+  },
+  "devDependencies": {
+    "@tiptap/core": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/vue-3": "3.32.0",
+    "@traq-flavored-markdown/commonmark-plugin": "workspace:*",
+    "@traq-flavored-markdown/core": "workspace:*",
+    "@traq-flavored-markdown/extensions-plugin": "workspace:*",
+    "@traq-flavored-markdown/sdk": "workspace:*",
+    "@traq-flavored-markdown/traq-plugin": "workspace:*",
+    "@vitejs/plugin-vue": "6.0.10",
+    "@vue/test-utils": "2.4.11",
+    "@vueuse/core": "15.0.0",
+    "jsdom": "30.1.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.3",
+    "vue": "3.5.44",
+    "vue-tsc": "3.3.13"
+  }
+}

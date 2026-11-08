@@ -339,6 +339,43 @@ Prefix text preserves whole authored tabs and expresses partial tabs as spaces.
 The SDK supplies no CSS classes, DOM decorations, selection state, or IME policy.
 Repeated analysis of the same parsed snapshot reuses the result.
 
+`describeSource(editing)` provides the built-in grammar's semantic source regions
+for styles, links, literals, headings, images, stamps, tables, and line containers.
+Each region retains its `native` node and separate `content` and `syntax` range
+arrays. In particular, multiline content across quote/list prefixes remains
+disjoint. This view omits a block's final line ending from its display envelope;
+the original facts remain available in `editing.nodes`. It selects no DOM tags,
+CSS classes, or visibility rules. Custom node kinds can be handled directly
+through `editing.nodes`.
+
+Line breaks and indentation can be planned without an editor framework:
+
+```ts
+import {
+  analyzeForEditing,
+  planIndent,
+  planLineBreak
+} from '@traq-flavored-markdown/sdk/editor'
+
+const source = '> 12. item'
+const selection = { from: source.length, to: source.length }
+const plan = planLineBreak(source, selection, {
+  analyze: text => analyzeForEditing(parser.parseWithSyntax(text))
+})
+// plan inserts "\n> 13. " and places the selection after that prefix.
+// continueItem: true keeps the current list item (a soft line break).
+const indentation = planIndent(source, { from: 0, to: source.length })
+```
+
+Each immutable plan contains ordered, disjoint `changes` in the **original**
+UTF-16 source and a `selection` in the **resulting** source. Apply changes from
+last to first, or map their positions through the editor's transactions. A list
+break may also return `completion`, including resulting prefix coordinates and
+continuation/child spellings for editor-specific follow-up keys. CRLF/CR line
+endings are preserved. Invalid ranges, including surrogate-pair interiors, throw
+`RangeError`. Reference atoms, selection direction, Undo boundaries, composition,
+and DOM updates belong to the integrating editor.
+
 `SourceText.utf16Offset(byteOffset)` and `byteOffset(utf16Offset)` provide cached
 coordinate conversion; invalid UTF-8 boundaries and positions inside surrogate
 pairs are rejected. CRLF, NUL, and BOM remain in the original string. If an editor
