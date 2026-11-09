@@ -20,6 +20,7 @@ export function ComparisonControls({
   onSearch,
   onWhitespace,
   onCase,
+  onExcludeBots,
   onPage,
   onOutput
 }: {
@@ -37,6 +38,7 @@ export function ComparisonControls({
   onSearch: () => void
   onWhitespace: (ignore: boolean) => void
   onCase: (ignore: boolean) => void
+  onExcludeBots: (exclude: boolean) => void
   onPage: (page: number) => void
   onOutput: (view: OutputView) => void
 }) {
@@ -128,7 +130,7 @@ export function ComparisonControls({
           </button>
         </div>
       </nav>
-      <div className="filters" role="group" aria-label="表記差分の除外">
+      <div className="filters" role="group" aria-label="差分の絞り込み">
         <label title="HTML・プレーンテキストの文字列から半角スペース、タブ、改行、フォームフィードを除いて一致する結果を非表示にします。コードや属性値内の空白も対象です。">
           <input
             type="checkbox"
@@ -146,6 +148,15 @@ export function ComparisonControls({
             onChange={event => onCase(event.target.checked)}
           />
           大文字・小文字の違いのみを除外
+        </label>
+        <label title="BOT と判明している投稿を非表示にします。">
+          <input
+            type="checkbox"
+            id="exclude-bots"
+            checked={query.excludeBots}
+            onChange={event => onExcludeBots(event.target.checked)}
+          />
+          BOT の投稿を除外
         </label>
       </div>
     </>

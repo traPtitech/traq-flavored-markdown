@@ -34,6 +34,7 @@ export type ViewerAction =
   | { type: 'search' }
   | { type: 'whitespace'; ignore: boolean }
   | { type: 'case'; ignore: boolean }
+  | { type: 'bots'; exclude: boolean }
   | { type: 'page'; page: number; totalPages: number }
   | { type: 'output'; view: OutputView }
   | { type: 'category'; category: ClassificationSelection }
@@ -83,6 +84,12 @@ export function viewerReducer(
       return {
         ...state,
         query: { ...state.query, ignoreCase: action.ignore, page: 1 }
+      }
+
+    case 'bots':
+      return {
+        ...state,
+        query: { ...state.query, excludeBots: action.exclude, page: 1 }
       }
 
     case 'page':

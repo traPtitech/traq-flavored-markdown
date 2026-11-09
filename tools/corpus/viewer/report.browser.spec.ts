@@ -132,17 +132,16 @@ async function openReport(page: Page, data = reportFixture()) {
   await page.goto(route)
 }
 
-test('only whitespace and case exclusions are always visible alongside classifications', async ({
+test('whitespace, case and BOT exclusions are visible alongside classifications', async ({
   page
 }) => {
   const data = reportFixture([
     { ...fixtureLinkedImage, index: 6, source: 'classified image' }
   ])
 
-  data.metadata.authors.render = 'b'.repeat(data.metadata.counts.render)
   await openReport(page, data)
-  const filters = page.getByRole('group', { name: '表記差分の除外' })
-  await expect(filters.getByRole('checkbox')).toHaveCount(2)
+  const filters = page.getByRole('group', { name: '差分の絞り込み' })
+  await expect(filters.getByRole('checkbox')).toHaveCount(3)
   await expect(filters.getByLabel('ホワイトスペースのみを除外')).toBeVisible()
 
   await expect(
@@ -150,13 +149,41 @@ test('only whitespace and case exclusions are always visible alongside classific
   ).toBeVisible()
 
   await expect(filters.locator('xpath=ancestor::details')).toHaveCount(0)
-  await expect(page.getByRole('checkbox')).toHaveCount(3)
+  await expect(page.getByRole('checkbox')).toHaveCount(4)
   await page.locator('[data-category="image"]').click()
   await expect(page.locator('#rows .source')).toHaveText('classified image')
   await filters.getByLabel('ホワイトスペースのみを除外').check()
   await filters.getByLabel('大文字・小文字の違いのみを除外').check()
   await expect(page.locator('#rows .source')).toHaveText('classified image')
   await expect(page.locator('#status')).toHaveText('1 件 / 全 4 件')
+})
+
+test('BOT exclusion keeps human and unknown posts and persists across profiles', async ({
+  page
+}) => {
+  const data = reportFixture()
+  data.metadata.authors.render = 'bhu'
+  data.metadata.authors.inline = 'b'
+
+  await openReport(page, data)
+  const excludeBots = page.getByLabel('BOT の投稿を除外')
+  await expect(excludeBots).not.toBeChecked()
+  await expect(page.locator('#rows .source')).toHaveText('Alpha')
+  await page.getByRole('button', { name: '次のページ' }).click()
+  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('2')
+
+  await excludeBots.check()
+  await expect(page.getByLabel('ページ', { exact: true })).toHaveValue('1')
+  await expect(page.locator('#rows .source')).toHaveText('Beta')
+  await expect(page.locator('#status')).toHaveText('2 件 / 全 3 件')
+  await page.getByRole('button', { name: '次のページ' }).click()
+  await expect(page.locator('#rows .source')).toHaveText('Gamma needle')
+
+  await page.getByRole('button', { name: /traQ_S-UI · インライン/ }).click()
+  await expect(excludeBots).toBeChecked()
+  await expect(page.locator('#empty')).toBeVisible()
+  await excludeBots.uncheck()
+  await expect(page.locator('#rows .source')).toHaveText('Inline')
 })
 
 test('classification tree drills into mixed cases, retains unresolved changes and composes with search and profiles', async ({
@@ -447,6 +474,40 @@ test('bootstrap distinguishes missing data, invalid data and unsupported browser
   await expect(
     page.locator('[data-reason="unsupported-browser"]')
   ).toBeVisible()
+})
+
+test('large reports validate filter masks without exhausting the browser stack', async ({
+  page
+}) => {
+  const count = 250000
+  const pageSize = 50
+  const counts = byProfile(profile => (profile === 'render' ? count : 0))
+  const metadata = fixtureMetadata(counts, pageSize, count)
+
+  const chunk = gzipSync(
+    JSON.stringify(
+      Array.from({ length: pageSize }, (_, index) => ({
+        runId: metadata.run.runId,
+        index,
+        profile: 'render',
+        source: 'Large report row',
+        before: { kind: 'html', value: '<p>before</p>' },
+        after: { kind: 'html', value: '<p>after</p>' }
+      }))
+    )
+  ).toString('base64')
+
+  await openReport(page, {
+    metadata,
+    payload: byProfile(profile =>
+      profile === 'render' ? Array(count / pageSize).fill(chunk) : []
+    )
+  })
+
+  await expect(page.locator('#status')).toHaveText('250,000 件')
+  await expect(page.locator('#rows > details')).toHaveCount(pageSize)
+  await expect(page.locator('#rows .source')).toHaveText('Large report row')
+  await expect(page.locator('#pages')).toHaveText('5,000')
 })
 
 test('chunk failures are visible and equal failures remain visible with zero output differences', async ({

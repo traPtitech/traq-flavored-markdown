@@ -63,6 +63,7 @@ export function useViewerController(repository: ReportRepository) {
         dispatch({ type: 'whitespace', ignore }),
 
       onCase: (ignore: boolean) => dispatch({ type: 'case', ignore }),
+      onExcludeBots: (exclude: boolean) => dispatch({ type: 'bots', exclude }),
       onPage: (page: number) => dispatch({ type: 'page', page, totalPages }),
       onOutput: (view: OutputView) => dispatch({ type: 'output', view })
     }

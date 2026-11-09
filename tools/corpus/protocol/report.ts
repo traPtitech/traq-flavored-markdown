@@ -12,7 +12,7 @@ import {
   profilesFor,
   runSummarySchema
 } from './comparison.ts'
-import { filterMaskWidth } from './filters.ts'
+import { validFilterMasks } from './filters.ts'
 import {
   type Infer,
   array,
@@ -24,7 +24,12 @@ import {
   string
 } from './schema.ts'
 
-export { differenceFilters, filterMaskWidth } from './filters.ts'
+export {
+  differenceFilters,
+  encodeFilterMasks,
+  filterMaskAt,
+  filterMaskWidth
+} from './filters.ts'
 
 export { byProfile, profileIds, profilesFor, parseDifferenceRow }
 
@@ -36,14 +41,6 @@ export type {
 } from './comparison.ts'
 
 export const pageSize = 50
-
-export const encodeFilterMasks = (masks: readonly bigint[]) =>
-  masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')
-
-export const filterMaskAt = (encoded: string, index: number) =>
-  BigInt(
-    '0x' + encoded.slice(index * filterMaskWidth, (index + 1) * filterMaskWidth)
-  )
 
 export const metadataSchema = object('ReportMetadata', {
   messages: count,
@@ -87,8 +84,7 @@ export function parseReport(metadata: unknown, payload: unknown): ReportData {
     const result = meta.results[profile]
 
     if (
-      meta.filters[profile].length !== meta.counts[profile] * filterMaskWidth ||
-      !/^(?:[0-7][0-9a-f]{31})*$/.test(meta.filters[profile]) ||
+      !validFilterMasks(meta.filters[profile], meta.counts[profile]) ||
       meta.authors[profile].length !== meta.counts[profile] ||
       !validAuthorKinds(meta.authors[profile]) ||
       !validClassifications(

@@ -106,3 +106,30 @@ export function filterQueryMask(query: FilterQuery): bigint {
 
 /** One result bit for each nonempty selection, rounded to whole hex digits. */
 export const filterMaskWidth = Math.ceil(filterCombinations.length / 4)
+
+const filterMaskLimit = 1n << BigInt(filterCombinations.length)
+
+export const encodeFilterMasks = (masks: readonly bigint[]) =>
+  masks.map(mask => mask.toString(16).padStart(filterMaskWidth, '0')).join('')
+
+export const filterMaskAt = (encoded: string, index: number) =>
+  BigInt(
+    '0x' + encoded.slice(index * filterMaskWidth, (index + 1) * filterMaskWidth)
+  )
+
+export function validFilterMasks(encoded: string, count: number) {
+  if (encoded.length !== count * filterMaskWidth) return false
+
+  for (let index = 0; index < count; index++) {
+    const mask = encoded.slice(
+      index * filterMaskWidth,
+      (index + 1) * filterMaskWidth
+    )
+
+    if (/[^0-9a-f]/.test(mask) || BigInt('0x' + mask) >= filterMaskLimit) {
+      return false
+    }
+  }
+
+  return true
+}
